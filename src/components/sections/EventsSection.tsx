@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, ArrowRight, CheckCircle2, Award } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Award } from 'lucide-react';
 import { SectionTitle } from '../ui/SectionTitle';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';

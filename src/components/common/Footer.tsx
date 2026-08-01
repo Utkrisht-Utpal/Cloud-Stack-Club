@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
             <span>by Utkrisht Utpal</span>
           </div>
 
-          {/* Personal Social Icons (LinkedIn & GitHub only, Instagram removed) */}
+          {/* Personal Social Icons LinkedIn & GitHub only*/}
           <div className="flex items-center gap-3">
             <motion.a
               whileHover={{ scale: 1.15, y: -2 }}

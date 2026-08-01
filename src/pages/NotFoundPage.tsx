@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { CloudOff, ArrowLeft, Home } from 'lucide-react';
+import { CloudOff, Home } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
 export const NotFoundPage: React.FC = () => {

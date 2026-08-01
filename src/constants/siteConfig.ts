@@ -14,14 +14,14 @@ export const siteConfig: SiteConfig = {
     email: 'cloudstack@cumail.in',
     location: 'Chandigarh University, Mohali, Punjab',
     socials: {
-      instagram: 'https://instagram.com/cloudstack_cu',
-      linkedin: 'https://linkedin.com/company/cloudstack-cu',
+      instagram: 'https://www.instagram.com/cloud_stackclub?igsh=Z3l3dm1uamlsNms1',
+      linkedin: 'https://www.linkedin.com/in/cloud-stack-club-977987414/',
     },
   },
   // Personal social profile links (LinkedIn & GitHub only):
   personalSocials: {
-    linkedin: 'https://linkedin.com/in/your-personal-profile',
-    github: 'https://github.com/your-personal-github',
+    linkedin: 'https://www.linkedin.com/in/utkrisht-utpal',
+    github: 'https://github.com/Utkrisht-Utpal',
   },
   navLinks: [
     { name: 'Home', href: '/#hero' },

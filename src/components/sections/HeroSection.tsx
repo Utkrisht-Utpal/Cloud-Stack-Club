@@ -4,7 +4,7 @@ import { ArrowRight, Calendar, Terminal, Cpu } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TECH_BADGES } from '../../constants/data';
 import { ClubLogo } from '../ui/ClubLogo';
-import { siteConfig } from '../../constants/siteConfig';
+
 
 interface HeroSectionProps {
   onJoinClick: () => void;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Users, ArrowLeft, ShieldCheck, Sparkles, UserPlus } from 'lucide-react';
+import { Users, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const TeamComingSoon: React.FC = () => {

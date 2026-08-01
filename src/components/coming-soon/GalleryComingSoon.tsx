@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Image, ArrowLeft, Sparkles, Camera } from 'lucide-react';
+import { ArrowLeft, Sparkles, Camera } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
+
 
 export const GalleryComingSoon: React.FC = () => {
   const navigate = useNavigate();
