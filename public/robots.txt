@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cloudstackclub.cu.ac.in/sitemap.xml
