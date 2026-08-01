@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Sparkles, User, Mail, GraduationCap, Code2, Send } from 'lucide-react';
+import { Sparkles, User, Mail, GraduationCap, Code2, Send, AlertCircle } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CustomSelect } from '../ui/CustomSelect';
+import { sendJoinApplication } from '../../services/emailService';
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -27,18 +28,25 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     domain: 'Cloud Computing',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.uid) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setError(null);
+
+    try {
+      await sendJoinApplication(formData);
+      setFormData({ name: '', email: '', uid: '', domain: 'Cloud Computing' });
       onClose();
       onSuccessToast();
-      setFormData({ name: '', email: '', uid: '', domain: 'Cloud Computing' });
-    }, 600);
+    } catch {
+      setError('Failed to send. Please try again or email us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -104,6 +112,13 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
             options={DOMAIN_OPTIONS}
           />
 
+          {error && (
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="pt-3">
             <Button
               type="submit"
@@ -113,7 +128,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               icon={<Send className="w-4 h-4" />}
               className="w-full"
             >
-              {isSubmitting ? 'Registering Membership...' : 'Submit Application'}
+              {isSubmitting ? 'Sending Application...' : 'Submit Application'}
             </Button>
           </div>
         </form>

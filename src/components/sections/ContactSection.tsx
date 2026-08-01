@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Mail, Send, Sparkles } from 'lucide-react';
+import { MapPin, Mail, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { LinkedinIcon, InstagramIcon } from '../ui/SocialIcons';
 import { SectionTitle } from '../ui/SectionTitle';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Toast } from '../ui/Toast';
 import { siteConfig } from '../../constants/siteConfig';
+import { sendContactMessage } from '../../services/emailService';
 
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -16,17 +17,24 @@ export const ContactSection: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowToast(true);
+    setError(null);
+
+    try {
+      await sendContactMessage(formData);
       setFormData({ name: '', email: '', message: '' });
-    }, 600);
+      setShowToast(true);
+    } catch {
+      setError('Failed to send. Please try again or email us directly.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -174,6 +182,13 @@ export const ContactSection: React.FC = () => {
                       className="w-full px-4 py-3 rounded-xl glass-panel bg-white/50 dark:bg-slate-900/60 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none"
                     />
                   </div>
+
+                  {error && (
+                    <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400">
+                      <AlertCircle className="w-4 h-4 shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
 
                   <Button
                     type="submit"
