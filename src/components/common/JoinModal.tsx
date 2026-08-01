@@ -1,0 +1,123 @@
+import React, { useState } from 'react';
+import { Sparkles, User, Mail, GraduationCap, Code2, Send } from 'lucide-react';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
+import { CustomSelect } from '../ui/CustomSelect';
+
+interface JoinModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccessToast: () => void;
+}
+
+const DOMAIN_OPTIONS = [
+  { value: 'Cloud Computing', label: 'Cloud Computing' },
+  { value: 'Full Stack Development', label: 'Full Stack Development' },
+  { value: 'DevOps', label: 'DevOps' },
+  { value: 'Web Development', label: 'Web Development' },
+  { value: 'Docker & Kubernetes', label: 'Docker & Kubernetes' },
+  { value: 'AI + Cloud', label: 'AI + Cloud' },
+];
+
+export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccessToast }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    uid: '',
+    domain: 'Cloud Computing',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.uid) return;
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      onClose();
+      onSuccessToast();
+      setFormData({ name: '', email: '', uid: '', domain: 'Cloud Computing' });
+    }, 600);
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Join Cloud Stack Club">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-sky-400 font-semibold">
+          <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
+          <span>Become a member of Chandigarh University's premier cloud developer network.</span>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-sky-400" />
+              Full Name
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="e.g. Ananya Sharma"
+              className="w-full px-4 py-2.5 rounded-xl glass-panel bg-slate-900/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm border border-slate-700/60"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-sky-400" />
+              CU Email Address
+            </label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="e.g. 22BCS1000@cuchd.in"
+              className="w-full px-4 py-2.5 rounded-xl glass-panel bg-slate-900/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm border border-slate-700/60"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <GraduationCap className="w-3.5 h-3.5 text-sky-400" />
+              UID / Student ID
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.uid}
+              onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
+              placeholder="e.g. 22BCS10101"
+              className="w-full px-4 py-2.5 rounded-xl glass-panel bg-slate-900/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm border border-slate-700/60"
+            />
+          </div>
+
+          {/* UI Friendly Custom Glassmorphic Select Dropdown (Image 4 Requirement) */}
+          <CustomSelect
+            label="Primary Domain Interest"
+            icon={<Code2 className="w-3.5 h-3.5 text-sky-400" />}
+            value={formData.domain}
+            onChange={(val) => setFormData({ ...formData, domain: val })}
+            options={DOMAIN_OPTIONS}
+          />
+
+          <div className="pt-3">
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              disabled={isSubmitting}
+              icon={<Send className="w-4 h-4" />}
+              className="w-full"
+            >
+              {isSubmitting ? 'Registering Membership...' : 'Submit Application'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </Modal>
+  );
+};

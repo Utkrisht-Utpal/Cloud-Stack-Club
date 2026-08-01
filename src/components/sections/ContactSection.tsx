@@ -1,0 +1,204 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { MapPin, Mail, Send, Sparkles } from 'lucide-react';
+import { LinkedinIcon, InstagramIcon } from '../ui/SocialIcons';
+import { SectionTitle } from '../ui/SectionTitle';
+import { Card } from '../ui/Card';
+import { Button } from '../ui/Button';
+import { Toast } from '../ui/Toast';
+import { siteConfig } from '../../constants/siteConfig';
+
+export const ContactSection: React.FC = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) return;
+
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowToast(true);
+      setFormData({ name: '', email: '', message: '' });
+    }, 600);
+  };
+
+  return (
+    <section id="contact" className="py-20 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <SectionTitle
+          badge="Get in Touch"
+          title="Contact Us"
+          subtitle="Have questions, want to partner with Cloud Stack Club, or interested in hosting a session at Chandigarh University? Reach out to us below."
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Left Side Info Cards */}
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Location Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card className="flex items-start gap-4">
+                <div className="p-3.5 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 shrink-0">
+                  <MapPin className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white">Location</h4>
+                  <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {siteConfig.contact.location}
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Email Card */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <Card className="flex items-start gap-4">
+                <div className="p-3.5 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 shrink-0">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white">Email Us</h4>
+                  <p className="mt-1 text-sm font-mono text-blue-600 dark:text-sky-400">
+                    {siteConfig.contact.email}
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Social Links Card (Club Credentials: LinkedIn & Instagram) */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <Card className="space-y-4">
+                <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  Follow Our Social Channels
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <a
+                    href={siteConfig.contact.socials.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3 rounded-xl glass-panel flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:border-blue-500/50 transition-all"
+                  >
+                    <LinkedinIcon className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span>LinkedIn</span>
+                  </a>
+                  <a
+                    href={siteConfig.contact.socials.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-3 rounded-xl glass-panel flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-500/50 transition-all"
+                  >
+                    <InstagramIcon className="w-4 h-4 text-pink-600 shrink-0" />
+                    <span>Instagram</span>
+                  </a>
+                </div>
+              </Card>
+            </motion.div>
+
+          </div>
+
+          {/* Right Side Form */}
+          <div className="lg:col-span-7">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card gradientBorder={true} className="p-6 sm:p-8">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div>
+                    <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                      Your Name
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="e.g. Rahul Sharma"
+                      className="w-full px-4 py-3 rounded-xl glass-panel bg-white/50 dark:bg-slate-900/60 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="e.g. rahul@cumail.in"
+                      className="w-full px-4 py-3 rounded-xl glass-panel bg-white/50 dark:bg-slate-900/60 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                      Message
+                    </label>
+                    <textarea
+                      id="message"
+                      rows={4}
+                      required
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      placeholder="How can we assist you or collaborate?"
+                      className="w-full px-4 py-3 rounded-xl glass-panel bg-white/50 dark:bg-slate-900/60 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all resize-none"
+                    />
+                  </div>
+
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="lg"
+                    disabled={isSubmitting}
+                    icon={<Send className="w-4 h-4" />}
+                    className="w-full"
+                  >
+                    {isSubmitting ? 'Sending Message...' : 'Send Message'}
+                  </Button>
+                </form>
+              </Card>
+            </motion.div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Success Toast */}
+      <Toast
+        isVisible={showToast}
+        message="Thank you! Your message has been sent successfully. We will get back to you soon."
+        onClose={() => setShowToast(false)}
+      />
+    </section>
+  );
+};

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60" fill="none">
+  <rect width="200" height="60" rx="8" fill="transparent"/>
+  <g transform="translate(10, 8)">
+    <!-- Red Accent Emblem -->
+    <path d="M0 8C0 3.58172 3.58172 0 8 0H28C32.4183 0 36 3.58172 36 8V36C36 40.4183 32.4183 44 28 44H8C3.58172 44 0 40.4183 0 36V8Z" fill="#DC2626"/>
+    <path d="M12 12H24V18H12V12ZM12 22H24V32H12V22Z" fill="#FFFFFF"/>
+    <!-- CU Text -->
+    <text x="44" y="24" fill="currentColor" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="20" letter-spacing="0.5">CHANDIGARH</text>
+    <text x="44" y="38" fill="currentColor" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="13" letter-spacing="2" opacity="0.9">UNIVERSITY</text>
+  </g>
+</svg>
