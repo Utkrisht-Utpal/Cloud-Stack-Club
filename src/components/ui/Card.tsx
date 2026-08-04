@@ -1,32 +1,26 @@
 import React from 'react';
-import { motion, type HTMLMotionProps } from 'framer-motion';
 import { cn } from '../../utils/cn';
 
-export interface CardProps extends HTMLMotionProps<'div'> {
-  gradientBorder?: boolean;
-  glowOnHover?: boolean;
+export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  gradientBorder?: boolean; // kept for API compat, no longer used
+  glowOnHover?: boolean;    // kept for API compat, no longer used
   children: React.ReactNode;
 }
 
+/** Global card — Neumorphism (Soft UI) style throughout the site. */
 export const Card: React.FC<CardProps> = ({
-  gradientBorder = true,
-  glowOnHover = true,
   children,
   className,
+  gradientBorder: _g,
+  glowOnHover: _h,
   ...props
 }) => {
   return (
-    <motion.div
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className={cn(
-        'rounded-2xl p-6 transition-all duration-300',
-        gradientBorder ? 'gradient-border-card' : 'glass-panel',
-        glowOnHover && 'hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-sky-500/15',
-        className
-      )}
+    <div
+      className={cn('neumorphic-card p-6 transition-all duration-300 group', className)}
       {...props}
     >
       {children}
-    </motion.div>
+    </div>
   );
 };

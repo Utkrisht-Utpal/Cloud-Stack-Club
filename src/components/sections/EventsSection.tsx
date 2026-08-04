@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, Award } from 'lucide-react';
 import { SectionTitle } from '../ui/SectionTitle';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { EVENT_CATEGORIES } from '../../constants/data';
@@ -29,7 +28,7 @@ export const EventsSection: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.08 }}
             >
-              <Card className="h-full flex flex-col justify-between overflow-hidden p-0 group">
+              <div className="neumorphic-card h-full flex flex-col justify-between overflow-hidden p-0 group">
                 <div className="relative h-48 w-full overflow-hidden bg-slate-900">
                   <img
                     src={event.image}
@@ -65,7 +64,7 @@ export const EventsSection: React.FC = () => {
                     </Button>
                   </div>
                 </div>
-              </Card>
+              </div>
             </motion.div>
           ))}
         </div>

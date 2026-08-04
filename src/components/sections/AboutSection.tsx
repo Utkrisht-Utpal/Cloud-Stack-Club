@@ -31,7 +31,7 @@ export const AboutSection: React.FC = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-14 p-8 sm:p-10 rounded-3xl glass-panel gradient-border-card bg-gradient-to-r from-blue-900/20 via-sky-900/10 to-indigo-900/20 relative overflow-hidden"
+          className="mb-14 p-8 sm:p-10 rounded-3xl neumorphic-card relative overflow-hidden"
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="space-y-4 max-w-2xl">
@@ -47,11 +47,11 @@ export const AboutSection: React.FC = () => {
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4 shrink-0 w-full md:w-auto">
-              <div className="p-4 rounded-2xl glass-panel text-center">
+              <div className="p-4 rounded-2xl neumorphic-card text-center">
                 <p className="text-2xl sm:text-3xl font-black text-gradient">100+</p>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Active Members</p>
               </div>
-              <div className="p-4 rounded-2xl glass-panel text-center">
+              <div className="p-4 rounded-2xl neumorphic-card text-center">
                 <p className="text-2xl sm:text-3xl font-black text-gradient">5+</p>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Workshops & Events</p>
               </div>
@@ -71,7 +71,7 @@ export const AboutSection: React.FC = () => {
             >
               <Card className="h-full flex flex-col justify-between group">
                 <div className="space-y-4">
-                  <div className="p-3 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 w-fit group-hover:scale-110 transition-transform duration-300">
+                  <div className="neumorphic-icon p-3 w-fit group-hover:scale-95 transition-transform duration-300">
                     {iconMap[item.iconName]}
                   </div>
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">

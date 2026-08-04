@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { MapPin, Mail, Send, Sparkles, AlertCircle } from 'lucide-react';
 import { LinkedinIcon, InstagramIcon } from '../ui/SocialIcons';
 import { SectionTitle } from '../ui/SectionTitle';
-import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Toast } from '../ui/Toast';
 import { siteConfig } from '../../constants/siteConfig';
@@ -58,8 +57,8 @@ export const ContactSection: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <Card className="flex items-start gap-4">
-                <div className="p-3.5 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 shrink-0">
+              <div className="neumorphic-card p-6 flex items-start gap-4">
+                <div className="neumorphic-icon p-3 text-blue-600 dark:text-sky-400 shrink-0">
                   <MapPin className="w-6 h-6" />
                 </div>
                 <div>
@@ -68,7 +67,7 @@ export const ContactSection: React.FC = () => {
                     {siteConfig.contact.location}
                   </p>
                 </div>
-              </Card>
+              </div>
             </motion.div>
 
             {/* Email Card */}
@@ -78,8 +77,8 @@ export const ContactSection: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <Card className="flex items-start gap-4">
-                <div className="p-3.5 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 shrink-0">
+              <div className="neumorphic-card p-6 flex items-start gap-4">
+                <div className="neumorphic-icon p-3 text-sky-600 dark:text-sky-400 shrink-0">
                   <Mail className="w-6 h-6" />
                 </div>
                 <div>
@@ -88,7 +87,7 @@ export const ContactSection: React.FC = () => {
                     {siteConfig.contact.email}
                   </p>
                 </div>
-              </Card>
+              </div>
             </motion.div>
 
             {/* Social Links Card (Club Credentials: LinkedIn & Instagram) */}
@@ -98,7 +97,7 @@ export const ContactSection: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <Card className="space-y-4">
+              <div className="neumorphic-card p-6 space-y-4">
                 <h4 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-blue-500" />
                   Follow Our Social Channels
@@ -108,7 +107,7 @@ export const ContactSection: React.FC = () => {
                     href={siteConfig.contact.socials.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-3 rounded-xl glass-panel flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:border-blue-500/50 transition-all"
+                    className="p-3 rounded-xl neumorphic-card flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-all"
                   >
                     <LinkedinIcon className="w-4 h-4 text-blue-600 shrink-0" />
                     <span>LinkedIn</span>
@@ -117,13 +116,13 @@ export const ContactSection: React.FC = () => {
                     href={siteConfig.contact.socials.instagram}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-3 rounded-xl glass-panel flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-pink-600 dark:hover:text-pink-400 hover:border-pink-500/50 transition-all"
+                    className="p-3 rounded-xl neumorphic-card flex items-center justify-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-pink-600 dark:hover:text-pink-400 transition-all"
                   >
                     <InstagramIcon className="w-4 h-4 text-pink-600 shrink-0" />
                     <span>Instagram</span>
                   </a>
                 </div>
-              </Card>
+              </div>
             </motion.div>
 
           </div>
@@ -136,7 +135,7 @@ export const ContactSection: React.FC = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
             >
-              <Card gradientBorder={true} className="p-6 sm:p-8">
+              <div className="neumorphic-card p-6 sm:p-8">
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
                     <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
@@ -201,7 +200,7 @@ export const ContactSection: React.FC = () => {
                     {isSubmitting ? 'Sending Message...' : 'Send Message'}
                   </Button>
                 </form>
-              </Card>
+              </div>
             </motion.div>
           </div>
 
