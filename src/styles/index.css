@@ -101,6 +101,137 @@
   box-shadow: 0 0 40px 0px var(--glow-color);
 }
 
+/* ─────────────────────────────────────────────
+   GLASSMORPHISM — Enhanced card style
+   Used in: Domains / WhatWeDoSection
+───────────────────────────────────────────── */
+.glass-card {
+  position: relative;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  transition: all 0.35s ease;
+  overflow: hidden;
+}
+
+.dark .glass-card {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.08) 0%,
+    rgba(15, 23, 42, 0.55) 60%,
+    rgba(99, 102, 241, 0.06) 100%
+  );
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 60px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.dark .glass-card:hover {
+  box-shadow:
+    0 20px 60px rgba(56, 189, 248, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+/* ─────────────────────────────────────────────
+   NEUMORPHISM — Soft UI card style
+   Used in: Why Join / WhyJoinSection
+───────────────────────────────────────────── */
+.neumorphic-card {
+  background: #e8edf5;
+  border-radius: 20px;
+  border: none;
+  box-shadow:
+    8px 8px 20px rgba(163, 177, 198, 0.7),
+    -8px -8px 20px rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+}
+
+.dark .neumorphic-card {
+  background: #0d1525;
+  box-shadow:
+    8px 8px 20px rgba(0, 0, 0, 0.5),
+    -8px -8px 20px rgba(30, 48, 80, 0.4);
+}
+
+.neumorphic-card:hover {
+  box-shadow:
+    4px 4px 12px rgba(163, 177, 198, 0.8),
+    -4px -4px 12px rgba(255, 255, 255, 0.95),
+    inset 2px 2px 6px rgba(163, 177, 198, 0.4),
+    inset -2px -2px 6px rgba(255, 255, 255, 0.7);
+  transform: translateY(-2px);
+}
+
+.dark .neumorphic-card:hover {
+  box-shadow:
+    4px 4px 12px rgba(0, 0, 0, 0.6),
+    -4px -4px 12px rgba(30, 48, 80, 0.5),
+    inset 2px 2px 6px rgba(0, 0, 0, 0.4),
+    inset -2px -2px 6px rgba(30, 48, 80, 0.3);
+}
+
+.neumorphic-icon {
+  background: #e8edf5;
+  border-radius: 14px;
+  box-shadow:
+    4px 4px 10px rgba(163, 177, 198, 0.7),
+    -4px -4px 10px rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
+}
+
+.dark .neumorphic-icon {
+  background: #0d1525;
+  box-shadow:
+    4px 4px 10px rgba(0, 0, 0, 0.5),
+    -4px -4px 10px rgba(30, 48, 80, 0.4);
+}
+
+.neumorphic-card:hover .neumorphic-icon {
+  box-shadow:
+    inset 3px 3px 8px rgba(163, 177, 198, 0.6),
+    inset -3px -3px 8px rgba(255, 255, 255, 0.8);
+}
+
+.dark .neumorphic-card:hover .neumorphic-icon {
+  box-shadow:
+    inset 3px 3px 8px rgba(0, 0, 0, 0.5),
+    inset -3px -3px 8px rgba(30, 48, 80, 0.4);
+}
+
 /* Text Gradients */
 .text-gradient {
   background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 50%, #6366f1 100%);
