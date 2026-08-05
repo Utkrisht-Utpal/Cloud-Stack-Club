@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
           {/* Left: Club Shield Logo (Image 1) */}
           <Link
             to="/"
-            className="flex items-center gap-3 focus:outline-none group"
+            className="flex items-center gap-3 focus:outline-none group cursor-pointer"
             aria-label="Cloud Stack Club Home"
           >
             <ClubLogo size="md" showText={true} />
@@ -100,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
                 <button
                   key={link.name}
                   onClick={() => handleNavClick(link.href, link.isExternalPage)}
-                  className={`relative px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors rounded-full ${
+                  className={`relative px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors rounded-full cursor-pointer ${
                     isActive
                       ? 'text-blue-600 dark:text-sky-400'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -151,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl glass-panel text-slate-700 dark:text-slate-200"
+              className="p-2 rounded-xl glass-panel text-slate-700 dark:text-slate-200 cursor-pointer"
               aria-label="Toggle Theme"
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
@@ -159,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
 
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl glass-panel text-slate-900 dark:text-white focus:outline-none"
+              className="p-2 rounded-xl glass-panel text-slate-900 dark:text-white focus:outline-none cursor-pointer"
               aria-label="Toggle Mobile Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -187,7 +187,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
                 <button
                   key={link.name}
                   onClick={() => handleNavClick(link.href, link.isExternalPage)}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:text-sky-400 hover:bg-slate-800/60 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium text-slate-200 hover:text-sky-400 hover:bg-slate-800/60 transition-colors flex items-center justify-between cursor-pointer"
                 >
                   <span>{link.name}</span>
                   <ArrowRight className="w-4 h-4 opacity-50" />
