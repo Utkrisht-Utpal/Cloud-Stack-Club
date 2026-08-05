@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -8,24 +8,37 @@ interface FloatingMobileCTAProps {
 }
 
 export const FloatingMobileCTA: React.FC<FloatingMobileCTAProps> = ({ onJoinClick }) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [pastHero, setPastHero] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Show CTA once the hero scrolls out of view
   useEffect(() => {
     const handleScroll = () => {
-      const heroSection = document.getElementById('hero');
-      if (heroSection) {
-        const bottom = heroSection.getBoundingClientRect().bottom;
-        if (bottom < 0) {
-          setIsVisible(true);
-        } else {
-          setIsVisible(false);
-        }
+      const hero = document.getElementById('hero');
+      if (hero) {
+        setPastHero(hero.getBoundingClientRect().bottom < 0);
       }
     };
-
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Hide CTA as soon as the footer enters the viewport
+  useEffect(() => {
+    const footer = document.querySelector('footer');
+    if (!footer) return;
+
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => setFooterVisible(entry.isIntersecting),
+      { threshold: 0 } // fires the moment any pixel of the footer is visible
+    );
+    observerRef.current.observe(footer);
+
+    return () => observerRef.current?.disconnect();
+  }, []);
+
+  const isVisible = pastHero && !footerVisible;
 
   return (
     <AnimatePresence>
@@ -34,6 +47,7 @@ export const FloatingMobileCTA: React.FC<FloatingMobileCTAProps> = ({ onJoinClic
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
+          transition={{ duration: 0.25 }}
           className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
         >
           <div className="p-3 rounded-2xl glass-panel bg-slate-900/90 border-blue-500/30 shadow-2xl flex items-center justify-between gap-3 text-white">
