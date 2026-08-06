@@ -13,16 +13,18 @@ const THEME_KEY = 'cloud_stack_theme_preference';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
+    // Only restore from localStorage if the user has explicitly made a choice before.
+    // On first visit (nothing stored), always start in dark mode.
     const stored = localStorage.getItem(THEME_KEY);
     if (stored === 'light' || stored === 'dark') {
       return stored;
     }
-    // Fallback to system preference
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'dark'; // Default to dark premium aesthetic for developer community feel
+    return 'dark'; // First-time default → always dark
   });
+
+  // Apply the class to <html> and persist ONLY if this is a user-initiated change.
+  // The `userChose` ref tracks whether we should write to localStorage.
+  const userChoseRef = React.useRef(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -33,27 +35,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.add('light');
       root.classList.remove('dark');
     }
-    localStorage.setItem(THEME_KEY, theme);
+
+    // Persist only after the user has explicitly toggled
+    if (userChoseRef.current) {
+      localStorage.setItem(THEME_KEY, theme);
+    }
   }, [theme]);
 
-  // Listen for system theme changes if no explicit user preference in localStorage
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      const stored = localStorage.getItem(THEME_KEY);
-      if (!stored) {
-        setThemeState(e.matches ? 'dark' : 'light');
-      }
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
   const setTheme = (newTheme: Theme) => {
+    userChoseRef.current = true;
     setThemeState(newTheme);
   };
 
   const toggleTheme = () => {
+    userChoseRef.current = true;
     setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
