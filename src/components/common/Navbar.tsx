@@ -50,6 +50,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (location.pathname === '/' && location.hash) {
+      const targetId = location.hash.replace('#', '');
+      const scrollToSection = () => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+          setActiveSection(targetId);
+          return true;
+        }
+        return false;
+      };
+
+      if (!scrollToSection()) {
+        const timer = setTimeout(scrollToSection, 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [location.pathname, location.hash]);
+
   const handleNavClick = (href: string, isExternalPage?: boolean) => {
     setMobileMenuOpen(false);
 
