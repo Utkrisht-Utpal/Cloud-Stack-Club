@@ -7,6 +7,7 @@ import { CloudBackground } from '../components/ui/CloudBackground';
 import { ScrollProgress } from '../components/ui/ScrollProgress';
 import { JoinModal } from '../components/common/JoinModal';
 import { Toast } from '../components/ui/Toast';
+import { ScrollToTop } from '../components/common/ScrollToTop';
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
@@ -17,6 +18,9 @@ export const MainLayout: React.FC = () => {
 
   return (
     <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+      {/* Route Scroll Restoration */}
+      <ScrollToTop />
+
       {/* Top Scroll Reading Progress */}
       <ScrollProgress />
 
