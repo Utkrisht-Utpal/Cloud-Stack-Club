@@ -55,10 +55,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.1]"
+            className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]"
           >
-            <span className="inline-block">Cloud Stack</span>{' '}
-            <span className="text-gradient">Club</span>
+            <span className="hero-title-gradient">Cloud Stack Club</span>
           </motion.h1>
 
           <motion.p

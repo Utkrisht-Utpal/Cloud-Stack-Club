@@ -102,6 +102,79 @@
 }
 
 /* ─────────────────────────────────────────────
+   HERO TITLE — Breathing gradient animation
+   Applied ONLY to the main "Cloud Stack Club" h1.
+   Palette derived from the Cloud Stack Club logo:
+   deep navy → electric blue → cyan → light cyan
+   → electric blue → deep navy
+   DO NOT apply to any other element.
+───────────────────────────────────────────── */
+@keyframes hero-gradient-flow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes hero-breathe {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.93; }
+}
+
+.hero-title-gradient {
+  /* Light mode: navy → electric blue → cyan → sky → electric blue → navy
+     White/light-cyan kept minimal so text stays readable on white bg */
+  background-image: linear-gradient(
+    110deg,
+    #0f2d6e 0%,
+    #1d4ed8 18%,
+    #0ea5e9 36%,
+    #bae6fd 50%,
+    #0ea5e9 64%,
+    #1d4ed8 82%,
+    #0f2d6e 100%
+  );
+  background-size: 250% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent; /* fallback */
+
+  /* Gradient flows over ~10 s; breathing over ~6 s — staggered so they
+     never peak at exactly the same moment, keeping it natural */
+  animation:
+    hero-gradient-flow 10s ease-in-out infinite,
+    hero-breathe 6s ease-in-out infinite;
+
+  /* Prevent layout shift from breathing */
+  will-change: background-position, opacity;
+  display: inline-block; /* keeps the gradient clipped to text only */
+}
+
+/* Dark mode: richer electric blue / cyan / white highlights */
+.dark .hero-title-gradient {
+  background-image: linear-gradient(
+    110deg,
+    #0c1a4d 0%,
+    #2563eb 15%,
+    #38bdf8 32%,
+    #e0f2fe 50%,
+    #38bdf8 68%,
+    #2563eb 85%,
+    #0c1a4d 100%
+  );
+}
+
+/* Reduced motion: keep the static gradient, remove all movement */
+@media (prefers-reduced-motion: reduce) {
+  .hero-title-gradient {
+    animation: none;
+    /* Static snapshot at the middle of the gradient */
+    background-position: 50% 50%;
+    opacity: 1;
+  }
+}
+
+/* ─────────────────────────────────────────────
    GLASSMORPHISM — Enhanced card style
    Used in: Domains / WhatWeDoSection
 ───────────────────────────────────────────── */
