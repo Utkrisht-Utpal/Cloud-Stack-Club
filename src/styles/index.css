@@ -301,22 +301,16 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Custom Scrollbar */
+/* Hide custom vertical scrollbar track */
+html, body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--text-dim);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-blue);
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Hide Scrollbar Utility */
