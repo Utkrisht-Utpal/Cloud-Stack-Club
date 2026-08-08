@@ -107,31 +107,38 @@
    DO NOT apply to any other element.
 ───────────────────────────────────────────── */
 @keyframes hero-gradient-flow {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .hero-title-gradient {
   /* Light mode: deep navy → electric blue → bright cyan → white → cyan → blue → navy */
-  background-image: linear-gradient(
-    110deg,
-    #0a1f5c 0%,
-    #1a56db 20%,
-    #06b6d4 38%,
-    #cffafe 50%,
-    #06b6d4 62%,
-    #1a56db 80%,
-    #0a1f5c 100%
-  );
-  background-size: 300% 100%;   /* wider = more visible sweep */
+  background-image: linear-gradient(110deg,
+      #0a1f5c 0%,
+      #1a56db 20%,
+      #06b6d4 38%,
+      #cffafe 50%,
+      #06b6d4 62%,
+      #1a56db 80%,
+      #0a1f5c 100%);
+  background-size: 300% 100%;
+  /* wider = more visible sweep */
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
 
   /* 5 s flow — slow enough to feel premium, fast enough to clearly notice */
-  animation: hero-gradient-flow 5s ease-in-out infinite;
+  animation: hero-gradient-flow 15s ease-in-out infinite;
 
   will-change: background-position;
   display: inline-block;
@@ -139,23 +146,20 @@
 
 /* Dark mode: brighter electric blue / cyan / white */
 .dark .hero-title-gradient {
-  background-image: linear-gradient(
-    110deg,
-    #0c1a4d 0%,
-    #2563eb 18%,
-    #22d3ee 35%,
-    #e0f2fe 50%,
-    #22d3ee 65%,
-    #2563eb 82%,
-    #0c1a4d 100%
-  );
+  background-image: linear-gradient(110deg,
+      #0c1a4d 0%,
+      #2563eb 18%,
+      #22d3ee 35%,
+      #e0f2fe 50%,
+      #22d3ee 65%,
+      #2563eb 82%,
+      #0c1a4d 100%);
 }
 
-/* Reduced motion: keep a static gradient, just stop the sweep */
+/* Reduced motion: freeze the gradient at the electric-blue band — no movement, but keep the styled look */
 @media (prefers-reduced-motion: reduce) {
   .hero-title-gradient {
-    animation: none;
-    background-position: 30% 50%; /* lock to the electric-blue band */
+    background-position: 30% 50%;
   }
 }
 
@@ -165,11 +169,9 @@
 ───────────────────────────────────────────── */
 .glass-card {
   position: relative;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.05) 100%);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.22);
@@ -182,12 +184,10 @@
 }
 
 .dark .glass-card {
-  background: linear-gradient(
-    135deg,
-    rgba(56, 189, 248, 0.08) 0%,
-    rgba(15, 23, 42, 0.55) 60%,
-    rgba(99, 102, 241, 0.06) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(56, 189, 248, 0.08) 0%,
+      rgba(15, 23, 42, 0.55) 60%,
+      rgba(99, 102, 241, 0.06) 100%);
   border: 1px solid rgba(148, 163, 184, 0.12);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -199,11 +199,9 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    transparent 50%
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      transparent 50%);
   pointer-events: none;
 }
 
@@ -325,6 +323,7 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -332,9 +331,12 @@
 
 /* Floating animation */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }

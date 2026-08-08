@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import { ArrowRight, Calendar, Terminal, Cpu } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TECH_BADGES } from '../../constants/data';
@@ -15,8 +15,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
   return (
     <section id="hero" className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-        
-        {/* Top Announcement Pill (Removed red CU badge as requested) */}
+
+        {/* Top Announcement Pill*/}
         <div className="flex justify-center mb-6 sm:mb-8">
           <motion.div
             initial={{ opacity: 0, y: -15 }}
@@ -57,19 +57,23 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             transition={{ duration: 0.4, delay: 0.1 }}
             className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]"
           >
-            <motion.span
-              className="hero-title-gradient"
-              animate={{ opacity: [1, 0.82, 1] }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-                repeatType: 'loop',
-                delay: 0.5, // slight offset from page-load fade-in
-              }}
-            >
-              Cloud Stack Club
-            </motion.span>
+            {/* MotionConfig reducedMotion="never" overrides the OS preference
+                so the breathing runs even when Windows has animations off */}
+            <MotionConfig reducedMotion="never">
+              <motion.span
+                className="hero-title-gradient"
+                animate={{ opacity: [1, 0.82, 1] }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  repeatType: 'loop',
+                  delay: 0.5,
+                }}
+              >
+                Cloud Stack Club
+              </motion.span>
+            </MotionConfig>
           </motion.h1>
 
           <motion.p
@@ -167,10 +171,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
                 cloud-stack-club@cu:~
               </span>
             </div>
-            <span className="text-[11px] font-mono text-emerald-400 font-medium">● v2026.1 (Active)</span>
+            <span className="text-[11px] font-mono text-emerald-400 font-medium">● v2026.2 (Active)</span>
           </div>
           <div className="pt-3 font-mono text-xs sm:text-sm space-y-1.5 text-slate-300">
-            <p className="text-slate-400"><span className="text-sky-400">$</span> agy init --community "Cloud Stack Club"</p>
+            <p className="text-slate-400"><span className="text-sky-400">$</span> agy init --club "Cloud Stack"</p>
             <p className="text-emerald-400">✔ Initializing Chandigarh University Cloud Stack Developer Network...</p>
             <p className="text-slate-300"><span className="text-sky-400">$</span> deploy --target "Future Engineers" --status "Ready to innovate"</p>
             <p className="text-blue-400">🚀 Successfully deployed: AWS, Kubernetes, Docker, DevOps, Full-Stack</p>
