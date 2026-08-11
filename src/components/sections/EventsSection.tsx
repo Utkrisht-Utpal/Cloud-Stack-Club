@@ -47,7 +47,7 @@ export const EventsSection: React.FC = () => {
                     <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
                       {event.title}
                     </h3>
-                    <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <p className="mt-2 text-sm text-slate-700 dark:text-slate-400 leading-relaxed font-medium">
                       {event.description}
                     </p>
                   </div>
@@ -91,27 +91,27 @@ export const EventsSection: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-sm text-slate-300 leading-relaxed">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
               {selectedEvent.description}
             </p>
 
-            <div className="space-y-2 pt-2 border-t border-slate-800">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+            <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 flex items-center gap-1.5">
                 <Award className="w-4 h-4" />
                 Key Highlights
               </h4>
               <ul className="space-y-2">
                 {selectedEvent.features.map((feature, i) => (
-                  <li key={i} className="text-xs text-slate-300 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <li key={i} className="text-xs text-slate-700 dark:text-slate-300 font-medium flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-400">Upcoming sessions posted on WhatsApp/Socials</span>
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+              <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">Upcoming sessions posted on WhatsApp/Socials</span>
               <Button variant="primary" size="sm" onClick={() => setSelectedEvent(null)}>
                 Got It
               </Button>

@@ -22,20 +22,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-blue-500/30 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
+            className="inline-flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-blue-500/30 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden"
           >
-            <span className="flex h-2 w-2 relative">
+            <span className="flex h-2 w-2 relative shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
             </span>
 
-            <span className="font-extrabold tracking-wide uppercase">
+            <span className="font-extrabold tracking-wide uppercase whitespace-nowrap shrink-0">
               <span className="text-red-600 dark:text-red-500">CHANDIGARH</span>{' '}
               <span className="text-slate-900 dark:text-white">UNIVERSITY</span>
             </span>
 
-            <span className="text-slate-400">•</span>
-            <span className="text-slate-600 dark:text-slate-300 font-medium">Empowering Student Builders</span>
+            <span className="text-slate-400 hidden xs:inline">•</span>
+            <span className="text-slate-700 dark:text-slate-300 font-medium truncate hidden sm:inline">Empowering Student Builders</span>
           </motion.div>
         </div>
 
@@ -157,25 +157,37 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
           initial={{ opacity: 0, y: 25 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.25 }}
-          className="mt-14 max-w-3xl mx-auto rounded-2xl glass-panel p-5 border-blue-500/20 shadow-2xl bg-slate-950/80 text-slate-200 hidden sm:block"
+          className="mt-14 max-w-3xl mx-auto rounded-2xl p-5 bg-[#e6ecf5] dark:bg-slate-950 border border-white/60 dark:border-slate-800/80 shadow-[7px_7px_18px_rgba(163,177,198,0.6),-7px_-7px_18px_#ffffff] dark:shadow-2xl text-slate-900 dark:text-slate-100 hidden sm:block relative overflow-hidden"
         >
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-300/80 dark:border-slate-800/80">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500/80" />
-              <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
-              <div className="w-3 h-3 rounded-full bg-green-500/80" />
-              <span className="ml-2 text-xs font-mono text-slate-400 flex items-center gap-1.5">
-                <Terminal className="w-3.5 h-3.5 text-sky-400" />
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <div className="w-3 h-3 rounded-full bg-yellow-500" />
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <span className="ml-2 text-xs font-mono text-slate-700 dark:text-slate-400 flex items-center gap-1.5 font-bold">
+                <Terminal className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                 cloud-stack-club@cu:~
               </span>
             </div>
-            <span className="text-[11px] font-mono text-emerald-400 font-medium">● v2026.2 (Active)</span>
+            <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-extrabold">● v2026.2 (Active)</span>
           </div>
-          <div className="pt-3 font-mono text-xs sm:text-sm space-y-1.5 text-slate-300">
-            <p className="text-slate-400"><span className="text-sky-400">$</span> agy init --club "Cloud Stack"</p>
-            <p className="text-emerald-400">✔ Initializing Chandigarh University Cloud Stack Developer Network...</p>
-            <p className="text-slate-300"><span className="text-sky-400">$</span> deploy --target "Future Engineers" --status "Ready to innovate"</p>
-            <p className="text-blue-400">🚀 Successfully deployed: AWS, Kubernetes, Docker, DevOps, Full-Stack</p>
+          <div className="pt-3 font-mono text-xs sm:text-sm space-y-2">
+            <p className="flex items-center gap-2">
+              <span className="text-blue-700 dark:text-sky-400 font-extrabold">$</span>
+              <span className="text-slate-900 dark:text-slate-100 font-bold">agy init --club "Cloud Stack"</span>
+            </p>
+            <p className="text-emerald-700 dark:text-emerald-400 font-extrabold flex items-center gap-1.5">
+              <span>✔</span>
+              <span>Initializing Chandigarh University Cloud Stack Developer Network...</span>
+            </p>
+            <p className="flex items-center gap-2 pt-1">
+              <span className="text-blue-700 dark:text-sky-400 font-extrabold">$</span>
+              <span className="text-slate-900 dark:text-slate-100 font-bold">deploy --target "Future Engineers" --status "Ready to innovate"</span>
+            </p>
+            <p className="text-blue-700 dark:text-sky-300 font-extrabold flex items-center gap-1.5 pt-0.5">
+              <span>🚀</span>
+              <span>Successfully deployed: AWS, Kubernetes, Docker, DevOps, Full-Stack</span>
+            </p>
           </div>
         </motion.div>
 
