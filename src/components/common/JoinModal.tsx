@@ -54,7 +54,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
       <div className="space-y-4">
         <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-sky-400 text-xs font-semibold">
           <Sparkles className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
-          <span>Become a member of Chandigarh University's premier cloud developer network.</span>
+          <span>Become a member of Chandigarh University's premier cloud & developer network and get access to exclusive perks.</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">

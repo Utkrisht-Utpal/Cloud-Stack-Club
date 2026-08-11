@@ -137,21 +137,35 @@
 }
 
 .hero-title-gradient {
-  /* Light mode: Vibrant royal blue → electric blue → sky blue gradient */
-  background-image: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #0284c7 80%, #1e40af 100%);
-  background-size: 200% 100%;
+  /* Light mode: Deep Royal Blue → Electric Blue → Vivid Sky Blue → Indigo → Royal Blue */
+  background-image: linear-gradient(
+    110deg,
+    #0f2b80 0%,
+    #1d4ed8 25%,
+    #0284c7 50%,
+    #4338ca 75%,
+    #0f2b80 100%
+  );
+  background-size: 300% 100%;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: #1d4ed8;
-  animation: hero-gradient-flow 8s ease-in-out infinite;
-  will-change: background-position;
+  animation: hero-gradient-flow 6s ease-in-out infinite;
+  will-change: background-position, opacity, transform;
   display: inline-block;
 }
 
-/* Dark mode: brighter electric blue / sky blue / indigo */
+/* Dark mode: Glowing Electric Cyan / Sky Blue / Indigo */
 .dark .hero-title-gradient {
-  background-image: linear-gradient(110deg, #38bdf8 0%, #60a5fa 35%, #818cf8 65%, #38bdf8 100%);
+  background-image: linear-gradient(
+    110deg,
+    #38bdf8 0%,
+    #60a5fa 25%,
+    #818cf8 50%,
+    #22d3ee 75%,
+    #38bdf8 100%
+  );
   color: transparent;
 }
 

@@ -60,13 +60,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             <MotionConfig reducedMotion="never">
               <motion.span
                 className="hero-title-gradient"
-                animate={{ opacity: [1, 0.92, 1] }}
+                animate={{
+                  opacity: [1, 0.82, 1],
+                  scale: [1, 1.018, 1],
+                }}
                 transition={{
-                  duration: 6,
+                  duration: 3.5,
                   repeat: Infinity,
                   ease: 'easeInOut',
                   repeatType: 'loop',
-                  delay: 0.5,
                 }}
               >
                 Cloud Stack Club

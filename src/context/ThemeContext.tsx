@@ -13,13 +13,12 @@ const THEME_KEY = 'cloud_stack_theme_preference';
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
-    // Only restore from localStorage if the user has explicitly made a choice before.
-    // On first visit (nothing stored), always start in dark mode.
+    // On first visit (nothing stored), default to light mode.
     const stored = localStorage.getItem(THEME_KEY);
     if (stored === 'light' || stored === 'dark') {
       return stored;
     }
-    return 'dark'; // First-time default → always dark
+    return 'light'; // First-time default → light mode
   });
 
   // Apply the class to <html> and persist ONLY if this is a user-initiated change.
