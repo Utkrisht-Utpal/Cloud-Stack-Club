@@ -52,15 +52,15 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Join Cloud Stack Club">
       <div className="space-y-4">
-        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-sky-400 font-semibold">
-          <Sparkles className="w-4 h-4 text-sky-400 shrink-0" />
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-sky-400 text-xs font-semibold">
+          <Sparkles className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
           <span>Become a member of Chandigarh University's premier cloud developer network.</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-2">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-sky-400" />
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
               Full Name
             </label>
             <input
@@ -68,29 +68,29 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Ananya Sharma"
-              className="w-full px-4 py-2.5 rounded-xl glass-panel bg-slate-900/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm border border-slate-700/60"
+              placeholder="e.g. Ronak Sharma"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5 text-sky-400" />
-              CU Email Address
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+              Email Address
             </label>
             <input
               type="email"
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="e.g. 22BCS1000@cuchd.in"
-              className="w-full px-4 py-2.5 rounded-xl glass-panel bg-slate-900/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm border border-slate-700/60"
+              placeholder="e.g. 25BCS1000@cuchd.in"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <GraduationCap className="w-3.5 h-3.5 text-sky-400" />
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
               UID / Student ID
             </label>
             <input
@@ -99,7 +99,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               value={formData.uid}
               onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
               placeholder="e.g. 22BCS10101"
-              className="w-full px-4 py-2.5 rounded-xl glass-panel bg-slate-900/80 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 text-sm border border-slate-700/60"
+              className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
             />
           </div>
 

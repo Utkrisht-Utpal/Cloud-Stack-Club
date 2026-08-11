@@ -43,7 +43,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   return (
     <div className="relative space-y-1.5" ref={containerRef}>
       {label && (
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
           {icon}
           {label}
         </label>
@@ -53,22 +53,24 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 rounded-2xl glass-panel bg-slate-900/90 text-white flex items-center justify-between transition-all duration-300 border ${
-          isOpen ? 'border-sky-500 ring-2 ring-sky-500/30 shadow-lg shadow-sky-500/10' : 'border-slate-700/60 hover:border-slate-600'
+        className={`w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border ${
+          isOpen
+            ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md'
+            : 'border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
         }`}
       >
-        <span className="text-sm font-medium text-slate-100 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-sky-400" />
+        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400" />
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-sky-400 transition-transform duration-300 ${
+          className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 ${
             isOpen ? 'rotate-180' : 'rotate-0'
           }`}
         />
       </button>
 
-      {/* Animated Dropdown Menu with fixed max height & internal scrolling */}
+      {/* Animated Dropdown Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -76,7 +78,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute left-0 right-0 z-50 rounded-2xl glass-panel bg-slate-900/95 backdrop-blur-xl border border-sky-500/30 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-52 no-scrollbar focus:outline-none"
+            className="absolute left-0 right-0 z-50 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-52 no-scrollbar focus:outline-none"
           >
             {options.map((option) => {
               const isSelected = option.value === value;
@@ -90,8 +92,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   }}
                   className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center justify-between cursor-pointer ${
                     isSelected
-                      ? 'bg-gradient-to-r from-blue-600 to-sky-500 text-white font-semibold shadow-md'
-                      : 'text-slate-200 hover:bg-slate-800/80 hover:text-sky-300'
+                      ? 'bg-blue-600 text-white font-semibold shadow-md'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300'
                   }`}
                 >
                   <span className="flex items-center gap-2">

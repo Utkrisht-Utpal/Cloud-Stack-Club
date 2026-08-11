@@ -1,16 +1,23 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     /* Light mode — Pristine, ultra-crisp modern tech aesthetic */
-    --bg-primary: #f8fafc;          /* Slate 50 — clean, high-contrast canvas */
+    --bg-primary: #f8fafc;
+    /* Slate 50 — clean, high-contrast canvas */
     --bg-secondary: #ffffff;
     --bg-card: #ffffff;
     --bg-glass: rgba(255, 255, 255, 0.88);
-    --border-color: rgba(226, 232, 240, 0.9); /* Slate 200 */
-    --text-main: #0f172a;            /* Slate 900 — crisp typography */
-    --text-muted: #475569;           /* Slate 600 */
-    --text-dim: #64748b;            /* Slate 500 */
+    --border-color: rgba(226, 232, 240, 0.9);
+    /* Slate 200 */
+    --text-main: #0f172a;
+    /* Slate 900 — crisp typography */
+    --text-muted: #475569;
+    /* Slate 600 */
+    --text-dim: #64748b;
+    /* Slate 500 */
     --accent-blue: #2563eb;
     --accent-sky: #0284c7;
     --accent-cyan: #0891b2;
