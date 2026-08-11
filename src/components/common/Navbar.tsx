@@ -108,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
           </Link>
 
           {/* Center: Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 px-3.5 py-1.5 rounded-full shadow-xs">
+          <nav className="hidden lg:flex items-center gap-1 bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 px-3.5 py-1.5 rounded-full">
             {siteConfig.navLinks.map((link) => {
               const sectionId = link.href.replace('/#', '');
               const isActive =
@@ -122,15 +122,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
                   onClick={() => handleNavClick(link.href, link.isExternalPage)}
                   className={`relative px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors rounded-full cursor-pointer ${
                     isActive
-                      ? 'text-blue-600 dark:text-sky-400'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                      ? 'text-blue-700 dark:text-sky-400 font-bold'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   {link.name}
                   {isActive && (
                     <motion.div
                       layoutId="activeNavUnderline"
-                      className="absolute inset-0 bg-blue-50 dark:bg-sky-400/15 border border-blue-100 dark:border-transparent rounded-full -z-10 shadow-xs"
+                      className="absolute inset-0 bg-[#dce3f0] dark:bg-sky-400/15 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.5),inset_-2px_-2px_5px_#ffffff] dark:shadow-none rounded-full -z-10"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -150,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 shadow-xs transition-colors cursor-pointer"
+              className="p-2.5 rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
               aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}

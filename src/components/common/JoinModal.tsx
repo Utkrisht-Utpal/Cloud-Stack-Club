@@ -83,7 +83,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="e.g. 25BCS1000@cuchd.in"
+              placeholder="e.g. ronaksh1@example.com"
               className="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
             />
           </div>

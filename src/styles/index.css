@@ -4,24 +4,19 @@
 
 @layer base {
   :root {
-    /* Light mode — Pristine, ultra-crisp modern tech aesthetic */
-    --bg-primary: #f8fafc;
-    /* Slate 50 — clean, high-contrast canvas */
-    --bg-secondary: #ffffff;
-    --bg-card: #ffffff;
-    --bg-glass: rgba(255, 255, 255, 0.88);
-    --border-color: rgba(226, 232, 240, 0.9);
-    /* Slate 200 */
-    --text-main: #0f172a;
-    /* Slate 900 — crisp typography */
-    --text-muted: #475569;
-    /* Slate 600 */
-    --text-dim: #64748b;
-    /* Slate 500 */
-    --accent-blue: #2563eb;
+    /* Light mode — Authentic Neumorphism (Soft UI) canvas */
+    --bg-primary: #e6ecf5;           /* Soft neumorphic light blue-grey background */
+    --bg-secondary: #e6ecf5;
+    --bg-card: #e6ecf5;
+    --bg-glass: rgba(230, 236, 245, 0.9);
+    --border-color: rgba(163, 177, 198, 0.3);
+    --text-main: #0f172a;            /* Slate 900 — high contrast typography */
+    --text-muted: #334155;           /* Slate 700 — crisp body text */
+    --text-dim: #475569;            /* Slate 600 */
+    --accent-blue: #1d4ed8;
     --accent-sky: #0284c7;
     --accent-cyan: #0891b2;
-    --glow-color: rgba(37, 99, 235, 0.08);
+    --glow-color: rgba(29, 78, 216, 0.12);
   }
 
   .dark {
@@ -56,13 +51,13 @@
   }
 }
 
-/* Glassmorphism utility */
+/* Glassmorphism / Neumorphic Panel utility */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+  background: #e6ecf5;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    6px 6px 16px rgba(163, 177, 198, 0.55),
+    -6px -6px 16px #ffffff;
 }
 
 .dark .glass-panel {
@@ -72,11 +67,11 @@
 }
 
 .glass-nav {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(230, 236, 245, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  border-bottom: 1px solid rgba(163, 177, 198, 0.3);
+  box-shadow: 0 4px 15px rgba(163, 177, 198, 0.25);
 }
 
 .dark .glass-nav {
@@ -168,14 +163,16 @@
 }
 
 /* ─────────────────────────────────────────────
-   CARDS — Elevated Modern Card Style
+   NEUMORPHISM (Soft UI) — Global Card Style
    Used in: WhatWeDo, WhyJoin, About, Events, etc.
 ───────────────────────────────────────────── */
 .neumorphic-card {
-  background: #ffffff;
+  background: #e6ecf5;
   border-radius: 20px;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    7px 7px 18px rgba(163, 177, 198, 0.6),
+    -7px -7px 18px #ffffff;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -188,8 +185,10 @@
 }
 
 .neumorphic-card:hover {
-  border-color: rgba(147, 197, 253, 0.6);
-  box-shadow: 0 12px 30px -4px rgba(37, 99, 235, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  box-shadow:
+    10px 10px 24px rgba(163, 177, 198, 0.75),
+    -10px -10px 24px #ffffff,
+    inset 1px 1px 2px rgba(255, 255, 255, 0.8);
   transform: translateY(-3px);
 }
 
@@ -204,10 +203,11 @@
 }
 
 .neumorphic-icon {
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  background: #e6ecf5;
   border-radius: 14px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  box-shadow:
+    inset 3px 3px 7px rgba(163, 177, 198, 0.5),
+    inset -3px -3px 7px #ffffff;
   transition: all 0.3s ease;
 }
 
@@ -220,9 +220,9 @@
 }
 
 .neumorphic-card:hover .neumorphic-icon {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  box-shadow:
+    3px 3px 8px rgba(163, 177, 198, 0.5),
+    -3px -3px 8px #ffffff;
 }
 
 .dark .neumorphic-card:hover .neumorphic-icon {

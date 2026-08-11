@@ -45,12 +45,12 @@ export const WhatWeDoSection: React.FC = () => {
                   )}
                 </div>
 
-                <h3 className="text-xl font-bold text-slate-800 dark:text-white
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white
                   group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
                   {domain.title}
                 </h3>
 
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400 leading-relaxed flex-1">
+                <p className="mt-3 text-sm text-slate-700 dark:text-slate-400 leading-relaxed flex-1 font-medium">
                   {domain.description}
                 </p>
               </div>

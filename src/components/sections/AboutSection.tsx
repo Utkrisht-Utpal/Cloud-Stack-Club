@@ -42,18 +42,18 @@ export const AboutSection: React.FC = () => {
               <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
                 Learn • Build • Deploy • Scale
               </h3>
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                 Cloud Stack Club bridges the gap between classroom theory and industry practice. Whether you are starting your cloud journey or scaling production workloads, we provide the launchpad, community, and mentorship to take you further.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4 shrink-0 w-full md:w-auto">
               <div className="p-4 rounded-2xl neumorphic-card text-center">
-                <p className="text-2xl sm:text-3xl font-black text-gradient">100+</p>
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Active Members</p>
+                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-sky-400">100+</p>
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-400 mt-1">Active Members</p>
               </div>
               <div className="p-4 rounded-2xl neumorphic-card text-center">
-                <p className="text-2xl sm:text-3xl font-black text-gradient">5+</p>
-                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">Workshops & Events</p>
+                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-sky-400">5+</p>
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-400 mt-1">Workshops & Events</p>
               </div>
             </div>
           </div>

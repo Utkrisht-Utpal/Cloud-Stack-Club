@@ -38,11 +38,11 @@ export const WhyJoinSection: React.FC = () => {
                     {iconMap[item.iconName]}
                   </div>
                   <div className="space-y-2 pt-0.5">
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100
                       group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
                       {item.title}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p className="text-sm text-slate-700 dark:text-slate-400 leading-relaxed font-medium">
                       {item.description}
                     </p>
                   </div>

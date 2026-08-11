@@ -22,7 +22,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-blue-500/30 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs hover:border-blue-500/60 transition-colors"
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-blue-500/30 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors"
           >
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
@@ -140,11 +140,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
                   damping: 25,
                 }}
                 whileHover={{ scale: 1.08, y: -3, transition: { duration: 0.15 } }}
-                className="px-4 py-2 rounded-2xl bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-sky-400 transition-all flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2 rounded-2xl bg-[#e6ecf5] dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 hover:text-blue-600 dark:hover:text-sky-400 transition-all flex items-center gap-2 cursor-pointer"
               >
                 <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400" />
                 <span>{tech.name}</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#dce3f0] dark:bg-slate-800 text-blue-700 dark:text-slate-400 shadow-[inset_1px_1px_3px_rgba(163,177,198,0.4),inset_-1px_-1px_3px_#ffffff] dark:shadow-none font-bold">
                   {tech.category}
                 </span>
               </motion.div>
