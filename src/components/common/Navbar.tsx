@@ -108,7 +108,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
           </Link>
 
           {/* Center: Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 glass-panel px-3.5 py-1.5 rounded-full border-white/20 dark:border-slate-800">
+          <nav className="hidden lg:flex items-center gap-1 bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800 px-3.5 py-1.5 rounded-full shadow-xs">
             {siteConfig.navLinks.map((link) => {
               const sectionId = link.href.replace('/#', '');
               const isActive =
@@ -130,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
                   {isActive && (
                     <motion.div
                       layoutId="activeNavUnderline"
-                      className="absolute inset-0 bg-blue-500/10 dark:bg-sky-400/15 rounded-full -z-10"
+                      className="absolute inset-0 bg-blue-50 dark:bg-sky-400/15 border border-blue-100 dark:border-transparent rounded-full -z-10 shadow-xs"
                       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                     />
                   )}
@@ -150,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleTheme}
-              className="p-2.5 rounded-xl glass-panel text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+              className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 shadow-xs transition-colors cursor-pointer"
               aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}

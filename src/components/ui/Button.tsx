@@ -29,7 +29,7 @@ export const Button: React.FC<ButtonProps> = ({
     outline:
       'border border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/80',
     glass:
-      'glass-panel text-slate-800 dark:text-slate-100 hover:bg-white/80 dark:hover:bg-slate-800/80 shadow-md border-white/20 dark:border-slate-700/50',
+      'bg-white dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 border border-slate-200/90 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 shadow-xs',
     ghost:
       'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/50',
   };

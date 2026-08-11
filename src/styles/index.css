@@ -2,18 +2,19 @@
 
 @layer base {
   :root {
-    --bg-primary: #f8fafc;
+    /* Light mode — Pristine, ultra-crisp modern tech aesthetic */
+    --bg-primary: #f8fafc;          /* Slate 50 — clean, high-contrast canvas */
     --bg-secondary: #ffffff;
-    --bg-card: rgba(255, 255, 255, 0.85);
-    --bg-glass: rgba(255, 255, 255, 0.7);
-    --border-color: rgba(226, 232, 240, 0.8);
-    --text-main: #0f172a;
-    --text-muted: #475569;
-    --text-dim: #64748b;
+    --bg-card: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.88);
+    --border-color: rgba(226, 232, 240, 0.9); /* Slate 200 */
+    --text-main: #0f172a;            /* Slate 900 — crisp typography */
+    --text-muted: #475569;           /* Slate 600 */
+    --text-dim: #64748b;            /* Slate 500 */
     --accent-blue: #2563eb;
     --accent-sky: #0284c7;
     --accent-cyan: #0891b2;
-    --glow-color: rgba(37, 99, 235, 0.15);
+    --glow-color: rgba(37, 99, 235, 0.08);
   }
 
   .dark {
@@ -50,17 +51,31 @@
 
 /* Glassmorphism utility */
 .glass-panel {
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04);
+}
+
+.dark .glass-panel {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  box-shadow: none;
 }
 
 .glass-nav {
-  background: var(--bg-glass);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+}
+
+.dark .glass-nav {
+  background: var(--bg-glass);
+  border-bottom-color: var(--border-color);
+  box-shadow: none;
 }
 
 /* Gradient Borders */
@@ -104,7 +119,6 @@
 /* ─────────────────────────────────────────────
    HERO TITLE — Breathing gradient animation
    Applied ONLY to the main "Cloud Stack Club" h1.
-   DO NOT apply to any other element.
 ───────────────────────────────────────────── */
 @keyframes hero-gradient-flow {
   0% {
@@ -121,42 +135,25 @@
 }
 
 .hero-title-gradient {
-  /* Light mode: deep navy → electric blue → bright cyan → white → cyan → blue → navy */
-  background-image: linear-gradient(110deg,
-      #0a1f5c 0%,
-      #1a56db 20%,
-      #06b6d4 38%,
-      #cffafe 50%,
-      #06b6d4 62%,
-      #1a56db 80%,
-      #0a1f5c 100%);
-  background-size: 300% 100%;
-  /* wider = more visible sweep */
+  /* Light mode: Vibrant royal blue → electric blue → sky blue gradient */
+  background-image: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 45%, #0284c7 80%, #1e40af 100%);
+  background-size: 200% 100%;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  color: transparent;
-
-  /* 5 s flow — slow enough to feel premium, fast enough to clearly notice */
-  animation: hero-gradient-flow 15s ease-in-out infinite;
-
+  color: #1d4ed8;
+  animation: hero-gradient-flow 8s ease-in-out infinite;
   will-change: background-position;
   display: inline-block;
 }
 
-/* Dark mode: brighter electric blue / cyan / white */
+/* Dark mode: brighter electric blue / sky blue / indigo */
 .dark .hero-title-gradient {
-  background-image: linear-gradient(110deg,
-      #0c1a4d 0%,
-      #2563eb 18%,
-      #22d3ee 35%,
-      #e0f2fe 50%,
-      #22d3ee 65%,
-      #2563eb 82%,
-      #0c1a4d 100%);
+  background-image: linear-gradient(110deg, #38bdf8 0%, #60a5fa 35%, #818cf8 65%, #38bdf8 100%);
+  color: transparent;
 }
 
-/* Reduced motion: freeze the gradient at the electric-blue band — no movement, but keep the styled look */
+/* Reduced motion: freeze the gradient position */
 @media (prefers-reduced-motion: reduce) {
   .hero-title-gradient {
     background-position: 30% 50%;
@@ -164,122 +161,69 @@
 }
 
 /* ─────────────────────────────────────────────
-   GLASSMORPHISM — Enhanced card style
-   Used in: Domains / WhatWeDoSection
-───────────────────────────────────────────── */
-.glass-card {
-  position: relative;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.18) 0%,
-      rgba(255, 255, 255, 0.05) 100%);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
-  transition: all 0.35s ease;
-  overflow: hidden;
-}
-
-.dark .glass-card {
-  background: linear-gradient(135deg,
-      rgba(56, 189, 248, 0.08) 0%,
-      rgba(15, 23, 42, 0.55) 60%,
-      rgba(99, 102, 241, 0.06) 100%);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-}
-
-.glass-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      transparent 50%);
-  pointer-events: none;
-}
-
-.glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 20px 60px rgba(59, 130, 246, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 0 0 1px rgba(59, 130, 246, 0.3);
-  border-color: rgba(59, 130, 246, 0.4);
-}
-
-.dark .glass-card:hover {
-  box-shadow:
-    0 20px 60px rgba(56, 189, 248, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 0 1px rgba(56, 189, 248, 0.25);
-  border-color: rgba(56, 189, 248, 0.35);
-}
-
-/* ─────────────────────────────────────────────
-   NEUMORPHISM — Soft UI card style
-   Used in: Why Join / WhyJoinSection
+   CARDS — Elevated Modern Card Style
+   Used in: WhatWeDo, WhyJoin, About, Events, etc.
 ───────────────────────────────────────────── */
 .neumorphic-card {
-  background: #e8edf5;
+  background: #ffffff;
   border-radius: 20px;
-  border: none;
-  box-shadow:
-    8px 8px 20px rgba(163, 177, 198, 0.7),
-    -8px -8px 20px rgba(255, 255, 255, 0.9);
-  transition: all 0.3s ease;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark .neumorphic-card {
   background: #0d1525;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow:
     8px 8px 20px rgba(0, 0, 0, 0.5),
     -8px -8px 20px rgba(30, 48, 80, 0.4);
 }
 
 .neumorphic-card:hover {
-  box-shadow:
-    4px 4px 12px rgba(163, 177, 198, 0.8),
-    -4px -4px 12px rgba(255, 255, 255, 0.95),
-    inset 2px 2px 6px rgba(163, 177, 198, 0.4),
-    inset -2px -2px 6px rgba(255, 255, 255, 0.7);
-  transform: translateY(-2px);
+  border-color: rgba(147, 197, 253, 0.6);
+  box-shadow: 0 12px 30px -4px rgba(37, 99, 235, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  transform: translateY(-3px);
 }
 
 .dark .neumorphic-card:hover {
+  border-color: rgba(56, 189, 248, 0.25);
   box-shadow:
     4px 4px 12px rgba(0, 0, 0, 0.6),
     -4px -4px 12px rgba(30, 48, 80, 0.5),
     inset 2px 2px 6px rgba(0, 0, 0, 0.4),
     inset -2px -2px 6px rgba(30, 48, 80, 0.3);
+  transform: translateY(-2px);
 }
 
 .neumorphic-icon {
-  background: #e8edf5;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
-  box-shadow:
-    4px 4px 10px rgba(163, 177, 198, 0.7),
-    -4px -4px 10px rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   transition: all 0.3s ease;
 }
 
 .dark .neumorphic-icon {
   background: #0d1525;
+  border: none;
   box-shadow:
     4px 4px 10px rgba(0, 0, 0, 0.5),
     -4px -4px 10px rgba(30, 48, 80, 0.4);
 }
 
 .neumorphic-card:hover .neumorphic-icon {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.dark .neumorphic-card:hover .neumorphic-icon {
+  background: #0d1525;
+  border: none;
   box-shadow:
-    inset 3px 3px 8px rgba(163, 177, 198, 0.6),
-    inset -3px -3px 8px rgba(255, 255, 255, 0.8);
+    inset 3px 3px 8px rgba(0, 0, 0, 0.5),
+    inset -3px -3px 8px rgba(30, 48, 80, 0.4);
 }
 
 .dark .neumorphic-card:hover .neumorphic-icon {

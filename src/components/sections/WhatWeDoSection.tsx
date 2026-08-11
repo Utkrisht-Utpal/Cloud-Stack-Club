@@ -39,11 +39,7 @@ export const WhatWeDoSection: React.FC = () => {
                     {iconMap[domain.iconName]}
                   </div>
                   {domain.badge && (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold
-                      bg-slate-200 dark:bg-slate-800/60
-                      text-sky-600 dark:text-sky-400
-                      shadow-[2px_2px_5px_rgba(163,177,198,0.5),-2px_-2px_5px_rgba(255,255,255,0.7)]
-                      dark:shadow-[2px_2px_5px_rgba(0,0,0,0.4),-2px_-2px_5px_rgba(30,48,80,0.3)]">
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 dark:bg-slate-800/60 dark:text-sky-400 dark:border-slate-700/60">
                       {domain.badge}
                     </span>
                   )}

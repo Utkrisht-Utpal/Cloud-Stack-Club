@@ -22,7 +22,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: -15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full glass-panel border-blue-500/30 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-lg shadow-blue-500/5 hover:border-blue-500/60 transition-colors"
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 border border-slate-200/90 dark:border-blue-500/30 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-xs hover:border-blue-500/60 transition-colors"
           >
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
@@ -57,14 +57,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             transition={{ duration: 0.4, delay: 0.1 }}
             className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]"
           >
-            {/* MotionConfig reducedMotion="never" overrides the OS preference
-                so the breathing runs even when Windows has animations off */}
             <MotionConfig reducedMotion="never">
               <motion.span
                 className="hero-title-gradient"
-                animate={{ opacity: [1, 0.82, 1] }}
+                animate={{ opacity: [1, 0.92, 1] }}
                 transition={{
-                  duration: 1,
+                  duration: 6,
                   repeat: Infinity,
                   ease: 'easeInOut',
                   repeatType: 'loop',
@@ -80,7 +78,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
-            className="mt-6 text-lg sm:text-2xl font-medium text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed"
+            className="mt-6 text-lg sm:text-2xl font-medium text-slate-700 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed"
           >
             To empower students with cloud technologies, hands-on learning and industry exposure to build innovative solutions and become future-ready professionals.
           </motion.p>
@@ -105,7 +103,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             <Button
               variant="glass"
               size="lg"
-              icon={<Calendar className="w-5 h-5 text-blue-500" />}
+              icon={<Calendar className="w-5 h-5 text-blue-600 dark:text-sky-400" />}
               onClick={onExploreEventsClick}
               className="w-full sm:w-auto"
             >
@@ -122,8 +120,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             transition={{ duration: 0.2, delay: 0.05 }}
             className="text-center mb-5"
           >
-            <p className="text-xs uppercase font-bold tracking-widest text-slate-400 dark:text-slate-500 flex items-center justify-center gap-2">
-              <Cpu className="w-3.5 h-3.5 text-blue-500" />
+            <p className="text-xs uppercase font-bold tracking-widest text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+              <Cpu className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
               Technologies & Frameworks We Work On
             </p>
           </motion.div>
@@ -142,11 +140,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
                   damping: 25,
                 }}
                 whileHover={{ scale: 1.08, y: -3, transition: { duration: 0.15 } }}
-                className="px-4 py-2 rounded-2xl glass-panel text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-800 shadow-md hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-sky-400 transition-all flex items-center gap-2 cursor-pointer"
+                className="px-4 py-2 rounded-2xl bg-white dark:bg-slate-900 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-sm hover:border-blue-500/50 hover:text-blue-600 dark:hover:text-sky-400 transition-all flex items-center gap-2 cursor-pointer"
               >
-                <span className="w-2 h-2 rounded-full bg-sky-400" />
+                <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400" />
                 <span>{tech.name}</span>
-                <span className="text-[10px] text-slate-400 font-mono px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-800">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60">
                   {tech.category}
                 </span>
               </motion.div>

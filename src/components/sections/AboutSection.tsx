@@ -35,7 +35,7 @@ export const AboutSection: React.FC = () => {
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="space-y-4 max-w-2xl">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/15 text-blue-600 dark:text-sky-400">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200/80 dark:bg-blue-500/15 dark:text-sky-400 dark:border-transparent">
                 <Compass className="w-4 h-4" />
                 Cloud · Powering the Future
               </span>
