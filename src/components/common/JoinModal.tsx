@@ -110,7 +110,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Membership Application Submitted!</h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                Your application has been logged directly into the Cloud Stack Club members directory.
+                We will let you know after successful verification of your membership registration.
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono text-center">

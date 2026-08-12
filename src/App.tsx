@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useOutletContext } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { AdminAuthProvider } from './context/AdminAuthContext';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
 import { GalleryPage } from './pages/GalleryPage';
@@ -16,16 +17,18 @@ const HomeWrapper: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<HomeWrapper />} />
-            <Route path="gallery" element={<GalleryPage />} />
-            <Route path="team" element={<TeamPage />} />
-            <Route path="*" element={<NotFoundPage />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
+      <AdminAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<HomeWrapper />} />
+              <Route path="gallery" element={<GalleryPage />} />
+              <Route path="team" element={<TeamPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AdminAuthProvider>
     </ThemeProvider>
   );
 };

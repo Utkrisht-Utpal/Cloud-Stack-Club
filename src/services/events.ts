@@ -20,6 +20,21 @@ export const getEvents = async (): Promise<Event[]> => {
   return data || [];
 };
 
+export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> => {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from('events')
+    .insert([eventPayload])
+    .select('*')
+    .single();
+
+  if (error) throw error;
+  return data as Event;
+};
+
 export const getEventBySlug = async (slug: string): Promise<Event | null> => {
   if (!isSupabaseConfigured()) {
     return null;

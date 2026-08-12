@@ -8,13 +8,29 @@ import { ScrollProgress } from '../components/ui/ScrollProgress';
 import { JoinModal } from '../components/common/JoinModal';
 import { Toast } from '../components/ui/Toast';
 import { ScrollToTop } from '../components/common/ScrollToTop';
+import { AdminLoginModal } from '../components/admin/AdminLoginModal';
+import { AdminDashboard } from '../components/admin/AdminDashboard';
+import { useAdminAuth } from '../context/AdminAuthContext';
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const { showDashboard } = useAdminAuth();
 
   const handleOpenJoinModal = () => setJoinModalOpen(true);
   const handleCloseJoinModal = () => setJoinModalOpen(false);
+
+  if (showDashboard) {
+    return (
+      <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
+        <ScrollToTop />
+        <CloudBackground />
+        <Navbar onOpenJoinModal={handleOpenJoinModal} />
+        <AdminDashboard />
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
@@ -47,6 +63,9 @@ export const MainLayout: React.FC = () => {
         onClose={handleCloseJoinModal}
         onSuccessToast={() => setShowSuccessToast(true)}
       />
+
+      {/* Admin Login Modal */}
+      <AdminLoginModal />
 
       {/* Toast Notification */}
       <Toast
