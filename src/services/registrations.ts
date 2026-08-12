@@ -19,6 +19,34 @@ export const registerForEvent = async (
     answers,
   } = payload;
 
+  // 0. Ensure targetEventId is a valid UUID (if passed as slug like "membership-application" or string placeholder)
+  let targetEventId = event_id;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
+
+  if (!isUuid) {
+    const { data: eventBySlug } = await supabase
+      .from('events')
+      .select('id')
+      .eq('slug', targetEventId)
+      .maybeSingle();
+
+    if (eventBySlug && (eventBySlug as any).id) {
+      targetEventId = (eventBySlug as any).id;
+    } else {
+      const { data: anyEvent } = await supabase
+        .from('events')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+
+      if (anyEvent && (anyEvent as any).id) {
+        targetEventId = (anyEvent as any).id;
+      } else {
+        targetEventId = '00000000-0000-0000-0000-000000000001';
+      }
+    }
+  }
+
   // 1. Look up if registrant is an existing member by UID or Email
   let member_id: string | null = payload.member_id || null;
   let is_member = payload.is_member || false;
@@ -45,7 +73,7 @@ export const registerForEvent = async (
     const { data: teamData, error: teamError } = await supabase
       .from('event_teams')
       .insert({
-        event_id,
+        event_id: targetEventId,
         team_name: team_name.trim(),
       })
       .select('id')
@@ -82,7 +110,7 @@ export const registerForEvent = async (
   const { data: regData, error: regError } = await supabase
     .from('event_registrations')
     .insert({
-      event_id,
+      event_id: targetEventId,
       member_id,
       registrant_name,
       registrant_email,

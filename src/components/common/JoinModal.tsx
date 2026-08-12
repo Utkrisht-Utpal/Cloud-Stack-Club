@@ -54,7 +54,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     try {
       // Submit registration payload to Supabase database
       const regResult = await registerForEvent({
-        event_id: 'membership-application-2026',
+        event_id: 'membership-application',
         registrant_name: formData.name.trim(),
         registrant_email: formData.email.trim(),
         registrant_phone: formData.phone.trim() || undefined,
