@@ -19,16 +19,17 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
+import { ManageRoleModal } from './ManageRoleModal';
 import {
   getPendingMemberApplications,
   approveMemberApplicationService,
   rejectMemberApplicationService,
   getMembers,
   deleteMemberAdmin,
-  toggleCoreMemberStatusAdmin,
 } from '../../services/members';
 import { getEvents, createEvent } from '../../services/events';
-import type { Member, Event } from '../../types/database';
+import { getRoles } from '../../services/roles';
+import type { Member, Event, Role } from '../../types/database';
 
 export const AdminDashboard: React.FC = () => {
   const { adminEmail, logout, setShowDashboard } = useAdminAuth();
@@ -40,10 +41,12 @@ export const AdminDashboard: React.FC = () => {
   const [selectedDocFile, setSelectedDocFile] = useState<{ path: string; name: string } | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  // Active Members State
+  // Active Members & Roles State
   const [membersList, setMembersList] = useState<Member[]>([]);
+  const [rolesList, setRolesList] = useState<Role[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
+  const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
   // Events State
   const [eventsList, setEventsList] = useState<Event[]>([]);
@@ -74,10 +77,11 @@ export const AdminDashboard: React.FC = () => {
   const loadAllMembers = async () => {
     setLoadingMembers(true);
     try {
-      const list = await getMembers();
+      const [list, roles] = await Promise.all([getMembers(), getRoles()]);
       setMembersList(list);
+      setRolesList(roles);
     } catch (err) {
-      console.error('Error fetching members:', err);
+      console.error('Error fetching members or roles:', err);
     } finally {
       setLoadingMembers(false);
     }
@@ -117,20 +121,11 @@ export const AdminDashboard: React.FC = () => {
     if (!confirm(`Are you sure you want to reject application for ${member.name}?`)) return;
     try {
       await rejectMemberApplicationService(member.id, member.verification_file_url);
-      setActionSuccess(`Rejected application for ${member.name}.`);
+      setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
       loadPendingApps();
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
       alert(`Rejection failed: ${err?.message || 'Unknown error'}`);
-    }
-  };
-
-  const handleToggleCore = async (memberId: string, currentStatus: boolean) => {
-    try {
-      await toggleCoreMemberStatusAdmin(memberId, !currentStatus);
-      loadAllMembers();
-    } catch (err: any) {
-      alert(`Failed to update core member status: ${err?.message}`);
     }
   };
 
@@ -432,7 +427,7 @@ export const AdminDashboard: React.FC = () => {
                             <span>{member.name}</span>
                             {member.is_core_member && (
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-500/15 text-blue-600 dark:text-sky-400">
-                                Core Member
+                                {member.role?.name || 'Core Member'}
                               </span>
                             )}
                           </div>
@@ -448,12 +443,13 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                         <td className="py-3.5 px-4">
                           <button
-                            onClick={() => handleToggleCore(member.id, !!member.is_core_member)}
-                            className={`px-3 py-1 rounded-xl text-[11px] font-extrabold cursor-pointer transition-all ${
+                            onClick={() => setSelectedMemberForRole(member)}
+                            className={`px-3.5 py-1.5 rounded-full text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 shadow-sm ${
                               member.is_core_member
-                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                                ? 'bg-amber-100/90 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
                             }`}
+                            title="Click to manage core responsibility or convert to normal user"
                           >
                             {member.is_core_member ? '★ Core Member' : 'Make Core Member'}
                           </button>
@@ -648,6 +644,15 @@ export const AdminDashboard: React.FC = () => {
           onClose={() => setSelectedDocFile(null)}
           filePath={selectedDocFile?.path || null}
           applicantName={selectedDocFile?.name || 'Applicant'}
+        />
+
+        {/* Role & Core Status Management Modal */}
+        <ManageRoleModal
+          isOpen={!!selectedMemberForRole}
+          onClose={() => setSelectedMemberForRole(null)}
+          member={selectedMemberForRole}
+          roles={rolesList}
+          onSuccess={() => loadAllMembers()}
         />
       </div>
     </div>

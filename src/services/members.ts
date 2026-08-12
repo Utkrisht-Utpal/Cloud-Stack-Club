@@ -246,6 +246,24 @@ export const toggleCoreMemberStatusAdmin = async (
   if (error) throw error;
 };
 
+export const updateMemberRoleAndCoreStatusAdmin = async (
+  memberId: string,
+  roleId: string | null,
+  isCore: boolean
+): Promise<void> => {
+  if (!isSupabaseConfigured()) return;
+  const { error } = await supabase
+    .from('members')
+    .update({
+      role_id: roleId,
+      is_core_member: isCore,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', memberId);
+
+  if (error) throw error;
+};
+
 export const getMemberByUid = async (uid: string): Promise<Member | null> => {
   if (!isSupabaseConfigured()) {
     return null;
