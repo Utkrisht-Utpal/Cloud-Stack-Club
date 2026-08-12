@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, User, Mail, GraduationCap, Phone, Building2, Calendar, Upload, Send, AlertCircle, CheckCircle2, HelpCircle, X } from 'lucide-react';
+import { Sparkles, User, Mail, GraduationCap, Phone, Building2, Calendar, Upload, Send, AlertCircle, CheckCircle2, HelpCircle, X, ExternalLink } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CustomSelect } from '../ui/CustomSelect';
@@ -49,6 +49,12 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.uid) return;
+
+    // Enforce required CUIMS verification document upload
+    if (!verificationFile) {
+      setError('CUIMS verification screenshot or document is required to apply for membership.');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -182,7 +188,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                   required
                   value={formData.uid}
                   onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
-                  placeholder="e.g. 24BCF10003"
+                  placeholder="e.g. 24BCF100xx"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
               </div>
@@ -219,32 +225,33 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                     <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
-                    <span>CUIMS VERIFICATION SCREENSHOT</span>
+                    <span>CUIMS VERIFICATION SCREENSHOT *</span>
                   </label>
 
-                  {/* Trigger Button: Clean text by default, turns into Blue Pill ONLY on hover */}
-                  <div className="relative inline-block">
+                  {/* Wrapper: Handles mouse enter/leave for smooth open & auto-close */}
+                  <div
+                    className="relative inline-block"
+                    onMouseEnter={() => setShowCuimsHelp(true)}
+                    onMouseLeave={() => setShowCuimsHelp(false)}
+                  >
                     <button
                       type="button"
                       onClick={() => setShowCuimsHelp(!showCuimsHelp)}
-                      onMouseEnter={() => setShowCuimsHelp(true)}
                       className="px-2.5 py-1 rounded-full text-slate-600 dark:text-slate-300 hover:bg-blue-100/90 dark:hover:bg-blue-500/25 hover:text-blue-600 dark:hover:text-sky-400 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 whitespace-nowrap cursor-pointer"
-                      title="Click or hover to see CUIMS registration steps"
                     >
                       <HelpCircle className="w-4 h-4 shrink-0 text-blue-600 dark:text-sky-400" />
                       <span className="whitespace-nowrap font-medium">How to get screenshot?</span>
                     </button>
 
-                    {/* Popover Menu opening to the RIGHT SIDE */}
+                    {/* Popover Menu opening vertically centered to the RIGHT SIDE */}
                     <AnimatePresence>
                       {showCuimsHelp && (
                         <motion.div
-                          initial={{ opacity: 0, x: -10, scale: 0.95 }}
+                          initial={{ opacity: 0, x: -8, scale: 0.96 }}
                           animate={{ opacity: 1, x: 0, scale: 1 }}
-                          exit={{ opacity: 0, x: -10, scale: 0.95 }}
+                          exit={{ opacity: 0, x: -8, scale: 0.96 }}
                           transition={{ duration: 0.15 }}
-                          onMouseLeave={() => setShowCuimsHelp(false)}
-                          className="absolute md:left-full md:top-0 md:ml-3 right-0 top-full mt-2 w-72 sm:w-80 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl z-[9999] text-left space-y-2.5"
+                          className="absolute sm:left-full sm:top-1/2 sm:-translate-y-1/2 sm:ml-3 right-0 top-full mt-2 w-72 sm:w-80 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl z-[9999] text-left space-y-2.5"
                         >
                           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
@@ -265,7 +272,19 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                           </p>
 
                           <ol className="text-[11px] text-slate-800 dark:text-slate-200 space-y-1.5 list-decimal list-inside font-semibold bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
-                            <li>Open <strong>CUIMS</strong> (<code className="text-blue-600 dark:text-sky-400 font-mono">uims.cuchd.in</code>)</li>
+                            <li>
+                              Open <strong>CUIMS</strong> (
+                              <a
+                                href="https://uims.cuchd.in"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-sky-400 hover:underline font-mono font-bold inline-flex items-center gap-0.5"
+                              >
+                                uims.cuchd.in
+                                <ExternalLink className="w-3 h-3 inline" />
+                              </a>
+                              )
+                            </li>
                             <li>Go to <strong>Student Relation Management System</strong></li>
                             <li>Select <strong>Club & Society</strong></li>
                             <li>Click on <strong>Register Entity</strong></li>
@@ -284,6 +303,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
 
                 <input
                   type="file"
+                  required
                   accept="image/*,application/pdf"
                   onChange={handleFileChange}
                   className="w-full h-11 px-3.5 py-2 text-xs text-slate-600 dark:text-slate-400 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/60 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-700 dark:file:bg-slate-800 dark:file:text-sky-400 hover:file:bg-blue-200 cursor-pointer"
