@@ -2,7 +2,7 @@
  * Database Types & Supabase Schema Interface for Cloud Stack Club
  */
 
-export type MemberStatus = 'active' | 'inactive';
+export type MemberStatus = 'pending' | 'active' | 'inactive';
 export type EventStatus = 'upcoming' | 'live' | 'completed' | 'cancelled';
 export type FieldType = 
   | 'text' 
@@ -39,6 +39,7 @@ export interface Member {
   is_core_member: boolean;
   joined_at: string;
   status: MemberStatus;
+  verification_file_url?: string | null;
   created_at: string;
   updated_at: string;
   role?: Role | null;
@@ -159,6 +160,16 @@ export interface EventRegistrationPayload {
   answers?: { field_id: string; answer_text?: string; answer_json?: any; file_url?: string }[];
 }
 
+export interface MemberApplicationPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  uid: string;
+  department?: string;
+  year?: string;
+  verification_file_url?: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -184,7 +195,7 @@ export interface Database {
         Row: Member;
         Insert: {
           id?: string;
-          registration_id: string;
+          registration_id?: string;
           uid?: string | null;
           name: string;
           email: string;
@@ -195,6 +206,7 @@ export interface Database {
           is_core_member?: boolean;
           joined_at?: string;
           status?: MemberStatus;
+          verification_file_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -211,6 +223,7 @@ export interface Database {
           is_core_member?: boolean;
           joined_at?: string;
           status?: MemberStatus;
+          verification_file_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -439,6 +452,10 @@ export interface Database {
       };
       approve_membership_registration: {
         Args: { p_registration_id: string };
+        Returns: void;
+      };
+      approve_member_application: {
+        Args: { p_member_id: string };
         Returns: void;
       };
     };

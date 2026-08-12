@@ -15,6 +15,7 @@ interface CustomSelectProps {
   options: Option[];
   placeholder?: string;
   icon?: React.ReactNode;
+  triggerClassName?: string;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -24,6 +25,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   placeholder = 'Select domain',
   icon,
+  triggerClassName,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +42,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const defaultTriggerClass = `w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border ${
+    isOpen
+      ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md'
+      : 'border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
+  }`;
+
   return (
     <div className="relative space-y-1.5" ref={containerRef}>
       {label && (
@@ -53,18 +61,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border ${
-          isOpen
-            ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md'
-            : 'border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
-        }`}
+        className={triggerClassName || defaultTriggerClass}
       >
         <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400" />
+          <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 ${
+          className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 shrink-0 ${
             isOpen ? 'rotate-180' : 'rotate-0'
           }`}
         />
@@ -99,7 +103,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                   <span className="flex items-center gap-2">
                     {option.label}
                   </span>
-                  {isSelected && <Check className="w-4 h-4 text-white" />}
+                  {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
                 </button>
               );
             })}
