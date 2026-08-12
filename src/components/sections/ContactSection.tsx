@@ -6,7 +6,7 @@ import { SectionTitle } from '../ui/SectionTitle';
 import { Button } from '../ui/Button';
 import { Toast } from '../ui/Toast';
 import { siteConfig } from '../../constants/siteConfig';
-import { sendContactMessage } from '../../services/emailService';
+import { submitFeedback } from '../../services/supabase';
 
 export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -26,11 +26,11 @@ export const ContactSection: React.FC = () => {
     setError(null);
 
     try {
-      await sendContactMessage(formData);
+      await submitFeedback(formData);
       setFormData({ name: '', email: '', message: '' });
       setShowToast(true);
     } catch {
-      setError('Failed to send. Please try again or email us directly.');
+      setError('Failed to submit feedback. Please try again or email us directly.');
     } finally {
       setIsSubmitting(false);
     }
@@ -41,8 +41,8 @@ export const ContactSection: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
           badge="Get in Touch"
-          title="Contact Us"
-          subtitle="Have questions, want to partner with Cloud Stack Club, or interested in hosting a session at Chandigarh University? Reach out to us below."
+          title="Contact & Feedback"
+          subtitle="Have questions, feedback, or want to partner with Cloud Stack Club at Chandigarh University? Reach out to us below."
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -169,7 +169,7 @@ export const ContactSection: React.FC = () => {
 
                   <div>
                     <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                      Message
+                      Message / Feedback
                     </label>
                     <textarea
                       id="message"
@@ -177,7 +177,7 @@ export const ContactSection: React.FC = () => {
                       required
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="How can we assist you or collaborate?"
+                      placeholder="Share your thoughts, suggestions, or feedback with us..."
                       className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all resize-none text-sm"
                     />
                   </div>
@@ -197,7 +197,7 @@ export const ContactSection: React.FC = () => {
                     icon={<Send className="w-4 h-4" />}
                     className="w-full"
                   >
-                    {isSubmitting ? 'Sending Message...' : 'Send Message'}
+                    {isSubmitting ? 'Submitting Feedback...' : 'Send Feedback'}
                   </Button>
                 </form>
               </div>
@@ -210,7 +210,7 @@ export const ContactSection: React.FC = () => {
       {/* Success Toast */}
       <Toast
         isVisible={showToast}
-        message="Thank you! Your message has been sent successfully. We will get back to you soon."
+        message="Thank you! Your feedback has been recorded in our database."
         onClose={() => setShowToast(false)}
       />
     </section>

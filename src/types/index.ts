@@ -71,3 +71,5 @@ export interface ContactFormData {
   email: string;
   message: string;
 }
+
+export * from './database';
