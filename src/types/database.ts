@@ -63,6 +63,7 @@ export interface Event {
   supports_teams: boolean;
   max_team_size: number | null;
   max_registrations: number | null;
+  category?: string | null;
   created_at: string;
   updated_at: string;
 }

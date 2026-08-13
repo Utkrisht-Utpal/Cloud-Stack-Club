@@ -49,6 +49,15 @@ import {
 import { getRoles } from '../../services/roles';
 import type { Member, Event, Role } from '../../types/database';
 
+const EVENT_CATEGORY_OPTIONS = [
+  { value: 'Hackathons', label: 'Hackathons' },
+  { value: 'Ideathons', label: 'Ideathons' },
+  { value: 'Expert Talks', label: 'Expert Talks' },
+  { value: 'Industry Visits', label: 'Industry Visits' },
+  { value: 'Workshops', label: 'Workshops' },
+  { value: 'Bootcamps', label: 'Bootcamps' },
+];
+
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members'>('applications');
 
@@ -79,6 +88,7 @@ export const AdminDashboard: React.FC = () => {
   // Create Event Form State
   const [newEventData, setNewEventData] = useState({
     title: '',
+    category: 'Hackathons',
     description: '',
     date: '',
     time: '10:00',
@@ -95,6 +105,7 @@ export const AdminDashboard: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editEventData, setEditEventData] = useState({
     title: '',
+    category: 'Hackathons',
     description: '',
     date: '',
     time: '',
@@ -250,6 +261,7 @@ export const AdminDashboard: React.FC = () => {
       const newEventObj: Event = {
         id: eventId,
         title: newEventData.title.trim(),
+        category: newEventData.category || 'Hackathons',
         slug: autoSlug,
         description: newEventData.description.trim() || null,
         date: newEventData.date,
@@ -277,6 +289,7 @@ export const AdminDashboard: React.FC = () => {
       setEventPosterFile(null);
       setNewEventData({
         title: '',
+        category: 'Hackathons',
         description: '',
         date: '',
         time: '10:00',
@@ -307,6 +320,7 @@ export const AdminDashboard: React.FC = () => {
     setEditPosterFile(null);
     setEditEventData({
       title: evt.title,
+      category: evt.category || 'Hackathons',
       description: evt.description || '',
       date: evt.date ? evt.date.split('T')[0] : '',
       time: evt.start_time || '10:00',
@@ -338,6 +352,7 @@ export const AdminDashboard: React.FC = () => {
 
       const updatedPayload: Partial<Event> = {
         title: editEventData.title.trim(),
+        category: editEventData.category || 'Hackathons',
         description: editEventData.description.trim() || null,
         date: editEventData.date,
         start_time: editEventData.time,
@@ -751,8 +766,8 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Registration Status Badge Overlay */}
-                      <div className="absolute top-3 left-3 z-30">
+                      {/* Registration Status & Category Badge Overlay */}
+                      <div className="absolute top-3 left-3 z-30 flex flex-col gap-1 items-start">
                         <span
                           className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md ${
                             evt.registration_enabled
@@ -762,6 +777,11 @@ export const AdminDashboard: React.FC = () => {
                         >
                           {evt.registration_enabled ? 'Registration Open' : 'Closed'}
                         </span>
+                        {evt.category && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-950/80 text-sky-300 border border-sky-500/30 backdrop-blur-md shadow-lg">
+                            {evt.category}
+                          </span>
+                        )}
                       </div>
 
                       {/* Edit & Delete Action Buttons Overlay */}
@@ -883,18 +903,33 @@ export const AdminDashboard: React.FC = () => {
         {/* Create Event Modal */}
         <Modal isOpen={isCreateEventOpen} onClose={() => setIsCreateEventOpen(false)} title="Create New Event">
           <form onSubmit={handleCreateEventSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Event Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={newEventData.title}
-                onChange={(e) => setNewEventData({ ...newEventData, title: e.target.value })}
-                placeholder="e.g. Cloud Native Hackathon 2026"
-                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-              />
+            {/* Event Title & Event Category Side-by-Side */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="sm:col-span-7">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Event Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newEventData.title}
+                  onChange={(e) => setNewEventData({ ...newEventData, title: e.target.value })}
+                  placeholder="e.g. Elevate - X"
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="sm:col-span-5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Event Category *
+                </label>
+                <CustomSelect
+                  value={newEventData.category || 'Hackathons'}
+                  onChange={(val) => setNewEventData({ ...newEventData, category: val })}
+                  options={EVENT_CATEGORY_OPTIONS}
+                  triggerClassName="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between text-xs font-semibold text-left"
+                />
+              </div>
             </div>
 
             {/* Identical Width Side-by-Side 2-Column Media Upload Grid (Event Poster & Event PDF) */}
@@ -1162,17 +1197,32 @@ export const AdminDashboard: React.FC = () => {
         {/* Edit Event Modal */}
         <Modal isOpen={!!editingEvent} onClose={() => setEditingEvent(null)} title={`Edit Event — ${editingEvent?.title || ''}`}>
           <form onSubmit={handleEditEventSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Event Title *
-              </label>
-              <input
-                type="text"
-                required
-                value={editEventData.title}
-                onChange={(e) => setEditEventData({ ...editEventData, title: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-              />
+            {/* Event Title & Event Category Side-by-Side */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="sm:col-span-7">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Event Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editEventData.title}
+                  onChange={(e) => setEditEventData({ ...editEventData, title: e.target.value })}
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="sm:col-span-5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Event Category *
+                </label>
+                <CustomSelect
+                  value={editEventData.category || 'Hackathons'}
+                  onChange={(val) => setEditEventData({ ...editEventData, category: val })}
+                  options={EVENT_CATEGORY_OPTIONS}
+                  triggerClassName="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between text-xs font-semibold text-left"
+                />
+              </div>
             </div>
 
             {/* Identical Width Side-by-Side 2-Column Media Upload Grid (Poster & PDF) */}

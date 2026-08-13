@@ -137,7 +137,11 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
             {/* Column 2: Event Details & Badges (7 cols on Desktop) */}
             <div className="md:col-span-7 p-5 sm:p-7 md:p-8 flex flex-col justify-between space-y-4 overflow-y-auto scrollbar-none">
               <div className="space-y-3">
-                <div>
+                <div className="space-y-1.5">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-500/20">
+                    <Sparkles className="w-3 h-3 text-blue-500" />
+                    <span>{activeAdEvent.category || 'Upcoming Event'}</span>
+                  </div>
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                     {activeAdEvent.title}
                   </h2>
