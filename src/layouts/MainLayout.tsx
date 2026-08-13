@@ -16,7 +16,7 @@ import { useScrollbarFallback } from '../utils/useScrollbarFallback';
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const { showDashboard } = useAdminAuth();
+  const { showDashboard, logout } = useAdminAuth();
 
   // Hide native vertical scrollbar while ScrollProgress indicator is healthy;
   // automatically restores it if the indicator fails or is removed.
@@ -30,7 +30,7 @@ export const MainLayout: React.FC = () => {
       <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
         <ScrollToTop />
         <CloudBackground />
-        <Navbar onOpenJoinModal={handleOpenJoinModal} />
+        <Navbar isAdminDashboard={true} onAdminLogout={logout} />
         <AdminDashboard />
         <Footer />
       </div>
