@@ -24,6 +24,71 @@ const markMemberInactiveLocally = (memberId: string): void => {
   }
 };
 
+export const checkMemberDuplicate = async (
+  uid: string,
+  email: string,
+  phone?: string
+): Promise<{ isDuplicate: boolean; field?: 'UID' | 'Email' | 'Mobile Number'; message?: string }> => {
+  if (!isSupabaseConfigured()) return { isDuplicate: false };
+
+  const cleanUid = uid.trim();
+  const cleanEmail = email.trim();
+  const cleanPhone = phone?.trim() || '';
+
+  // 1. Check UID duplicate in members table
+  if (cleanUid) {
+    const { data: existingUid } = await supabase
+      .from('members')
+      .select('id, uid')
+      .ilike('uid', cleanUid)
+      .maybeSingle();
+
+    if (existingUid) {
+      return {
+        isDuplicate: true,
+        field: 'UID',
+        message: `A member with UID "${cleanUid}" already exists.`,
+      };
+    }
+  }
+
+  // 2. Check Email duplicate in members table
+  if (cleanEmail) {
+    const { data: existingEmail } = await supabase
+      .from('members')
+      .select('id, email')
+      .ilike('email', cleanEmail)
+      .maybeSingle();
+
+    if (existingEmail) {
+      return {
+        isDuplicate: true,
+        field: 'Email',
+        message: `A member with Email "${cleanEmail}" already exists.`,
+      };
+    }
+  }
+
+  // 3. Check Mobile Number duplicate in members table (if phone is provided)
+  if (cleanPhone) {
+    const { data: existingPhone } = await supabase
+      .from('members')
+      .select('id, phone')
+      .eq('phone', cleanPhone)
+      .maybeSingle();
+
+    if (existingPhone) {
+      return {
+        isDuplicate: true,
+        field: 'Mobile Number',
+        message: `A member with Mobile Number "${cleanPhone}" already exists.`,
+      };
+    }
+  }
+
+  return { isDuplicate: false };
+};
+
 export const submitMemberApplication = async (
   payload: MemberApplicationPayload,
   verificationFile?: File | null
@@ -33,6 +98,13 @@ export const submitMemberApplication = async (
   }
 
   const { name, email, phone, uid, department, year } = payload;
+
+  // Check for existing duplicate UID, Email, or Mobile Number BEFORE processing!
+  const dupCheck = await checkMemberDuplicate(uid, email, phone);
+  if (dupCheck.isDuplicate) {
+    throw new Error(dupCheck.message || `A registration with this ${dupCheck.field} already exists.`);
+  }
+
   const memberId = crypto.randomUUID();
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
   const regId = `CSC-${new Date().getFullYear()}-${randomSuffix}`;
@@ -77,8 +149,27 @@ export const submitMemberApplication = async (
     .maybeSingle();
 
   if (memberError || !memberData) {
+    if (memberError?.message?.includes('members_uid_key') || memberError?.message?.includes('uid')) {
+      throw new Error(`A member with UID "${uid.trim()}" already exists.`);
+    }
+    if (memberError?.message?.includes('members_email_key') || memberError?.message?.includes('email')) {
+      throw new Error(`A member with Email "${email.trim()}" already exists.`);
+    }
+    if (memberError?.message?.includes('phone')) {
+      throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists.`);
+    }
+
     const { error: fallbackError } = await supabase.from('members').insert(insertPayload);
     if (fallbackError) {
+      if (fallbackError.message?.includes('uid')) {
+        throw new Error(`A member with UID "${uid.trim()}" already exists.`);
+      }
+      if (fallbackError.message?.includes('email')) {
+        throw new Error(`A member with Email "${email.trim()}" already exists.`);
+      }
+      if (fallbackError.message?.includes('phone')) {
+        throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists.`);
+      }
       console.error('Error inserting member application:', fallbackError.message);
       throw new Error(`Membership application failed: ${fallbackError.message}`);
     }

@@ -4,7 +4,7 @@ import { Sparkles, User, Mail, GraduationCap, Phone, Building2, Calendar, Upload
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CustomSelect } from '../ui/CustomSelect';
-import { submitMemberApplication } from '../../services/supabase';
+import { submitMemberApplication, checkMemberDuplicate } from '../../services/supabase';
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -60,7 +60,15 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     setError(null);
 
     try {
-      // Submit membership application payload DIRECTLY into Supabase `members` table ONLY
+      // 1. Check for duplicates in UID, Email, or Mobile Number before attempting registration
+      const dupCheck = await checkMemberDuplicate(formData.uid, formData.email, formData.phone);
+      if (dupCheck.isDuplicate) {
+        setError(dupCheck.message || `A member with this ${dupCheck.field} already exists.`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Submit membership application payload DIRECTLY into Supabase `members` table ONLY
       const newMember = await submitMemberApplication(
         {
           name: formData.name.trim(),
