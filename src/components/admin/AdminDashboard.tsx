@@ -16,11 +16,13 @@ import {
   UploadCloud,
   Clock,
   ExternalLink,
+  Filter,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
+import { CustomSelect } from '../ui/CustomSelect';
 import {
   getPendingMemberApplications,
   approveMemberApplicationService,
@@ -46,6 +48,7 @@ export const AdminDashboard: React.FC = () => {
   const [rolesList, setRolesList] = useState<Role[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberTypeFilter, setMemberTypeFilter] = useState<'all' | 'members' | 'core-members'>('all');
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
   // Events State
@@ -99,6 +102,11 @@ export const AdminDashboard: React.FC = () => {
       setLoadingEvents(false);
     }
   };
+
+  // Reset scroll position to top when dashboard is entered/mounted
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, []);
 
   useEffect(() => {
     loadPendingApps();
@@ -197,13 +205,23 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const filteredMembers = membersList.filter(
-    (m) =>
+  // Member counts — computed from the full active-member dataset, independent of search
+  const coreMemberCount = membersList.filter((m) => m.is_core_member).length;
+  const regularMemberCount = membersList.length - coreMemberCount;
+  const allMemberCount = membersList.length;
+
+  const filteredMembers = membersList
+    .filter((m) => {
+      if (memberTypeFilter === 'members') return !m.is_core_member;
+      if (memberTypeFilter === 'core-members') return m.is_core_member;
+      return true;
+    })
+    .filter((m) =>
       m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
       (m.uid || '').toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.registration_id.toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.email.toLowerCase().includes(memberSearch.toLowerCase())
-  );
+    );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
@@ -389,20 +407,48 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={memberSearch}
-                  onChange={(e) => setMemberSearch(e.target.value)}
-                  placeholder="Search by name, UID, Reg ID..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                <div className="w-full sm:w-52">
+                  <CustomSelect
+                    value={memberTypeFilter}
+                    onChange={(val) => setMemberTypeFilter(val as 'all' | 'members' | 'core-members')}
+                    options={[
+                      { value: 'all', label: `All (${allMemberCount})` },
+                      { value: 'members', label: `Members (${regularMemberCount})` },
+                      { value: 'core-members', label: `Core Members (${coreMemberCount})` },
+                    ]}
+                    icon={<Filter className="w-3.5 h-3.5" />}
+                    triggerClassName={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer`}
+                  />
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search by name, UID, Reg ID..."
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
               </div>
             </div>
 
             {loadingMembers ? (
               <div className="py-12 text-center text-xs text-slate-500">Loading members directory...</div>
+            ) : filteredMembers.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-500 space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                <Users className="w-8 h-8 text-slate-400 mx-auto opacity-80" />
+                <p className="font-semibold text-slate-700 dark:text-slate-300">No members found.</p>
+                <p className="text-slate-500">
+                  {memberTypeFilter === 'core-members'
+                    ? 'No Core Members match your search.'
+                    : memberTypeFilter === 'members'
+                    ? 'No regular members match your search.'
+                    : 'No members match your current filters.'}
+                </p>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">

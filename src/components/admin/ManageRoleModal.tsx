@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Award, Check, UserMinus } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { CustomSelect } from '../ui/CustomSelect';
 import { updateMemberRoleAndCoreStatusAdmin } from '../../services/members';
 import type { Member, Role } from '../../types/database';
 
@@ -96,17 +97,15 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
             Select executive role from database to assign or update core responsibility:
           </p>
 
-          <select
+          <CustomSelect
             value={selectedRoleId}
-            onChange={(e) => setSelectedRoleId(e.target.value)}
-            className="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          >
-            {roles.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name} {r.description ? `(${r.description})` : ''}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedRoleId(val)}
+            options={roles.map((r) => ({
+              value: r.id,
+              label: `${r.name} ${r.description ? `(${r.description})` : ''}`,
+            }))}
+            triggerClassName="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all duration-300 text-xs font-semibold"
+          />
 
           <Button
             type="submit"
