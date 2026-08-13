@@ -21,6 +21,7 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
+import { CustomSelect } from '../ui/CustomSelect';
 import {
   getPendingMemberApplications,
   approveMemberApplicationService,
@@ -407,17 +408,18 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                <div className="relative w-full sm:w-48">
-                  <Filter className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  <select
+                <div className="w-full sm:w-52">
+                  <CustomSelect
                     value={memberTypeFilter}
-                    onChange={(e) => setMemberTypeFilter(e.target.value as 'all' | 'members' | 'core-members')}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none cursor-pointer"
-                  >
-                    <option value="all">All ({allMemberCount})</option>
-                    <option value="members">Members ({regularMemberCount})</option>
-                    <option value="core-members">Core Members ({coreMemberCount})</option>
-                  </select>
+                    onChange={(val) => setMemberTypeFilter(val as 'all' | 'members' | 'core-members')}
+                    options={[
+                      { value: 'all', label: `All (${allMemberCount})` },
+                      { value: 'members', label: `Members (${regularMemberCount})` },
+                      { value: 'core-members', label: `Core Members (${coreMemberCount})` },
+                    ]}
+                    icon={<Filter className="w-3.5 h-3.5" />}
+                    triggerClassName={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer`}
+                  />
                 </div>
 
                 <div className="relative w-full sm:w-64">
