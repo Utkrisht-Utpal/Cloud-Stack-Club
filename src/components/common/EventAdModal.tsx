@@ -112,12 +112,6 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 h-full overflow-hidden scrollbar-none">
             {/* Column 1: Full-Size Instagram Poster (5 cols on Desktop) */}
             <div className="md:col-span-5 bg-slate-950 p-3 sm:p-4 flex flex-col items-center justify-center relative overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
-              <div className="absolute top-3 left-3 z-10">
-                <span className="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-lg flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Upcoming Event</span>
-                </span>
-              </div>
 
               {activeAdEvent.image_url ? (
                 <div className="w-full h-48 sm:h-64 md:h-[420px] max-h-[50vh] md:max-h-[70vh] rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center">
