@@ -640,15 +640,15 @@ export const AdminDashboard: React.FC = () => {
             {loadingMembers ? (
               <div className="py-12 text-center text-xs text-slate-500">Loading members directory...</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-lg border border-slate-100 dark:border-slate-800/60 custom-scrollbar pr-1">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                     <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-3 px-4">Member Name</th>
-                      <th className="py-3 px-4">Reg ID & UID</th>
-                      <th className="py-3 px-4">Department & Year</th>
-                      <th className="py-3 px-4">Role / Core Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-3 px-4 font-semibold">Member Name</th>
+                      <th className="py-3 px-4 font-semibold">Reg ID & UID</th>
+                      <th className="py-3 px-4 font-semibold">Department & Year</th>
+                      <th className="py-3 px-4 font-semibold">Role / Core Status</th>
+                      <th className="py-3 px-4 text-right font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
