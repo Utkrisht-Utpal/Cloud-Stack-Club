@@ -23,6 +23,16 @@ const saveLocalCustomEvent = (event: Event): void => {
   }
 };
 
+const removeLocalCustomEvent = (eventId: string): void => {
+  try {
+    const list = getLocalCustomEvents();
+    const filtered = list.filter((e) => e.id !== eventId);
+    localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(filtered));
+  } catch (err) {
+    console.warn('Could not remove custom event locally:', err);
+  }
+};
+
 export const getEvents = async (): Promise<Event[]> => {
   const localEvents = getLocalCustomEvents();
   if (!isSupabaseConfigured()) {
@@ -137,6 +147,86 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   }
 
   return (data as Event) || createdEvent;
+};
+
+export const updateEventAdmin = async (
+  eventId: string,
+  eventPayload: Partial<Event>
+): Promise<Event> => {
+  // Update local storage
+  const list = getLocalCustomEvents();
+  const index = list.findIndex((e) => e.id === eventId);
+  if (index !== -1) {
+    list[index] = { ...list[index], ...eventPayload, updated_at: new Date().toISOString() };
+    localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(list));
+  }
+
+  if (!isSupabaseConfigured()) {
+    return (list[index] || eventPayload) as Event;
+  }
+
+  // 1. Attempt RPC update_event_admin
+  const { data: rpcData, error: rpcError } = await supabase.rpc('update_event_admin', {
+    p_id: eventId,
+    p_title: eventPayload.title,
+    p_description: eventPayload.description || null,
+    p_date: eventPayload.date || null,
+    p_start_time: eventPayload.start_time || null,
+    p_location: eventPayload.location || null,
+    p_pdf_url: eventPayload.pdf_url || null,
+    p_registration_enabled: eventPayload.registration_enabled ?? true,
+  });
+
+  if (!rpcError && rpcData) {
+    return rpcData as Event;
+  }
+
+  // 2. Direct update fallback
+  const { data, error } = await supabase
+    .from('events')
+    .update({
+      title: eventPayload.title,
+      description: eventPayload.description || null,
+      date: eventPayload.date || null,
+      start_time: eventPayload.start_time || null,
+      location: eventPayload.location || null,
+      pdf_url: eventPayload.pdf_url || null,
+      registration_enabled: eventPayload.registration_enabled ?? true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', eventId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    console.warn('Direct event update error notice:', error.message);
+  }
+
+  return (data as Event) || (list[index] as Event) || (eventPayload as Event);
+};
+
+export const deleteEventAdmin = async (eventId: string): Promise<void> => {
+  // Remove from local storage
+  removeLocalCustomEvent(eventId);
+
+  if (!isSupabaseConfigured()) return;
+
+  // 1. Attempt RPC delete_event_admin (sets status = 'cancelled')
+  const { error: rpcError } = await supabase.rpc('delete_event_admin', {
+    p_id: eventId,
+  });
+
+  if (rpcError) {
+    // 2. Direct update/delete fallback
+    const { error: updateError } = await supabase
+      .from('events')
+      .update({ status: 'cancelled' })
+      .eq('id', eventId);
+
+    if (updateError) {
+      await supabase.from('events').delete().eq('id', eventId);
+    }
+  }
 };
 
 export const getEventBySlug = async (slug: string): Promise<Event | null> => {

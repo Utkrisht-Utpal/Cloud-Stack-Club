@@ -10,19 +10,21 @@ import {
   Eye,
   Plus,
   Trash2,
+  Pencil,
+  Shield,
+  LogOut,
   Search,
   CheckCircle2,
   FileText,
   UploadCloud,
   Clock,
   ExternalLink,
-  Filter,
 } from 'lucide-react';
+import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
-import { CustomSelect } from '../ui/CustomSelect';
 import { EventPdfModal } from './EventPdfModal';
 import {
   getPendingMemberApplications,
@@ -31,11 +33,12 @@ import {
   getMembers,
   deleteMemberAdmin,
 } from '../../services/members';
-import { getEvents, createEvent, uploadEventPdf } from '../../services/events';
+import { getEvents, createEvent, updateEventAdmin, deleteEventAdmin, uploadEventPdf } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import type { Member, Event, Role } from '../../types/database';
 
 export const AdminDashboard: React.FC = () => {
+  const { adminEmail, logout, setShowDashboard } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members'>('applications');
 
   // Pending Applications State
@@ -49,7 +52,6 @@ export const AdminDashboard: React.FC = () => {
   const [rolesList, setRolesList] = useState<Role[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
-  const [memberTypeFilter, setMemberTypeFilter] = useState<'all' | 'members' | 'core-members'>('all');
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
   // Events State
@@ -59,6 +61,19 @@ export const AdminDashboard: React.FC = () => {
   const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
   const [selectedEventPdf, setSelectedEventPdf] = useState<{ url: string; title: string } | null>(null);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+
+  // Edit Event State
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [editEventData, setEditEventData] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    registration_enabled: true,
+  });
+  const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
+
   const [newEventData, setNewEventData] = useState({
     title: '',
     description: '',
@@ -104,11 +119,6 @@ export const AdminDashboard: React.FC = () => {
       setLoadingEvents(false);
     }
   };
-
-  // Reset scroll position to top when dashboard is entered/mounted
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, []);
 
   useEffect(() => {
     loadPendingApps();
@@ -207,28 +217,112 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // Member counts — computed from the full active-member dataset, independent of search
-  const coreMemberCount = membersList.filter((m) => m.is_core_member).length;
-  const regularMemberCount = membersList.length - coreMemberCount;
-  const allMemberCount = membersList.length;
+  const handleOpenEditEvent = (evt: Event) => {
+    setEditingEvent(evt);
+    setEditPdfFile(null);
+    setEditEventData({
+      title: evt.title,
+      description: evt.description || '',
+      date: evt.date ? evt.date.split('T')[0] : '',
+      time: evt.start_time || '10:00',
+      location: evt.location || '',
+      registration_enabled: evt.registration_enabled ?? true,
+    });
+  };
 
-  const filteredMembers = membersList
-    .filter((m) => {
-      if (memberTypeFilter === 'members') return !m.is_core_member;
-      if (memberTypeFilter === 'core-members') return m.is_core_member;
-      return true;
-    })
-    .filter((m) =>
+  const handleEditEventSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEvent || !editEventData.title) return;
+
+    setIsUploadingPdf(true);
+    try {
+      let pdfUrl = editingEvent.pdf_url;
+      if (editPdfFile) {
+        pdfUrl = await uploadEventPdf(editPdfFile, editingEvent.id);
+      }
+
+      await updateEventAdmin(editingEvent.id, {
+        title: editEventData.title.trim(),
+        description: editEventData.description.trim() || null,
+        date: editEventData.date,
+        start_time: editEventData.time,
+        location: editEventData.location.trim(),
+        pdf_url: pdfUrl,
+        registration_enabled: editEventData.registration_enabled,
+      });
+
+      setActionSuccess(`Successfully updated event "${editEventData.title}"!`);
+      setEditingEvent(null);
+      setEditPdfFile(null);
+      await loadAllEvents();
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err: any) {
+      alert(`Event update failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete event "${title}"?`)) return;
+    try {
+      setEventsList((prev) => prev.filter((e) => e.id !== eventId));
+      await deleteEventAdmin(eventId);
+      setActionSuccess(`Event "${title}" deleted.`);
+      await loadAllEvents();
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err: any) {
+      alert(`Failed to delete event: ${err?.message}`);
+      loadAllEvents();
+    }
+  };
+
+  const filteredMembers = membersList.filter(
+    (m) =>
       m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
       (m.uid || '').toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.registration_id.toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.email.toLowerCase().includes(memberSearch.toLowerCase())
-    );
+  );
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Bar — now rendered inside Navbar, see Navbar.tsx */}
+        {/* Header Bar */}
+        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 flex items-center justify-center">
+              <Shield className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold">Admin Management Dashboard</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  Central Admin
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Logged in as <span className="font-semibold text-slate-700 dark:text-slate-200">{adminEmail}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDashboard(false)}
+              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-all"
+            >
+              Exit Dashboard
+            </button>
+            <button
+              onClick={logout}
+              className="px-4 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 text-xs font-bold transition-all flex items-center gap-1.5"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
 
         {/* Action Success Alert Banner */}
         {actionSuccess && (
@@ -409,48 +503,20 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-                <div className="w-full sm:w-52">
-                  <CustomSelect
-                    value={memberTypeFilter}
-                    onChange={(val) => setMemberTypeFilter(val as 'all' | 'members' | 'core-members')}
-                    options={[
-                      { value: 'all', label: `All (${allMemberCount})` },
-                      { value: 'members', label: `Members (${regularMemberCount})` },
-                      { value: 'core-members', label: `Core Members (${coreMemberCount})` },
-                    ]}
-                    icon={<Filter className="w-3.5 h-3.5" />}
-                    triggerClassName={`w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer`}
-                  />
-                </div>
-
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={memberSearch}
-                    onChange={(e) => setMemberSearch(e.target.value)}
-                    placeholder="Search by name, UID, Reg ID..."
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                  />
-                </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  placeholder="Search by name, UID, Reg ID..."
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
               </div>
             </div>
 
             {loadingMembers ? (
               <div className="py-12 text-center text-xs text-slate-500">Loading members directory...</div>
-            ) : filteredMembers.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500 space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                <Users className="w-8 h-8 text-slate-400 mx-auto opacity-80" />
-                <p className="font-semibold text-slate-700 dark:text-slate-300">No members found.</p>
-                <p className="text-slate-500">
-                  {memberTypeFilter === 'core-members'
-                    ? 'No Core Members match your search.'
-                    : memberTypeFilter === 'members'
-                    ? 'No regular members match your search.'
-                    : 'No members match your current filters.'}
-                </p>
-              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
@@ -501,7 +567,7 @@ export const AdminDashboard: React.FC = () => {
                         <td className="py-3.5 px-4 text-right">
                           <button
                             onClick={() => handleDeleteMember(member.id, member.name)}
-                            className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors"
+                            className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
                             title="Delete Member"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -523,7 +589,7 @@ export const AdminDashboard: React.FC = () => {
               <div>
                 <h2 className="text-base font-bold">Club Events Management</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Create new club events, upload event PDF schedules, or manage event registration windows.
+                  Create, edit, or delete club events, update event PDF schedules, and manage registration status.
                 </p>
               </div>
 
@@ -554,15 +620,35 @@ export const AdminDashboard: React.FC = () => {
                       <div>
                         <h3 className="font-bold text-sm text-slate-900 dark:text-white">{evt.title}</h3>
                       </div>
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                          evt.registration_enabled
-                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                        }`}
-                      >
-                        {evt.registration_enabled ? 'Registration Open' : 'Closed'}
-                      </span>
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                            evt.registration_enabled
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {evt.registration_enabled ? 'Registration Open' : 'Closed'}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditEvent(evt)}
+                          className="p-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 transition-all cursor-pointer"
+                          title="Edit Event"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEvent(evt.id, evt.title)}
+                          className="p-1.5 rounded-xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-100 transition-all cursor-pointer"
+                          title="Delete Event"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
@@ -624,7 +710,6 @@ export const AdminDashboard: React.FC = () => {
         {/* Create Event Modal */}
         <Modal isOpen={isCreateEventOpen} onClose={() => setIsCreateEventOpen(false)} title="Create New Event">
           <form onSubmit={handleCreateEventSubmit} className="space-y-4">
-            {/* EVENT TITLE * */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Event Title *
@@ -639,7 +724,6 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            {/* EVENT PDF Dropzone */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                 Event PDF
@@ -713,7 +797,6 @@ export const AdminDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* DESCRIPTION */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Description
@@ -727,7 +810,6 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            {/* EVENT DATE * | EVENT TIME * */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
@@ -756,7 +838,6 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* LOCATION */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Location
@@ -770,10 +851,167 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            {/* Submit Button */}
             <div className="pt-2">
               <Button type="submit" variant="primary" size="md" disabled={isUploadingPdf} className="w-full">
                 {isUploadingPdf ? 'Publishing Event...' : 'Publish Event'}
+              </Button>
+            </div>
+          </form>
+        </Modal>
+
+        {/* Edit Event Modal */}
+        <Modal isOpen={!!editingEvent} onClose={() => setEditingEvent(null)} title={`Edit Event — ${editingEvent?.title || ''}`}>
+          <form onSubmit={handleEditEventSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                Event Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={editEventData.title}
+                onChange={(e) => setEditEventData({ ...editEventData, title: e.target.value })}
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Event PDF
+              </label>
+
+              {editPdfFile ? (
+                <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {editPdfFile.name} (New)
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        {(editPdfFile.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditPdfFile(null)}
+                    className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : editingEvent?.pdf_url ? (
+                <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                    <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                    <span className="truncate">Attached PDF Document</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEventPdf({ url: editingEvent.pdf_url!, title: editingEvent.title })}
+                      className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 text-xs font-bold"
+                    >
+                      Preview
+                    </button>
+                    <label className="px-2.5 py-1 rounded-xl bg-slate-200 dark:bg-slate-700 text-xs font-bold cursor-pointer">
+                      Replace
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative group">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all">
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Upload PDF Document</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                Description
+              </label>
+              <textarea
+                rows={3}
+                value={editEventData.description}
+                onChange={(e) => setEditEventData({ ...editEventData, description: e.target.value })}
+                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Event Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={editEventData.date}
+                  onChange={(e) => setEditEventData({ ...editEventData, date: e.target.value })}
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Event Time *
+                </label>
+                <input
+                  type="time"
+                  required
+                  value={editEventData.time}
+                  onChange={(e) => setEditEventData({ ...editEventData, time: e.target.value })}
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                Location
+              </label>
+              <input
+                type="text"
+                value={editEventData.location}
+                onChange={(e) => setEditEventData({ ...editEventData, location: e.target.value })}
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={editEventData.registration_enabled}
+                  onChange={(e) => setEditEventData({ ...editEventData, registration_enabled: e.target.checked })}
+                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Registration Window Open</span>
+              </label>
+            </div>
+
+            <div className="pt-2">
+              <Button type="submit" variant="primary" size="md" disabled={isUploadingPdf} className="w-full">
+                {isUploadingPdf ? 'Saving Changes...' : 'Save Changes'}
               </Button>
             </div>
           </form>
