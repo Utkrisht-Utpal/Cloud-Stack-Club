@@ -66,37 +66,15 @@ export const getEventPdfViewerUrl = (pdfPathOrUrl: string | null): string => {
   return data.publicUrl;
 };
 
-export const uploadEventPdf = async (file: File, eventId: string): Promise<string> => {
-  const readFileAsDataUrl = (f: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve('');
-      reader.readAsDataURL(f);
-    });
-  };
-
-  const dataUrl = await readFileAsDataUrl(file);
-
-  if (!isSupabaseConfigured()) {
-    return dataUrl;
-  }
-
-  try {
-    const filePath = `events/${eventId}/${file.name}`;
-    const { error } = await supabase.storage
-      .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-      .upload(filePath, file, { upsert: true });
-
-    if (error) {
-      console.warn('Event PDF storage upload notice (using Data URL fallback):', error.message);
-      return dataUrl;
-    }
-    return filePath;
-  } catch (err) {
-    console.error('Event PDF upload error (using Data URL fallback):', err);
-    return dataUrl;
-  }
+export const uploadEventPdf = async (file: File, _eventId: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve((reader.result as string) || '');
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
 };
 
 export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> => {
