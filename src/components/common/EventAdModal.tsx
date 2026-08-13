@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, MapPin, Sparkles, ArrowRight, FileText, Users2, Ticket, Timer } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -19,8 +19,11 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [activeAdEvent, setActiveAdEvent] = useState<Event | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const { isAdminLoggedIn } = useAdminAuth();
+  const hasTriggeredRef = useRef(false);
 
   useEffect(() => {
+    // Prevent duplicate ad triggers on page load / re-renders
+    if (hasTriggeredRef.current) return;
     if (!events || events.length === 0) return;
 
     const now = new Date();
@@ -46,13 +49,11 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     });
 
     if (validUpcomingEvent) {
+      hasTriggeredRef.current = true;
       setActiveAdEvent(validUpcomingEvent);
       // Wait exactly 1 second before showing the announcement ad popup
       const timer = setTimeout(() => setIsOpen(true), 1000);
       return () => clearTimeout(timer);
-    } else {
-      setActiveAdEvent(null);
-      setIsOpen(false);
     }
   }, [events]);
 
