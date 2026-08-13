@@ -23,6 +23,7 @@ import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
 import { CustomSelect } from '../ui/CustomSelect';
+import { EventPdfModal } from './EventPdfModal';
 import {
   getPendingMemberApplications,
   approveMemberApplicationService,
@@ -30,7 +31,7 @@ import {
   getMembers,
   deleteMemberAdmin,
 } from '../../services/members';
-import { getEvents, createEvent, uploadEventPdf, getEventPdfViewerUrl } from '../../services/events';
+import { getEvents, createEvent, uploadEventPdf } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import type { Member, Event, Role } from '../../types/database';
 
@@ -56,6 +57,7 @@ export const AdminDashboard: React.FC = () => {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
+  const [selectedEventPdf, setSelectedEventPdf] = useState<{ url: string; title: string } | null>(null);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [newEventData, setNewEventData] = useState({
     title: '',
@@ -582,15 +584,14 @@ export const AdminDashboard: React.FC = () => {
                       </div>
 
                       {evt.pdf_url && (
-                        <a
-                          href={getEventPdfViewerUrl(evt.pdf_url)}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => setSelectedEventPdf({ url: evt.pdf_url!, title: evt.title })}
                           className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
                         >
                           <FileText className="w-3.5 h-3.5" />
                           <span>View Event PDF</span>
-                        </a>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -793,6 +794,14 @@ export const AdminDashboard: React.FC = () => {
           member={selectedMemberForRole}
           roles={rolesList}
           onSuccess={() => loadAllMembers()}
+        />
+
+        {/* Event PDF Viewer Modal */}
+        <EventPdfModal
+          isOpen={!!selectedEventPdf}
+          onClose={() => setSelectedEventPdf(null)}
+          pdfUrl={selectedEventPdf?.url || null}
+          eventTitle={selectedEventPdf?.title || 'Event'}
         />
       </div>
     </div>
