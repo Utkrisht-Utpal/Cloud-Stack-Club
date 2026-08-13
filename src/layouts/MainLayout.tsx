@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
@@ -10,13 +10,32 @@ import { Toast } from '../components/ui/Toast';
 import { ScrollToTop } from '../components/common/ScrollToTop';
 import { AdminLoginModal } from '../components/admin/AdminLoginModal';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
+import { EventAdModal } from '../components/common/EventAdModal';
+import { EventPdfModal } from '../components/admin/EventPdfModal';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useScrollbarFallback } from '../utils/useScrollbarFallback';
+import { getEvents } from '../services/events';
+import type { Event } from '../types/database';
+
+const getInitialCachedEvents = (): Event[] => {
+  try {
+    const cached = localStorage.getItem('csc_custom_events_list');
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [eventsList, setEventsList] = useState<Event[]>(getInitialCachedEvents);
+  const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
   const { showDashboard, logout } = useAdminAuth();
+
+  useEffect(() => {
+    getEvents().then(setEventsList).catch(console.error);
+  }, []);
 
   // Hide native vertical scrollbar while ScrollProgress indicator is healthy;
   // automatically restores it if the indicator fails or is removed.
@@ -61,6 +80,21 @@ export const MainLayout: React.FC = () => {
 
       {/* Footer */}
       <Footer />
+
+      {/* Full-Sized Hero Upcoming Event Announcement Ad Modal */}
+      <EventAdModal
+        events={eventsList}
+        onRegisterClick={() => setJoinModalOpen(true)}
+        onViewPdfClick={(url, title) => setSelectedAdPdf({ url, title })}
+      />
+
+      {/* Event PDF Viewer Modal */}
+      <EventPdfModal
+        isOpen={!!selectedAdPdf}
+        onClose={() => setSelectedAdPdf(null)}
+        pdfUrl={selectedAdPdf?.url || null}
+        eventTitle={selectedAdPdf?.title || 'Event'}
+      />
 
       {/* Join Membership Modal */}
       <JoinModal

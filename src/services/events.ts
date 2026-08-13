@@ -87,6 +87,17 @@ export const uploadEventPdf = async (file: File, _eventId: string): Promise<stri
   });
 };
 
+export const uploadEventImage = async (file: File, _eventId: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      resolve((reader.result as string) || '');
+    };
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+};
+
 export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> => {
   const eventId = eventPayload.id || crypto.randomUUID();
   const createdEvent: Event = {
@@ -102,11 +113,11 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     pdf_url: eventPayload.pdf_url || null,
     status: (eventPayload.status as any) || 'upcoming',
     registration_enabled: eventPayload.registration_enabled ?? true,
-    registration_start: null,
-    registration_end: null,
-    supports_teams: false,
-    max_team_size: 1,
-    max_registrations: 100,
+    registration_start: eventPayload.registration_start || null,
+    registration_end: eventPayload.registration_end || null,
+    supports_teams: eventPayload.supports_teams ?? false,
+    max_team_size: eventPayload.max_team_size ?? 1,
+    max_registrations: eventPayload.max_registrations ?? null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -128,7 +139,13 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     p_start_time: createdEvent.start_time,
     p_location: createdEvent.location,
     p_pdf_url: createdEvent.pdf_url,
+    p_image_url: createdEvent.image_url,
     p_registration_enabled: createdEvent.registration_enabled,
+    p_registration_start: createdEvent.registration_start,
+    p_registration_end: createdEvent.registration_end,
+    p_supports_teams: createdEvent.supports_teams,
+    p_max_team_size: createdEvent.max_team_size,
+    p_max_registrations: createdEvent.max_registrations,
   });
 
   if (!rpcError && rpcData) {
@@ -174,7 +191,13 @@ export const updateEventAdmin = async (
     p_start_time: eventPayload.start_time || null,
     p_location: eventPayload.location || null,
     p_pdf_url: eventPayload.pdf_url || null,
+    p_image_url: eventPayload.image_url || null,
     p_registration_enabled: eventPayload.registration_enabled ?? true,
+    p_registration_start: eventPayload.registration_start || null,
+    p_registration_end: eventPayload.registration_end || null,
+    p_supports_teams: eventPayload.supports_teams ?? false,
+    p_max_team_size: eventPayload.max_team_size ?? 1,
+    p_max_registrations: eventPayload.max_registrations ?? null,
   });
 
   if (!rpcError && rpcData) {
@@ -191,7 +214,13 @@ export const updateEventAdmin = async (
       start_time: eventPayload.start_time || null,
       location: eventPayload.location || null,
       pdf_url: eventPayload.pdf_url || null,
+      image_url: eventPayload.image_url || null,
       registration_enabled: eventPayload.registration_enabled ?? true,
+      registration_start: eventPayload.registration_start || null,
+      registration_end: eventPayload.registration_end || null,
+      supports_teams: eventPayload.supports_teams ?? false,
+      max_team_size: eventPayload.max_team_size ?? 1,
+      max_registrations: eventPayload.max_registrations ?? null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId)
@@ -205,22 +234,39 @@ export const updateEventAdmin = async (
   return (data as Event) || (list[index] as Event) || (eventPayload as Event);
 };
 
-export const deleteEventAdmin = async (eventId: string): Promise<void> => {
-  // Remove from local storage
+export const deleteEventAdmin = async (
+  eventId: string,
+  existingPdfUrl?: string | null,
+  existingImageUrl?: string | null
+): Promise<void> => {
+  // 1. Remove from local storage
   removeLocalCustomEvent(eventId);
 
   if (!isSupabaseConfigured()) return;
 
-  // 1. Attempt RPC delete_event_admin (sets status = 'cancelled')
+  // 2. Clean up files from Supabase storage buckets if stored as path
+  if (existingPdfUrl && !existingPdfUrl.startsWith('data:') && !existingPdfUrl.startsWith('http')) {
+    await supabase.storage.from(STORAGE_BUCKETS.REGISTRATION_FILES).remove([existingPdfUrl]).catch(() => {});
+  }
+  if (existingImageUrl && !existingImageUrl.startsWith('data:') && !existingImageUrl.startsWith('http')) {
+    await supabase.storage.from(STORAGE_BUCKETS.EVENT_IMAGES).remove([existingImageUrl]).catch(() => {});
+  }
+
+  // 3. Attempt RPC delete_event_admin (sets status = 'cancelled', pdf_url = NULL, image_url = NULL)
   const { error: rpcError } = await supabase.rpc('delete_event_admin', {
     p_id: eventId,
   });
 
   if (rpcError) {
-    // 2. Direct update/delete fallback
+    // 4. Direct update fallback (clears pdf_url and image_url to free up DB space)
     const { error: updateError } = await supabase
       .from('events')
-      .update({ status: 'cancelled' })
+      .update({
+        status: 'cancelled',
+        pdf_url: null,
+        image_url: null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', eventId);
 
     if (updateError) {

@@ -79,6 +79,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setAdminEmail(activeEmail);
       setShowDashboard(true);
       setIsAdminModalOpen(false);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       return true;
     }
 

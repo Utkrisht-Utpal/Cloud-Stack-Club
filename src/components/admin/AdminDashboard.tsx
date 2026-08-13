@@ -11,21 +11,26 @@ import {
   Plus,
   Trash2,
   Pencil,
-  Shield,
-  LogOut,
   Search,
   CheckCircle2,
   FileText,
   UploadCloud,
   Clock,
-  ExternalLink,
+  Users2,
+  Ticket,
+  Image as ImageIcon,
+  Maximize2,
+  Sparkles,
 } from 'lucide-react';
-import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
 import { EventPdfModal } from './EventPdfModal';
+import { EventPosterModal } from './EventPosterModal';
+import { CustomSelect } from '../ui/CustomSelect';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { formatEventTime } from '../../utils/formatters';
 import {
   getPendingMemberApplications,
   approveMemberApplicationService,
@@ -33,12 +38,18 @@ import {
   getMembers,
   deleteMemberAdmin,
 } from '../../services/members';
-import { getEvents, createEvent, updateEventAdmin, deleteEventAdmin, uploadEventPdf } from '../../services/events';
+import {
+  getEvents,
+  createEvent,
+  updateEventAdmin,
+  deleteEventAdmin,
+  uploadEventPdf,
+  uploadEventImage,
+} from '../../services/events';
 import { getRoles } from '../../services/roles';
 import type { Member, Event, Role } from '../../types/database';
 
 export const AdminDashboard: React.FC = () => {
-  const { adminEmail, logout, setShowDashboard } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members'>('applications');
 
   // Pending Applications State
@@ -52,6 +63,7 @@ export const AdminDashboard: React.FC = () => {
   const [rolesList, setRolesList] = useState<Role[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
+  const [memberFilter, setMemberFilter] = useState<'all' | 'members' | 'core'>('all');
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
   // Events State
@@ -59,10 +71,27 @@ export const AdminDashboard: React.FC = () => {
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
+  const [eventPosterFile, setEventPosterFile] = useState<File | null>(null);
   const [selectedEventPdf, setSelectedEventPdf] = useState<{ url: string; title: string } | null>(null);
-  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [selectedEventPoster, setSelectedEventPoster] = useState<{ url: string; title: string } | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
-  // Edit Event State
+  // Create Event Form State
+  const [newEventData, setNewEventData] = useState({
+    title: '',
+    description: '',
+    date: '',
+    time: '10:00',
+    location: '',
+    registration_enabled: true,
+    registration_start: '',
+    registration_end: '',
+    supports_teams: false,
+    max_team_size: 1,
+    max_registrations: '',
+  });
+
+  // Edit Event Form State
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editEventData, setEditEventData] = useState({
     title: '',
@@ -71,17 +100,14 @@ export const AdminDashboard: React.FC = () => {
     time: '',
     location: '',
     registration_enabled: true,
+    registration_start: '',
+    registration_end: '',
+    supports_teams: false,
+    max_team_size: 1,
+    max_registrations: '',
   });
   const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
-
-  const [newEventData, setNewEventData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    time: '10:00',
-    location: '',
-    registration_enabled: true,
-  });
+  const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
 
   const loadPendingApps = async () => {
     setLoadingApplications(true);
@@ -121,10 +147,27 @@ export const AdminDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     loadPendingApps();
     loadAllMembers();
     loadAllEvents();
   }, []);
+
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    variant: 'danger' | 'warning' | 'primary';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
 
   const handleApprove = async (member: Member) => {
     try {
@@ -134,43 +177,58 @@ export const AdminDashboard: React.FC = () => {
       loadAllMembers();
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
-      alert(`Approval failed: ${err?.message || 'Unknown error'}`);
+      setActionSuccess(`Approval failed: ${err?.message || 'Unknown error'}`);
+      setTimeout(() => setActionSuccess(null), 4000);
     }
   };
 
-  const handleReject = async (member: Member) => {
-    if (!confirm(`Are you sure you want to reject application for ${member.name}?`)) return;
-    try {
-      setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
-      await rejectMemberApplicationService(member.id, member.verification_file_url);
-      setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
-      await loadPendingApps();
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err: any) {
-      alert(`Rejection failed: ${err?.message || 'Unknown error'}`);
-      loadPendingApps();
-    }
+  const handleReject = (member: Member) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Reject Application?',
+      message: `Are you sure you want to reject application for ${member.name}? The status will be set to inactive.`,
+      confirmText: 'Reject Application',
+      variant: 'danger',
+      onConfirm: async () => {
+        setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
+        setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
+        setTimeout(() => setActionSuccess(null), 3000);
+
+        try {
+          await rejectMemberApplicationService(member.id, member.verification_file_url);
+        } catch (err: any) {
+          console.warn('Rejection error:', err);
+        }
+      },
+    });
   };
 
-  const handleDeleteMember = async (memberId: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete member ${name}?`)) return;
-    try {
-      setMembersList((prev) => prev.filter((m) => m.id !== memberId));
-      await deleteMemberAdmin(memberId);
-      setActionSuccess(`Member ${name} marked as inactive and removed from admin list.`);
-      await loadAllMembers();
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err: any) {
-      alert(`Failed to delete member: ${err?.message}`);
-      loadAllMembers();
-    }
+  const handleDeleteMember = (memberId: string, name: string) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Member?',
+      message: `Are you sure you want to delete member ${name}? This member will be marked as inactive and removed from active directory.`,
+      confirmText: 'Delete Member',
+      variant: 'danger',
+      onConfirm: async () => {
+        setMembersList((prev) => prev.filter((m) => m.id !== memberId));
+        setActionSuccess(`Member ${name} marked as inactive and removed from admin list.`);
+        setTimeout(() => setActionSuccess(null), 3000);
+
+        try {
+          await deleteMemberAdmin(memberId);
+        } catch (err: any) {
+          console.warn('Member deletion error:', err);
+        }
+      },
+    });
   };
 
   const handleCreateEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEventData.title || !newEventData.date || !newEventData.time) return;
 
-    setIsUploadingPdf(true);
+    setIsUploadingMedia(true);
     try {
       const eventId = crypto.randomUUID();
       const autoSlug =
@@ -184,22 +242,39 @@ export const AdminDashboard: React.FC = () => {
         pdfUrl = await uploadEventPdf(eventPdfFile, eventId);
       }
 
-      await createEvent({
+      let imageUrl: string | null = null;
+      if (eventPosterFile) {
+        imageUrl = await uploadEventImage(eventPosterFile, eventId);
+      }
+
+      const newEventObj: Event = {
         id: eventId,
         title: newEventData.title.trim(),
         slug: autoSlug,
         description: newEventData.description.trim() || null,
         date: newEventData.date,
         start_time: newEventData.time,
+        end_time: null,
         location: newEventData.location.trim() || 'Chandigarh University',
         pdf_url: pdfUrl,
+        image_url: imageUrl,
         registration_enabled: newEventData.registration_enabled,
+        registration_start: newEventData.registration_start || null,
+        registration_end: newEventData.registration_end || null,
+        supports_teams: newEventData.supports_teams,
+        max_team_size: newEventData.supports_teams ? newEventData.max_team_size : 1,
+        max_registrations: newEventData.max_registrations ? parseInt(newEventData.max_registrations) : null,
         status: 'upcoming',
-      });
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
 
+      // Optimistic UI Update: Update React state & close modal INSTANTLY
+      setEventsList((prev) => [newEventObj, ...prev.filter((e) => e.id !== eventId)]);
       setActionSuccess(`Successfully created event "${newEventData.title}"!`);
       setIsCreateEventOpen(false);
       setEventPdfFile(null);
+      setEventPosterFile(null);
       setNewEventData({
         title: '',
         description: '',
@@ -207,19 +282,29 @@ export const AdminDashboard: React.FC = () => {
         time: '10:00',
         location: '',
         registration_enabled: true,
+        registration_start: '',
+        registration_end: '',
+        supports_teams: false,
+        max_team_size: 1,
+        max_registrations: '',
       });
-      await loadAllEvents();
       setTimeout(() => setActionSuccess(null), 4000);
+
+      // Async DB Persistence in background
+      createEvent(newEventObj).catch((err) => {
+        console.warn('Background event creation error:', err);
+      });
     } catch (err: any) {
       alert(`Event creation failed: ${err?.message || 'Unknown error'}`);
     } finally {
-      setIsUploadingPdf(false);
+      setIsUploadingMedia(false);
     }
   };
 
   const handleOpenEditEvent = (evt: Event) => {
     setEditingEvent(evt);
     setEditPdfFile(null);
+    setEditPosterFile(null);
     setEditEventData({
       title: evt.title,
       description: evt.description || '',
@@ -227,6 +312,11 @@ export const AdminDashboard: React.FC = () => {
       time: evt.start_time || '10:00',
       location: evt.location || '',
       registration_enabled: evt.registration_enabled ?? true,
+      registration_start: evt.registration_start ? evt.registration_start.split('T')[0] : '',
+      registration_end: evt.registration_end ? evt.registration_end.split('T')[0] : '',
+      supports_teams: evt.supports_teams ?? false,
+      max_team_size: evt.max_team_size || 1,
+      max_registrations: evt.max_registrations ? evt.max_registrations.toString() : '',
     });
   };
 
@@ -234,96 +324,94 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!editingEvent || !editEventData.title) return;
 
-    setIsUploadingPdf(true);
+    setIsUploadingMedia(true);
     try {
       let pdfUrl = editingEvent.pdf_url;
       if (editPdfFile) {
         pdfUrl = await uploadEventPdf(editPdfFile, editingEvent.id);
       }
 
-      await updateEventAdmin(editingEvent.id, {
+      let imageUrl = editingEvent.image_url;
+      if (editPosterFile) {
+        imageUrl = await uploadEventImage(editPosterFile, editingEvent.id);
+      }
+
+      const updatedPayload: Partial<Event> = {
         title: editEventData.title.trim(),
         description: editEventData.description.trim() || null,
         date: editEventData.date,
         start_time: editEventData.time,
         location: editEventData.location.trim(),
         pdf_url: pdfUrl,
+        image_url: imageUrl,
         registration_enabled: editEventData.registration_enabled,
-      });
+        registration_start: editEventData.registration_start || null,
+        registration_end: editEventData.registration_end || null,
+        supports_teams: editEventData.supports_teams,
+        max_team_size: editEventData.supports_teams ? editEventData.max_team_size : 1,
+        max_registrations: editEventData.max_registrations ? parseInt(editEventData.max_registrations) : null,
+        updated_at: new Date().toISOString(),
+      };
 
+      // Optimistic UI Update: Update React state & close modal INSTANTLY
+      setEventsList((prev) =>
+        prev.map((e) => (e.id === editingEvent.id ? { ...e, ...updatedPayload } : e))
+      );
       setActionSuccess(`Successfully updated event "${editEventData.title}"!`);
       setEditingEvent(null);
       setEditPdfFile(null);
-      await loadAllEvents();
+      setEditPosterFile(null);
       setTimeout(() => setActionSuccess(null), 4000);
+
+      // Async DB Persistence in background
+      updateEventAdmin(editingEvent.id, updatedPayload).catch((err) => {
+        console.warn('Background event update error:', err);
+      });
     } catch (err: any) {
       alert(`Event update failed: ${err?.message || 'Unknown error'}`);
     } finally {
-      setIsUploadingPdf(false);
+      setIsUploadingMedia(false);
     }
   };
 
-  const handleDeleteEvent = async (eventId: string, title: string) => {
-    if (!confirm(`Are you sure you want to delete event "${title}"?`)) return;
-    try {
-      setEventsList((prev) => prev.filter((e) => e.id !== eventId));
-      await deleteEventAdmin(eventId);
-      setActionSuccess(`Event "${title}" deleted.`);
-      await loadAllEvents();
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err: any) {
-      alert(`Failed to delete event: ${err?.message}`);
-      loadAllEvents();
-    }
+  const handleDeleteEvent = (eventPayload: Event) => {
+    setConfirmModalConfig({
+      isOpen: true,
+      title: 'Delete Event?',
+      message: `Are you sure you want to delete event "${eventPayload.title}"? This event will be cancelled and its media files will be deleted from storage to free up space.`,
+      confirmText: 'Delete Event',
+      variant: 'danger',
+      onConfirm: async () => {
+        setEventsList((prev) => prev.filter((e) => e.id !== eventPayload.id));
+        setActionSuccess(`Deleted event "${eventPayload.title}"`);
+        setTimeout(() => setActionSuccess(null), 3000);
+
+        try {
+          await deleteEventAdmin(eventPayload.id, eventPayload.pdf_url, eventPayload.image_url);
+        } catch (err: any) {
+          console.warn('Background event deletion notice:', err);
+        }
+      },
+    });
   };
 
-  const filteredMembers = membersList.filter(
-    (m) =>
+  const filteredMembers = membersList.filter((m) => {
+    const matchesSearch =
       m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
       (m.uid || '').toLowerCase().includes(memberSearch.toLowerCase()) ||
       m.registration_id.toLowerCase().includes(memberSearch.toLowerCase()) ||
-      m.email.toLowerCase().includes(memberSearch.toLowerCase())
-  );
+      m.email.toLowerCase().includes(memberSearch.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (memberFilter === 'members') return !m.is_core_member;
+    if (memberFilter === 'core') return m.is_core_member;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Bar */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 flex items-center justify-center">
-              <Shield className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">Admin Management Dashboard</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  Central Admin
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Logged in as <span className="font-semibold text-slate-700 dark:text-slate-200">{adminEmail}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDashboard(false)}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-all"
-            >
-              Exit Dashboard
-            </button>
-            <button
-              onClick={logout}
-              className="px-4 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 text-xs font-bold transition-all flex items-center gap-1.5"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-
         {/* Action Success Alert Banner */}
         {actionSuccess && (
           <motion.div
@@ -336,66 +424,68 @@ export const AdminDashboard: React.FC = () => {
           </motion.div>
         )}
 
-        {/* Management Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          <button
-            onClick={() => setActiveTab('applications')}
-            className={`px-5 py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'applications'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            <span>Membership Applications</span>
-            {pendingApplications.length > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
-                {pendingApplications.length}
+        {/* Management Navigation & Controls */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none min-w-0">
+            <button
+              onClick={() => setActiveTab('applications')}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'applications'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Membership Applications</span>
+              {pendingApplications.length > 0 && (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+                  {pendingApplications.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('members')}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'members'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Members & Core Directory</span>
+              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {membersList.length}
               </span>
-            )}
-          </button>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('members')}
-            className={`px-5 py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'members'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Members & Core Directory</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {membersList.length}
-            </span>
-          </button>
+            <button
+              onClick={() => setActiveTab('events')}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'events'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>Events Management</span>
+              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                {eventsList.length}
+              </span>
+            </button>
 
-          <button
-            onClick={() => setActiveTab('events')}
-            className={`px-5 py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'events'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Events Management</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {eventsList.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('forms')}
-            className={`px-5 py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-              activeTab === 'forms'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Event Registration Form Builder</span>
-          </button>
+            <button
+              onClick={() => setActiveTab('forms')}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'forms'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span>Registration Form Builder</span>
+            </button>
+          </div>
         </div>
 
         {/* Tab Content 1: Pending Membership Applications */}
@@ -495,7 +585,7 @@ export const AdminDashboard: React.FC = () => {
         {/* Tab Content 2: Members Directory & Core Team CRUD */}
         {activeTab === 'members' && (
           <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h2 className="text-base font-bold">Active Members & Core Team Directory</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -503,15 +593,32 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={memberSearch}
-                  onChange={(e) => setMemberSearch(e.target.value)}
-                  placeholder="Search by name, UID, Reg ID..."
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+                {/* Filter Dropdown matching screenshot: All (22), Members (1), Core Members (21) */}
+                <div className="w-full sm:w-48 shrink-0">
+                  <CustomSelect
+                    value={memberFilter}
+                    onChange={(val) => setMemberFilter(val as 'all' | 'members' | 'core')}
+                    options={[
+                      { value: 'all', label: `All (${membersList.length})` },
+                      { value: 'members', label: `Members (${membersList.filter((m) => !m.is_core_member).length})` },
+                      { value: 'core', label: `Core Members (${membersList.filter((m) => m.is_core_member).length})` },
+                    ]}
+                    triggerClassName="w-full h-10 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
+                  />
+                </div>
+
+                {/* Search Box */}
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search by name, UID, Reg ID..."
+                    className="w-full pl-9 pr-3 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium"
+                  />
+                </div>
               </div>
             </div>
 
@@ -589,7 +696,7 @@ export const AdminDashboard: React.FC = () => {
               <div>
                 <h2 className="text-base font-bold">Club Events Management</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Create, edit, or delete club events, update event PDF schedules, and manage registration status.
+                  Create, edit, or delete club events, upload event poster & PDF schedules, and manage registration windows.
                 </p>
               </div>
 
@@ -610,40 +717,67 @@ export const AdminDashboard: React.FC = () => {
                 No events found. Click "Create New Event" to get started.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {eventsList.map((evt) => (
                   <div
                     key={evt.id}
-                    className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-3"
+                    className="p-5 rounded-3xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-bold text-sm text-slate-900 dark:text-white">{evt.title}</h3>
-                      </div>
+                    {/* Vertical Instagram Poster Frame with Ambient Blur Fill */}
+                    <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-700/60 shadow-md flex items-center justify-center">
+                      {evt.image_url ? (
+                        <>
+                          {/* Ambient Blurred Background to prevent letterbox gaps */}
+                          <div
+                            className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 scale-110"
+                            style={{ backgroundImage: `url(${evt.image_url})` }}
+                          />
+                          <img
+                            src={evt.image_url}
+                            alt={evt.title}
+                            className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300 drop-shadow-md rounded-xl"
+                          />
+                          <div
+                            onClick={() => setSelectedEventPoster({ url: evt.image_url!, title: evt.title })}
+                            className="absolute inset-0 z-20 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 text-white text-xs font-black backdrop-blur-[2px] cursor-pointer"
+                          >
+                            <Maximize2 className="w-4 h-4" />
+                            <span>View Full Poster</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center p-6 text-center text-white font-bold">
+                          <Sparkles className="w-12 h-12 opacity-50" />
+                        </div>
+                      )}
 
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Registration Status Badge Overlay */}
+                      <div className="absolute top-3 left-3 z-30">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md ${
                             evt.registration_enabled
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                              : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-slate-900/80 text-slate-300 border border-white/20'
                           }`}
                         >
                           {evt.registration_enabled ? 'Registration Open' : 'Closed'}
                         </span>
+                      </div>
 
+                      {/* Edit & Delete Action Buttons Overlay */}
+                      <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleOpenEditEvent(evt)}
-                          className="p-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 transition-all cursor-pointer"
+                          className="p-2 rounded-full bg-slate-900/80 hover:bg-blue-600 text-white backdrop-blur-md transition-all shadow-md cursor-pointer border border-white/20"
                           title="Edit Event"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleDeleteEvent(evt.id, evt.title)}
-                          className="p-1.5 rounded-xl bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-100 transition-all cursor-pointer"
+                          onClick={() => handleDeleteEvent(evt)}
+                          className="p-2 rounded-full bg-slate-900/80 hover:bg-red-600 text-white backdrop-blur-md transition-all shadow-md cursor-pointer border border-white/20"
                           title="Delete Event"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -651,34 +785,73 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
-                      {evt.description || 'Cloud Stack Club Official Event. Registration is currently open.'}
-                    </p>
-
-                    <div className="text-[11px] text-slate-500 space-y-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-semibold">
-                          <span>📅 {evt.date ? new Date(evt.date).toLocaleDateString() : 'TBD'}</span>
-                          {evt.start_time && (
-                            <span className="flex items-center gap-0.5 text-blue-600 dark:text-sky-400">
-                              <Clock className="w-3 h-3" />
-                              <span>{evt.start_time}</span>
-                            </span>
-                          )}
-                        </div>
-                        <div>📍 {evt.location || 'Chandigarh University'}</div>
+                    {/* Event Content Details */}
+                    <div className="space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2">
+                        <h3 className="font-black text-lg text-slate-900 dark:text-white tracking-tight leading-snug">
+                          {evt.title}
+                        </h3>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-medium">
+                          {evt.description || 'Cloud Stack Club Official Event. Registration is currently open.'}
+                        </p>
                       </div>
 
-                      {evt.pdf_url && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedEventPdf({ url: evt.pdf_url!, title: evt.title })}
-                          className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
-                        >
-                          <FileText className="w-3.5 h-3.5" />
-                          <span>View Event PDF</span>
-                        </button>
-                      )}
+                      {/* Config Badges: Teams, Max Seats */}
+                      <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                        {evt.supports_teams && (
+                          <span className="px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                            <Users2 className="w-3.5 h-3.5" />
+                            <span>Teams (Max {evt.max_team_size || 4})</span>
+                          </span>
+                        )}
+                        {evt.max_registrations && (
+                          <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <Ticket className="w-3.5 h-3.5" />
+                            <span>Max {evt.max_registrations} seats</span>
+                          </span>
+                        )}
+                        {evt.registration_start && (
+                          <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Registration Starts: {new Date(evt.registration_start).toLocaleDateString()}</span>
+                          </span>
+                        )}
+                        {evt.registration_end && (
+                          <span className="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Registration Ends: {new Date(evt.registration_end).toLocaleDateString()}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Date, Time, Venue & PDF View */}
+                      <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-2">
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-bold truncate">
+                            <span>📅 {evt.date ? new Date(evt.date).toLocaleDateString() : 'TBD'}</span>
+                            {evt.start_time && (
+                              <span className="flex items-center gap-0.5 text-blue-600 dark:text-sky-400">
+                                <Clock className="w-3 h-3" />
+                                <span>{formatEventTime(evt.start_time)}</span>
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-500 truncate font-semibold">
+                            📍 {evt.location || 'Chandigarh University'}
+                          </div>
+                        </div>
+
+                        {evt.pdf_url && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedEventPdf({ url: evt.pdf_url!, title: evt.title })}
+                            className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-extrabold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>PDF</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -724,77 +897,116 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Event PDF
-              </label>
+            {/* Identical Width Side-by-Side 2-Column Media Upload Grid (Event Poster & Event PDF) */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Column 1: EVENT POSTER (IMAGE) */}
+              <div className="min-w-0">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="truncate">Event Poster</span>
+                </label>
 
-              {eventPdfFile ? (
-                <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5" />
+                {eventPosterFile ? (
+                  <div className="p-2 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
+                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                      <img
+                        src={URL.createObjectURL(eventPosterFile)}
+                        alt="Poster Preview"
+                        className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
+                        onClick={() => setSelectedEventPoster({ url: URL.createObjectURL(eventPosterFile), title: newEventData.title || 'Event' })}
+                      />
+                      <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                        {eventPosterFile.name}
+                      </span>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {eventPdfFile.name}
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        {(eventPdfFile.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+
+                    <button
+                      type="button"
+                      onClick={() => setEventPosterFile(null)}
+                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                      title="Remove Poster"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          if (!file.type.startsWith('image/')) {
+                            alert('Only image files (PNG, JPG, WEBP) are accepted.');
+                            return;
+                          }
+                          setEventPosterFile(file);
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Upload Poster</span>
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <a
-                      href={URL.createObjectURL(eventPdfFile)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1.5 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-500/25 text-xs font-bold transition-all flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>View</span>
-                    </a>
+              {/* Column 2: EVENT PDF (DOCUMENT) */}
+              <div className="min-w-0">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="truncate">Event PDF</span>
+                </label>
+
+                {eventPdfFile ? (
+                  <div className="p-2 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
+                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                      <FileText className="w-4 h-4 text-red-500 shrink-0" />
+                      <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                        {eventPdfFile.name}
+                      </span>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() => setEventPdfFile(null)}
-                      className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
                       title="Remove PDF"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
-              ) : (
-                <div className="relative group">
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-                          alert('Only PDF files are accepted.');
-                          return;
+                ) : (
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                            alert('Only PDF files are accepted.');
+                            return;
+                          }
+                          setEventPdfFile(file);
                         }
-                        if (file.size > 15 * 1024 * 1024) {
-                          alert('PDF file size must be under 15 MB.');
-                          return;
-                        }
-                        setEventPdfFile(file);
-                      }
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="p-5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 dark:group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-1">
-                    <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center mx-auto">
-                      <UploadCloud className="w-5 h-5" />
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Upload PDF</span>
+                      </div>
                     </div>
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Upload Event PDF</div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">PDF files only (guidelines, schedule, rules)</p>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div>
@@ -851,9 +1063,97 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
+            {/* Registration & Team Configuration Section */}
+            <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                <span>Registration & Team Settings</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={newEventData.registration_enabled}
+                    onChange={(e) => setNewEventData({ ...newEventData, registration_enabled: e.target.checked })}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Enable Registration</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={newEventData.supports_teams}
+                    onChange={(e) => setNewEventData({ ...newEventData, supports_teams: e.target.checked, max_team_size: e.target.checked ? 4 : 1 })}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Allow Team Registrations</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {newEventData.supports_teams && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                      Max Team Size (Members)
+                    </label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={10}
+                      value={newEventData.max_team_size}
+                      onChange={(e) => setNewEventData({ ...newEventData, max_team_size: parseInt(e.target.value) || 2 })}
+                      className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                )}
+
+                <div className={newEventData.supports_teams ? '' : 'sm:col-span-2'}>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Max Total Registrations
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 100 (leave empty for unlimited)"
+                    value={newEventData.max_registrations}
+                    onChange={(e) => setNewEventData({ ...newEventData, max_registrations: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Registration Start Window
+                  </label>
+                  <input
+                    type="date"
+                    value={newEventData.registration_start}
+                    onChange={(e) => setNewEventData({ ...newEventData, registration_start: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Registration End / Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={newEventData.registration_end}
+                    onChange={(e) => setNewEventData({ ...newEventData, registration_end: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="pt-2">
-              <Button type="submit" variant="primary" size="md" disabled={isUploadingPdf} className="w-full">
-                {isUploadingPdf ? 'Publishing Event...' : 'Publish Event'}
+              <Button type="submit" variant="primary" size="md" disabled={isUploadingMedia} className="w-full">
+                {isUploadingMedia ? 'Publishing Event...' : 'Publish Event'}
               </Button>
             </div>
           </form>
@@ -875,74 +1175,153 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Event PDF
-              </label>
+            {/* Identical Width Side-by-Side 2-Column Media Upload Grid (Poster & PDF) */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Column 1: EVENT POSTER (IMAGE) */}
+              <div className="min-w-0">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="truncate">Event Poster</span>
+                </label>
 
-              {editPdfFile ? (
-                <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5" />
+                {editPosterFile ? (
+                  <div className="p-2.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
+                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                      <img
+                        src={URL.createObjectURL(editPosterFile)}
+                        alt="Poster Preview"
+                        className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
+                        onClick={() => setSelectedEventPoster({ url: URL.createObjectURL(editPosterFile), title: editingEvent?.title || 'Event' })}
+                      />
+                      <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                        {editPosterFile.name}
+                      </span>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                        {editPdfFile.name} (New)
-                      </div>
-                      <div className="text-[10px] text-slate-500 font-mono">
-                        {(editPdfFile.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
-                      </div>
-                    </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setEditPdfFile(null)}
-                    className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : editingEvent?.pdf_url ? (
-                <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
-                    <FileText className="w-4 h-4 text-blue-500 shrink-0" />
-                    <span className="truncate">Attached PDF Document</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() => setSelectedEventPdf({ url: editingEvent.pdf_url!, title: editingEvent.title })}
-                      className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 text-xs font-bold"
+                      onClick={() => setEditPosterFile(null)}
+                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
                     >
-                      Preview
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <label className="px-2.5 py-1 rounded-xl bg-slate-200 dark:bg-slate-700 text-xs font-bold cursor-pointer">
-                      Replace
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
-                        className="hidden"
+                  </div>
+                ) : editingEvent?.image_url ? (
+                  <div className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
+                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                      <img
+                        src={editingEvent.image_url}
+                        alt="Current Poster"
+                        className="w-7 h-7 rounded-md object-cover border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
+                        onClick={() => setSelectedEventPoster({ url: editingEvent.image_url!, title: editingEvent.title })}
                       />
-                    </label>
+                      <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">Current Poster</span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEventPoster({ url: editingEvent.image_url!, title: editingEvent.title })}
+                        className="px-2 py-1 rounded-lg bg-blue-500/15 text-blue-600 dark:text-sky-400 text-[10px] font-bold"
+                      >
+                        Preview
+                      </button>
+                      <label className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[10px] font-bold cursor-pointer">
+                        Replace
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => e.target.files?.[0] && setEditPosterFile(e.target.files[0])}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="relative group">
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className="p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all">
-                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Upload PDF Document</div>
+                ) : (
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => e.target.files?.[0] && setEditPosterFile(e.target.files[0])}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Upload Poster</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Column 2: EVENT PDF (DOCUMENT) */}
+              <div className="min-w-0">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <span className="truncate">Event PDF</span>
+                </label>
+
+                {editPdfFile ? (
+                  <div className="p-2.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
+                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
+                      <FileText className="w-4 h-4 text-red-500 shrink-0" />
+                      <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
+                        {editPdfFile.name}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditPdfFile(null)}
+                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : editingEvent?.pdf_url ? (
+                  <div className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 truncate min-w-0">
+                      <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                      <span className="truncate">Attached PDF</span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEventPdf({ url: editingEvent.pdf_url!, title: editingEvent.title })}
+                        className="px-2 py-1 rounded-lg bg-blue-500/15 text-blue-600 dark:text-sky-400 text-[10px] font-bold"
+                      >
+                        Preview
+                      </button>
+                      <label className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[10px] font-bold cursor-pointer">
+                        Replace
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Upload PDF</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -997,21 +1376,97 @@ export const AdminDashboard: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer pt-1">
-                <input
-                  type="checkbox"
-                  checked={editEventData.registration_enabled}
-                  onChange={(e) => setEditEventData({ ...editEventData, registration_enabled: e.target.checked })}
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Registration Window Open</span>
-              </label>
+            {/* Edit Registration & Team Configuration Section */}
+            <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                <span>Registration & Team Settings</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editEventData.registration_enabled}
+                    onChange={(e) => setEditEventData({ ...editEventData, registration_enabled: e.target.checked })}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Enable Registration</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editEventData.supports_teams}
+                    onChange={(e) => setEditEventData({ ...editEventData, supports_teams: e.target.checked, max_team_size: e.target.checked ? 4 : 1 })}
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Allow Team Registrations</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {editEventData.supports_teams && (
+                  <div>
+                    <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                      Max Team Size (Members)
+                    </label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={10}
+                      value={editEventData.max_team_size}
+                      onChange={(e) => setEditEventData({ ...editEventData, max_team_size: parseInt(e.target.value) || 2 })}
+                      className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                    />
+                  </div>
+                )}
+
+                <div className={editEventData.supports_teams ? '' : 'sm:col-span-2'}>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Max Total Registrations
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="e.g. 100 (leave empty for unlimited)"
+                    value={editEventData.max_registrations}
+                    onChange={(e) => setEditEventData({ ...editEventData, max_registrations: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Registration Start Window
+                  </label>
+                  <input
+                    type="date"
+                    value={editEventData.registration_start}
+                    onChange={(e) => setEditEventData({ ...editEventData, registration_start: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                    Registration End / Deadline
+                  </label>
+                  <input
+                    type="date"
+                    value={editEventData.registration_end}
+                    onChange={(e) => setEditEventData({ ...editEventData, registration_end: e.target.value })}
+                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="pt-2">
-              <Button type="submit" variant="primary" size="md" disabled={isUploadingPdf} className="w-full">
-                {isUploadingPdf ? 'Saving Changes...' : 'Save Changes'}
+              <Button type="submit" variant="primary" size="md" disabled={isUploadingMedia} className="w-full">
+                {isUploadingMedia ? 'Saving Changes...' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -1040,6 +1495,25 @@ export const AdminDashboard: React.FC = () => {
           onClose={() => setSelectedEventPdf(null)}
           pdfUrl={selectedEventPdf?.url || null}
           eventTitle={selectedEventPdf?.title || 'Event'}
+        />
+
+        {/* Event Poster Viewer Modal */}
+        <EventPosterModal
+          isOpen={!!selectedEventPoster}
+          onClose={() => setSelectedEventPoster(null)}
+          imageUrl={selectedEventPoster?.url || null}
+          eventTitle={selectedEventPoster?.title || 'Event'}
+        />
+
+        {/* Global Themed Confirmation Modal */}
+        <ConfirmModal
+          isOpen={confirmModalConfig.isOpen}
+          onClose={() => setConfirmModalConfig((prev) => ({ ...prev, isOpen: false }))}
+          onConfirm={confirmModalConfig.onConfirm}
+          title={confirmModalConfig.title}
+          message={confirmModalConfig.message}
+          confirmText={confirmModalConfig.confirmText}
+          variant={confirmModalConfig.variant}
         />
       </div>
     </div>

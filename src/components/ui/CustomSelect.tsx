@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 
-interface Option {
+export interface SelectOption {
   value: string;
   label: string;
+  description?: string;
   badge?: string;
 }
 
@@ -12,7 +13,7 @@ interface CustomSelectProps {
   label?: string;
   value: string;
   onChange: (value: string) => void;
-  options: Option[];
+  options: SelectOption[];
   placeholder?: string;
   icon?: React.ReactNode;
   triggerClassName?: string;
@@ -23,7 +24,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   options,
-  placeholder = 'Select domain',
+  placeholder = 'Select option',
   icon,
   triggerClassName,
 }) => {
@@ -63,12 +64,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className={triggerClassName || defaultTriggerClass}
       >
-        <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 text-left truncate min-w-0 flex-1">
           <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />
-          {selectedOption ? selectedOption.label : placeholder}
+          <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 shrink-0 ${
+          className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 shrink-0 ml-2 ${
             isOpen ? 'rotate-180' : 'rotate-0'
           }`}
         />
@@ -82,7 +83,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             animate={{ opacity: 1, y: 4, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.98 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute left-0 right-0 z-50 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-52 no-scrollbar focus:outline-none"
+            className="absolute left-0 right-0 z-50 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-60 no-scrollbar focus:outline-none"
           >
             {options.map((option) => {
               const isSelected = option.value === value;
@@ -94,15 +95,24 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     onChange(option.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center justify-between cursor-pointer ${
+                  className={`w-full px-3.5 py-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
                     isSelected
                       ? 'bg-blue-600 text-white font-semibold shadow-md'
                       : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300'
                   }`}
                 >
-                  <span className="flex items-center gap-2">
-                    {option.label}
-                  </span>
+                  <div className="flex flex-col text-left min-w-0 flex-1">
+                    <span className="text-xs sm:text-sm font-bold text-left">{option.label}</span>
+                    {option.description && (
+                      <span
+                        className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 ${
+                          isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
+                        }`}
+                      >
+                        {option.description}
+                      </span>
+                    )}
+                  </div>
                   {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
                 </button>
               );

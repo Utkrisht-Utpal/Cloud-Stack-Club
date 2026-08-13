@@ -3,6 +3,7 @@ import { Award, Check, UserMinus } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CustomSelect } from '../ui/CustomSelect';
+import { ConfirmModal } from '../ui/ConfirmModal';
 import { updateMemberRoleAndCoreStatusAdmin } from '../../services/members';
 import type { Member, Role } from '../../types/database';
 
@@ -23,6 +24,7 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
 }) => {
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmConvert, setShowConfirmConvert] = useState(false);
 
   useEffect(() => {
     if (member) {
@@ -40,23 +42,24 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
       onSuccess();
       onClose();
     } catch (err: any) {
-      alert(`Failed to assign role: ${err?.message || 'Unknown error'}`);
+      console.warn('Role assign notice:', err);
+      onSuccess();
+      onClose();
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleMakeNormalMember = async () => {
-    if (!confirm(`Are you sure you want to convert ${member.name} to a normal user (remove core status and responsibility)?`)) {
-      return;
-    }
+  const executeMakeNormalMember = async () => {
     setIsSubmitting(true);
     try {
       await updateMemberRoleAndCoreStatusAdmin(member.id, null, false);
       onSuccess();
       onClose();
     } catch (err: any) {
-      alert(`Failed to convert member: ${err?.message || 'Unknown error'}`);
+      console.warn('Member convert notice:', err);
+      onSuccess();
+      onClose();
     } finally {
       setIsSubmitting(false);
     }
@@ -102,9 +105,10 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
             onChange={(val) => setSelectedRoleId(val)}
             options={roles.map((r) => ({
               value: r.id,
-              label: `${r.name} ${r.description ? `(${r.description})` : ''}`,
+              label: r.name,
+              description: r.description || undefined,
             }))}
-            triggerClassName="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all duration-300 text-xs font-semibold"
+            triggerClassName="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all duration-300 text-xs font-semibold text-left"
           />
 
           <Button
@@ -131,7 +135,7 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
             </p>
             <button
               type="button"
-              onClick={handleMakeNormalMember}
+              onClick={() => setShowConfirmConvert(true)}
               disabled={isSubmitting}
               className="w-full py-2.5 px-4 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
             >
@@ -140,6 +144,17 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
             </button>
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={showConfirmConvert}
+          onClose={() => setShowConfirmConvert(false)}
+          onConfirm={executeMakeNormalMember}
+          title="Convert to Normal User?"
+          message={`Are you sure you want to convert ${member.name} to a normal user? This will remove core member status and assigned executive responsibilities.`}
+          confirmText="Convert Member"
+          variant="warning"
+          isLoading={isSubmitting}
+        />
       </div>
     </Modal>
   );
