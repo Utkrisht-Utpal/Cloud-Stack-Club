@@ -284,6 +284,19 @@
   background: var(--accent-blue);
 }
 
+/* Horizontal scroll active — hide native vertical scrollbar */
+html.horizontal-scroll-active {
+  scrollbar-width: none;          /* Firefox */
+}
+
+html.horizontal-scroll-active::-webkit-scrollbar {
+  display: none;                  /* Chrome, Safari, Edge */
+}
+
+html.horizontal-scroll-active body {
+  -ms-overflow-style: none;       /* IE / legacy Edge */
+}
+
 /* Hide Scrollbar Utility */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

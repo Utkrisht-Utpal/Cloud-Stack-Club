@@ -11,11 +11,16 @@ import { ScrollToTop } from '../components/common/ScrollToTop';
 import { AdminLoginModal } from '../components/admin/AdminLoginModal';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { useAdminAuth } from '../context/AdminAuthContext';
+import { useScrollbarFallback } from '../utils/useScrollbarFallback';
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const { showDashboard } = useAdminAuth();
+
+  // Hide native vertical scrollbar while ScrollProgress indicator is healthy;
+  // automatically restores it if the indicator fails or is removed.
+  useScrollbarFallback('[data-scroll-progress]');
 
   const handleOpenJoinModal = () => setJoinModalOpen(true);
   const handleCloseJoinModal = () => setJoinModalOpen(false);
