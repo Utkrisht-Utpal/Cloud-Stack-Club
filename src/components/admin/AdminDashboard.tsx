@@ -10,8 +10,6 @@ import {
   Eye,
   Plus,
   Trash2,
-  Shield,
-  LogOut,
   Search,
   CheckCircle2,
   FileText,
@@ -19,7 +17,6 @@ import {
   Clock,
   ExternalLink,
 } from 'lucide-react';
-import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
@@ -37,7 +34,6 @@ import { getRoles } from '../../services/roles';
 import type { Member, Event, Role } from '../../types/database';
 
 export const AdminDashboard: React.FC = () => {
-  const { adminEmail, logout, setShowDashboard } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members'>('applications');
 
   // Pending Applications State
@@ -214,41 +210,7 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Bar */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-blue-600/10 dark:bg-blue-500/20 text-blue-600 dark:text-sky-400 flex items-center justify-center">
-              <Shield className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">Admin Management Dashboard</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-                  Central Admin
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Logged in as <span className="font-semibold text-slate-700 dark:text-slate-200">{adminEmail}</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowDashboard(false)}
-              className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-all"
-            >
-              Exit Dashboard
-            </button>
-            <button
-              onClick={logout}
-              className="px-4 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 text-xs font-bold transition-all flex items-center gap-1.5"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
+        {/* Header Bar — now rendered inside Navbar, see Navbar.tsx */}
 
         {/* Action Success Alert Banner */}
         {actionSuccess && (

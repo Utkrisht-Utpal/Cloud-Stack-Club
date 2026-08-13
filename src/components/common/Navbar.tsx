@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Menu, X, ArrowRight } from 'lucide-react';
+import { Sun, Moon, Menu, X, ArrowRight, LogOut } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { siteConfig } from '../../constants/siteConfig';
 import { Button } from '../ui/Button';
@@ -10,9 +10,11 @@ import { CULogo } from '../ui/CULogo';
 
 interface NavbarProps {
   onOpenJoinModal?: () => void;
+  isAdminDashboard?: boolean;
+  onAdminLogout?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboard, onAdminLogout }) => {
   const { theme, toggleTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -107,37 +109,43 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
             <ClubLogo size="md" showText={true} />
           </Link>
 
-          {/* Center: Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 px-3.5 py-1.5 rounded-full">
-            {siteConfig.navLinks.map((link) => {
-              const sectionId = link.href.replace('/#', '');
-              const isActive =
-                link.isExternalPage
-                  ? location.pathname === link.href
-                  : location.pathname === '/' && activeSection === sectionId;
+          {/* Center: Desktop Navigation Links OR Admin Dashboard Card */}
+          {isAdminDashboard ? (
+            <div className="hidden lg:flex items-center">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Admin Management Dashboard</h1>
+            </div>
+          ) : (
+            <nav className="hidden lg:flex items-center gap-1 bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 px-3.5 py-1.5 rounded-full">
+              {siteConfig.navLinks.map((link) => {
+                const sectionId = link.href.replace('/#', '');
+                const isActive =
+                  link.isExternalPage
+                    ? location.pathname === link.href
+                    : location.pathname === '/' && activeSection === sectionId;
 
-              return (
-                <button
-                  key={link.name}
-                  onClick={() => handleNavClick(link.href, link.isExternalPage)}
-                  className={`relative px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors rounded-full cursor-pointer ${
-                    isActive
-                      ? 'text-blue-700 dark:text-sky-400 font-bold'
-                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {link.name}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNavUnderline"
-                      className="absolute inset-0 bg-[#dce3f0] dark:bg-sky-400/15 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.5),inset_-2px_-2px_5px_#ffffff] dark:shadow-none rounded-full -z-10"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
+                return (
+                  <button
+                    key={link.name}
+                    onClick={() => handleNavClick(link.href, link.isExternalPage)}
+                    className={`relative px-3.5 py-1.5 text-xs font-semibold tracking-wide transition-colors rounded-full cursor-pointer ${
+                      isActive
+                        ? 'text-blue-700 dark:text-sky-400 font-bold'
+                        : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {link.name}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNavUnderline"
+                        className="absolute inset-0 bg-[#dce3f0] dark:bg-sky-400/15 shadow-[inset_2px_2px_5px_rgba(163,177,198,0.5),inset_-2px_-2px_5px_#ffffff] dark:shadow-none rounded-full -z-10"
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right: CU Logo (Image 2) + Theme Toggle + Join Button */}
           <div className="hidden md:flex items-center gap-4">
@@ -156,15 +164,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </motion.button>
 
-            {/* Join Club Button */}
-            <Button
-              variant="primary"
-              size="sm"
-              icon={<ArrowRight className="w-4 h-4" />}
-              onClick={onOpenJoinModal}
-            >
-              Join Club
-            </Button>
+            {/* Logout (admin) or Join Club (public) */}
+            {isAdminDashboard ? (
+              <button
+                onClick={onAdminLogout}
+                className="px-4 py-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<ArrowRight className="w-4 h-4" />}
+                onClick={onOpenJoinModal}
+              >
+                Join Club
+              </Button>
+            )}
           </div>
 
           {/* Mobile Right Controls */}
@@ -177,60 +195,82 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal }) => {
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
 
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl glass-panel text-slate-900 dark:text-white focus:outline-none cursor-pointer"
-              aria-label="Toggle Mobile Menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {/* Admin Logout on mobile (replaces hamburger) */}
+            {isAdminDashboard ? (
+              <button
+                onClick={onAdminLogout}
+                className="p-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
+                aria-label="Logout"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 rounded-xl glass-panel text-slate-900 dark:text-white focus:outline-none cursor-pointer"
+                aria-label="Toggle Mobile Menu"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
-            className="md:hidden border-b border-slate-300/80 dark:border-slate-800 overflow-hidden bg-[#e6ecf5] dark:bg-slate-950/95 text-slate-900 dark:text-white shadow-xl"
-          >
-            <div className="px-4 pt-3 pb-6 space-y-2">
-              <div className="pb-3 border-b border-slate-300/80 dark:border-slate-800 flex items-center justify-between">
-                <CULogo size="sm" />
-              </div>
+      {/* Mobile Navigation Drawer — hidden on admin dashboard */}
+      {!isAdminDashboard && (
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden border-b border-slate-300/80 dark:border-slate-800 overflow-hidden bg-[#e6ecf5] dark:bg-slate-950/95 text-slate-900 dark:text-white shadow-xl"
+            >
+              <div className="px-4 pt-3 pb-6 space-y-2">
+                <div className="pb-3 border-b border-slate-300/80 dark:border-slate-800 flex items-center justify-between">
+                  <CULogo size="sm" />
+                </div>
 
-              {siteConfig.navLinks.map((link) => (
-                <button
-                  key={link.name}
-                  onClick={() => handleNavClick(link.href, link.isExternalPage)}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-[#dce3f0] dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between cursor-pointer"
-                >
-                  <span>{link.name}</span>
-                  <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400 opacity-70" />
-                </button>
-              ))}
+                {siteConfig.navLinks.map((link) => (
+                  <button
+                    key={link.name}
+                    onClick={() => handleNavClick(link.href, link.isExternalPage)}
+                    className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-[#dce3f0] dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between cursor-pointer"
+                  >
+                    <span>{link.name}</span>
+                    <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400 opacity-70" />
+                  </button>
+                ))}
 
-              <div className="pt-4 border-t border-slate-300/80 dark:border-slate-800">
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="w-full shadow-lg shadow-blue-500/25"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    if (onOpenJoinModal) onOpenJoinModal();
-                  }}
-                >
-                  Join Cloud Stack Club
-                </Button>
+                <div className="pt-4 border-t border-slate-300/80 dark:border-slate-800">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    className="w-full shadow-lg shadow-blue-500/25"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (onOpenJoinModal) onOpenJoinModal();
+                    }}
+                  >
+                    Join Cloud Stack Club
+                  </Button>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
+
+      {/* Mobile/Tablet Admin Dashboard Card — shown below header bar on smaller screens */}
+      {isAdminDashboard && (
+        <div className="lg:hidden border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+            <h1 className="text-sm font-bold text-slate-900 dark:text-white">Admin Management Dashboard</h1>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
