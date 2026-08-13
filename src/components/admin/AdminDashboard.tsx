@@ -14,6 +14,10 @@ import {
   LogOut,
   Search,
   CheckCircle2,
+  FileText,
+  UploadCloud,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { Button } from '../ui/Button';
@@ -27,7 +31,7 @@ import {
   getMembers,
   deleteMemberAdmin,
 } from '../../services/members';
-import { getEvents, createEvent } from '../../services/events';
+import { getEvents, createEvent, uploadEventPdf, getEventPdfViewerUrl } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import type { Member, Event, Role } from '../../types/database';
 
@@ -52,13 +56,14 @@ export const AdminDashboard: React.FC = () => {
   const [eventsList, setEventsList] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
+  const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [newEventData, setNewEventData] = useState({
     title: '',
-    slug: '',
     description: '',
     date: '',
+    time: '10:00',
     location: '',
-    max_registrations: 100,
     registration_enabled: true,
   });
 
@@ -98,11 +103,6 @@ export const AdminDashboard: React.FC = () => {
       setLoadingEvents(false);
     }
   };
-
-  // Reset scroll position to top when dashboard is entered/mounted
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, []);
 
   useEffect(() => {
     loadPendingApps();
@@ -152,38 +152,61 @@ export const AdminDashboard: React.FC = () => {
 
   const handleCreateEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEventData.title || !newEventData.slug) return;
+    if (!newEventData.title || !newEventData.date || !newEventData.time) return;
+
+    setIsUploadingPdf(true);
     try {
+      const eventId = crypto.randomUUID();
+      const autoSlug =
+        newEventData.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '') || `event-${Date.now()}`;
+
+      let pdfUrl: string | null = null;
+      if (eventPdfFile) {
+        pdfUrl = await uploadEventPdf(eventPdfFile, eventId);
+      }
+
       await createEvent({
+        id: eventId,
         title: newEventData.title.trim(),
-        slug: newEventData.slug.trim().toLowerCase(),
-        description: newEventData.description.trim(),
-        date: newEventData.date || new Date().toISOString(),
+        slug: autoSlug,
+        description: newEventData.description.trim() || null,
+        date: newEventData.date,
+        start_time: newEventData.time,
         location: newEventData.location.trim() || 'Chandigarh University',
+        pdf_url: pdfUrl,
         registration_enabled: newEventData.registration_enabled,
         status: 'upcoming',
       });
+
+      setActionSuccess(`Successfully created event "${newEventData.title}"!`);
       setIsCreateEventOpen(false);
+      setEventPdfFile(null);
       setNewEventData({
         title: '',
-        slug: '',
         description: '',
         date: '',
+        time: '10:00',
         location: '',
-        max_registrations: 100,
         registration_enabled: true,
       });
-      loadAllEvents();
+      await loadAllEvents();
+      setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
-      alert(`Event creation failed: ${err?.message}`);
+      alert(`Event creation failed: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setIsUploadingPdf(false);
     }
   };
 
-  const filteredMembers = membersList.filter((m) =>
-    m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
-    (m.uid || '').toLowerCase().includes(memberSearch.toLowerCase()) ||
-    m.registration_id.toLowerCase().includes(memberSearch.toLowerCase()) ||
-    m.email.toLowerCase().includes(memberSearch.toLowerCase())
+  const filteredMembers = membersList.filter(
+    (m) =>
+      m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      (m.uid || '').toLowerCase().includes(memberSearch.toLowerCase()) ||
+      m.registration_id.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      m.email.toLowerCase().includes(memberSearch.toLowerCase())
   );
 
   return (
@@ -490,7 +513,7 @@ export const AdminDashboard: React.FC = () => {
               <div>
                 <h2 className="text-base font-bold">Club Events Management</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Create new club events, toggle registration windows, or manage schedules.
+                  Create new club events, upload event PDF schedules, or manage event registration windows.
                 </p>
               </div>
 
@@ -520,7 +543,6 @@ export const AdminDashboard: React.FC = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <h3 className="font-bold text-sm text-slate-900 dark:text-white">{evt.title}</h3>
-                        <p className="text-[11px] text-slate-500 font-mono">/{evt.slug}</p>
                       </div>
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
@@ -533,11 +555,35 @@ export const AdminDashboard: React.FC = () => {
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{evt.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
+                      {evt.description || 'Cloud Stack Club Official Event. Registration is currently open.'}
+                    </p>
 
-                    <div className="text-[11px] text-slate-500 space-y-0.5">
-                      <div>📅 {evt.date ? new Date(evt.date).toLocaleDateString() : 'TBD'}</div>
-                      <div>📍 {evt.location || 'Chandigarh University'}</div>
+                    <div className="text-[11px] text-slate-500 space-y-1 pt-1 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-semibold">
+                          <span>📅 {evt.date ? new Date(evt.date).toLocaleDateString() : 'TBD'}</span>
+                          {evt.start_time && (
+                            <span className="flex items-center gap-0.5 text-blue-600 dark:text-sky-400">
+                              <Clock className="w-3 h-3" />
+                              <span>{evt.start_time}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div>📍 {evt.location || 'Chandigarh University'}</div>
+                      </div>
+
+                      {evt.pdf_url && (
+                        <a
+                          href={getEventPdfViewerUrl(evt.pdf_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-bold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>View Event PDF</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -560,7 +606,7 @@ export const AdminDashboard: React.FC = () => {
               <FileSpreadsheet className="w-8 h-8 text-blue-600 dark:text-sky-400 mx-auto opacity-80" />
               <h3 className="text-sm font-bold">Dynamic Form Fields Active</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Standard event registration forms collect Full Name, Student Email, Phone, UID, Department, and Year automatically. Custom form field overrides can be linked per event slug.
+                Standard event registration forms collect Full Name, Student Email, Phone, UID, Department, and Year automatically. Custom form field overrides can be linked per event.
               </p>
             </div>
           </div>
@@ -568,7 +614,8 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Create Event Modal */}
         <Modal isOpen={isCreateEventOpen} onClose={() => setIsCreateEventOpen(false)} title="Create New Event">
-          <form onSubmit={handleCreateEventSubmit} className="space-y-3.5">
+          <form onSubmit={handleCreateEventSubmit} className="space-y-4">
+            {/* EVENT TITLE * */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Event Title *
@@ -577,30 +624,87 @@ export const AdminDashboard: React.FC = () => {
                 type="text"
                 required
                 value={newEventData.title}
-                onChange={(e) => {
-                  const title = e.target.value;
-                  const autoSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-                  setNewEventData({ ...newEventData, title, slug: autoSlug });
-                }}
+                onChange={(e) => setNewEventData({ ...newEventData, title: e.target.value })}
                 placeholder="e.g. Cloud Native Hackathon 2026"
-                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60"
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
               />
             </div>
 
+            {/* EVENT PDF Dropzone */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                URL Slug *
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Event PDF
               </label>
-              <input
-                type="text"
-                required
-                value={newEventData.slug}
-                onChange={(e) => setNewEventData({ ...newEventData, slug: e.target.value })}
-                placeholder="e.g. cloud-native-hackathon-2026"
-                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm font-mono border border-slate-200 dark:border-slate-700/60"
-              />
+
+              {eventPdfFile ? (
+                <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/15 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {eventPdfFile.name}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-mono">
+                        {(eventPdfFile.size / (1024 * 1024)).toFixed(2)} MB • PDF Document
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <a
+                      href={URL.createObjectURL(eventPdfFile)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1.5 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-500/25 text-xs font-bold transition-all flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>View</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setEventPdfFile(null)}
+                      className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-all cursor-pointer"
+                      title="Remove PDF"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="relative group">
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                          alert('Only PDF files are accepted.');
+                          return;
+                        }
+                        if (file.size > 15 * 1024 * 1024) {
+                          alert('PDF file size must be under 15 MB.');
+                          return;
+                        }
+                        setEventPdfFile(file);
+                      }
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="p-5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 dark:group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-1">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center mx-auto">
+                      <UploadCloud className="w-5 h-5" />
+                    </div>
+                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Upload Event PDF</div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">PDF files only (guidelines, schedule, rules)</p>
+                  </div>
+                </div>
+              )}
             </div>
 
+            {/* DESCRIPTION */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Description
@@ -610,40 +714,57 @@ export const AdminDashboard: React.FC = () => {
                 value={newEventData.description}
                 onChange={(e) => setNewEventData({ ...newEventData, description: e.target.value })}
                 placeholder="Event details, schedule, and guidelines..."
-                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60"
+                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
               />
             </div>
 
+            {/* EVENT DATE * | EVENT TIME * */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Date
+                  Event Date *
                 </label>
                 <input
                   type="date"
-                  value={newEventData.date ? newEventData.date.split('T')[0] : ''}
+                  required
+                  value={newEventData.date}
                   onChange={(e) => setNewEventData({ ...newEventData, date: e.target.value })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60"
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Location
+                  Event Time *
                 </label>
                 <input
-                  type="text"
-                  value={newEventData.location}
-                  onChange={(e) => setNewEventData({ ...newEventData, location: e.target.value })}
-                  placeholder="e.g. CU Main Auditorium"
-                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60"
+                  type="time"
+                  required
+                  value={newEventData.time}
+                  onChange={(e) => setNewEventData({ ...newEventData, time: e.target.value })}
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                 />
               </div>
             </div>
 
+            {/* LOCATION */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                Location
+              </label>
+              <input
+                type="text"
+                value={newEventData.location}
+                onChange={(e) => setNewEventData({ ...newEventData, location: e.target.value })}
+                placeholder="e.g. CU Main Auditorium"
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* Submit Button */}
             <div className="pt-2">
-              <Button type="submit" variant="primary" size="md" className="w-full">
-                Publish Event
+              <Button type="submit" variant="primary" size="md" disabled={isUploadingPdf} className="w-full">
+                {isUploadingPdf ? 'Publishing Event...' : 'Publish Event'}
               </Button>
             </div>
           </form>
