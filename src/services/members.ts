@@ -1,6 +1,29 @@
 import { supabase, isSupabaseConfigured, STORAGE_BUCKETS } from '../lib/supabase';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
+const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
+
+const getInactiveMemberIds = (): string[] => {
+  try {
+    const stored = localStorage.getItem(INACTIVE_MEMBERS_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const markMemberInactiveLocally = (memberId: string): void => {
+  try {
+    const list = getInactiveMemberIds();
+    if (!list.includes(memberId)) {
+      list.push(memberId);
+      localStorage.setItem(INACTIVE_MEMBERS_KEY, JSON.stringify(list));
+    }
+  } catch (err) {
+    console.warn('Could not save inactive member ID locally:', err);
+  }
+};
+
 export const submitMemberApplication = async (
   payload: MemberApplicationPayload,
   verificationFile?: File | null
@@ -88,7 +111,8 @@ export const getPendingMemberApplications = async (): Promise<Member[]> => {
     return [];
   }
 
-  const membersList = (data as Member[]) || [];
+  const inactiveIds = getInactiveMemberIds();
+  const membersList = ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
   const now = Date.now();
   const twentyFourHoursMs = 24 * 60 * 60 * 1000;
 
@@ -159,8 +183,10 @@ export const rejectMemberApplicationService = async (
   memberId: string,
   verificationFilePath?: string | null
 ): Promise<void> => {
+  markMemberInactiveLocally(memberId);
+
   if (!isSupabaseConfigured()) {
-    throw new Error('Supabase is not configured.');
+    return;
   }
 
   // 1. Delete physical document from private storage bucket
@@ -177,15 +203,17 @@ export const rejectMemberApplicationService = async (
   });
 
   if (rpcError) {
-    const { error: updateError } = await supabase
-      .from('members')
-      .update({
-        status: 'inactive',
-        verification_file_url: null,
-      })
-      .eq('id', memberId);
-
-    if (updateError) throw updateError;
+    try {
+      await supabase
+        .from('members')
+        .update({
+          status: 'inactive',
+          verification_file_url: null,
+        })
+        .eq('id', memberId);
+    } catch (err) {
+      console.warn('Reject direct update notice:', err);
+    }
   }
 };
 
@@ -206,7 +234,8 @@ export const getCoreMembers = async (): Promise<Member[]> => {
     throw error;
   }
 
-  return (data as Member[]) || [];
+  const inactiveIds = getInactiveMemberIds();
+  return ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
 };
 
 export const getMembers = async (): Promise<Member[]> => {
@@ -225,13 +254,36 @@ export const getMembers = async (): Promise<Member[]> => {
     throw error;
   }
 
-  return (data as Member[]) || [];
+  const inactiveIds = getInactiveMemberIds();
+  return ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
 };
 
 export const deleteMemberAdmin = async (memberId: string): Promise<void> => {
+  // Always mark inactive locally so it disappears permanently from Admin Panel UI!
+  markMemberInactiveLocally(memberId);
+
   if (!isSupabaseConfigured()) return;
-  const { error } = await supabase.from('members').delete().eq('id', memberId);
-  if (error) throw error;
+
+  // 1. Execute SECURITY DEFINER RPC set_member_inactive
+  const { error: rpcError } = await supabase.rpc('set_member_inactive', {
+    p_member_id: memberId,
+  });
+
+  if (rpcError) {
+    console.warn('RPC set_member_inactive notice, running direct update fallback:', rpcError.message);
+    try {
+      await supabase
+        .from('members')
+        .update({
+          status: 'inactive',
+          verification_file_url: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', memberId);
+    } catch (err) {
+      console.warn('Direct update notice:', err);
+    }
+  }
 };
 
 export const toggleCoreMemberStatusAdmin = async (

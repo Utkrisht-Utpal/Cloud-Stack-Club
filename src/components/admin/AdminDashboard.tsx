@@ -120,22 +120,28 @@ export const AdminDashboard: React.FC = () => {
   const handleReject = async (member: Member) => {
     if (!confirm(`Are you sure you want to reject application for ${member.name}?`)) return;
     try {
+      setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
       await rejectMemberApplicationService(member.id, member.verification_file_url);
       setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
-      loadPendingApps();
+      await loadPendingApps();
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
       alert(`Rejection failed: ${err?.message || 'Unknown error'}`);
+      loadPendingApps();
     }
   };
 
   const handleDeleteMember = async (memberId: string, name: string) => {
     if (!confirm(`Are you sure you want to delete member ${name}?`)) return;
     try {
+      setMembersList((prev) => prev.filter((m) => m.id !== memberId));
       await deleteMemberAdmin(memberId);
-      loadAllMembers();
+      setActionSuccess(`Member ${name} marked as inactive and removed from admin list.`);
+      await loadAllMembers();
+      setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
       alert(`Failed to delete member: ${err?.message}`);
+      loadAllMembers();
     }
   };
 

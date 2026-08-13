@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Mail, MapPin, Send, AlertCircle, CheckCircle2, Sparkles, Lock, Shield } from 'lucide-react';
 import { siteConfig } from '../../constants/siteConfig';
 import { Button } from '../ui/Button';
+import { SectionTitle } from '../ui/SectionTitle';
 import { submitFeedback } from '../../services/supabase';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
@@ -57,23 +58,12 @@ export const ContactSection: React.FC = () => {
   return (
     <section id="contact" className="py-24 relative overflow-hidden bg-slate-50/50 dark:bg-slate-950/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center space-y-4 mb-16"
-        >
-          <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-sky-400 border border-blue-200 dark:border-blue-500/20 uppercase tracking-wider">
-            Get In Touch
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white">
-            Connect With Cloud Stack Club
-          </h2>
-          <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Have questions about events, membership, or collaborations? Send us your message or feedback.
-          </p>
-        </motion.div>
+        <SectionTitle
+          badge="Get In Touch"
+          title="Connect With Cloud Stack Club"
+          subtitle="Have questions about events, membership, or collaborations? Send us your message or feedback."
+          className="mb-16"
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Side Details */}
