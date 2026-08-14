@@ -33,6 +33,29 @@ const removeLocalCustomEvent = (eventId: string): void => {
   }
 };
 
+const CATEGORY_MAP_KEY = 'csc_event_categories_map';
+
+export const getStoredCategoriesMap = (): Record<string, string> => {
+  try {
+    const data = localStorage.getItem(CATEGORY_MAP_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveStoredCategory = (eventId: string, category: string | null) => {
+  try {
+    const map = getStoredCategoriesMap();
+    if (category && category.trim()) {
+      map[eventId] = category.trim();
+    } else {
+      delete map[eventId];
+    }
+    localStorage.setItem(CATEGORY_MAP_KEY, JSON.stringify(map));
+  } catch {}
+};
+
 export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
 
@@ -115,8 +138,8 @@ export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
 };
 
 export const getEvents = async (): Promise<Event[]> => {
-  const localEvents = getLocalCustomEvents();
   if (!isSupabaseConfigured()) {
+    const localEvents = getLocalCustomEvents();
     autoSyncEventStatuses(localEvents);
     return sortEventsByRelevance(localEvents);
   }
@@ -129,20 +152,24 @@ export const getEvents = async (): Promise<Event[]> => {
       .order('date', { ascending: true });
 
     if (error) {
-      console.warn('Error fetching events from DB, returning local events:', error.message);
+      console.warn('Error fetching events from DB:', error.message);
+      const localEvents = getLocalCustomEvents();
       return sortEventsByRelevance(localEvents);
     }
 
     const dbEvents = (data as Event[]) || [];
-    const dbEventIds = new Set(dbEvents.map((e) => e.id));
-    const uniqueLocalEvents = localEvents.filter((e) => !dbEventIds.has(e.id));
-    const allEvents = [...uniqueLocalEvents, ...dbEvents];
+    const catMap = getStoredCategoriesMap();
+    const eventsWithCat = dbEvents.map((e) => ({
+      ...e,
+      category: e.category || catMap[e.id] || null,
+    }));
 
-    // Asynchronously sync database statuses for expired deadlines, live today events, and past events
-    autoSyncEventStatuses(allEvents);
+    // Background non-blocking status sync (0ms load time optimization)
+    autoSyncEventStatuses(eventsWithCat).catch(() => {});
 
-    return sortEventsByRelevance(allEvents);
+    return sortEventsByRelevance(eventsWithCat);
   } catch {
+    const localEvents = getLocalCustomEvents();
     return sortEventsByRelevance(localEvents);
   }
 };
@@ -205,9 +232,12 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     supports_teams: eventPayload.supports_teams ?? false,
     max_team_size: eventPayload.max_team_size ?? 1,
     max_registrations: eventPayload.max_registrations ?? null,
+    category: eventPayload.category || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
+
+  saveStoredCategory(createdEvent.id, createdEvent.category || null);
 
   // Save locally first so creation NEVER fails on frontend UI
   saveLocalCustomEvent(createdEvent);
@@ -220,6 +250,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   const { data: rpcData, error: rpcError } = await supabase.rpc('create_event_admin', {
     p_id: createdEvent.id,
     p_title: createdEvent.title,
+    p_category: createdEvent.category || null,
     p_slug: createdEvent.slug,
     p_description: createdEvent.description,
     p_date: createdEvent.date,
@@ -240,11 +271,18 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   }
 
   // 2. Direct insert fallback
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('events')
     .insert([createdEvent])
     .select('*')
     .maybeSingle();
+
+  if (error && error.message.includes('category')) {
+    const { category, ...rest } = createdEvent;
+    const retry = await supabase.from('events').insert([rest]).select('*').maybeSingle();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.warn('DB Event insert notice (event saved locally):', error.message);
@@ -257,6 +295,9 @@ export const updateEventAdmin = async (
   eventId: string,
   eventPayload: Partial<Event>
 ): Promise<Event> => {
+  if (eventPayload.category !== undefined) {
+    saveStoredCategory(eventId, eventPayload.category);
+  }
   // Update local storage
   const list = getLocalCustomEvents();
   const index = list.findIndex((e) => e.id === eventId);
@@ -273,6 +314,7 @@ export const updateEventAdmin = async (
   const { data: rpcData, error: rpcError } = await supabase.rpc('update_event_admin', {
     p_id: eventId,
     p_title: eventPayload.title,
+    p_category: eventPayload.category !== undefined ? eventPayload.category : null,
     p_description: eventPayload.description || null,
     p_date: eventPayload.date || null,
     p_start_time: eventPayload.start_time || null,
@@ -292,27 +334,42 @@ export const updateEventAdmin = async (
   }
 
   // 2. Direct update fallback
-  const { data, error } = await supabase
+  const updateFields: any = {
+    title: eventPayload.title,
+    category: eventPayload.category !== undefined ? eventPayload.category : null,
+    description: eventPayload.description || null,
+    date: eventPayload.date || null,
+    start_time: eventPayload.start_time || null,
+    location: eventPayload.location || null,
+    pdf_url: eventPayload.pdf_url || null,
+    image_url: eventPayload.image_url || null,
+    registration_enabled: eventPayload.registration_enabled ?? true,
+    registration_start: eventPayload.registration_start || null,
+    registration_end: eventPayload.registration_end || null,
+    supports_teams: eventPayload.supports_teams ?? false,
+    max_team_size: eventPayload.max_team_size ?? 1,
+    max_registrations: eventPayload.max_registrations ?? null,
+    updated_at: new Date().toISOString(),
+  };
+
+  let { data, error } = await supabase
     .from('events')
-    .update({
-      title: eventPayload.title,
-      description: eventPayload.description || null,
-      date: eventPayload.date || null,
-      start_time: eventPayload.start_time || null,
-      location: eventPayload.location || null,
-      pdf_url: eventPayload.pdf_url || null,
-      image_url: eventPayload.image_url || null,
-      registration_enabled: eventPayload.registration_enabled ?? true,
-      registration_start: eventPayload.registration_start || null,
-      registration_end: eventPayload.registration_end || null,
-      supports_teams: eventPayload.supports_teams ?? false,
-      max_team_size: eventPayload.max_team_size ?? 1,
-      max_registrations: eventPayload.max_registrations ?? null,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateFields)
     .eq('id', eventId)
     .select('*')
     .maybeSingle();
+
+  if (error && error.message.includes('category')) {
+    delete updateFields.category;
+    const retry = await supabase
+      .from('events')
+      .update(updateFields)
+      .eq('id', eventId)
+      .select('*')
+      .maybeSingle();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.warn('Direct event update error notice:', error.message);

@@ -65,14 +65,7 @@ const EVENT_CATEGORY_OPTIONS = [
   { value: 'Bootcamps', label: 'Bootcamps' },
 ];
 
-const getInitialEventsCache = (): Event[] => {
-  try {
-    const cached = localStorage.getItem('csc_custom_events_list');
-    return cached ? JSON.parse(cached) : [];
-  } catch {
-    return [];
-  }
-};
+
 
 const getInitialFeedbacksCache = (): ContactFeedback[] => {
   try {
@@ -100,9 +93,9 @@ export const AdminDashboard: React.FC = () => {
   const [memberFilter, setMemberFilter] = useState<'all' | 'members' | 'core'>('all');
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
-  // Events State (Instant Cache Initialization for 0ms load)
-  const [eventsList, setEventsList] = useState<Event[]>(getInitialEventsCache);
-  const [loadingEvents, setLoadingEvents] = useState(() => getInitialEventsCache().length === 0);
+  // Events State (Direct Real DB Fetching)
+  const [eventsList, setEventsList] = useState<Event[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
   const [eventPosterFile, setEventPosterFile] = useState<File | null>(null);
@@ -114,7 +107,7 @@ export const AdminDashboard: React.FC = () => {
   // Create Event Form State
   const [newEventData, setNewEventData] = useState({
     title: '',
-    category: 'Hackathons',
+    category: '',
     description: '',
     date: '',
     time: '10:00',
@@ -131,7 +124,7 @@ export const AdminDashboard: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [editEventData, setEditEventData] = useState({
     title: '',
-    category: 'Hackathons',
+    category: '',
     description: '',
     date: '',
     time: '',
@@ -178,11 +171,8 @@ export const AdminDashboard: React.FC = () => {
   const loadAllEvents = async () => {
     try {
       const evs = await getEvents();
-      if (evs && evs.length > 0) {
+      if (evs) {
         setEventsList(evs);
-        try {
-          localStorage.setItem('csc_custom_events_list', JSON.stringify(evs));
-        } catch {}
       }
     } catch (err) {
       console.error('Error fetching events:', err);
@@ -336,7 +326,7 @@ export const AdminDashboard: React.FC = () => {
       const newEventObj: Event = {
         id: eventId,
         title: newEventData.title.trim(),
-        category: newEventData.category || 'Hackathons',
+        category: newEventData.category || null,
         slug: autoSlug,
         description: newEventData.description.trim() || null,
         date: newEventData.date,
@@ -346,8 +336,8 @@ export const AdminDashboard: React.FC = () => {
         pdf_url: pdfUrl,
         image_url: imageUrl,
         registration_enabled: newEventData.registration_enabled,
-        registration_start: newEventData.registration_start || null,
-        registration_end: newEventData.registration_end || null,
+        registration_start: newEventData.registration_enabled ? (newEventData.registration_start || null) : null,
+        registration_end: newEventData.registration_enabled ? (newEventData.registration_end || null) : null,
         supports_teams: newEventData.supports_teams,
         max_team_size: newEventData.supports_teams ? newEventData.max_team_size : 1,
         max_registrations: newEventData.max_registrations ? parseInt(newEventData.max_registrations) : null,
@@ -364,7 +354,7 @@ export const AdminDashboard: React.FC = () => {
       setEventPosterFile(null);
       setNewEventData({
         title: '',
-        category: 'Hackathons',
+        category: '',
         description: '',
         date: '',
         time: '10:00',
@@ -378,10 +368,9 @@ export const AdminDashboard: React.FC = () => {
       });
       setTimeout(() => setActionSuccess(null), 2000);
 
-      // Async DB Persistence in background
-      createEvent(newEventObj).catch((err) => {
-        console.warn('Background event creation error:', err);
-      });
+      // Async DB Persistence & instant refresh
+      await createEvent(newEventObj);
+      await loadAllEvents();
     } catch (err: any) {
       alert(`Event creation failed: ${err?.message || 'Unknown error'}`);
     } finally {
@@ -395,7 +384,7 @@ export const AdminDashboard: React.FC = () => {
     setEditPosterFile(null);
     setEditEventData({
       title: evt.title,
-      category: evt.category || 'Hackathons',
+      category: evt.category || '',
       description: evt.description || '',
       date: evt.date ? evt.date.split('T')[0] : '',
       time: evt.start_time || '10:00',
@@ -441,7 +430,7 @@ export const AdminDashboard: React.FC = () => {
 
       const updatedPayload: Partial<Event> = {
         title: editEventData.title.trim(),
-        category: editEventData.category || 'Hackathons',
+        category: editEventData.category || null,
         description: editEventData.description.trim() || null,
         date: editEventData.date,
         start_time: editEventData.time,
@@ -449,8 +438,8 @@ export const AdminDashboard: React.FC = () => {
         pdf_url: pdfUrl,
         image_url: imageUrl,
         registration_enabled: editEventData.registration_enabled,
-        registration_start: editEventData.registration_start || null,
-        registration_end: editEventData.registration_end || null,
+        registration_start: editEventData.registration_enabled ? (editEventData.registration_start || null) : null,
+        registration_end: editEventData.registration_enabled ? (editEventData.registration_end || null) : null,
         supports_teams: editEventData.supports_teams,
         max_team_size: editEventData.supports_teams ? editEventData.max_team_size : 1,
         max_registrations: editEventData.max_registrations ? parseInt(editEventData.max_registrations) : null,
@@ -467,10 +456,9 @@ export const AdminDashboard: React.FC = () => {
       setEditPosterFile(null);
       setTimeout(() => setActionSuccess(null), 2000);
 
-      // Async DB Persistence in background
-      updateEventAdmin(editingEvent.id, updatedPayload).catch((err) => {
-        console.warn('Background event update error:', err);
-      });
+      // Async DB Persistence & instant refresh
+      await updateEventAdmin(editingEvent.id, updatedPayload);
+      await loadAllEvents();
     } catch (err: any) {
       alert(`Event update failed: ${err?.message || 'Unknown error'}`);
     } finally {
@@ -969,13 +957,13 @@ export const AdminDashboard: React.FC = () => {
                             <span>Max {evt.max_registrations} seats</span>
                           </span>
                         )}
-                        {evt.registration_start && (
+                        {evt.registration_enabled && evt.registration_start && (
                           <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5" />
                             <span>Registration Starts: {new Date(evt.registration_start).toLocaleDateString()}</span>
                           </span>
                         )}
-                        {evt.registration_end && (
+                        {evt.registration_enabled && evt.registration_end && (
                           <span className="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center gap-1">
                             <Clock className="w-3.5 h-3.5" />
                             <span>Registration Ends: {new Date(evt.registration_end).toLocaleDateString()}</span>
@@ -1001,15 +989,17 @@ export const AdminDashboard: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => setViewRegsEvent(evt)}
-                            className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                            title="View registered students for this event"
-                          >
-                            <Users className="w-3.5 h-3.5 text-blue-500" />
-                            <span>Registrations</span>
-                          </button>
+                          {evt.registration_enabled && (
+                            <button
+                              type="button"
+                              onClick={() => setViewRegsEvent(evt)}
+                              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              title="View registered students for this event"
+                            >
+                              <Users className="w-3.5 h-3.5 text-blue-500" />
+                              <span>Registrations</span>
+                            </button>
+                          )}
 
                           {evt.pdf_url && (
                             <button
@@ -1252,8 +1242,9 @@ export const AdminDashboard: React.FC = () => {
                   Event Category *
                 </label>
                 <CustomSelect
-                  value={newEventData.category || 'Hackathons'}
+                  value={newEventData.category}
                   onChange={(val) => setNewEventData({ ...newEventData, category: val })}
+                  placeholder="Select Category"
                   options={EVENT_CATEGORY_OPTIONS}
                   triggerClassName="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between text-xs font-semibold text-left"
                 />
@@ -1487,37 +1478,41 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Registration Start Window
-                  </label>
-                  <input
-                    type="date"
-                    value={newEventData.registration_start}
-                    onChange={(e) => setNewEventData({ ...newEventData, registration_start: e.target.value })}
-                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
+              {newEventData.registration_enabled && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                        Registration Start Window
+                      </label>
+                      <input
+                        type="date"
+                        value={newEventData.registration_start}
+                        onChange={(e) => setNewEventData({ ...newEventData, registration_start: e.target.value })}
+                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Registration End / Deadline
-                  </label>
-                  <input
-                    type="date"
-                    value={newEventData.registration_end}
-                    onChange={(e) => setNewEventData({ ...newEventData, registration_end: e.target.value })}
-                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                        Registration End / Deadline
+                      </label>
+                      <input
+                        type="date"
+                        value={newEventData.registration_end}
+                        onChange={(e) => setNewEventData({ ...newEventData, registration_end: e.target.value })}
+                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
 
-              {newEventData.registration_end && newEventData.date && new Date(newEventData.registration_end) > new Date(newEventData.date) && (
-                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
-                  <span>Warning: Registration Deadline ({newEventData.registration_end}) crosses after Event Date ({newEventData.date}).</span>
-                </div>
+                  {newEventData.registration_end && newEventData.date && new Date(newEventData.registration_end) > new Date(newEventData.date) && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                      <span>Warning: Registration Deadline ({newEventData.registration_end}) crosses after Event Date ({newEventData.date}).</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -1552,8 +1547,9 @@ export const AdminDashboard: React.FC = () => {
                   Event Category *
                 </label>
                 <CustomSelect
-                  value={editEventData.category || 'Hackathons'}
+                  value={editEventData.category}
                   onChange={(val) => setEditEventData({ ...editEventData, category: val })}
+                  placeholder="Select Category"
                   options={EVENT_CATEGORY_OPTIONS}
                   triggerClassName="w-full h-11 px-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between text-xs font-semibold text-left"
                 />
@@ -1822,37 +1818,41 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Registration Start Window
-                  </label>
-                  <input
-                    type="date"
-                    value={editEventData.registration_start}
-                    onChange={(e) => setEditEventData({ ...editEventData, registration_start: e.target.value })}
-                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
+              {editEventData.registration_enabled && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                        Registration Start Window
+                      </label>
+                      <input
+                        type="date"
+                        value={editEventData.registration_start}
+                        onChange={(e) => setEditEventData({ ...editEventData, registration_start: e.target.value })}
+                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                    Registration End / Deadline
-                  </label>
-                  <input
-                    type="date"
-                    value={editEventData.registration_end}
-                    onChange={(e) => setEditEventData({ ...editEventData, registration_end: e.target.value })}
-                    className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
+                        Registration End / Deadline
+                      </label>
+                      <input
+                        type="date"
+                        value={editEventData.registration_end}
+                        onChange={(e) => setEditEventData({ ...editEventData, registration_end: e.target.value })}
+                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
 
-              {editEventData.registration_end && editEventData.date && new Date(editEventData.registration_end) > new Date(editEventData.date) && (
-                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
-                  <span>Warning: Registration Deadline ({editEventData.registration_end}) crosses after Event Date ({editEventData.date}).</span>
-                </div>
+                  {editEventData.registration_end && editEventData.date && new Date(editEventData.registration_end) > new Date(editEventData.date) && (
+                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                      <span>Warning: Registration Deadline ({editEventData.registration_end}) crosses after Event Date ({editEventData.date}).</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

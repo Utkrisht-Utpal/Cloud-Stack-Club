@@ -238,14 +238,14 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                     </span>
                   )}
 
-                  {regStartFormatted && (
+                  {activeAdEvent.registration_enabled && regStartFormatted && (
                     <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 text-[11px] font-semibold flex items-center gap-1.5">
                       <Timer className="w-3.5 h-3.5" />
                       <span>Registration Starts: {regStartFormatted}</span>
                     </span>
                   )}
 
-                  {regEndFormatted && (
+                  {activeAdEvent.registration_enabled && regEndFormatted && (
                     <span className="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[11px] font-semibold flex items-center gap-1.5">
                       <Timer className="w-3.5 h-3.5" />
                       <span>Registration Ends: {regEndFormatted}</span>
@@ -256,26 +256,28 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
-                {regOpen && onRegisterClick ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleClose();
-                      onRegisterClick(activeAdEvent);
-                    }}
-                    className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>Register Now for Event</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-not-allowed border border-slate-300 dark:border-slate-700"
-                  >
-                    <span>Registration Closed</span>
-                  </button>
+                {activeAdEvent.registration_enabled && (
+                  regOpen && onRegisterClick ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleClose();
+                        onRegisterClick(activeAdEvent);
+                      }}
+                      className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>Register Now for Event</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-not-allowed border border-slate-300 dark:border-slate-700"
+                    >
+                      <span>Registration Closed</span>
+                    </button>
+                  )
                 )}
 
                 {/* View Event PDF — Restrict EXCLUSIVELY to Logged-In Admins */}
