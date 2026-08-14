@@ -166,7 +166,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="e.g. rahul@cumail.in"
+                    placeholder="@example.com"
                     className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                   />
                 </div>
@@ -189,14 +189,14 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
                   <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                  CU Student UID / EID *
+                  University ID (UID) *
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.uid}
                   onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
-                  placeholder="e.g. 24BCF100xx"
+                  placeholder="University ID (UID)"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
               </div>

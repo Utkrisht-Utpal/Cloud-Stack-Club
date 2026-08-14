@@ -120,6 +120,7 @@ export interface EventRegistration {
   registrant_name: string;
   registrant_email: string;
   registrant_phone: string | null;
+  uid?: string | null;
   is_member: boolean;
   team_id: string | null;
   status: RegistrationStatus;

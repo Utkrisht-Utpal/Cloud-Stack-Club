@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Check } from 'lucide-react';
 
@@ -29,13 +30,69 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   triggerClassName,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [portalStyle, setPortalStyle] = useState<{
+    top?: number;
+    bottom?: number;
+    left: number;
+    width: number;
+    dropUp: boolean;
+  } | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
   useEffect(() => {
+    if (!isOpen) {
+      setPortalStyle(null);
+      return;
+    }
+
+    const updatePos = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const shouldDropUp = spaceBelow < 220 && rect.top > 200;
+
+      if (shouldDropUp) {
+        setPortalStyle({
+          bottom: viewportHeight - rect.top + 4,
+          left: rect.left,
+          width: rect.width,
+          dropUp: true,
+        });
+      } else {
+        setPortalStyle({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+          dropUp: false,
+        });
+      }
+    };
+
+    updatePos();
+
+    window.addEventListener('resize', updatePos);
+    window.addEventListener('scroll', updatePos, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePos);
+      window.removeEventListener('scroll', updatePos, true);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        menuRef.current &&
+        !menuRef.current.contains(target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -75,51 +132,63 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         />
       </button>
 
-      {/* Animated Dropdown Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 4, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="absolute left-0 right-0 z-50 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-60 no-scrollbar focus:outline-none"
-          >
-            {options.map((option) => {
-              const isSelected = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full px-3.5 py-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                    isSelected
-                      ? 'bg-blue-600 text-white font-semibold shadow-md'
-                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300'
-                  }`}
-                >
-                  <div className="flex flex-col text-left min-w-0 flex-1">
-                    <span className="text-xs sm:text-sm font-bold text-left">{option.label}</span>
-                    {option.description && (
-                      <span
-                        className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 ${
-                          isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
-                        }`}
-                      >
-                        {option.description}
-                      </span>
-                    )}
-                  </div>
-                  {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
-                </button>
-              );
-            })}
-          </motion.div>
+      {/* React Portal Floating Dropdown Menu */}
+      {isOpen &&
+        portalStyle &&
+        createPortal(
+          <AnimatePresence>
+            <motion.div
+              ref={menuRef}
+              initial={{ opacity: 0, y: portalStyle.dropUp ? 8 : -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: portalStyle.dropUp ? 8 : -8, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: 'easeOut' }}
+              style={{
+                position: 'fixed',
+                top: portalStyle.top !== undefined ? `${portalStyle.top}px` : 'auto',
+                bottom: portalStyle.bottom !== undefined ? `${portalStyle.bottom}px` : 'auto',
+                left: `${portalStyle.left}px`,
+                width: `${portalStyle.width}px`,
+                zIndex: 99999,
+              }}
+              className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-48 custom-scrollbar focus:outline-none"
+            >
+              {options.map((option) => {
+                const isSelected = option.value === value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-600 text-white font-semibold shadow-md'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300'
+                    }`}
+                  >
+                    <div className="flex flex-col text-left min-w-0 flex-1">
+                      <span className="text-xs sm:text-sm font-bold text-left">{option.label}</span>
+                      {option.description && (
+                        <span
+                          className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 ${
+                            isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
+                          }`}
+                        >
+                          {option.description}
+                        </span>
+                      )}
+                    </div>
+                    {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                  </button>
+                );
+              })}
+            </motion.div>
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 };

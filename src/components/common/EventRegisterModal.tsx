@@ -116,8 +116,22 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.email.trim() || !formData.uid.trim()) {
-      setError('Please fill in all mandatory registrant fields.');
+      setError('Please fill in Name, Email (@example.com), and University ID (UID) for the team leader.');
       return;
+    }
+
+    if (isTeamRegistration) {
+      if (!teamName.trim()) {
+        setError('Please enter a Team Name.');
+        return;
+      }
+      for (let i = 0; i < teamMembers.length; i++) {
+        const m = teamMembers[i];
+        if (!m.name.trim() || !m.email.trim() || !m.uid.trim()) {
+          setError(`Please fill in Name, Email (@example.com), and University ID (UID) for Teammate #${i + 2}.`);
+          return;
+        }
+      }
     }
 
     // Check required custom questions
@@ -218,7 +232,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                 <div className="font-bold text-slate-900 dark:text-white truncate">{formData.name}</div>
               </div>
               <div>
-                <div className="text-[10px] font-bold text-slate-400">University UID</div>
+                <div className="text-[10px] font-bold text-slate-400">University ID (UID)</div>
                 <div className="font-bold text-slate-900 dark:text-white truncate">{formData.uid}</div>
               </div>
             </div>
@@ -319,7 +333,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="uid@cuchd.in"
+                    placeholder="@example.com"
                     className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -329,7 +343,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  University UID *
+                  University ID (UID) *
                 </label>
                 <div className="relative">
                   <GraduationCap className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -338,7 +352,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     required
                     value={formData.uid}
                     onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
-                    placeholder="e.g. 21BCS1024"
+                    placeholder="University ID (UID)"
                     className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -428,7 +442,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     <div key={idx} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                          Team Member {idx + 2}
+                          Team Member {idx + 2} *
                         </span>
                         <button
                           type="button"
@@ -442,21 +456,24 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <input
                           type="text"
-                          placeholder="Member Name"
+                          required
+                          placeholder="Member Name *"
                           value={m.name}
                           onChange={(e) => handleUpdateTeamMember(idx, 'name', e.target.value)}
                           className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
                         />
                         <input
                           type="email"
-                          placeholder="Member Email"
+                          required
+                          placeholder="@example.com *"
                           value={m.email}
                           onChange={(e) => handleUpdateTeamMember(idx, 'email', e.target.value)}
                           className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
                         />
                         <input
                           type="text"
-                          placeholder="University UID"
+                          required
+                          placeholder="University ID (UID) *"
                           value={m.uid}
                           onChange={(e) => handleUpdateTeamMember(idx, 'uid', e.target.value)}
                           className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"

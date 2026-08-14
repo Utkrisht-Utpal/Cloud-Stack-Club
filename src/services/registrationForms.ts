@@ -168,10 +168,14 @@ export const getEventRegistrationsService = async (
   }
 
   if (!isSupabaseConfigured()) {
-    const filtered = localMatches.filter(
-      (r) => queryIds.includes(r.event_id) || !r.event_id
-    );
-    return filtered;
+    const map = new Map<string, EventRegistration>();
+    localMatches.forEach((r) => {
+      const dedupKey = r.registration_number || r.id;
+      if (dedupKey && (queryIds.includes(r.event_id) || !r.event_id)) {
+        map.set(dedupKey, r);
+      }
+    });
+    return Array.from(map.values());
   }
 
   try {
@@ -199,21 +203,69 @@ export const getEventRegistrationsService = async (
 
     if (error || !data) {
       console.warn(`Warning/Error fetching registrations for event ${targetId}:`, error?.message);
-      return localMatches.filter((r) => queryIds.includes(r.event_id));
+      const map = new Map<string, EventRegistration>();
+      localMatches.forEach((r) => {
+        const dedupKey = r.registration_number || r.id;
+        if (dedupKey && queryIds.includes(r.event_id)) {
+          map.set(dedupKey, r);
+        }
+      });
+      return Array.from(map.values());
     }
 
-    // Merge Supabase and Local storage deduplicated by ID
+    // Merge Supabase and Local storage strictly deduplicated by registration_number or ID
     const map = new Map<string, EventRegistration>();
-    data.forEach((r) => map.set(r.id, r as EventRegistration));
+    data.forEach((r) => {
+      const dedupKey = r.registration_number || r.id;
+      if (dedupKey) map.set(dedupKey, r as EventRegistration);
+    });
+
     localMatches.forEach((r) => {
-      if (queryIds.includes(r.event_id) && !map.has(r.id)) {
-        map.set(r.id, r);
+      const dedupKey = r.registration_number || r.id;
+      if (dedupKey && !map.has(dedupKey) && (queryIds.includes(r.event_id) || !r.event_id)) {
+        map.set(dedupKey, r);
       }
     });
 
     return Array.from(map.values());
   } catch (err) {
     console.error('Error in getEventRegistrationsService:', err);
-    return localMatches;
+    const map = new Map<string, EventRegistration>();
+    localMatches.forEach((r) => {
+      const dedupKey = r.registration_number || r.id;
+      if (dedupKey) map.set(dedupKey, r);
+    });
+    return Array.from(map.values());
+  }
+};
+
+export const getTeamDetailsForRegistration = async (
+  teamId: string
+): Promise<{ team_name: string; members: Array<{ name: string; email: string; uid?: string | null }> } | null> => {
+  if (!isSupabaseConfigured()) {
+    const localTeam = localStorage.getItem(`csc_team_${teamId}`);
+    return localTeam ? JSON.parse(localTeam) : null;
+  }
+
+  try {
+    const { data: team } = await supabase
+      .from('event_teams')
+      .select('*')
+      .eq('id', teamId)
+      .maybeSingle();
+
+    if (!team) return null;
+
+    const { data: members } = await supabase
+      .from('event_team_members')
+      .select('*')
+      .eq('team_id', teamId);
+
+    return {
+      team_name: (team as any).team_name,
+      members: (members as any[]) || [],
+    };
+  } catch {
+    return null;
   }
 };
