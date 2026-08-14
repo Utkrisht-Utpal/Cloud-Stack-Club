@@ -304,7 +304,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                     <th className="py-3.5 px-4 font-black">Student Name</th>
                     <th className="py-3.5 px-4 font-black">Contact Details</th>
                     <th className="py-3.5 px-4 font-black">Type / Team Details</th>
-                    <th className="py-3.5 px-4 font-black">Date</th>
+                    <th className="py-3.5 px-4 font-black">Date & Time</th>
                     <th className="py-3.5 px-4 font-black text-right">Actions</th>
                   </tr>
                 </thead>
@@ -341,8 +341,15 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 text-slate-400 text-[11px]">
-                            {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : 'N/A'}
+                          <td className="py-3.5 px-4 space-y-0.5">
+                            <div className="text-slate-700 dark:text-slate-300 font-medium">
+                              {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : 'N/A'}
+                            </div>
+                            {r.submitted_at && (
+                              <div className="text-[11px] text-slate-400 font-normal">
+                                {new Date(r.submitted_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3.5 px-4 text-right">
                             <button
