@@ -144,99 +144,74 @@ export const getEventRegistrationsService = async (
   const targetId = typeof eventOrId === 'string' ? eventOrId : eventOrId.id;
   const targetSlug = typeof eventOrId === 'object' && eventOrId.slug ? eventOrId.slug : null;
 
-  // Gather all possible query identifiers
   const queryIds = Array.from(new Set([targetId, targetSlug].filter(Boolean))) as string[];
 
-  // 1. Local Cache Retrieval
+  // 1. Gather all local cache registrations
   const localKeys = [
     `csc_event_regs_${targetId}`,
     targetSlug ? `csc_event_regs_${targetSlug}` : null,
     'csc_all_event_regs',
   ].filter(Boolean) as string[];
 
-  const localMatches: EventRegistration[] = [];
+  const allCandidateRegs: any[] = [];
+
   for (const key of localKeys) {
     const cached = localStorage.getItem(key);
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
-          localMatches.push(...parsed);
+          allCandidateRegs.push(...parsed);
         }
       } catch (e) {}
     }
   }
 
-  if (!isSupabaseConfigured()) {
-    const map = new Map<string, EventRegistration>();
-    localMatches.forEach((r) => {
-      const dedupKey = r.registration_number || r.id;
-      if (dedupKey && (queryIds.includes(r.event_id) || !r.event_id)) {
-        map.set(dedupKey, r);
-      }
-    });
-    return Array.from(map.values());
-  }
-
-  try {
-    // 2. Supabase Query matching targetId or targetSlug
-    let { data, error } = await supabase
-      .from('event_registrations')
-      .select('*')
-      .in('event_id', queryIds)
-      .order('created_at', { ascending: false });
-
-    // Fallback: If no exact event_id match, fetch recent registrations to match locally or catch default event_id records
-    if (!error && (!data || data.length === 0)) {
-      const { data: fallbackRegs } = await supabase
+  if (isSupabaseConfigured()) {
+    try {
+      // Fetch all registrations from Supabase (to avoid missing any due to event_id formatting/slug/UUID differences)
+      const { data: remoteData, error: remoteError } = await supabase
         .from('event_registrations')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .select('*');
 
-      if (fallbackRegs && fallbackRegs.length > 0) {
-        data = fallbackRegs.filter(
-          (r: any) => queryIds.includes(r.event_id) || r.event_id === '00000000-0000-0000-0000-000000000001' || !r.event_id
-        );
-      }
-    }
-
-    if (error || !data) {
-      console.warn(`Warning/Error fetching registrations for event ${targetId}:`, error?.message);
-      const map = new Map<string, EventRegistration>();
-      localMatches.forEach((r) => {
-        const dedupKey = r.registration_number || r.id;
-        if (dedupKey && queryIds.includes(r.event_id)) {
-          map.set(dedupKey, r);
+      if (!remoteError && remoteData && remoteData.length > 0) {
+        allCandidateRegs.push(...remoteData);
+      } else {
+        // Fallback filtered query by queryIds
+        const { data: filteredData } = await supabase
+          .from('event_registrations')
+          .select('*')
+          .in('event_id', queryIds);
+        if (filteredData) {
+          allCandidateRegs.push(...filteredData);
         }
-      });
-      return Array.from(map.values());
-    }
-
-    // Merge Supabase and Local storage strictly deduplicated by registration_number or ID
-    const map = new Map<string, EventRegistration>();
-    data.forEach((r) => {
-      const dedupKey = r.registration_number || r.id;
-      if (dedupKey) map.set(dedupKey, r as EventRegistration);
-    });
-
-    localMatches.forEach((r) => {
-      const dedupKey = r.registration_number || r.id;
-      if (dedupKey && !map.has(dedupKey) && (queryIds.includes(r.event_id) || !r.event_id)) {
-        map.set(dedupKey, r);
       }
-    });
-
-    return Array.from(map.values());
-  } catch (err) {
-    console.error('Error in getEventRegistrationsService:', err);
-    const map = new Map<string, EventRegistration>();
-    localMatches.forEach((r) => {
-      const dedupKey = r.registration_number || r.id;
-      if (dedupKey) map.set(dedupKey, r);
-    });
-    return Array.from(map.values());
+    } catch (err) {
+      console.warn('Exception in fetching remote registrations:', err);
+    }
   }
+
+  // Filter candidates matching targetId/targetSlug or fallback IDs
+  const matchedRegs = allCandidateRegs.filter((r) => {
+    if (!r) return false;
+    if (!r.event_id) return true; // Include if unassigned
+    if (queryIds.includes(r.event_id)) return true;
+    if (r.event_id === '00000000-0000-0000-0000-000000000001') return true;
+    return false;
+  });
+
+  // Deduplicate by registration_number or ID
+  const map = new Map<string, EventRegistration>();
+  const regsToUse = matchedRegs.length > 0 ? matchedRegs : allCandidateRegs;
+
+  regsToUse.forEach((r) => {
+    const dedupKey = r.registration_number || r.id;
+    if (dedupKey && !map.has(dedupKey)) {
+      map.set(dedupKey, r as EventRegistration);
+    }
+  });
+
+  return Array.from(map.values());
 };
 
 export const getTeamDetailsForRegistration = async (
