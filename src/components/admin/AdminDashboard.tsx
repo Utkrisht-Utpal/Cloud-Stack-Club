@@ -872,14 +872,21 @@ export const AdminDashboard: React.FC = () => {
                 ))}
               </div>
             ) : (() => {
-                const todayStr = new Date().toISOString().split('T')[0];
                 const filtered = sortEventsByRelevance(eventsList).filter((evt) => {
                   if (eventFilter === 'all') return true;
-                  const evtDateStr = evt.date ? evt.date.split('T')[0] : '';
-                  const isPast = evtDateStr ? evtDateStr < todayStr || evt.status === 'completed' : false;
 
-                  if (eventFilter === 'upcoming') return !isPast;
-                  if (eventFilter === 'completed') return isPast;
+                  // Direct database status classification
+                  const isCompletedInDb = evt.status === 'completed';
+                  const isUpcomingInDb = evt.status === 'upcoming' || evt.status === 'live';
+
+                  if (eventFilter === 'upcoming') {
+                    return isUpcomingInDb || (!isCompletedInDb && evt.status !== 'completed');
+                  }
+
+                  if (eventFilter === 'completed') {
+                    return isCompletedInDb;
+                  }
+
                   return true;
                 });
 
