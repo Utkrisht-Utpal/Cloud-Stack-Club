@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   UserCheck,
@@ -207,7 +207,7 @@ export const AdminDashboard: React.FC = () => {
     const success = await updateFeedbackStatus(id, newStatus);
     if (success) {
       setActionSuccess(`Feedback status updated to "${newStatus.toUpperCase()}"`);
-      setTimeout(() => setActionSuccess(null), 3000);
+      setTimeout(() => setActionSuccess(null), 2000);
     }
   };
 
@@ -245,10 +245,10 @@ export const AdminDashboard: React.FC = () => {
       setActionSuccess(`Approved ${member.name} (${member.registration_id}). Verification document deleted.`);
       loadPendingApps();
       loadAllMembers();
-      setTimeout(() => setActionSuccess(null), 4000);
+      setTimeout(() => setActionSuccess(null), 2000);
     } catch (err: any) {
       setActionSuccess(`Approval failed: ${err?.message || 'Unknown error'}`);
-      setTimeout(() => setActionSuccess(null), 4000);
+      setTimeout(() => setActionSuccess(null), 2000);
     }
   };
 
@@ -262,7 +262,7 @@ export const AdminDashboard: React.FC = () => {
       onConfirm: async () => {
         setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
         setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
-        setTimeout(() => setActionSuccess(null), 3000);
+        setTimeout(() => setActionSuccess(null), 2000);
 
         try {
           await rejectMemberApplicationService(member.id, member.verification_file_url);
@@ -283,7 +283,7 @@ export const AdminDashboard: React.FC = () => {
       onConfirm: async () => {
         setMembersList((prev) => prev.filter((m) => m.id !== memberId));
         setActionSuccess(`Member ${name} marked as inactive and removed from admin list.`);
-        setTimeout(() => setActionSuccess(null), 3000);
+        setTimeout(() => setActionSuccess(null), 2000);
 
         try {
           await deleteMemberAdmin(memberId);
@@ -360,7 +360,7 @@ export const AdminDashboard: React.FC = () => {
         max_team_size: 1,
         max_registrations: '',
       });
-      setTimeout(() => setActionSuccess(null), 4000);
+      setTimeout(() => setActionSuccess(null), 2000);
 
       // Async DB Persistence in background
       createEvent(newEventObj).catch((err) => {
@@ -435,7 +435,7 @@ export const AdminDashboard: React.FC = () => {
       setEditingEvent(null);
       setEditPdfFile(null);
       setEditPosterFile(null);
-      setTimeout(() => setActionSuccess(null), 4000);
+      setTimeout(() => setActionSuccess(null), 2000);
 
       // Async DB Persistence in background
       updateEventAdmin(editingEvent.id, updatedPayload).catch((err) => {
@@ -458,7 +458,7 @@ export const AdminDashboard: React.FC = () => {
       onConfirm: async () => {
         setEventsList((prev) => prev.filter((e) => e.id !== eventPayload.id));
         setActionSuccess(`Deleted event "${eventPayload.title}"`);
-        setTimeout(() => setActionSuccess(null), 3000);
+        setTimeout(() => setActionSuccess(null), 2000);
 
         try {
           await deleteEventAdmin(eventPayload.id, eventPayload.pdf_url, eventPayload.image_url);
@@ -486,17 +486,6 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Action Success Alert Banner */}
-        {actionSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2"
-          >
-            <CheckCircle2 className="w-5 h-5 shrink-0" />
-            <span>{actionSuccess}</span>
-          </motion.div>
-        )}
 
         {/* Management Navigation & Controls */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
@@ -1858,6 +1847,24 @@ export const AdminDashboard: React.FC = () => {
           confirmText={confirmModalConfig.confirmText}
           variant={confirmModalConfig.variant}
         />
+
+        {/* Global Bottom Floating Toast Notification (Disappears in 2 seconds) */}
+        <AnimatePresence>
+          {actionSuccess && (
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border border-emerald-500/40 shadow-2xl shadow-emerald-500/10 backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-md pointer-events-none"
+            >
+              <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold leading-snug">{actionSuccess}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
