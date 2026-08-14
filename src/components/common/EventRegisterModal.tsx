@@ -120,6 +120,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       return;
     }
 
+    if (formData.phone.trim() && !/^\d{10}$/.test(formData.phone.trim())) {
+      setError('Phone number must be exactly 10 digits.');
+      return;
+    }
+
     if (isTeamRegistration) {
       if (!teamName.trim()) {
         setError('Please enter a Team Name.');
@@ -366,9 +371,10 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                   <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="tel"
+                    maxLength={10}
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+91 98765 43210"
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    placeholder="10-digit Phone Number"
                     className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
                 </div>

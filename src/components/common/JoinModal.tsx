@@ -50,6 +50,11 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.uid) return;
 
+    if (formData.phone.trim() && !/^\d{10}$/.test(formData.phone.trim())) {
+      setError('Phone number must be exactly 10 digits.');
+      return;
+    }
+
     // Enforce required CUIMS verification document upload
     if (!verificationFile) {
       setError('CUIMS verification screenshot or document is required to apply for membership.');
@@ -178,9 +183,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                   </label>
                   <input
                     type="tel"
+                    maxLength={10}
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="e.g. +91 9876543210"
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    placeholder="10-digit Phone Number"
                     className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                   />
                 </div>

@@ -9,11 +9,16 @@ import {
   Users2
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { getEventRegistrationsService, getTeamDetailsForRegistration } from '../../services/registrationForms';
+import { 
+  getEventRegistrationsService, 
+  getTeamDetailsForRegistration, 
+  getFormForEvent, 
+  getRegistrationAnswersForEvent 
+} from '../../services/registrationForms';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Event, EventRegistration } from '../../types/database';
+import type { Event, EventRegistration, EventFormField } from '../../types/database';
 
 interface ViewRegistrationsModalProps {
   isOpen: boolean;
@@ -33,6 +38,10 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
   // Team details cache: reg.id -> team info
   const [teamMap, setTeamMap] = useState<Record<string, { team_name: string; members: any[] }>>({});
+  
+  // Custom form questions & answers state
+  const [formFields, setFormFields] = useState<EventFormField[]>([]);
+  const [answersMap, setAnswersMap] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     if (isOpen && event) {
@@ -58,6 +67,15 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         }
       }
       setTeamMap(newTeamMap);
+
+      // Fetch custom form questions & student answers for event
+      const formObj = await getFormForEvent(event.id);
+      const fieldsList = formObj?.fields || [];
+      setFormFields(fieldsList);
+
+      const regIds = data.map((r) => r.id);
+      const answers = await getRegistrationAnswersForEvent(regIds);
+      setAnswersMap(answers);
     } catch (err) {
       console.error('Error loading registrations:', err);
     } finally {
@@ -88,33 +106,48 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
     filtered.forEach((r) => {
       const teamInfo = teamMap[r.id];
+      const regAnswers = answersMap[r.id] || {};
+
+      // Custom questions column dictionary for this registration
+      const customAnswersDict: Record<string, string> = {};
+      formFields.forEach((field) => {
+        const ansVal = regAnswers[field.id] || regAnswers[field.field_key] || '';
+        customAnswersDict[field.label] = ansVal;
+      });
 
       if (teamInfo && teamInfo.members && teamInfo.members.length > 0) {
         // 1. Team Leader Row
         exportRows.push({
           'S.No': serialNo,
           'Registration No': r.registration_number || '',
-          'Team Name': teamInfo.team_name || 'N/A',
+          'Team Name': teamInfo.team_name || '',
           'Member Role': 'Team Leader',
           'Member Name': r.registrant_name || '',
           'Email': r.registrant_email || '',
-          'Phone': r.registrant_phone || 'N/A',
-          'University UID': r.uid || 'N/A',
-          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'N/A',
+          'Phone': r.registrant_phone || '',
+          'University UID': r.uid || '',
+          ...customAnswersDict,
+          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '',
         });
 
         // 2. Teammates Rows
         teamInfo.members.forEach((m, mIdx) => {
+          const blankCustomDict: Record<string, string> = {};
+          formFields.forEach((field) => {
+            blankCustomDict[field.label] = '';
+          });
+
           exportRows.push({
             'S.No': '',
             'Registration No': r.registration_number || '',
-            'Team Name': teamInfo.team_name || 'N/A',
+            'Team Name': teamInfo.team_name || '',
             'Member Role': `Teammate #${mIdx + 2}`,
             'Member Name': m.name || '',
             'Email': m.email || '',
-            'Phone': m.phone || 'N/A',
-            'University UID': m.uid || 'N/A',
-            'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'N/A',
+            'Phone': m.phone || '',
+            'University UID': m.uid || '',
+            ...blankCustomDict,
+            'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '',
           });
         });
       } else {
@@ -122,17 +155,23 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         exportRows.push({
           'S.No': serialNo,
           'Registration No': r.registration_number || '',
-          'Team Name': 'N/A (Individual)',
+          'Team Name': '',
           'Member Role': 'Individual Registrant',
           'Member Name': r.registrant_name || '',
           'Email': r.registrant_email || '',
-          'Phone': r.registrant_phone || 'N/A',
-          'University UID': r.uid || 'N/A',
-          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : 'N/A',
+          'Phone': r.registrant_phone || '',
+          'University UID': r.uid || '',
+          ...customAnswersDict,
+          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '',
         });
       }
 
       // 3. Leave a blank separator row after each registration ends
+      const blankSeparatorDict: Record<string, string> = {};
+      formFields.forEach((field) => {
+        blankSeparatorDict[field.label] = '';
+      });
+
       exportRows.push({
         'S.No': '',
         'Registration No': '',
@@ -142,6 +181,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         'Email': '',
         'Phone': '',
         'University UID': '',
+        ...blankSeparatorDict,
         'Submitted Date': '',
       });
 
@@ -168,37 +208,51 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     doc.setTextColor(100, 116, 139);
     doc.text(`Total Registrations: ${filtered.length}  •  Export Date: ${new Date().toLocaleDateString()}`, 14, 22);
 
+    const pdfHeaders = ['#', 'Reg Number', 'Team Name', 'Role', 'Member Name', 'Email', 'Phone', 'UID'];
+    formFields.forEach((field) => {
+      pdfHeaders.push(field.label.slice(0, 18));
+    });
+    pdfHeaders.push('Date');
+
     const tableRows: string[][] = [];
     let serialNo = 1;
 
     filtered.forEach((r) => {
       const teamInfo = teamMap[r.id];
+      const regAnswers = answersMap[r.id] || {};
+
+      const customAnswersList = formFields.map((field) => {
+        return regAnswers[field.id] || regAnswers[field.field_key] || '';
+      });
 
       if (teamInfo && teamInfo.members && teamInfo.members.length > 0) {
         // Leader row
         tableRows.push([
           serialNo.toString(),
-          r.registration_number || 'N/A',
-          teamInfo.team_name || 'N/A',
+          r.registration_number || '',
+          teamInfo.team_name || '',
           'Team Leader',
-          r.registrant_name || 'N/A',
-          r.registrant_email || 'N/A',
-          r.registrant_phone || 'N/A',
-          r.uid || 'N/A',
-          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : 'N/A',
+          r.registrant_name || '',
+          r.registrant_email || '',
+          r.registrant_phone || '',
+          r.uid || '',
+          ...customAnswersList,
+          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '',
         ]);
 
         // Teammate rows
+        const blankAnswersList = formFields.map(() => '');
         teamInfo.members.forEach((m, mIdx) => {
           tableRows.push([
             '',
             r.registration_number || '',
             teamInfo.team_name || '',
             `Teammate #${mIdx + 2}`,
-            m.name || 'N/A',
-            m.email || 'N/A',
-            m.phone || 'N/A',
-            m.uid || 'N/A',
+            m.name || '',
+            m.email || '',
+            m.phone || '',
+            m.uid || '',
+            ...blankAnswersList,
             '',
           ]);
         });
@@ -206,31 +260,33 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         // Individual row
         tableRows.push([
           serialNo.toString(),
-          r.registration_number || 'N/A',
+          r.registration_number || '',
+          '',
           'Individual',
-          'Individual',
-          r.registrant_name || 'N/A',
-          r.registrant_email || 'N/A',
-          r.registrant_phone || 'N/A',
-          r.uid || 'N/A',
-          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : 'N/A',
+          r.registrant_name || '',
+          r.registrant_email || '',
+          r.registrant_phone || '',
+          r.uid || '',
+          ...customAnswersList,
+          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '',
         ]);
       }
 
       // Blank separator row after each registration
-      tableRows.push(['', '', '', '', '', '', '', '', '']);
+      const blankRowList = pdfHeaders.map(() => '');
+      tableRows.push(blankRowList);
 
       serialNo++;
     });
 
     autoTable(doc, {
       startY: 27,
-      head: [['#', 'Reg Number', 'Team Name', 'Role', 'Member Name', 'Email', 'Phone', 'UID', 'Date']],
+      head: [pdfHeaders],
       body: tableRows,
       theme: 'grid',
       headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
-      bodyStyles: { fontSize: 8 },
-      margin: { top: 27, left: 14, right: 14, bottom: 15 },
+      bodyStyles: { fontSize: 7.5 },
+      margin: { top: 27, left: 10, right: 10, bottom: 15 },
     });
 
     const cleanTitle = event.title.replace(/[^a-z0-9]+/gi, '_');
@@ -387,6 +443,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                         <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400">Team Leader</div>
                                         <div className="font-bold text-slate-900 dark:text-white">{r.registrant_name}</div>
                                         <div className="text-[11px] text-slate-500">{r.registrant_email}</div>
+                                        {r.uid && <div className="text-[10px] font-mono text-slate-400">UID: {r.uid}</div>}
                                       </div>
 
                                       {/* Teammates */}

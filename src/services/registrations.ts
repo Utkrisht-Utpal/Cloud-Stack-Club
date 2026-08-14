@@ -45,12 +45,40 @@ export const registerForEvent = async (
     }
   }
 
+  // 0.1 Check for Duplicate UID Registration for this event
+  const allUids = [uid, ...(team_members || []).map((m) => m.uid)].filter(Boolean) as string[];
+
+  if (allUids.length > 0 && isSupabaseConfigured()) {
+    // Check primary registrations
+    const { data: existingReg } = await supabase
+      .from('event_registrations')
+      .select('registrant_name, uid')
+      .eq('event_id', targetEventId)
+      .in('uid', allUids)
+      .maybeSingle();
+
+    if (existingReg) {
+      throw new Error(`Warning: The University ID (UID: ${(existingReg as any).uid}) has already registered for this event.`);
+    }
+
+    // Check team members table for this event
+    const { data: existingTeamMember } = await supabase
+      .from('event_team_members')
+      .select('uid')
+      .in('uid', allUids)
+      .maybeSingle();
+
+    if (existingTeamMember) {
+      throw new Error(`Warning: The University ID (UID: ${(existingTeamMember as any).uid}) is already registered as a team member for this event.`);
+    }
+  }
+
   // 1. Look up if registrant is an existing member by UID or Email
   let member_id: string | null = payload.member_id || null;
   let is_member = payload.is_member || false;
 
   if (!member_id && (uid || registrant_email)) {
-    let query = supabase.from('members').select('id').eq('status', 'active');
+    let query = supabase.from('members').select('id');
     if (uid) {
       query = query.eq('uid', uid);
     } else {
@@ -81,12 +109,25 @@ export const registerForEvent = async (
       team_id = (teamData as any).id;
 
       if (team_members && team_members.length > 0) {
-        const validMembers = team_members.slice(0, 5).map((m) => ({
-          team_id,
-          name: m.name,
-          email: m.email,
-          uid: m.uid || null,
-        }));
+        const validMembers = await Promise.all(
+          team_members.slice(0, 5).map(async (m) => {
+            let isMember = false;
+            if (isSupabaseConfigured() && (m.uid || m.email)) {
+              let q = supabase.from('members').select('id');
+              if (m.uid) q = q.eq('uid', m.uid);
+              else q = q.eq('email', m.email);
+              const { data: mem } = await q.maybeSingle();
+              if (mem) isMember = true;
+            }
+            return {
+              team_id,
+              name: m.name,
+              email: m.email,
+              uid: m.uid || null,
+              is_member: isMember,
+            };
+          })
+        );
 
         await supabase.from('event_team_members').insert(validMembers);
       }
@@ -104,6 +145,7 @@ export const registerForEvent = async (
       registrant_name,
       registrant_email,
       registrant_phone: registrant_phone || null,
+      uid: uid || null,
       is_member,
       team_id,
       status: 'registered',
@@ -112,8 +154,6 @@ export const registerForEvent = async (
     .maybeSingle();
 
   if (regError || !regData) {
-    console.warn('Select query after insert encountered RLS constraint. Performing insert fallback:', regError?.message);
-
     // Fallback: Perform insert without select chain to bypass RLS select restrictions
     const { error: insertOnlyError } = await supabase
       .from('event_registrations')
@@ -123,13 +163,13 @@ export const registerForEvent = async (
         registrant_name,
         registrant_email,
         registrant_phone: registrant_phone || null,
+        uid: uid || null,
         is_member,
         team_id,
         status: 'registered',
       });
 
     if (insertOnlyError) {
-      console.error('Error creating event registration:', insertOnlyError.message);
       throw new Error(`Registration failed: ${insertOnlyError.message}`);
     }
 
@@ -144,6 +184,7 @@ export const registerForEvent = async (
       registrant_name,
       registrant_email,
       registrant_phone: registrant_phone || null,
+      uid: uid || null,
       is_member,
       team_id,
       status: 'registered',
