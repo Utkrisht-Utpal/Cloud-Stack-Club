@@ -15,25 +15,60 @@ interface AdminAuthContextType {
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
+const getInitialAdminLoggedIn = (): boolean => {
+  return (
+    localStorage.getItem('csc_admin_logged_in') === 'true' ||
+    sessionStorage.getItem('csc_admin_logged_in') === 'true'
+  );
+};
+
+const getInitialAdminEmail = (): string | null => {
+  return (
+    localStorage.getItem('csc_admin_email') ||
+    sessionStorage.getItem('csc_admin_email') ||
+    null
+  );
+};
+
+const getInitialShowDashboard = (): boolean => {
+  const saved = localStorage.getItem('csc_show_dashboard') || sessionStorage.getItem('csc_show_dashboard');
+  if (saved !== null) {
+    return saved === 'true';
+  }
+  return getInitialAdminLoggedIn();
+};
+
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    return sessionStorage.getItem('csc_admin_logged_in') === 'true';
-  });
-  const [adminEmail, setAdminEmail] = useState<string | null>(() => {
-    return sessionStorage.getItem('csc_admin_email') || null;
-  });
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(getInitialAdminLoggedIn);
+  const [adminEmail, setAdminEmail] = useState<string | null>(getInitialAdminEmail);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [showDashboard, setShowDashboard] = useState(false);
+  const [showDashboard, setShowDashboard] = useState<boolean>(getInitialShowDashboard);
 
   useEffect(() => {
     if (isAdminLoggedIn) {
+      localStorage.setItem('csc_admin_logged_in', 'true');
       sessionStorage.setItem('csc_admin_logged_in', 'true');
-      if (adminEmail) sessionStorage.setItem('csc_admin_email', adminEmail);
+      if (adminEmail) {
+        localStorage.setItem('csc_admin_email', adminEmail);
+        sessionStorage.setItem('csc_admin_email', adminEmail);
+      }
     } else {
+      localStorage.removeItem('csc_admin_logged_in');
       sessionStorage.removeItem('csc_admin_logged_in');
+      localStorage.removeItem('csc_admin_email');
       sessionStorage.removeItem('csc_admin_email');
+      localStorage.removeItem('csc_show_dashboard');
+      sessionStorage.removeItem('csc_show_dashboard');
+      setShowDashboard(false);
     }
   }, [isAdminLoggedIn, adminEmail]);
+
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      localStorage.setItem('csc_show_dashboard', showDashboard ? 'true' : 'false');
+      sessionStorage.setItem('csc_show_dashboard', showDashboard ? 'true' : 'false');
+    }
+  }, [showDashboard, isAdminLoggedIn]);
 
   const login = async (emailInput: string, passwordInput: string): Promise<boolean> => {
     const cleanEmail = emailInput.trim().toLowerCase();
@@ -52,6 +87,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setAdminEmail(data.user.email || cleanEmail);
           setShowDashboard(true);
           setIsAdminModalOpen(false);
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           return true;
         }
       } catch (err) {
@@ -60,7 +96,6 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     // 2. Official Central Admin Credentials & Rules:
-    // Admin Email format: cloudstack@cuchd.in or any @cuchd.in admin or user ID "admin"
     const isValidAdminId = 
       cleanEmail === 'cloudstack@cuchd.in' || 
       cleanEmail === 'admin' || 
@@ -90,12 +125,26 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setIsAdminLoggedIn(false);
     setAdminEmail(null);
     setShowDashboard(false);
+    localStorage.removeItem('csc_admin_logged_in');
+    sessionStorage.removeItem('csc_admin_logged_in');
+    localStorage.removeItem('csc_admin_email');
+    sessionStorage.removeItem('csc_admin_email');
+    localStorage.removeItem('csc_show_dashboard');
+    sessionStorage.removeItem('csc_show_dashboard');
     if (isSupabaseConfigured()) {
       supabase.auth.signOut().catch(() => {});
     }
   };
 
-  const openAdminModal = () => setIsAdminModalOpen(true);
+  const openAdminModal = () => {
+    if (isAdminLoggedIn) {
+      setShowDashboard(true);
+      setIsAdminModalOpen(false);
+    } else {
+      setIsAdminModalOpen(true);
+    }
+  };
+
   const closeAdminModal = () => setIsAdminModalOpen(false);
 
   return (

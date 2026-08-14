@@ -19,11 +19,11 @@ export const registerForEvent = async (
     answers,
   } = payload;
 
-  // 0. Ensure targetEventId is a valid UUID (if passed as slug like "membership-application" or string placeholder)
+  // 0. Ensure targetEventId is resolved to the exact event UUID from database
   let targetEventId = event_id;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
 
-  if (!isUuid) {
+  if (!isUuid && isSupabaseConfigured()) {
     const { data: eventBySlug } = await supabase
       .from('events')
       .select('id')
@@ -33,16 +33,14 @@ export const registerForEvent = async (
     if (eventBySlug && (eventBySlug as any).id) {
       targetEventId = (eventBySlug as any).id;
     } else {
-      const { data: anyEvent } = await supabase
+      const { data: eventByTitle } = await supabase
         .from('events')
         .select('id')
-        .limit(1)
+        .ilike('title', `%${targetEventId}%`)
         .maybeSingle();
 
-      if (anyEvent && (anyEvent as any).id) {
-        targetEventId = (anyEvent as any).id;
-      } else {
-        targetEventId = '00000000-0000-0000-0000-000000000001';
+      if (eventByTitle && (eventByTitle as any).id) {
+        targetEventId = (eventByTitle as any).id;
       }
     }
   }

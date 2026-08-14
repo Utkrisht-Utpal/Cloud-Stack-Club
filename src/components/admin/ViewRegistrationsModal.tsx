@@ -295,9 +295,9 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           </div>
         ) : (
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${filtered.length > 5 ? 'max-h-[360px] overflow-y-auto custom-scrollbar' : ''}`}>
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">
+                <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] shadow-sm">
                   <tr>
                     <th className="py-3.5 px-4 font-black">#</th>
                     <th className="py-3.5 px-4 font-black">Registration No</th>
