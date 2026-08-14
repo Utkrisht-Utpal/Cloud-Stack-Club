@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Member } from '../types/database';
+import type { Member, ContactFeedback } from '../types/database';
 
 export const exportMembersToExcel = (
   members: Member[],
@@ -116,4 +116,78 @@ export const exportMembersToPdf = (
   const fileName = `Cloud_Stack_Club_Member_Directory_${filterLabel}_${fileDate}.pdf`;
 
   doc.save(fileName);
+};
+
+export const exportFeedbacksToPdf = (
+  feedbacks: ContactFeedback[],
+  filterType: string,
+  searchQuery: string
+) => {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  // Document Title
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(15, 23, 42);
+  doc.text('Cloud Stack Club — Contact & Feedbacks Directory', 14, 15);
+
+  // Subtitle / Metadata
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(100, 116, 139);
+
+  const filterText = filterType.replace('_', ' ').toUpperCase();
+  const searchNote = searchQuery ? ` | Search: "${searchQuery}"` : '';
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  doc.text(`Filter: ${filterText} (${feedbacks.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
+
+  // Table Data mapping
+  const tableRows = feedbacks.map((f, index) => [
+    (index + 1).toString(),
+    f.name || 'N/A',
+    f.email || 'N/A',
+    f.message || 'N/A',
+    (f.status || 'pending').toUpperCase(),
+    f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A',
+  ]);
+
+  autoTable(doc, {
+    startY: 27,
+    head: [['#', 'Sender Name', 'Email', 'Message / Feedback Query', 'Status', 'Received Date']],
+    body: tableRows,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+    },
+    bodyStyles: {
+      fontSize: 8.5,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { cellWidth: 10 },
+      1: { cellWidth: 40 },
+      2: { cellWidth: 55 },
+      3: { cellWidth: 110 },
+      4: { cellWidth: 25 },
+      5: { cellWidth: 25 },
+    },
+    alternateRowStyles: {
+      fillColor: [248, 250, 252],
+    },
+    margin: { top: 27, left: 14, right: 14, bottom: 16 },
+    didDrawPage: (data) => {
+      const totalPages = doc.getNumberOfPages();
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text(`Chandigarh University  •  Cloud Stack Club`, 14, doc.internal.pageSize.height - 7);
+      doc.text(`Page ${data.pageNumber} of ${totalPages}`, doc.internal.pageSize.width - 25, doc.internal.pageSize.height - 7);
+    },
+  });
+
+  const cleanFilter = filterType.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`Cloud_Stack_Club_Feedbacks_${cleanFilter}_${new Date().toISOString().split('T')[0]}.pdf`);
 };

@@ -55,6 +55,7 @@ import {
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import { getAllFeedbacks, updateFeedbackStatus } from '../../services/feedback';
+import { exportFeedbacksToPdf } from '../../utils/exportDirectory';
 import type { Member, Event, Role, ContactFeedback } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
@@ -213,6 +214,29 @@ export const AdminDashboard: React.FC = () => {
       setActionSuccess(`Feedback status updated to "${newStatus.toUpperCase()}"`);
       setTimeout(() => setActionSuccess(null), 2000);
     }
+  };
+
+  const handleExportFeedbacksPdf = () => {
+    const filtered = feedbacksList.filter((f) => {
+      const matchSearch =
+        !feedbackSearch ||
+        f.name.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+        f.email.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+        f.message.toLowerCase().includes(feedbackSearch.toLowerCase());
+
+      const matchStatus =
+        feedbackFilter === 'all' ||
+        (feedbackFilter === 'pending' && (f.status === 'pending' || f.status === 'unread')) ||
+        (feedbackFilter === 'in_progress' && f.status === 'in_progress') ||
+        (feedbackFilter === 'resolved' && (f.status === 'resolved' || f.status === 'responded')) ||
+        (feedbackFilter === 'archived' && f.status === 'archived');
+
+      return matchSearch && matchStatus;
+    });
+
+    exportFeedbacksToPdf(filtered, feedbackFilter, feedbackSearch);
+    setActionSuccess('Feedbacks PDF downloaded successfully!');
+    setTimeout(() => setActionSuccess(null), 2000);
   };
 
   useEffect(() => {
@@ -1177,16 +1201,28 @@ export const AdminDashboard: React.FC = () => {
                 ))}
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search sender, email..."
-                  value={feedbackSearch}
-                  onChange={(e) => setFeedbackSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 text-xs font-medium border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
-                />
+              {/* Search Bar & Download PDF Button Side-by-Side */}
+              <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search sender, email..."
+                    value={feedbackSearch}
+                    onChange={(e) => setFeedbackSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 text-xs font-medium border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleExportFeedbacksPdf}
+                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  title="Download filtered feedbacks as PDF"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
               </div>
             </div>
 
