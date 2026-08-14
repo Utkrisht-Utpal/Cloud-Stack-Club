@@ -28,6 +28,7 @@ import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
 import { EventPdfModal } from './EventPdfModal';
 import { EventPosterModal } from './EventPosterModal';
+import { DownloadDropdown } from './DownloadDropdown';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { formatEventTime } from '../../utils/formatters';
@@ -609,7 +610,14 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
-                {/* Filter Dropdown matching screenshot: All (22), Members (1), Core Members (21) */}
+                {/* Download Button Dropdown (Positioned to the Left of Filter Dropdown) */}
+                <DownloadDropdown
+                  members={filteredMembers}
+                  currentFilter={memberFilter}
+                  searchQuery={memberSearch}
+                />
+
+                {/* Filter Dropdown */}
                 <div className="w-full sm:w-48 shrink-0">
                   <CustomSelect
                     value={memberFilter}
