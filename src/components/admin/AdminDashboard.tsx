@@ -49,6 +49,8 @@ import {
   createEvent,
   updateEventAdmin,
   deleteEventAdmin,
+  deleteEventPosterAdmin,
+  deleteEventPdfAdmin,
   uploadEventPdf,
   uploadEventImage,
   sortEventsByRelevance,
@@ -236,6 +238,30 @@ export const AdminDashboard: React.FC = () => {
 
     exportFeedbacksToPdf(filtered, feedbackFilter, feedbackSearch);
     setActionSuccess('Feedbacks PDF downloaded successfully!');
+    setTimeout(() => setActionSuccess(null), 2000);
+  };
+
+  const handleDeleteEventPoster = async (eventId: string) => {
+    setEditingEvent((prev) => (prev ? { ...prev, image_url: null } : null));
+    setEditPosterFile(null);
+    setEventsList((prev) =>
+      prev.map((e) => (e.id === eventId ? { ...e, image_url: null } : e))
+    );
+
+    await deleteEventPosterAdmin(eventId);
+    setActionSuccess('Event poster deleted from database!');
+    setTimeout(() => setActionSuccess(null), 2000);
+  };
+
+  const handleDeleteEventPdf = async (eventId: string) => {
+    setEditingEvent((prev) => (prev ? { ...prev, pdf_url: null } : null));
+    setEditPdfFile(null);
+    setEventsList((prev) =>
+      prev.map((e) => (e.id === eventId ? { ...e, pdf_url: null } : e))
+    );
+
+    await deleteEventPdfAdmin(eventId);
+    setActionSuccess('Event PDF schedule deleted from database!');
     setTimeout(() => setActionSuccess(null), 2000);
   };
 
@@ -1723,15 +1749,15 @@ export const AdminDashboard: React.FC = () => {
                       >
                         Preview
                       </button>
-                      <label className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[10px] font-bold cursor-pointer">
-                        Replace
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => e.target.files?.[0] && setEditPosterFile(e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEventPoster(editingEvent.id)}
+                        className="px-2 py-1 rounded-lg bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-500/25 text-[10px] font-extrabold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Delete poster from database"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1791,15 +1817,15 @@ export const AdminDashboard: React.FC = () => {
                       >
                         Preview
                       </button>
-                      <label className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-[10px] font-bold cursor-pointer">
-                        Replace
-                        <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteEventPdf(editingEvent.id)}
+                        className="px-2 py-1 rounded-lg bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-500/25 text-[10px] font-extrabold transition-all flex items-center gap-1 cursor-pointer"
+                        title="Delete PDF schedule from database"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
+                      </button>
                     </div>
                   </div>
                 ) : (

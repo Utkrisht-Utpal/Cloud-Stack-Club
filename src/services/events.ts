@@ -384,14 +384,45 @@ export const updateEventAdmin = async (
       .select('*')
       .maybeSingle();
     data = retry.data;
-    error = retry.error;
   }
 
-  if (error) {
-    console.warn('Direct event update error notice:', error.message);
+  return (data || list[index] || eventPayload) as Event;
+};
+
+export const deleteEventPosterAdmin = async (eventId: string): Promise<boolean> => {
+  const list = getLocalCustomEvents();
+  const index = list.findIndex((e) => e.id === eventId);
+  if (index !== -1) {
+    list[index].image_url = null;
+    localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(list));
   }
 
-  return (data as Event) || (list[index] as Event) || (eventPayload as Event);
+  if (!isSupabaseConfigured()) return true;
+
+  const { error } = await supabase
+    .from('events')
+    .update({ image_url: null, updated_at: new Date().toISOString() })
+    .eq('id', eventId);
+
+  return !error;
+};
+
+export const deleteEventPdfAdmin = async (eventId: string): Promise<boolean> => {
+  const list = getLocalCustomEvents();
+  const index = list.findIndex((e) => e.id === eventId);
+  if (index !== -1) {
+    list[index].pdf_url = null;
+    localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(list));
+  }
+
+  if (!isSupabaseConfigured()) return true;
+
+  const { error } = await supabase
+    .from('events')
+    .update({ pdf_url: null, updated_at: new Date().toISOString() })
+    .eq('id', eventId);
+
+  return !error;
 };
 
 export const deleteEventAdmin = async (
