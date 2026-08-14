@@ -1154,7 +1154,7 @@ export const AdminDashboard: React.FC = () => {
                                   { value: 'resolved', label: '✅ Resolved' },
                                   { value: 'archived', label: '📁 Archived' },
                                 ]}
-                                triggerClassName={`w-36 h-9 px-3 rounded-xl text-xs font-bold border flex items-center justify-between transition-all cursor-pointer ${
+                                triggerClassName={`min-w-[160px] w-auto h-9 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${
                                   f.status === 'pending' || f.status === 'unread'
                                     ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                     : f.status === 'in_progress'

@@ -121,9 +121,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         className={triggerClassName || defaultTriggerClass}
       >
-        <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 text-left truncate min-w-0 flex-1">
+        <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 text-left min-w-0 flex-1 whitespace-nowrap">
           <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />
-          <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+          <span className="whitespace-nowrap">{selectedOption ? selectedOption.label : placeholder}</span>
         </span>
         <ChevronDown
           className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 shrink-0 ml-2 ${
