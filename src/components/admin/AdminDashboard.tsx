@@ -22,6 +22,7 @@ import {
   Maximize2,
   Sparkles,
   MessageSquare,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -34,7 +35,7 @@ import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ConfirmModal } from '../ui/ConfirmModal';
-import { formatEventTime } from '../../utils/formatters';
+import { formatEventTime, getEventStatusInfo, isRegistrationActive } from '../../utils/formatters';
 import {
   getPendingMemberApplications,
   approveMemberApplicationService,
@@ -298,6 +299,20 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!newEventData.title || !newEventData.date || !newEventData.time) return;
 
+    if (newEventData.registration_end && newEventData.date) {
+      const eventDateObj = new Date(newEventData.date);
+      const regEndObj = new Date(newEventData.registration_end);
+      eventDateObj.setHours(0, 0, 0, 0);
+      regEndObj.setHours(0, 0, 0, 0);
+
+      if (regEndObj > eventDateObj) {
+        const confirmSave = window.confirm(
+          `⚠️ WARNING: Registration Deadline (${newEventData.registration_end}) is set AFTER the Event Date (${newEventData.date})!\n\nAre you sure you want to save this event with a deadline after the event date?`
+        );
+        if (!confirmSave) return;
+      }
+    }
+
     setIsUploadingMedia(true);
     try {
       const eventId = crypto.randomUUID();
@@ -396,6 +411,20 @@ export const AdminDashboard: React.FC = () => {
   const handleEditEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent || !editEventData.title) return;
+
+    if (editEventData.registration_end && editEventData.date) {
+      const eventDateObj = new Date(editEventData.date);
+      const regEndObj = new Date(editEventData.registration_end);
+      eventDateObj.setHours(0, 0, 0, 0);
+      regEndObj.setHours(0, 0, 0, 0);
+
+      if (regEndObj > eventDateObj) {
+        const confirmSave = window.confirm(
+          `⚠️ WARNING: Registration Deadline (${editEventData.registration_end}) is set AFTER the Event Date (${editEventData.date})!\n\nAre you sure you want to save this event with a deadline after the event date?`
+        );
+        if (!confirmSave) return;
+      }
+    }
 
     setIsUploadingMedia(true);
     try {
@@ -852,22 +881,35 @@ export const AdminDashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Registration Status & Category Badge Overlay */}
+                      {/* Registration Status & Category/Ongoing Badge Overlay */}
                       <div className="absolute top-3 left-3 z-30 flex flex-col gap-1 items-start">
-                        <span
-                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md ${
-                            evt.registration_enabled
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-slate-900/80 text-slate-300 border border-white/20'
-                          }`}
-                        >
-                          {evt.registration_enabled ? 'Registration Open' : 'Closed'}
-                        </span>
-                        {evt.category && (
-                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-slate-950/80 text-sky-300 border border-sky-500/30 backdrop-blur-md shadow-lg">
-                            {evt.category}
-                          </span>
-                        )}
+                        {(() => {
+                          const regActive = isRegistrationActive(evt);
+                          const statusInfo = getEventStatusInfo(evt.date);
+                          return (
+                            <>
+                              <span
+                                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md ${
+                                  regActive
+                                    ? 'bg-emerald-500 text-white'
+                                    : 'bg-slate-900/90 text-rose-300 border border-rose-500/30'
+                                }`}
+                              >
+                                {regActive ? 'Registration Open' : 'Registration Closed'}
+                              </span>
+
+                              <span
+                                className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-lg border ${
+                                  statusInfo.type === 'ongoing'
+                                    ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse'
+                                    : 'bg-slate-950/80 text-sky-300 border-sky-500/30'
+                                }`}
+                              >
+                                {statusInfo.type === 'ongoing' ? '🔥 ONGOING EVENT' : evt.category || statusInfo.label}
+                              </span>
+                            </>
+                          );
+                        })()}
                       </div>
 
                       {/* Edit & Delete Action Buttons Overlay */}
@@ -1459,6 +1501,13 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {newEventData.registration_end && newEventData.date && new Date(newEventData.registration_end) > new Date(newEventData.date) && (
+                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                  <span>Warning: Registration Deadline ({newEventData.registration_end}) crosses after Event Date ({newEventData.date}).</span>
+                </div>
+              )}
             </div>
 
             <div className="pt-2">
@@ -1787,6 +1836,13 @@ export const AdminDashboard: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {editEventData.registration_end && editEventData.date && new Date(editEventData.registration_end) > new Date(editEventData.date) && (
+                <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                  <span>Warning: Registration Deadline ({editEventData.registration_end}) crosses after Event Date ({editEventData.date}).</span>
+                </div>
+              )}
             </div>
 
             <div className="pt-2">

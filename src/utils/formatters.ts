@@ -27,3 +27,56 @@ export const formatEventTime = (timeStr?: string | null): string => {
 
   return trimmed;
 };
+
+export interface EventStatusInfo {
+  label: string;
+  type: 'ongoing' | 'upcoming' | 'completed';
+}
+
+export const getEventStatusInfo = (dateStr?: string | null): EventStatusInfo => {
+  if (!dateStr) return { label: 'Upcoming Event', type: 'upcoming' };
+  try {
+    const today = new Date();
+    const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    const eventDate = new Date(dateStr);
+    const eventYMD = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+
+    if (eventYMD === todayYMD) {
+      return { label: 'Ongoing Event', type: 'ongoing' };
+    }
+    
+    const dToday = new Date(todayYMD);
+    const dEvent = new Date(eventYMD);
+
+    if (dEvent < dToday) {
+      return { label: 'Completed Event', type: 'completed' };
+    }
+    return { label: 'Upcoming Event', type: 'upcoming' };
+  } catch {
+    return { label: 'Upcoming Event', type: 'upcoming' };
+  }
+};
+
+export const isRegistrationActive = (evt?: any): boolean => {
+  if (!evt) return false;
+  if (!evt.registration_enabled) return false;
+
+  const now = new Date();
+
+  // If registration start is set and in future
+  if (evt.registration_start) {
+    const startDate = new Date(evt.registration_start);
+    startDate.setHours(0, 0, 0, 0);
+    if (startDate > now) return false;
+  }
+
+  // If registration end date has passed
+  if (evt.registration_end) {
+    const endDate = new Date(evt.registration_end);
+    endDate.setHours(23, 59, 59, 999);
+    if (endDate < now) return false;
+  }
+
+  return true;
+};

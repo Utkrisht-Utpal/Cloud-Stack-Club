@@ -24,12 +24,18 @@ export const CULogo: React.FC<CULogoProps> = ({
   const currentLogo = theme === 'dark' ? cuLogoDark : cuLogoLight;
 
   return (
-    <div className={`inline-flex items-center shrink-0 ${className}`}>
+    <a
+      href="https://www.cuchd.in/"
+      target="_blank"
+      rel="noopener noreferrer"
+      title="Chandigarh University Official Website"
+      className={`inline-flex items-center shrink-0 hover:opacity-90 transition-opacity group cursor-pointer ${className}`}
+    >
       <img
         src={currentLogo}
         alt="Chandigarh University Logo"
-        className={`${sizeClasses[size]} drop-shadow-sm transition-opacity duration-300`}
+        className={`${sizeClasses[size]} drop-shadow-sm transition-transform duration-300 group-hover:scale-[1.02]`}
       />
-    </div>
+    </a>
   );
 };
