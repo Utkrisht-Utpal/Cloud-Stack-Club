@@ -12,8 +12,9 @@ const LOCAL_FEEDBACKS_KEY = 'csc_contact_feedbacks';
 export const submitFeedback = async (
   payload: SubmitFeedbackPayload
 ): Promise<ContactFeedback> => {
+  const tempId = 'fb-' + Date.now();
   const newFeedback: ContactFeedback = {
-    id: 'fb-' + Date.now(),
+    id: tempId,
     name: payload.name.trim(),
     email: payload.email.trim(),
     message: payload.message.trim(),
@@ -21,15 +22,13 @@ export const submitFeedback = async (
     created_at: new Date().toISOString(),
   };
 
-  // Instant local storage cache
-  try {
-    const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
-    const list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
-    list.unshift(newFeedback);
-    localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
-  } catch (e) {}
-
   if (!isSupabaseConfigured()) {
+    try {
+      const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+      const list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
+      list.unshift(newFeedback);
+      localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
+    } catch (e) {}
     return newFeedback;
   }
 
@@ -46,7 +45,17 @@ export const submitFeedback = async (
       .maybeSingle();
 
     if (!error && data) {
-      return data as ContactFeedback;
+      const dbFeedback = data as ContactFeedback;
+      // Update local storage with canonical DB object
+      try {
+        const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+        let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
+        list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
+        list.unshift(dbFeedback);
+        localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
+      } catch (e) {}
+
+      return dbFeedback;
     }
   } catch (e) {}
 
@@ -54,18 +63,17 @@ export const submitFeedback = async (
 };
 
 export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
-  let list: ContactFeedback[] = [];
+  let localList: ContactFeedback[] = [];
 
-  // Local storage cache
   try {
     const cached = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
     if (cached) {
-      list = JSON.parse(cached);
+      localList = JSON.parse(cached);
     }
   } catch (e) {}
 
   if (!isSupabaseConfigured()) {
-    return list;
+    return localList;
   }
 
   try {
@@ -75,19 +83,43 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      // Merge remote & local
-      const map = new Map<string, ContactFeedback>();
-      data.forEach((f) => map.set(f.id, f as ContactFeedback));
-      list.forEach((f) => {
-        if (!map.has(f.id)) map.set(f.id, f);
+      const dbList = (data as ContactFeedback[]) || [];
+
+      // Deduplicate by signature (name + email + message) & ID
+      const seenIds = new Set<string>();
+      const seenSignatures = new Set<string>();
+      const combined: ContactFeedback[] = [];
+
+      dbList.forEach((f) => {
+        const sig = `${(f.name || '').toLowerCase().trim()}|${(f.email || '').toLowerCase().trim()}|${(f.message || '').toLowerCase().trim()}`;
+        if (!seenIds.has(f.id) && !seenSignatures.has(sig)) {
+          seenIds.add(f.id);
+          seenSignatures.add(sig);
+          combined.push(f);
+        }
       });
-      return Array.from(map.values()).sort(
+
+      localList.forEach((f) => {
+        const sig = `${(f.name || '').toLowerCase().trim()}|${(f.email || '').toLowerCase().trim()}|${(f.message || '').toLowerCase().trim()}`;
+        if (!seenIds.has(f.id) && !seenSignatures.has(sig)) {
+          seenIds.add(f.id);
+          seenSignatures.add(sig);
+          combined.push(f);
+        }
+      });
+
+      // Update local storage with clean deduplicated list
+      try {
+        localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(combined));
+      } catch (e) {}
+
+      return combined.sort(
         (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       );
     }
   } catch (e) {}
 
-  return list;
+  return localList;
 };
 
 export const updateFeedbackStatus = async (

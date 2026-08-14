@@ -47,6 +47,11 @@ export const ContactSection: React.FC = () => {
 
       setIsSubmitted(true);
       setFormData({ name: '', email: '', message: '' });
+
+      // Automatically reset back to normal form after 3 seconds
+      setTimeout(() => {
+        setIsSubmitted(false);
+      }, 3000);
     } catch (err: any) {
       console.error('Feedback submission error:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');

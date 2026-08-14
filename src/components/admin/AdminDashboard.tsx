@@ -63,6 +63,24 @@ const EVENT_CATEGORY_OPTIONS = [
   { value: 'Bootcamps', label: 'Bootcamps' },
 ];
 
+const getInitialEventsCache = (): Event[] => {
+  try {
+    const cached = localStorage.getItem('csc_custom_events_list');
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getInitialFeedbacksCache = (): ContactFeedback[] => {
+  try {
+    const cached = localStorage.getItem('csc_contact_feedbacks');
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members' | 'feedbacks'>('applications');
 
@@ -80,9 +98,9 @@ export const AdminDashboard: React.FC = () => {
   const [memberFilter, setMemberFilter] = useState<'all' | 'members' | 'core'>('all');
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
-  // Events State
-  const [eventsList, setEventsList] = useState<Event[]>([]);
-  const [loadingEvents, setLoadingEvents] = useState(false);
+  // Events State (Instant Cache Initialization for 0ms load)
+  const [eventsList, setEventsList] = useState<Event[]>(getInitialEventsCache);
+  const [loadingEvents, setLoadingEvents] = useState(() => getInitialEventsCache().length === 0);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
   const [eventPosterFile, setEventPosterFile] = useState<File | null>(null);
@@ -126,14 +144,13 @@ export const AdminDashboard: React.FC = () => {
   const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
   const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
 
-  // Contact & Feedbacks State
-  const [feedbacksList, setFeedbacksList] = useState<ContactFeedback[]>([]);
-  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+  // Contact & Feedbacks State (Instant Cache Initialization)
+  const [feedbacksList, setFeedbacksList] = useState<ContactFeedback[]>(getInitialFeedbacksCache);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(() => getInitialFeedbacksCache().length === 0);
   const [feedbackSearch, setFeedbackSearch] = useState('');
   const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved' | 'archived'>('all');
 
   const loadPendingApps = async () => {
-    setLoadingApplications(true);
     try {
       const apps = await getPendingMemberApplications();
       setPendingApplications(apps);
@@ -145,7 +162,6 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const loadAllMembers = async () => {
-    setLoadingMembers(true);
     try {
       const [list, roles] = await Promise.all([getMembers(), getRoles()]);
       setMembersList(list);
@@ -158,10 +174,14 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const loadAllEvents = async () => {
-    setLoadingEvents(true);
     try {
       const evs = await getEvents();
-      setEventsList(evs);
+      if (evs && evs.length > 0) {
+        setEventsList(evs);
+        try {
+          localStorage.setItem('csc_custom_events_list', JSON.stringify(evs));
+        } catch {}
+      }
     } catch (err) {
       console.error('Error fetching events:', err);
     } finally {
@@ -170,10 +190,9 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const loadAllFeedbacks = async () => {
-    setLoadingFeedbacks(true);
     try {
       const fbs = await getAllFeedbacks();
-      setFeedbacksList(fbs);
+      if (fbs) setFeedbacksList(fbs);
     } catch (err) {
       console.error('Error fetching feedbacks:', err);
     } finally {
@@ -194,10 +213,14 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    loadPendingApps();
-    loadAllMembers();
-    loadAllEvents();
-    loadAllFeedbacks();
+
+    // Concurrent parallel fetch (Stale-While-Revalidate pattern) for instant UI response
+    Promise.all([
+      loadPendingApps(),
+      loadAllMembers(),
+      loadAllEvents(),
+      loadAllFeedbacks(),
+    ]);
   }, []);
 
   const [confirmModalConfig, setConfirmModalConfig] = useState<{
@@ -461,7 +484,7 @@ export const AdminDashboard: React.FC = () => {
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 pb-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Action Success Alert Banner */}
         {actionSuccess && (
@@ -1122,10 +1145,12 @@ export const AdminDashboard: React.FC = () => {
                               </div>
                             </td>
                             <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
-                              {f.created_at ? new Date(f.created_at).toLocaleString() : 'N/A'}
+                              {f.created_at
+                                ? `${new Date(f.created_at).toLocaleDateString('en-GB')}, ${new Date(f.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                                : 'N/A'}
                             </td>
                             <td className="py-3.5 px-4 whitespace-nowrap">
-                              <select
+                              <CustomSelect
                                 value={
                                   f.status === 'unread'
                                     ? 'pending'
@@ -1133,8 +1158,14 @@ export const AdminDashboard: React.FC = () => {
                                     ? 'resolved'
                                     : f.status
                                 }
-                                onChange={(e) => handleUpdateFeedbackStatus(f.id, e.target.value)}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer focus:outline-none ${
+                                onChange={(newVal) => handleUpdateFeedbackStatus(f.id, newVal)}
+                                options={[
+                                  { value: 'pending', label: '⏳ Pending' },
+                                  { value: 'in_progress', label: '🔄 In Progress' },
+                                  { value: 'resolved', label: '✅ Resolved' },
+                                  { value: 'archived', label: '📁 Archived' },
+                                ]}
+                                triggerClassName={`w-36 h-9 px-3 rounded-xl text-xs font-bold border flex items-center justify-between transition-all cursor-pointer ${
                                   f.status === 'pending' || f.status === 'unread'
                                     ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                     : f.status === 'in_progress'
@@ -1143,20 +1174,7 @@ export const AdminDashboard: React.FC = () => {
                                     ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                                     : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
                                 }`}
-                              >
-                                <option value="pending" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                                  ⏳ Pending
-                                </option>
-                                <option value="in_progress" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                                  🔄 In Progress
-                                </option>
-                                <option value="resolved" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                                  ✅ Resolved
-                                </option>
-                                <option value="archived" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                                  📁 Archived
-                                </option>
-                              </select>
+                              />
                             </td>
                           </tr>
                         ))}

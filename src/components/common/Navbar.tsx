@@ -99,20 +99,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           {/* Left: Club Shield Logo (Image 1) */}
           <Link
             to="/"
-            className="flex items-center gap-3 focus:outline-none group cursor-pointer"
+            className="flex items-center gap-3 focus:outline-none group cursor-pointer shrink-0"
             aria-label="Cloud Stack Club Home"
           >
             <ClubLogo size="md" showText={true} />
           </Link>
 
-          {/* Center: Desktop Navigation Links OR Admin Dashboard Card */}
+          {/* Center: Desktop Navigation Links OR Admin Dashboard Title */}
           {isAdminDashboard ? (
-            <div className="hidden lg:flex items-center">
-              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Admin Management Dashboard</h1>
+            <div className="flex items-center justify-center shrink-0">
+              <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+                Admin Management Dashboard
+              </h1>
             </div>
           ) : (
             <nav className="hidden lg:flex items-center gap-1 bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 px-3.5 py-1.5 rounded-full">
@@ -263,14 +265,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
         </AnimatePresence>
       )}
 
-      {/* Mobile/Tablet Admin Dashboard Card — shown below header bar on smaller screens */}
-      {isAdminDashboard && (
-        <div className="lg:hidden border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-white">Admin Management Dashboard</h1>
-          </div>
-        </div>
-      )}
     </header>
   );
 };
