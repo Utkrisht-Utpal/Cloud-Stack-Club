@@ -440,6 +440,21 @@ export const AdminDashboard: React.FC = () => {
         imageUrl = await uploadEventImage(editPosterFile, editingEvent.id);
       }
 
+      const todayStr = new Date().toISOString().split('T')[0];
+      const newDateStr = editEventData.date ? editEventData.date.split('T')[0] : '';
+      let computedStatus: Event['status'] = editingEvent.status;
+      if (editingEvent.status !== 'cancelled') {
+        if (newDateStr) {
+          if (newDateStr === todayStr) {
+            computedStatus = 'live';
+          } else if (newDateStr > todayStr) {
+            computedStatus = 'upcoming';
+          } else {
+            computedStatus = 'completed';
+          }
+        }
+      }
+
       const updatedPayload: Partial<Event> = {
         title: editEventData.title.trim(),
         category: editEventData.category || null,
@@ -449,6 +464,7 @@ export const AdminDashboard: React.FC = () => {
         location: editEventData.location.trim(),
         pdf_url: pdfUrl,
         image_url: imageUrl,
+        status: computedStatus,
         registration_enabled: editEventData.registration_enabled,
         registration_start: editEventData.registration_enabled ? (editEventData.registration_start || null) : null,
         registration_end: editEventData.registration_enabled ? (editEventData.registration_end || null) : null,

@@ -298,6 +298,20 @@ export const updateEventAdmin = async (
   if (eventPayload.category !== undefined) {
     saveStoredCategory(eventId, eventPayload.category);
   }
+
+  // Recalculate status based on date if date is provided and status is not explicitly cancelled
+  if (eventPayload.date && eventPayload.status !== 'cancelled') {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const newDateStr = eventPayload.date.split('T')[0];
+    if (newDateStr === todayStr) {
+      eventPayload.status = 'live';
+    } else if (newDateStr > todayStr) {
+      eventPayload.status = 'upcoming';
+    } else if (newDateStr < todayStr) {
+      eventPayload.status = 'completed';
+    }
+  }
+
   // Update local storage
   const list = getLocalCustomEvents();
   const index = list.findIndex((e) => e.id === eventId);
@@ -321,6 +335,7 @@ export const updateEventAdmin = async (
     p_location: eventPayload.location || null,
     p_pdf_url: eventPayload.pdf_url || null,
     p_image_url: eventPayload.image_url || null,
+    p_status: eventPayload.status || null,
     p_registration_enabled: eventPayload.registration_enabled ?? true,
     p_registration_start: eventPayload.registration_start || null,
     p_registration_end: eventPayload.registration_end || null,
@@ -343,6 +358,7 @@ export const updateEventAdmin = async (
     location: eventPayload.location || null,
     pdf_url: eventPayload.pdf_url || null,
     image_url: eventPayload.image_url || null,
+    status: eventPayload.status || undefined,
     registration_enabled: eventPayload.registration_enabled ?? true,
     registration_start: eventPayload.registration_start || null,
     registration_end: eventPayload.registration_end || null,
