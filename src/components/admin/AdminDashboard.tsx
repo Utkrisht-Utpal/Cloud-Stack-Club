@@ -21,6 +21,7 @@ import {
   Image as ImageIcon,
   Maximize2,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -50,7 +51,8 @@ import {
   uploadEventImage,
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
-import type { Member, Event, Role } from '../../types/database';
+import { getAllFeedbacks, updateFeedbackStatus } from '../../services/feedback';
+import type { Member, Event, Role, ContactFeedback } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
   { value: 'Hackathons', label: 'Hackathons' },
@@ -62,7 +64,7 @@ const EVENT_CATEGORY_OPTIONS = [
 ];
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members'>('applications');
+  const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members' | 'feedbacks'>('applications');
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -124,6 +126,12 @@ export const AdminDashboard: React.FC = () => {
   const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
   const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
 
+  // Contact & Feedbacks State
+  const [feedbacksList, setFeedbacksList] = useState<ContactFeedback[]>([]);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(false);
+  const [feedbackSearch, setFeedbackSearch] = useState('');
+  const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved' | 'archived'>('all');
+
   const loadPendingApps = async () => {
     setLoadingApplications(true);
     try {
@@ -161,11 +169,35 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const loadAllFeedbacks = async () => {
+    setLoadingFeedbacks(true);
+    try {
+      const fbs = await getAllFeedbacks();
+      setFeedbacksList(fbs);
+    } catch (err) {
+      console.error('Error fetching feedbacks:', err);
+    } finally {
+      setLoadingFeedbacks(false);
+    }
+  };
+
+  const handleUpdateFeedbackStatus = async (id: string, newStatus: any) => {
+    setFeedbacksList((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
+    );
+    const success = await updateFeedbackStatus(id, newStatus);
+    if (success) {
+      setActionSuccess(`Feedback status updated to "${newStatus.toUpperCase()}"`);
+      setTimeout(() => setActionSuccess(null), 3000);
+    }
+  };
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     loadPendingApps();
     loadAllMembers();
     loadAllEvents();
+    loadAllFeedbacks();
   }, []);
 
   const [confirmModalConfig, setConfirmModalConfig] = useState<{
@@ -504,6 +536,23 @@ export const AdminDashboard: React.FC = () => {
               <FileSpreadsheet className="w-4 h-4" />
               <span>Registration Form Builder</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('feedbacks')}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'feedbacks'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Contact & Feedbacks</span>
+              {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length > 0 && (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+                  {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -737,7 +786,21 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {loadingEvents ? (
-              <div className="py-12 text-center text-xs text-slate-500">Loading events...</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg space-y-4 animate-pulse"
+                  >
+                    <div className="w-full aspect-[4/5] rounded-2xl bg-slate-200 dark:bg-slate-800/80" />
+                    <div className="space-y-2">
+                      <div className="h-5 w-3/4 bg-slate-200 dark:bg-slate-800/80 rounded-xl" />
+                      <div className="h-4 w-full bg-slate-200 dark:bg-slate-800/60 rounded-xl" />
+                    </div>
+                    <div className="h-10 w-full bg-slate-200 dark:bg-slate-800/60 rounded-xl" />
+                  </div>
+                ))}
+              </div>
             ) : eventsList.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                 No events found. Click "Create New Event" to get started.
@@ -906,6 +969,203 @@ export const AdminDashboard: React.FC = () => {
         {/* Tab Content 4: Registration Form Builder */}
         {activeTab === 'forms' && (
           <EventFormBuilder events={eventsList} />
+        )}
+
+        {/* Tab Content 5: Contact & Feedbacks Management */}
+        {activeTab === 'feedbacks' && (
+          <div className="space-y-6">
+            {/* Stat Cards Header */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div className="neumorphic-card p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center font-bold shrink-0">
+                  <MessageSquare className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase text-slate-500">Total Feedbacks</div>
+                  <div className="text-xl font-black text-slate-900 dark:text-white">{feedbacksList.length}</div>
+                </div>
+              </div>
+
+              <div className="neumorphic-card p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase text-slate-500">Pending</div>
+                  <div className="text-xl font-black text-amber-600 dark:text-amber-400">
+                    {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="neumorphic-card p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase text-slate-500">In Progress</div>
+                  <div className="text-xl font-black text-indigo-600 dark:text-indigo-400">
+                    {feedbacksList.filter((f) => f.status === 'in_progress').length}
+                  </div>
+                </div>
+              </div>
+
+              <div className="neumorphic-card p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-[11px] font-bold uppercase text-slate-500">Resolved</div>
+                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                    {feedbacksList.filter((f) => f.status === 'resolved' || f.status === 'responded').length}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter & Search Controls */}
+            <div className="neumorphic-card p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              {/* Status Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {(['all', 'pending', 'in_progress', 'resolved', 'archived'] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setFeedbackFilter(st)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer ${
+                      feedbackFilter === st
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {st.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search sender, email..."
+                  value={feedbackSearch}
+                  onChange={(e) => setFeedbackSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 text-xs font-medium border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Feedbacks Data Table */}
+            <div className="neumorphic-card overflow-hidden">
+              {loadingFeedbacks ? (
+                <div className="p-12 text-center text-slate-400 text-sm font-semibold">
+                  Loading user feedbacks...
+                </div>
+              ) : feedbacksList.filter((f) => {
+                  const matchSearch =
+                    f.name.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+                    f.email.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+                    f.message.toLowerCase().includes(feedbackSearch.toLowerCase());
+                  if (!matchSearch) return false;
+                  if (feedbackFilter === 'pending') return f.status === 'pending' || f.status === 'unread';
+                  if (feedbackFilter === 'in_progress') return f.status === 'in_progress';
+                  if (feedbackFilter === 'resolved') return f.status === 'resolved' || f.status === 'responded';
+                  if (feedbackFilter === 'archived') return f.status === 'archived';
+                  return true;
+                }).length === 0 ? (
+                <div className="p-12 text-center space-y-2">
+                  <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
+                  <div className="text-slate-600 dark:text-slate-400 font-bold text-sm">No feedbacks found</div>
+                  <div className="text-xs text-slate-400">User submissions from the Contact Us form will appear here.</div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-500 bg-slate-50/50 dark:bg-slate-900/50">
+                        <th className="py-3 px-4">#</th>
+                        <th className="py-3 px-4">Sender Details</th>
+                        <th className="py-3 px-4">Message / Feedback</th>
+                        <th className="py-3 px-4">Submitted Date</th>
+                        <th className="py-3 px-4">Status & Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/60 text-xs">
+                      {feedbacksList
+                        .filter((f) => {
+                          const matchSearch =
+                            f.name.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+                            f.email.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+                            f.message.toLowerCase().includes(feedbackSearch.toLowerCase());
+                          if (!matchSearch) return false;
+                          if (feedbackFilter === 'pending') return f.status === 'pending' || f.status === 'unread';
+                          if (feedbackFilter === 'in_progress') return f.status === 'in_progress';
+                          if (feedbackFilter === 'resolved') return f.status === 'resolved' || f.status === 'responded';
+                          if (feedbackFilter === 'archived') return f.status === 'archived';
+                          return true;
+                        })
+                        .map((f, idx) => (
+                          <tr key={f.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
+                            <td className="py-3.5 px-4 space-y-0.5 min-w-[160px]">
+                              <div className="font-bold text-slate-900 dark:text-white">{f.name}</div>
+                              <a
+                                href={`mailto:${f.email}`}
+                                className="text-[11px] text-blue-600 dark:text-sky-400 hover:underline font-mono"
+                              >
+                                {f.email}
+                              </a>
+                            </td>
+                            <td className="py-3.5 px-4 min-w-[280px]">
+                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl">
+                                {f.message}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
+                              {f.created_at ? new Date(f.created_at).toLocaleString() : 'N/A'}
+                            </td>
+                            <td className="py-3.5 px-4 whitespace-nowrap">
+                              <select
+                                value={
+                                  f.status === 'unread'
+                                    ? 'pending'
+                                    : f.status === 'responded'
+                                    ? 'resolved'
+                                    : f.status
+                                }
+                                onChange={(e) => handleUpdateFeedbackStatus(f.id, e.target.value)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer focus:outline-none ${
+                                  f.status === 'pending' || f.status === 'unread'
+                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                    : f.status === 'in_progress'
+                                    ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-500/30'
+                                    : f.status === 'resolved' || f.status === 'responded'
+                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                    : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
+                                }`}
+                              >
+                                <option value="pending" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                                  ⏳ Pending
+                                </option>
+                                <option value="in_progress" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                                  🔄 In Progress
+                                </option>
+                                <option value="resolved" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                                  ✅ Resolved
+                                </option>
+                                <option value="archived" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                                  📁 Archived
+                                </option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* Create Event Modal */}

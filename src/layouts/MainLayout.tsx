@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
@@ -13,12 +13,15 @@ import { useScrollbarFallback } from '../utils/useScrollbarFallback';
 import { getEvents } from '../services/events';
 import type { Event } from '../types/database';
 
-// Code-splitting / Lazy loading non-critical heavy modules so they don't block backend popup fetching
-const JoinModal = lazy(() => import('../components/common/JoinModal').then((m) => ({ default: m.JoinModal })));
-const EventRegisterModal = lazy(() => import('../components/common/EventRegisterModal').then((m) => ({ default: m.EventRegisterModal })));
-const AdminLoginModal = lazy(() => import('../components/admin/AdminLoginModal').then((m) => ({ default: m.AdminLoginModal })));
-const AdminDashboard = lazy(() => import('../components/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
-const EventPdfModal = lazy(() => import('../components/admin/EventPdfModal').then((m) => ({ default: m.EventPdfModal })));
+import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
+
+// Code-splitting with auto-retry on 404 deployment stale chunks
+const JoinModal = lazyWithRetry(() => import('../components/common/JoinModal'), 'JoinModal');
+const EventRegisterModal = lazyWithRetry(() => import('../components/common/EventRegisterModal'), 'EventRegisterModal');
+const AdminLoginModal = lazyWithRetry(() => import('../components/admin/AdminLoginModal'), 'AdminLoginModal');
+const AdminDashboard = lazyWithRetry(() => import('../components/admin/AdminDashboard'), 'AdminDashboard');
+const EventPdfModal = lazyWithRetry(() => import('../components/admin/EventPdfModal'), 'EventPdfModal');
 
 const getInitialCachedEvents = (): Event[] => {
   try {
@@ -63,9 +66,23 @@ export const MainLayout: React.FC = () => {
         <ScrollToTop />
         <CloudBackground />
         <Navbar isAdminDashboard={true} onAdminLogout={logout} />
-        <Suspense fallback={<div className="min-h-screen pt-24 text-center text-slate-500 text-sm">Loading Dashboard...</div>}>
-          <AdminDashboard />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense
+            fallback={
+              <div className="min-h-screen pt-28 px-4 max-w-7xl mx-auto space-y-6">
+                <div className="h-12 w-96 bg-slate-200 dark:bg-slate-800/80 rounded-2xl animate-pulse" />
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800/60 rounded-3xl animate-pulse" />
+                  ))}
+                </div>
+                <div className="h-96 bg-slate-200 dark:bg-slate-800/50 rounded-3xl animate-pulse" />
+              </div>
+            }
+          >
+            <AdminDashboard />
+          </Suspense>
+        </ErrorBoundary>
         <Footer />
       </div>
     );

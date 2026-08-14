@@ -45,16 +45,19 @@ export const registerForEvent = async (
     }
   }
 
-  // 0.1 Check for Duplicate UID Registration for this event
-  const allUids = [uid, ...(team_members || []).map((m) => m.uid)].filter(Boolean) as string[];
+  // 0.1 Check for Duplicate UID Registration for this event (Case-Insensitive)
+  const rawUids = [uid, ...(team_members || []).map((m) => m.uid)].filter(Boolean) as string[];
+  const allUidsNorm = Array.from(
+    new Set(rawUids.flatMap((u) => [u.trim(), u.trim().toUpperCase(), u.trim().toLowerCase()]))
+  );
 
-  if (allUids.length > 0 && isSupabaseConfigured()) {
+  if (allUidsNorm.length > 0 && isSupabaseConfigured()) {
     // Check primary registrations
     const { data: existingReg } = await supabase
       .from('event_registrations')
       .select('registrant_name, uid')
       .eq('event_id', targetEventId)
-      .in('uid', allUids)
+      .in('uid', allUidsNorm)
       .maybeSingle();
 
     if (existingReg) {
@@ -65,7 +68,7 @@ export const registerForEvent = async (
     const { data: existingTeamMember } = await supabase
       .from('event_team_members')
       .select('uid')
-      .in('uid', allUids)
+      .in('uid', allUidsNorm)
       .maybeSingle();
 
     if (existingTeamMember) {
@@ -73,22 +76,37 @@ export const registerForEvent = async (
     }
   }
 
-  // 1. Look up if registrant is an existing member by UID or Email
+  // 1. Look up if registrant is an existing member by UID or Email (Case-Insensitive)
   let member_id: string | null = payload.member_id || null;
   let is_member = payload.is_member || false;
 
-  if (!member_id && (uid || registrant_email)) {
-    let query = supabase.from('members').select('id');
-    if (uid) {
-      query = query.eq('uid', uid);
-    } else {
-      query = query.eq('email', registrant_email);
+  const normalizedLeaderUid = uid ? uid.trim().toUpperCase() : null;
+
+  if (!member_id && (normalizedLeaderUid || registrant_email)) {
+    if (normalizedLeaderUid) {
+      const { data: memByUid } = await supabase
+        .from('members')
+        .select('id')
+        .ilike('uid', normalizedLeaderUid)
+        .maybeSingle();
+
+      if (memByUid) {
+        member_id = (memByUid as any).id;
+        is_member = true;
+      }
     }
 
-    const { data: memberData } = await query.maybeSingle();
-    if (memberData) {
-      member_id = (memberData as any).id;
-      is_member = true;
+    if (!member_id && registrant_email) {
+      const { data: memByEmail } = await supabase
+        .from('members')
+        .select('id')
+        .ilike('email', registrant_email.trim())
+        .maybeSingle();
+
+      if (memByEmail) {
+        member_id = (memByEmail as any).id;
+        is_member = true;
+      }
     }
   }
 
@@ -112,18 +130,34 @@ export const registerForEvent = async (
         const validMembers = await Promise.all(
           team_members.slice(0, 5).map(async (m) => {
             let isMember = false;
-            if (isSupabaseConfigured() && (m.uid || m.email)) {
-              let q = supabase.from('members').select('id');
-              if (m.uid) q = q.eq('uid', m.uid);
-              else q = q.eq('email', m.email);
-              const { data: mem } = await q.maybeSingle();
-              if (mem) isMember = true;
+            const mUidNorm = m.uid ? m.uid.trim().toUpperCase() : '';
+            const mEmailNorm = m.email ? m.email.trim() : '';
+
+            if (isSupabaseConfigured() && (mUidNorm || mEmailNorm)) {
+              if (mUidNorm) {
+                const { data: mem } = await supabase
+                  .from('members')
+                  .select('id')
+                  .ilike('uid', mUidNorm)
+                  .maybeSingle();
+                if (mem) isMember = true;
+              }
+
+              if (!isMember && mEmailNorm) {
+                const { data: mem } = await supabase
+                  .from('members')
+                  .select('id')
+                  .ilike('email', mEmailNorm)
+                  .maybeSingle();
+                if (mem) isMember = true;
+              }
             }
+
             return {
               team_id,
               name: m.name,
               email: m.email,
-              uid: m.uid || null,
+              uid: mUidNorm || null,
               is_member: isMember,
             };
           })

@@ -479,9 +479,10 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                         <input
                           type="text"
                           required
-                          placeholder="University ID (UID) *"
+                          maxLength={11}
+                          placeholder="UID (Max 11 Alpha-numeric) *"
                           value={m.uid}
-                          onChange={(e) => handleUpdateTeamMember(idx, 'uid', e.target.value)}
+                          onChange={(e) => handleUpdateTeamMember(idx, 'uid', e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 11).toUpperCase())}
                           className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
                         />
                       </div>

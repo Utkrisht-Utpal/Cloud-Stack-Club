@@ -376,8 +376,13 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                           <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs">
                             {r.registration_number || 'N/A'}
                           </td>
-                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                            {r.registrant_name}
+                          <td className="py-3.5 px-4 space-y-0.5">
+                            <div className="font-bold text-slate-900 dark:text-white leading-tight">{r.registrant_name}</div>
+                            {r.uid && (
+                              <div className="text-[11px] font-mono text-slate-400 font-normal whitespace-nowrap">
+                                UID: {r.uid.toUpperCase()}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3.5 px-4 space-y-0.5">
                             <div className="text-slate-700 dark:text-slate-300 font-medium">{r.registrant_email}</div>

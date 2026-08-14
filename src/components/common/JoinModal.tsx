@@ -200,9 +200,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 <input
                   type="text"
                   required
+                  maxLength={11}
                   value={formData.uid}
-                  onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
-                  placeholder="University ID (UID)"
+                  onChange={(e) => setFormData({ ...formData, uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 11).toUpperCase() })}
+                  placeholder="University ID (e.g. 24BCF10003)"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
               </div>

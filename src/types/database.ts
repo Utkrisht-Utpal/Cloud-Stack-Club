@@ -16,7 +16,7 @@ export type FieldType =
   | 'file' 
   | 'date';
 export type RegistrationStatus = 'registered' | 'confirmed' | 'cancelled' | 'attended';
-export type FeedbackStatus = 'unread' | 'read' | 'archived' | 'responded';
+export type FeedbackStatus = 'pending' | 'in_progress' | 'resolved' | 'unread' | 'read' | 'archived' | 'responded';
 
 export interface Role {
   id: string;
