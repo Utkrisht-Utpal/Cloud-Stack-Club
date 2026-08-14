@@ -96,6 +96,7 @@ export const AdminDashboard: React.FC = () => {
 
   // Events State (Direct Real DB Fetching)
   const [eventsList, setEventsList] = useState<Event[]>([]);
+  const [eventFilter, setEventFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
   const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
@@ -808,7 +809,7 @@ export const AdminDashboard: React.FC = () => {
         {/* Tab Content 3: Events Management */}
         {activeTab === 'events' && (
           <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-bold">Club Events Management</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -816,14 +817,42 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <Button
-                variant="primary"
-                size="sm"
-                icon={<Plus className="w-4 h-4" />}
-                onClick={() => setIsCreateEventOpen(true)}
-              >
-                Create New Event
-              </Button>
+              <div className="flex items-center gap-3 shrink-0">
+                {/* Event Filters Pill Group: All, Upcoming, Completed */}
+                <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 flex items-center gap-1">
+                  {(['all', 'upcoming', 'completed'] as const).map((filter) => {
+                    const isActive = eventFilter === filter;
+                    const labels: Record<string, string> = {
+                      all: 'All',
+                      upcoming: 'Upcoming',
+                      completed: 'Completed',
+                    };
+                    return (
+                      <button
+                        key={filter}
+                        type="button"
+                        onClick={() => setEventFilter(filter)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                        }`}
+                      >
+                        {labels[filter]}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={<Plus className="w-4 h-4" />}
+                  onClick={() => setIsCreateEventOpen(true)}
+                >
+                  Create New Event
+                </Button>
+              </div>
             </div>
 
             {loadingEvents ? (
@@ -842,13 +871,29 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 ))}
               </div>
-            ) : eventsList.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                No events found. Click "Create New Event" to get started.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {sortEventsByRelevance(eventsList).map((evt) => (
+            ) : (() => {
+                const todayStr = new Date().toISOString().split('T')[0];
+                const filtered = sortEventsByRelevance(eventsList).filter((evt) => {
+                  if (eventFilter === 'all') return true;
+                  const evtDateStr = evt.date ? evt.date.split('T')[0] : '';
+                  const isPast = evtDateStr ? evtDateStr < todayStr || evt.status === 'completed' : false;
+
+                  if (eventFilter === 'upcoming') return !isPast;
+                  if (eventFilter === 'completed') return isPast;
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="py-12 text-center text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                      No {eventFilter === 'all' ? '' : eventFilter} events found.
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filtered.map((evt) => (
                   <div
                     key={evt.id}
                     className="p-5 rounded-3xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group"
@@ -1028,7 +1073,8 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 ))}
               </div>
-            )}
+            );
+          })()}
           </div>
         )}
 
