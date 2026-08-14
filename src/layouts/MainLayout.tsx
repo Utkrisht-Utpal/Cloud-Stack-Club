@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import { FloatingMobileCTA } from '../components/common/FloatingMobileCTA';
 import { CloudBackground } from '../components/ui/CloudBackground';
 import { ScrollProgress } from '../components/ui/ScrollProgress';
-import { JoinModal } from '../components/common/JoinModal';
 import { Toast } from '../components/ui/Toast';
 import { ScrollToTop } from '../components/common/ScrollToTop';
-import { AdminLoginModal } from '../components/admin/AdminLoginModal';
-import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { EventAdModal } from '../components/common/EventAdModal';
-import { EventPdfModal } from '../components/admin/EventPdfModal';
 import { useAdminAuth } from '../context/AdminAuthContext';
 import { useScrollbarFallback } from '../utils/useScrollbarFallback';
 import { getEvents } from '../services/events';
 import type { Event } from '../types/database';
+
+// Code-splitting / Lazy loading non-critical heavy modules so they don't block backend popup fetching
+const JoinModal = lazy(() => import('../components/common/JoinModal').then((m) => ({ default: m.JoinModal })));
+const AdminLoginModal = lazy(() => import('../components/admin/AdminLoginModal').then((m) => ({ default: m.AdminLoginModal })));
+const AdminDashboard = lazy(() => import('../components/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const EventPdfModal = lazy(() => import('../components/admin/EventPdfModal').then((m) => ({ default: m.EventPdfModal })));
 
 const getInitialCachedEvents = (): Event[] => {
   try {
@@ -34,7 +36,16 @@ export const MainLayout: React.FC = () => {
   const { showDashboard, logout } = useAdminAuth();
 
   useEffect(() => {
-    getEvents().then(setEventsList).catch(console.error);
+    getEvents()
+      .then((fetchedEvents) => {
+        setEventsList(fetchedEvents);
+        try {
+          if (fetchedEvents && fetchedEvents.length > 0) {
+            localStorage.setItem('csc_custom_events_list', JSON.stringify(fetchedEvents));
+          }
+        } catch {}
+      })
+      .catch(console.error);
   }, []);
 
   // Hide native vertical scrollbar while ScrollProgress indicator is healthy;
@@ -50,7 +61,9 @@ export const MainLayout: React.FC = () => {
         <ScrollToTop />
         <CloudBackground />
         <Navbar isAdminDashboard={true} onAdminLogout={logout} />
-        <AdminDashboard />
+        <Suspense fallback={<div className="min-h-screen pt-24 text-center text-slate-500 text-sm">Loading Dashboard...</div>}>
+          <AdminDashboard />
+        </Suspense>
         <Footer />
       </div>
     );
@@ -88,23 +101,30 @@ export const MainLayout: React.FC = () => {
         onViewPdfClick={(url, title) => setSelectedAdPdf({ url, title })}
       />
 
-      {/* Event PDF Viewer Modal */}
-      <EventPdfModal
-        isOpen={!!selectedAdPdf}
-        onClose={() => setSelectedAdPdf(null)}
-        pdfUrl={selectedAdPdf?.url || null}
-        eventTitle={selectedAdPdf?.title || 'Event'}
-      />
+      {/* Code-split Non-Critical Modals (Loaded on demand or in background after initial popup fetch) */}
+      <Suspense fallback={null}>
+        {/* Event PDF Viewer Modal */}
+        {selectedAdPdf && (
+          <EventPdfModal
+            isOpen={!!selectedAdPdf}
+            onClose={() => setSelectedAdPdf(null)}
+            pdfUrl={selectedAdPdf.url}
+            eventTitle={selectedAdPdf.title}
+          />
+        )}
 
-      {/* Join Membership Modal */}
-      <JoinModal
-        isOpen={joinModalOpen}
-        onClose={handleCloseJoinModal}
-        onSuccessToast={() => setShowSuccessToast(true)}
-      />
+        {/* Join Membership Modal */}
+        {joinModalOpen && (
+          <JoinModal
+            isOpen={joinModalOpen}
+            onClose={handleCloseJoinModal}
+            onSuccessToast={() => setShowSuccessToast(true)}
+          />
+        )}
 
-      {/* Admin Login Modal */}
-      <AdminLoginModal />
+        {/* Admin Login Modal */}
+        <AdminLoginModal />
+      </Suspense>
 
       {/* Toast Notification */}
       <Toast

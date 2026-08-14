@@ -20,6 +20,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { isAdminLoggedIn } = useAdminAuth();
   const hasTriggeredRef = useRef(false);
+  const isInitialCacheRef = useRef(events && events.length > 0);
 
   useEffect(() => {
     // Prevent duplicate ad triggers on page load / re-renders
@@ -51,9 +52,13 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     if (validUpcomingEvent) {
       hasTriggeredRef.current = true;
       setActiveAdEvent(validUpcomingEvent);
-      // Wait exactly 1 second before showing the announcement ad popup
-      const timer = setTimeout(() => setIsOpen(true), 1000);
-      return () => clearTimeout(timer);
+      // If loaded from local storage cache -> 780ms delay
+      // If fetched live from DB -> 0ms immediate trigger as soon as DB data arrives
+      if (isInitialCacheRef.current) {
+        setTimeout(() => setIsOpen(true), 780);
+      } else {
+        setIsOpen(true);
+      }
     }
   }, [events]);
 
@@ -90,7 +95,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/85 backdrop-blur-md overflow-hidden">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/85 backdrop-blur-md overflow-hidden">
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
