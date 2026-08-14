@@ -33,6 +33,7 @@ import { EventPosterModal } from './EventPosterModal';
 import { DownloadDropdown } from './DownloadDropdown';
 import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
+import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { formatEventTime, getEventStatusInfo, isRegistrationActive } from '../../utils/formatters';
@@ -102,9 +103,10 @@ export const AdminDashboard: React.FC = () => {
   const [selectedEventPdf, setSelectedEventPdf] = useState<{ url: string; title: string } | null>(null);
   const [selectedEventPoster, setSelectedEventPoster] = useState<{ url: string; title: string } | null>(null);
   const [viewRegsEvent, setViewRegsEvent] = useState<Event | null>(null);
+  const [registrationCounts, setRegistrationCounts] = useState<Record<string, number>>({});
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
-  // Create Event Form State
+  // Create Event Form State (starts with registration disabled by default)
   const [newEventData, setNewEventData] = useState({
     title: '',
     category: '',
@@ -112,7 +114,7 @@ export const AdminDashboard: React.FC = () => {
     date: '',
     time: '10:00',
     location: '',
-    registration_enabled: true,
+    registration_enabled: false,
     registration_start: '',
     registration_end: '',
     supports_teams: false,
@@ -170,15 +172,24 @@ export const AdminDashboard: React.FC = () => {
 
   const loadAllEvents = async () => {
     try {
-      const evs = await getEvents();
-      if (evs) {
-        setEventsList(evs);
-      }
+      const [evs, counts] = await Promise.all([
+        getEvents(),
+        getEventRegistrationCountsMap(),
+      ]);
+      if (evs) setEventsList(evs);
+      if (counts) setRegistrationCounts(counts);
     } catch (err) {
       console.error('Error fetching events:', err);
     } finally {
       setLoadingEvents(false);
     }
+  };
+
+  const hasEventRegistrations = (evt: Event): boolean => {
+    const evtIdKey = (evt.id || '').toLowerCase();
+    const evtSlugKey = (evt.slug || '').toLowerCase();
+    const count = (registrationCounts[evtIdKey] || 0) + (registrationCounts[evtSlugKey] || 0);
+    return count > 0;
   };
 
   const loadAllFeedbacks = async () => {
@@ -359,7 +370,7 @@ export const AdminDashboard: React.FC = () => {
         date: '',
         time: '10:00',
         location: '',
-        registration_enabled: true,
+        registration_enabled: false,
         registration_start: '',
         registration_end: '',
         supports_teams: false,
@@ -989,7 +1000,7 @@ export const AdminDashboard: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          {evt.registration_enabled && (
+                          {(evt.registration_enabled || hasEventRegistrations(evt)) && (
                             <button
                               type="button"
                               onClick={() => setViewRegsEvent(evt)}

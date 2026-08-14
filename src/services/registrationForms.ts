@@ -460,3 +460,44 @@ export const getRegistrationAnswersForEvent = async (
 
   return result;
 };
+
+export const getEventRegistrationCountsMap = async (): Promise<Record<string, number>> => {
+  const countsMap: Record<string, number> = {};
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data } = await supabase
+        .from('event_registrations')
+        .select('event_id');
+
+      if (data) {
+        data.forEach((r) => {
+          if (r.event_id) {
+            const key = r.event_id.toLowerCase();
+            countsMap[key] = (countsMap[key] || 0) + 1;
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Error fetching registration counts map:', e);
+    }
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('csc_event_regs_') || k.startsWith('csc_regs_'))) {
+        const val = localStorage.getItem(k);
+        if (val) {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const eventKey = k.replace('csc_event_regs_', '').replace('csc_regs_', '').toLowerCase();
+            countsMap[eventKey] = Math.max(countsMap[eventKey] || 0, parsed.length);
+          }
+        }
+      }
+    }
+  } catch {}
+
+  return countsMap;
+};
