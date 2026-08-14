@@ -84,11 +84,41 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   }
 };
 
+export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
+  if (!eventsList || eventsList.length === 0) return [];
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  return [...eventsList].sort((a, b) => {
+      const aDateStr = a.date ? a.date.split('T')[0] : '';
+      const bDateStr = b.date ? b.date.split('T')[0] : '';
+
+      const aIsPast = aDateStr ? aDateStr < todayStr : false;
+      const bIsPast = bDateStr ? bDateStr < todayStr : false;
+
+      // Active / Upcoming events come BEFORE Completed / Past events
+      if (!aIsPast && bIsPast) return -1;
+      if (aIsPast && !bIsPast) return 1;
+
+      // If both are Active (Today or Future), sort ascending (nearest future event first)
+      if (!aIsPast && !bIsPast) {
+        if (!aDateStr) return 1;
+        if (!bDateStr) return -1;
+        return aDateStr.localeCompare(bDateStr);
+      }
+
+      // If both are Past/Completed, sort descending (most recent completed event first)
+      if (!aDateStr) return 1;
+      if (!bDateStr) return -1;
+      return bDateStr.localeCompare(aDateStr);
+    });
+};
+
 export const getEvents = async (): Promise<Event[]> => {
   const localEvents = getLocalCustomEvents();
   if (!isSupabaseConfigured()) {
     autoSyncEventStatuses(localEvents);
-    return localEvents;
+    return sortEventsByRelevance(localEvents);
   }
 
   try {
@@ -100,7 +130,7 @@ export const getEvents = async (): Promise<Event[]> => {
 
     if (error) {
       console.warn('Error fetching events from DB, returning local events:', error.message);
-      return localEvents;
+      return sortEventsByRelevance(localEvents);
     }
 
     const dbEvents = (data as Event[]) || [];
@@ -111,9 +141,9 @@ export const getEvents = async (): Promise<Event[]> => {
     // Asynchronously sync database statuses for expired deadlines, live today events, and past events
     autoSyncEventStatuses(allEvents);
 
-    return allEvents;
+    return sortEventsByRelevance(allEvents);
   } catch {
-    return localEvents;
+    return sortEventsByRelevance(localEvents);
   }
 };
 

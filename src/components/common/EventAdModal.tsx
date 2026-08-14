@@ -165,7 +165,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                       <span>{statusInfo.type === 'ongoing' ? 'ONGOING EVENT' : statusInfo.label}</span>
                     </div>
 
-                    {activeAdEvent.category && (
+                    {activeAdEvent.category && activeAdEvent.category.trim() && (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                         {activeAdEvent.category}
                       </span>

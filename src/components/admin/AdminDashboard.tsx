@@ -50,6 +50,7 @@ import {
   deleteEventAdmin,
   uploadEventPdf,
   uploadEventImage,
+  sortEventsByRelevance,
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import { getAllFeedbacks, updateFeedbackStatus } from '../../services/feedback';
@@ -848,7 +849,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {eventsList.map((evt) => (
+                {sortEventsByRelevance(eventsList).map((evt) => (
                   <div
                     key={evt.id}
                     className="p-5 rounded-3xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group"
@@ -898,15 +899,25 @@ export const AdminDashboard: React.FC = () => {
                                 {regActive ? 'Registration Open' : 'Registration Closed'}
                               </span>
 
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-lg border ${
-                                  statusInfo.type === 'ongoing'
-                                    ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse'
-                                    : 'bg-slate-950/80 text-sky-300 border-sky-500/30'
-                                }`}
-                              >
-                                {statusInfo.type === 'ongoing' ? '🔥 ONGOING EVENT' : evt.category || statusInfo.label}
-                              </span>
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-lg border ${
+                                    statusInfo.type === 'ongoing'
+                                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse'
+                                      : statusInfo.type === 'completed'
+                                      ? 'bg-slate-900/80 text-slate-300 border-slate-700'
+                                      : 'bg-slate-950/80 text-sky-300 border-sky-500/30'
+                                  }`}
+                                >
+                                  {statusInfo.type === 'ongoing' ? '🔥 ONGOING EVENT' : statusInfo.label}
+                                </span>
+
+                                {evt.category && evt.category.trim() && (
+                                  <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-950/80 text-slate-200 border border-white/20 backdrop-blur-md shadow-lg">
+                                    {evt.category}
+                                  </span>
+                                )}
+                              </div>
                             </>
                           );
                         })()}
