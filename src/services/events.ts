@@ -33,9 +33,61 @@ const removeLocalCustomEvent = (eventId: string): void => {
   }
 };
 
+export const autoSyncEventStatuses = async (eventsList: Event[]) => {
+  if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const nowMs = Date.now();
+
+  for (const evt of eventsList) {
+    if (evt.status === 'cancelled') continue;
+
+    let needsUpdate = false;
+    const updates: Partial<Event> = {};
+
+    // 1. If event date is TODAY -> update DB status to 'live' (Ongoing)
+    if (evt.date && evt.date.split('T')[0] === todayStr && evt.status !== 'live') {
+      updates.status = 'live';
+      evt.status = 'live';
+      needsUpdate = true;
+    }
+    // 2. If event date is in PAST -> update DB status to 'completed' & disable registration
+    else if (evt.date && evt.date.split('T')[0] < todayStr && evt.status !== 'completed') {
+      updates.status = 'completed';
+      updates.registration_enabled = false;
+      evt.status = 'completed';
+      evt.registration_enabled = false;
+      needsUpdate = true;
+    }
+
+    // 3. If registration_end deadline has passed -> update DB registration_enabled to false
+    if (evt.registration_end && evt.registration_enabled) {
+      const regEndMs = new Date(evt.registration_end).setHours(23, 59, 59, 999);
+      if (regEndMs < nowMs) {
+        updates.registration_enabled = false;
+        evt.registration_enabled = false;
+        needsUpdate = true;
+      }
+    }
+
+    if (needsUpdate) {
+      updates.updated_at = new Date().toISOString();
+      try {
+        await supabase
+          .from('events')
+          .update(updates)
+          .eq('id', evt.id);
+      } catch (err: any) {
+        console.warn('Background auto event status sync notice:', err);
+      }
+    }
+  }
+};
+
 export const getEvents = async (): Promise<Event[]> => {
   const localEvents = getLocalCustomEvents();
   if (!isSupabaseConfigured()) {
+    autoSyncEventStatuses(localEvents);
     return localEvents;
   }
 
@@ -54,7 +106,12 @@ export const getEvents = async (): Promise<Event[]> => {
     const dbEvents = (data as Event[]) || [];
     const dbEventIds = new Set(dbEvents.map((e) => e.id));
     const uniqueLocalEvents = localEvents.filter((e) => !dbEventIds.has(e.id));
-    return [...uniqueLocalEvents, ...dbEvents];
+    const allEvents = [...uniqueLocalEvents, ...dbEvents];
+
+    // Asynchronously sync database statuses for expired deadlines, live today events, and past events
+    autoSyncEventStatuses(allEvents);
+
+    return allEvents;
   } catch {
     return localEvents;
   }
