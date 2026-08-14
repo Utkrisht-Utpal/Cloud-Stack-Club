@@ -15,6 +15,7 @@ import type { Event } from '../types/database';
 
 // Code-splitting / Lazy loading non-critical heavy modules so they don't block backend popup fetching
 const JoinModal = lazy(() => import('../components/common/JoinModal').then((m) => ({ default: m.JoinModal })));
+const EventRegisterModal = lazy(() => import('../components/common/EventRegisterModal').then((m) => ({ default: m.EventRegisterModal })));
 const AdminLoginModal = lazy(() => import('../components/admin/AdminLoginModal').then((m) => ({ default: m.AdminLoginModal })));
 const AdminDashboard = lazy(() => import('../components/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const EventPdfModal = lazy(() => import('../components/admin/EventPdfModal').then((m) => ({ default: m.EventPdfModal })));
@@ -30,6 +31,7 @@ const getInitialCachedEvents = (): Event[] => {
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [eventsList, setEventsList] = useState<Event[]>(getInitialCachedEvents);
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
@@ -85,7 +87,7 @@ export const MainLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-grow relative z-10">
-        <Outlet context={{ onJoinClick: handleOpenJoinModal }} />
+        <Outlet context={{ onJoinClick: handleOpenJoinModal, onRegisterEventClick: (evt: Event) => setSelectedRegisterEvent(evt) }} />
       </main>
 
       {/* Floating CTA on Mobile */}
@@ -97,12 +99,22 @@ export const MainLayout: React.FC = () => {
       {/* Full-Sized Hero Upcoming Event Announcement Ad Modal */}
       <EventAdModal
         events={eventsList}
-        onRegisterClick={() => setJoinModalOpen(true)}
+        onRegisterClick={(targetEvent) => setSelectedRegisterEvent(targetEvent)}
         onViewPdfClick={(url, title) => setSelectedAdPdf({ url, title })}
       />
 
       {/* Code-split Non-Critical Modals (Loaded on demand or in background after initial popup fetch) */}
       <Suspense fallback={null}>
+        {/* Event Registration Modal for Specific Event */}
+        {selectedRegisterEvent && (
+          <EventRegisterModal
+            isOpen={!!selectedRegisterEvent}
+            onClose={() => setSelectedRegisterEvent(null)}
+            event={selectedRegisterEvent}
+            onSuccessToast={() => setShowSuccessToast(true)}
+          />
+        )}
+
         {/* Event PDF Viewer Modal */}
         {selectedAdPdf && (
           <EventPdfModal

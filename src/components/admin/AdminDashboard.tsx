@@ -29,6 +29,8 @@ import { ManageRoleModal } from './ManageRoleModal';
 import { EventPdfModal } from './EventPdfModal';
 import { EventPosterModal } from './EventPosterModal';
 import { DownloadDropdown } from './DownloadDropdown';
+import { EventFormBuilder } from './EventFormBuilder';
+import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { formatEventTime } from '../../utils/formatters';
@@ -84,6 +86,7 @@ export const AdminDashboard: React.FC = () => {
   const [eventPosterFile, setEventPosterFile] = useState<File | null>(null);
   const [selectedEventPdf, setSelectedEventPdf] = useState<{ url: string; title: string } | null>(null);
   const [selectedEventPoster, setSelectedEventPoster] = useState<{ url: string; title: string } | null>(null);
+  const [viewRegsEvent, setViewRegsEvent] = useState<Event | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
   // Create Event Form State
@@ -869,16 +872,28 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </div>
 
-                        {evt.pdf_url && (
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             type="button"
-                            onClick={() => setSelectedEventPdf({ url: evt.pdf_url!, title: evt.title })}
-                            className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-extrabold transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+                            onClick={() => setViewRegsEvent(evt)}
+                            className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            title="View registered students for this event"
                           >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>PDF</span>
+                            <Users className="w-3.5 h-3.5 text-blue-500" />
+                            <span>Registrations</span>
                           </button>
-                        )}
+
+                          {evt.pdf_url && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedEventPdf({ url: evt.pdf_url!, title: evt.title })}
+                              className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>PDF</span>
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -890,22 +905,7 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Tab Content 4: Registration Form Builder */}
         {activeTab === 'forms' && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div>
-              <h2 className="text-base font-bold">Event Registration Form Builder</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Customize dynamic form questions for event registration forms. Select an event to configure.
-              </p>
-            </div>
-
-            <div className="p-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl space-y-2">
-              <FileSpreadsheet className="w-8 h-8 text-blue-600 dark:text-sky-400 mx-auto opacity-80" />
-              <h3 className="text-sm font-bold">Dynamic Form Fields Active</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Standard event registration forms collect Full Name, Student Email, Phone, UID, Department, and Year automatically. Custom form field overrides can be linked per event.
-              </p>
-            </div>
-          </div>
+          <EventFormBuilder events={eventsList} />
         )}
 
         {/* Create Event Modal */}
@@ -1561,6 +1561,13 @@ export const AdminDashboard: React.FC = () => {
           onClose={() => setSelectedEventPoster(null)}
           imageUrl={selectedEventPoster?.url || null}
           eventTitle={selectedEventPoster?.title || 'Event'}
+        />
+
+        {/* View Event Registrations Modal */}
+        <ViewRegistrationsModal
+          isOpen={!!viewRegsEvent}
+          onClose={() => setViewRegsEvent(null)}
+          event={viewRegsEvent}
         />
 
         {/* Global Themed Confirmation Modal */}

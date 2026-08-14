@@ -177,6 +177,23 @@ export const registerForEvent = async (
     await supabase.from('registration_answers').insert(answerRecords);
   }
 
+  // Save to local storage caches for instant offline resilience and fallback
+  try {
+    const key = `csc_event_regs_${targetEventId}`;
+    const existing = localStorage.getItem(key);
+    const list: EventRegistration[] = existing ? JSON.parse(existing) : [];
+    list.unshift(createdRegistration);
+    localStorage.setItem(key, JSON.stringify(list));
+
+    const allKey = 'csc_all_event_regs';
+    const allExisting = localStorage.getItem(allKey);
+    const allList: EventRegistration[] = allExisting ? JSON.parse(allExisting) : [];
+    allList.unshift(createdRegistration);
+    localStorage.setItem(allKey, JSON.stringify(allList));
+  } catch (e) {
+    console.warn('Could not cache registration locally:', e);
+  }
+
   return createdRegistration;
 };
 

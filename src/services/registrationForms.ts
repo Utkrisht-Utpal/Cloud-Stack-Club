@@ -1,38 +1,219 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import type { EventRegistrationForm, EventFormField } from '../types/database';
+import type { EventRegistrationForm, EventFormField, EventRegistration, Event } from '../types/database';
+
+const LOCAL_FORM_PREFIX = 'csc_event_form_';
 
 export const getFormForEvent = async (eventId: string): Promise<EventRegistrationForm | null> => {
-  if (!isSupabaseConfigured()) {
-    return null;
-  }
-
-  const { data: formData, error: formError } = await supabase
-    .from('event_registration_forms')
-    .select('*')
-    .eq('event_id', eventId)
-    .eq('is_active', true)
-    .maybeSingle();
-
-  if (formError || !formData) {
-    if (formError) {
-      console.error(`Error fetching form for event ${eventId}:`, formError.message);
+  // 1. Try local storage cache first for instant response
+  const localData = localStorage.getItem(`${LOCAL_FORM_PREFIX}${eventId}`);
+  let cachedForm: EventRegistrationForm | null = null;
+  if (localData) {
+    try {
+      cachedForm = JSON.parse(localData);
+    } catch (e) {
+      console.warn('Failed to parse local form cache:', e);
     }
-    return null;
   }
 
-  // Fetch form fields ordered by display_order
-  const { data: fieldsData, error: fieldsError } = await supabase
-    .from('event_form_fields')
-    .select('*')
-    .eq('form_id', (formData as any).id)
-    .order('display_order', { ascending: true });
-
-  if (fieldsError) {
-    console.error(`Error fetching fields for form ${(formData as any).id}:`, fieldsError.message);
+  if (!isSupabaseConfigured()) {
+    return cachedForm;
   }
 
-  return {
-    ...(formData as EventRegistrationForm),
-    fields: (fieldsData as EventFormField[]) || [],
+  try {
+    const { data: formData, error: formError } = await supabase
+      .from('event_registration_forms')
+      .select('*')
+      .eq('event_id', eventId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (formError || !formData) {
+      return cachedForm;
+    }
+
+    // Fetch form fields ordered by display_order
+    const { data: fieldsData, error: fieldsError } = await supabase
+      .from('event_form_fields')
+      .select('*')
+      .eq('form_id', (formData as any).id)
+      .order('display_order', { ascending: true });
+
+    if (fieldsError) {
+      console.error(`Error fetching fields for form ${(formData as any).id}:`, fieldsError.message);
+    }
+
+    const fullForm: EventRegistrationForm = {
+      ...(formData as EventRegistrationForm),
+      fields: (fieldsData as EventFormField[]) || [],
+    };
+
+    // Update local cache
+    localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(fullForm));
+
+    return fullForm;
+  } catch (err) {
+    console.warn('Error in getFormForEvent, using cached version:', err);
+    return cachedForm;
+  }
+};
+
+export const saveFormForEvent = async (
+  eventId: string,
+  fields: Partial<EventFormField>[],
+  formTitle: string = 'Event Registration Form',
+  formDescription: string = ''
+): Promise<EventRegistrationForm> => {
+  const formId = `form_${eventId}`;
+  const now = new Date().toISOString();
+
+  const formattedFields: EventFormField[] = fields.map((f, index) => ({
+    id: f.id || `field_${Date.now()}_${index}`,
+    form_id: formId,
+    field_key: f.field_key || (f.label ? f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_') : `field_${index}`),
+    label: f.label || `Custom Question ${index + 1}`,
+    field_type: (f.field_type as any) || 'text',
+    options: f.options || null,
+    placeholder: f.placeholder || null,
+    help_text: f.help_text || null,
+    required: f.required ?? false,
+    display_order: index + 1,
+    created_at: now,
+  }));
+
+  const formObject: EventRegistrationForm = {
+    id: formId,
+    event_id: eventId,
+    title: formTitle,
+    description: formDescription,
+    is_active: true,
+    created_at: now,
+    updated_at: now,
+    fields: formattedFields,
   };
+
+  // 1. Instant local persistence
+  localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(formObject));
+
+  // 2. Async DB persistence if configured
+  if (isSupabaseConfigured()) {
+    try {
+      // Upsert form record
+      const { error: formUpsertError } = await supabase
+        .from('event_registration_forms')
+        .upsert({
+          id: formId,
+          event_id: eventId,
+          title: formTitle,
+          description: formDescription,
+          is_active: true,
+          updated_at: now,
+        });
+
+      if (!formUpsertError) {
+        // Delete existing fields and insert new ones
+        await supabase.from('event_form_fields').delete().eq('form_id', formId);
+
+        if (formattedFields.length > 0) {
+          await supabase.from('event_form_fields').insert(
+            formattedFields.map((f) => ({
+              id: f.id,
+              form_id: f.form_id,
+              field_key: f.field_key,
+              label: f.label,
+              field_type: f.field_type,
+              options: f.options,
+              placeholder: f.placeholder,
+              help_text: f.help_text,
+              required: f.required,
+              display_order: f.display_order,
+            }))
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('Could not save form to Supabase:', err);
+    }
+  }
+
+  return formObject;
+};
+
+export const getEventRegistrationsService = async (
+  eventOrId: string | Event
+): Promise<EventRegistration[]> => {
+  const targetId = typeof eventOrId === 'string' ? eventOrId : eventOrId.id;
+  const targetSlug = typeof eventOrId === 'object' && eventOrId.slug ? eventOrId.slug : null;
+
+  // Gather all possible query identifiers
+  const queryIds = Array.from(new Set([targetId, targetSlug].filter(Boolean))) as string[];
+
+  // 1. Local Cache Retrieval
+  const localKeys = [
+    `csc_event_regs_${targetId}`,
+    targetSlug ? `csc_event_regs_${targetSlug}` : null,
+    'csc_all_event_regs',
+  ].filter(Boolean) as string[];
+
+  const localMatches: EventRegistration[] = [];
+  for (const key of localKeys) {
+    const cached = localStorage.getItem(key);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          localMatches.push(...parsed);
+        }
+      } catch (e) {}
+    }
+  }
+
+  if (!isSupabaseConfigured()) {
+    const filtered = localMatches.filter(
+      (r) => queryIds.includes(r.event_id) || !r.event_id
+    );
+    return filtered;
+  }
+
+  try {
+    // 2. Supabase Query matching targetId or targetSlug
+    let { data, error } = await supabase
+      .from('event_registrations')
+      .select('*')
+      .in('event_id', queryIds)
+      .order('created_at', { ascending: false });
+
+    // Fallback: If no exact event_id match, fetch recent registrations to match locally or catch default event_id records
+    if (!error && (!data || data.length === 0)) {
+      const { data: fallbackRegs } = await supabase
+        .from('event_registrations')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (fallbackRegs && fallbackRegs.length > 0) {
+        data = fallbackRegs.filter(
+          (r: any) => queryIds.includes(r.event_id) || r.event_id === '00000000-0000-0000-0000-000000000001' || !r.event_id
+        );
+      }
+    }
+
+    if (error || !data) {
+      console.warn(`Warning/Error fetching registrations for event ${targetId}:`, error?.message);
+      return localMatches.filter((r) => queryIds.includes(r.event_id));
+    }
+
+    // Merge Supabase and Local storage deduplicated by ID
+    const map = new Map<string, EventRegistration>();
+    data.forEach((r) => map.set(r.id, r as EventRegistration));
+    localMatches.forEach((r) => {
+      if (queryIds.includes(r.event_id) && !map.has(r.id)) {
+        map.set(r.id, r);
+      }
+    });
+
+    return Array.from(map.values());
+  } catch (err) {
+    console.error('Error in getEventRegistrationsService:', err);
+    return localMatches;
+  }
 };
