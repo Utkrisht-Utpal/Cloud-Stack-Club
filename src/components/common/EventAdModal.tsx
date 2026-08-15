@@ -56,7 +56,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
         // Wait 300ms so fresh database event data is fully loaded, eliminating any previous event flash
         const timer = setTimeout(() => {
           setIsOpen(true);
-        }, 200);
+        }, 150);
         return () => clearTimeout(timer);
       }
     } else {

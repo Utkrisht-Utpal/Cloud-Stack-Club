@@ -39,6 +39,7 @@ import { DatePicker } from '../ui/DatePicker';
 import { TimePicker } from '../ui/TimePicker';
 import { CustomCheckbox } from '../ui/CustomCheckbox';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { AlertModal } from '../ui/AlertModal';
 import { formatEventTime, getEventStatusInfo, isRegistrationActive } from '../../utils/formatters';
 import {
   getPendingMemberApplications,
@@ -147,6 +148,28 @@ export const AdminDashboard: React.FC = () => {
   });
   const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
   const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
+
+  // Global Themed Alert / Warning Modal State
+  const [alertModalConfig, setAlertModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant?: 'warning' | 'error' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'warning',
+  });
+
+  const showAlert = (title: string, message: string, variant: 'warning' | 'error' | 'info' = 'warning') => {
+    setAlertModalConfig({
+      isOpen: true,
+      title,
+      message,
+      variant,
+    });
+  };
 
   // Contact & Feedbacks State (Instant Cache Initialization)
   const [feedbacksList, setFeedbacksList] = useState<ContactFeedback[]>(getInitialFeedbacksCache);
@@ -437,7 +460,7 @@ export const AdminDashboard: React.FC = () => {
       await createEvent(newEventObj);
       await loadAllEvents();
     } catch (err: any) {
-      alert(`Event creation failed: ${err?.message || 'Unknown error'}`);
+      showAlert('Event Creation Failed', err?.message || 'Unknown error occurred while creating event.', 'error');
     } finally {
       setIsUploadingMedia(false);
     }
@@ -541,7 +564,7 @@ export const AdminDashboard: React.FC = () => {
       await updateEventAdmin(editingEvent.id, updatedPayload);
       await loadAllEvents();
     } catch (err: any) {
-      alert(`Event update failed: ${err?.message || 'Unknown error'}`);
+      showAlert('Event Update Failed', err?.message || 'Unknown error occurred while updating event.', 'error');
     } finally {
       setIsUploadingMedia(false);
     }
@@ -1437,7 +1460,15 @@ export const AdminDashboard: React.FC = () => {
                         if (e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
                           if (!file.type.startsWith('image/')) {
-                            alert('Only image files (PNG, JPG, WEBP) are accepted.');
+                            showAlert('Invalid File Format', 'Only image files (PNG, JPG, WEBP) are accepted.', 'warning');
+                            return;
+                          }
+                          if (file.size > 2 * 1024 * 1024) {
+                            showAlert(
+                              'Image Size Limit Exceeded',
+                              `Image size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress or resize the image.`,
+                              'warning'
+                            );
                             return;
                           }
                           setEventPosterFile(file);
@@ -1489,7 +1520,15 @@ export const AdminDashboard: React.FC = () => {
                         if (e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
                           if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-                            alert('Only PDF files are accepted.');
+                            showAlert('Invalid File Format', 'Only PDF files (.pdf) are accepted.', 'warning');
+                            return;
+                          }
+                          if (file.size > 3 * 1024 * 1024) {
+                            showAlert(
+                              'PDF Size Limit Exceeded',
+                              `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 3 MB. Please compress the PDF.`,
+                              'warning'
+                            );
                             return;
                           }
                           setEventPdfFile(file);
@@ -1746,7 +1785,23 @@ export const AdminDashboard: React.FC = () => {
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => e.target.files?.[0] && setEditPosterFile(e.target.files[0])}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                          showAlert('Invalid File Format', 'Only image files (PNG, JPG, WEBP) are accepted.', 'warning');
+                          return;
+                        }
+                        if (file.size > 2 * 1024 * 1024) {
+                          showAlert(
+                            'Image Size Limit Exceeded',
+                            `Image size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress or resize the image.`,
+                            'warning'
+                          );
+                          return;
+                        }
+                        setEditPosterFile(file);
+                      }}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
                     <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
@@ -1814,7 +1869,23 @@ export const AdminDashboard: React.FC = () => {
                     <input
                       type="file"
                       accept="application/pdf"
-                      onChange={(e) => e.target.files?.[0] && setEditPdfFile(e.target.files[0])}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                          showAlert('Invalid File Format', 'Only PDF files (.pdf) are accepted.', 'warning');
+                          return;
+                        }
+                        if (file.size > 3 * 1024 * 1024) {
+                          showAlert(
+                            'PDF Size Limit Exceeded',
+                            `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 3 MB. Please compress the PDF.`,
+                            'warning'
+                          );
+                          return;
+                        }
+                        setEditPdfFile(file);
+                      }}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
                     <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
@@ -2014,6 +2085,15 @@ export const AdminDashboard: React.FC = () => {
           message={confirmModalConfig.message}
           confirmText={confirmModalConfig.confirmText}
           variant={confirmModalConfig.variant}
+        />
+
+        {/* Global Themed Alert / Warning Modal */}
+        <AlertModal
+          isOpen={alertModalConfig.isOpen}
+          onClose={() => setAlertModalConfig((prev) => ({ ...prev, isOpen: false }))}
+          title={alertModalConfig.title}
+          message={alertModalConfig.message}
+          variant={alertModalConfig.variant}
         />
 
         {/* Global Bottom Floating Toast Notification (Disappears in 2 seconds) */}
