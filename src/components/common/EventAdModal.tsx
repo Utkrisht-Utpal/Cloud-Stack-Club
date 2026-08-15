@@ -159,7 +159,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     <div
                       className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusInfo.type === 'ongoing'
-                        ? 'bg-blue-600 text-white border-blue-400 shadow-sm animate-pulse'
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse'
                         : statusInfo.type === 'completed'
                           ? 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/40'
                           : 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/20'
@@ -236,7 +236,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   )}
 
                   {activeAdEvent.max_registrations && (
-                    <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 text-xs font-bold flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
                       <Ticket className="w-3.5 h-3.5" />
                       <span>Max {activeAdEvent.max_registrations} seats available</span>
                     </span>
