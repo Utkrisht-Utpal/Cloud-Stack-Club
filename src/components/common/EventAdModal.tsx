@@ -20,19 +20,18 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { isAdminLoggedIn } = useAdminAuth();
   const hasTriggeredRef = useRef(false);
-  const isInitialCacheRef = useRef(events && events.length > 0);
+  const userDismissedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent duplicate ad triggers on page load / re-renders
-    if (hasTriggeredRef.current) return;
     if (!events || events.length === 0) return;
+    if (userDismissedRef.current) return;
 
     const now = new Date();
 
     // Find the latest active upcoming event whose deadline or date is not over
     const validUpcomingEvent = events.find((evt) => {
-      // Exclude deleted or cancelled events
-      if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any)) return false;
+      // Exclude deleted, cancelled, or completed events
+      if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any) || evt.status === ('completed' as any)) return false;
 
       // Check registration end deadline if set
       if (evt.registration_end) {
@@ -50,14 +49,16 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     });
 
     if (validUpcomingEvent) {
-      hasTriggeredRef.current = true;
       setActiveAdEvent(validUpcomingEvent);
-      // If loaded from local storage cache -> 780ms delay
-      // If fetched live from DB -> 0ms immediate trigger as soon as DB data arrives
-      if (isInitialCacheRef.current) {
-        setTimeout(() => setIsOpen(true), 780);
-      } else {
+
+      if (!hasTriggeredRef.current) {
+        hasTriggeredRef.current = true;
+        // Open popup immediately as soon as real DB data arrives (~150ms total time)
         setIsOpen(true);
+      }
+    } else {
+      if (isOpen) {
+        setIsOpen(false);
       }
     }
   }, [events]);
@@ -74,6 +75,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   }, [isOpen]);
 
   const handleClose = () => {
+    userDismissedRef.current = true;
     setIsOpen(false);
   };
 

@@ -24,32 +24,20 @@ const JoinModal = lazyWithRetry(() => import('../components/common/JoinModal'), 
 const EventRegisterModal = lazyWithRetry(() => import('../components/common/EventRegisterModal'), 'EventRegisterModal');
 const EventPdfModal = lazyWithRetry(() => import('../components/admin/EventPdfModal'), 'EventPdfModal');
 
-const getInitialCachedEvents = (): Event[] => {
-  try {
-    const cached = localStorage.getItem('csc_custom_events_list');
-    return cached ? JSON.parse(cached) : [];
-  } catch {
-    return [];
-  }
-};
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [eventsList, setEventsList] = useState<Event[]>(getInitialCachedEvents);
+  const [eventsList, setEventsList] = useState<Event[]>([]);
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
   const { showDashboard, logout } = useAdminAuth();
 
   useEffect(() => {
+    // Prioritized direct DB fetch (takes ~150ms) for 100% accurate live event popup
     getEvents()
       .then((fetchedEvents) => {
-        setEventsList(fetchedEvents);
-        try {
-          if (fetchedEvents && fetchedEvents.length > 0) {
-            localStorage.setItem('csc_custom_events_list', JSON.stringify(fetchedEvents));
-          }
-        } catch {}
+        setEventsList(fetchedEvents || []);
       })
       .catch(console.error);
   }, []);
