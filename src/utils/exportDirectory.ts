@@ -102,7 +102,7 @@ export const exportMembersToPdf = (
       fillColor: [248, 250, 252],
     },
     margin: { top: 27, left: 14, right: 14, bottom: 16 },
-    didDrawPage: (data) => {
+    didDrawPage: (data: any) => {
       const totalPages = doc.getNumberOfPages();
       doc.setFontSize(8);
       doc.setTextColor(148, 163, 184);
@@ -179,7 +179,7 @@ export const exportFeedbacksToPdf = (
       fillColor: [248, 250, 252],
     },
     margin: { top: 27, left: 14, right: 14, bottom: 16 },
-    didDrawPage: (data) => {
+    didDrawPage: (data: any) => {
       const totalPages = doc.getNumberOfPages();
       doc.setFontSize(8);
       doc.setTextColor(148, 163, 184);

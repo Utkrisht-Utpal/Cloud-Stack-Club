@@ -35,6 +35,9 @@ import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { CustomSelect } from '../ui/CustomSelect';
+import { DatePicker } from '../ui/DatePicker';
+import { TimePicker } from '../ui/TimePicker';
+import { CustomCheckbox } from '../ui/CustomCheckbox';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { formatEventTime, getEventStatusInfo, isRegistrationActive } from '../../utils/formatters';
 import {
@@ -1519,31 +1522,19 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newEventData.date}
-                  onChange={(e) => setNewEventData({ ...newEventData, date: e.target.value })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-                />
-              </div>
+              <DatePicker
+                label="Event Date *"
+                value={newEventData.date}
+                onChange={(val) => setNewEventData({ ...newEventData, date: val })}
+                placeholder="Select date"
+              />
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Time *
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={newEventData.time}
-                  onChange={(e) => setNewEventData({ ...newEventData, time: e.target.value })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-                />
-              </div>
+              <TimePicker
+                label="Event Time *"
+                value={newEventData.time}
+                onChange={(val) => setNewEventData({ ...newEventData, time: val })}
+                placeholder="Select time"
+              />
             </div>
 
             <div>
@@ -1567,25 +1558,21 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <input
-                    type="checkbox"
+                <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <CustomCheckbox
                     checked={newEventData.registration_enabled}
-                    onChange={(e) => setNewEventData({ ...newEventData, registration_enabled: e.target.checked })}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    onChange={(checked) => setNewEventData({ ...newEventData, registration_enabled: checked })}
+                    label="Enable Registration"
                   />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Enable Registration</span>
-                </label>
+                </div>
 
-                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <input
-                    type="checkbox"
+                <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <CustomCheckbox
                     checked={newEventData.supports_teams}
-                    onChange={(e) => setNewEventData({ ...newEventData, supports_teams: e.target.checked, max_team_size: e.target.checked ? 4 : 1 })}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    onChange={(checked) => setNewEventData({ ...newEventData, supports_teams: checked, max_team_size: checked ? 4 : 1 })}
+                    label="Allow Team Registrations"
                   />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Allow Team Registrations</span>
-                </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1624,26 +1611,20 @@ export const AdminDashboard: React.FC = () => {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                        Registration Start Window
-                      </label>
-                      <input
-                        type="date"
+                      <DatePicker
+                        label="Registration Start Window"
                         value={newEventData.registration_start}
-                        onChange={(e) => setNewEventData({ ...newEventData, registration_start: e.target.value })}
-                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                        onChange={(val) => setNewEventData({ ...newEventData, registration_start: val })}
+                        placeholder="Select start date"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                        Registration End / Deadline
-                      </label>
-                      <input
-                        type="date"
+                      <DatePicker
+                        label="Registration End / Deadline"
                         value={newEventData.registration_end}
-                        onChange={(e) => setNewEventData({ ...newEventData, registration_end: e.target.value })}
-                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                        onChange={(val) => setNewEventData({ ...newEventData, registration_end: val })}
+                        placeholder="Select end date"
                       />
                     </div>
                   </div>
@@ -1860,31 +1841,19 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={editEventData.date}
-                  onChange={(e) => setEditEventData({ ...editEventData, date: e.target.value })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-                />
-              </div>
+              <DatePicker
+                label="Event Date *"
+                value={editEventData.date}
+                onChange={(val) => setEditEventData({ ...editEventData, date: val })}
+                placeholder="Select date"
+              />
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Time *
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={editEventData.time}
-                  onChange={(e) => setEditEventData({ ...editEventData, time: e.target.value })}
-                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-                />
-              </div>
+              <TimePicker
+                label="Event Time *"
+                value={editEventData.time}
+                onChange={(val) => setEditEventData({ ...editEventData, time: val })}
+                placeholder="Select time"
+              />
             </div>
 
             <div>
@@ -1907,25 +1876,21 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <input
-                    type="checkbox"
+                <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <CustomCheckbox
                     checked={editEventData.registration_enabled}
-                    onChange={(e) => setEditEventData({ ...editEventData, registration_enabled: e.target.checked })}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    onChange={(checked) => setEditEventData({ ...editEventData, registration_enabled: checked })}
+                    label="Enable Registration"
                   />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Enable Registration</span>
-                </label>
+                </div>
 
-                <label className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                  <input
-                    type="checkbox"
+                <div className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <CustomCheckbox
                     checked={editEventData.supports_teams}
-                    onChange={(e) => setEditEventData({ ...editEventData, supports_teams: e.target.checked, max_team_size: e.target.checked ? 4 : 1 })}
-                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                    onChange={(checked) => setEditEventData({ ...editEventData, supports_teams: checked, max_team_size: checked ? 4 : 1 })}
+                    label="Allow Team Registrations"
                   />
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">Allow Team Registrations</span>
-                </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1964,26 +1929,20 @@ export const AdminDashboard: React.FC = () => {
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                        Registration Start Window
-                      </label>
-                      <input
-                        type="date"
+                      <DatePicker
+                        label="Registration Start Window"
                         value={editEventData.registration_start}
-                        onChange={(e) => setEditEventData({ ...editEventData, registration_start: e.target.value })}
-                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                        onChange={(val) => setEditEventData({ ...editEventData, registration_start: val })}
+                        placeholder="Select start date"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                        Registration End / Deadline
-                      </label>
-                      <input
-                        type="date"
+                      <DatePicker
+                        label="Registration End / Deadline"
                         value={editEventData.registration_end}
-                        onChange={(e) => setEditEventData({ ...editEventData, registration_end: e.target.value })}
-                        className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                        onChange={(val) => setEditEventData({ ...editEventData, registration_end: val })}
+                        placeholder="Select end date"
                       />
                     </div>
                   </div>
