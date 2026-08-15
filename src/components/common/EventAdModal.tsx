@@ -53,10 +53,10 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
       if (!hasTriggeredRef.current) {
         hasTriggeredRef.current = true;
-        // Wait 0.5s (500ms) so fresh database event data is fully loaded, eliminating any previous event flash
+        // Wait 300ms so fresh database event data is fully loaded, eliminating any previous event flash
         const timer = setTimeout(() => {
           setIsOpen(true);
-        }, 350);
+        }, 300);
         return () => clearTimeout(timer);
       }
     } else {
