@@ -45,9 +45,9 @@ export const AlertModal: React.FC<AlertModalProps> = ({
       case 'warning':
       default:
         return {
-          iconBg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
+          iconBg: 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/30',
           btn: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/25',
-          icon: <AlertTriangle className="w-6 h-6" />,
+          icon: <AlertTriangle className="w-6 h-6 text-blue-600 dark:text-sky-400" />,
         };
     }
   };

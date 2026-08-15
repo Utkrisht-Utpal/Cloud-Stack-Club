@@ -623,7 +623,7 @@ export const AdminDashboard: React.FC = () => {
               <UserCheck className="w-4 h-4" />
               <span>Membership Applications</span>
               {pendingApplications.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-blue-600 text-white font-black">
                   {pendingApplications.length}
                 </span>
               )}
@@ -682,7 +682,7 @@ export const AdminDashboard: React.FC = () => {
               <MessageSquare className="w-4 h-4" />
               <span>Contact & Feedbacks</span>
               {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-blue-600 text-white font-black">
                   {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
                 </span>
               )}
@@ -872,8 +872,8 @@ export const AdminDashboard: React.FC = () => {
                             onClick={() => setSelectedMemberForRole(member)}
                             className={`px-3.5 py-1.5 rounded-full text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 shadow-sm ${
                               member.is_core_member
-                                ? 'bg-amber-100/90 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                                ? 'bg-blue-100/90 dark:bg-blue-500/20 text-blue-700 dark:text-sky-400 hover:bg-blue-200 dark:hover:bg-blue-500/30'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                             }`}
                             title="Click to manage core responsibility or convert to normal user"
                           >
@@ -1046,7 +1046,7 @@ export const AdminDashboard: React.FC = () => {
                                 <span
                                   className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider backdrop-blur-md shadow-lg border ${
                                     statusInfo.type === 'ongoing'
-                                      ? 'bg-amber-500 text-slate-950 border-amber-400 font-black animate-pulse'
+                                      ? 'bg-blue-600 text-white border-blue-400 font-black animate-pulse'
                                       : statusInfo.type === 'completed'
                                       ? 'bg-slate-900/80 text-slate-300 border-slate-700'
                                       : 'bg-slate-950/80 text-sky-300 border-sky-500/30'
@@ -1107,7 +1107,7 @@ export const AdminDashboard: React.FC = () => {
                           </span>
                         )}
                         {evt.max_registrations && (
-                          <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center gap-1">
                             <Ticket className="w-3.5 h-3.5" />
                             <span>Max {evt.max_registrations} seats</span>
                           </span>
@@ -1669,8 +1669,8 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   {newEventData.registration_end && newEventData.date && new Date(newEventData.registration_end) > new Date(newEventData.date) && (
-                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                    <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-700 dark:text-sky-300 text-xs font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-blue-500" />
                       <span>Warning: Registration Deadline ({newEventData.registration_end}) crosses after Event Date ({newEventData.date}).</span>
                     </div>
                   )}
@@ -2019,8 +2019,8 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   {editEventData.registration_end && editEventData.date && new Date(editEventData.registration_end) > new Date(editEventData.date) && (
-                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
+                    <div className="p-3 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-700 dark:text-sky-300 text-xs font-bold flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-blue-500" />
                       <span>Warning: Registration Deadline ({editEventData.registration_end}) crosses after Event Date ({editEventData.date}).</span>
                     </div>
                   )}

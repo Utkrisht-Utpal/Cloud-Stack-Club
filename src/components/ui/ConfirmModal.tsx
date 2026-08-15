@@ -44,16 +44,16 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         };
       case 'warning':
         return {
-          iconBg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-          confirmBtn: 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/25',
-          icon: <AlertTriangle className="w-6 h-6" />,
+          iconBg: 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/30',
+          confirmBtn: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/25',
+          icon: <AlertTriangle className="w-6 h-6 text-blue-600 dark:text-sky-400" />,
         };
       case 'primary':
       default:
         return {
           iconBg: 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/30',
-          confirmBtn: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25',
-          icon: <CheckCircle2 className="w-6 h-6" />,
+          confirmBtn: 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white shadow-lg shadow-blue-500/25',
+          icon: <CheckCircle2 className="w-6 h-6 text-blue-600 dark:text-sky-400" />,
         };
     }
   };

@@ -76,7 +76,7 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
             <div className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
               <span>{member.name}</span>
               {member.is_core_member ? (
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-500/15 text-blue-600 dark:text-sky-400">
                   Current: Core Member
                 </span>
               ) : (
@@ -127,9 +127,9 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
 
         {/* Option 2: Convert to Normal Member */}
         {member.is_core_member && (
-          <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-900/60 border border-amber-200 dark:border-amber-500/20 space-y-2.5">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-800 dark:text-amber-400">
-              <UserMinus className="w-4 h-4 text-amber-600" />
+          <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-slate-900/60 border border-blue-200 dark:border-blue-500/20 space-y-2.5">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-800 dark:text-sky-400">
+              <UserMinus className="w-4 h-4 text-blue-600 dark:text-sky-400" />
               <span>Convert to Normal User</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-400">
@@ -139,7 +139,7 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
               type="button"
               onClick={() => setShowConfirmConvert(true)}
               disabled={isSubmitting}
-              className="w-full py-2.5 px-4 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 hover:bg-amber-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-4 rounded-xl bg-blue-500/15 text-blue-700 dark:text-sky-400 hover:bg-blue-500/25 transition-all text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
             >
               <UserMinus className="w-3.5 h-3.5" />
               <span>Make Normal User</span>
@@ -154,7 +154,7 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
           title="Convert to Normal User?"
           message={`Are you sure you want to convert ${member.name} to a normal user? This will remove core member status and assigned executive responsibilities.`}
           confirmText="Convert Member"
-          variant="warning"
+          variant="primary"
           isLoading={isSubmitting}
         />
       </div>
