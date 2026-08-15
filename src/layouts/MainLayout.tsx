@@ -25,20 +25,13 @@ const EventRegisterModal = lazyWithRetry(() => import('../components/common/Even
 const EventPdfModal = lazyWithRetry(() => import('../components/admin/EventPdfModal'), 'EventPdfModal');
 
 
-const getInitialCachedEvents = (): Event[] => {
-  try {
-    const cached = localStorage.getItem('csc_custom_events_list');
-    return cached ? JSON.parse(cached) : [];
-  } catch {
-    return [];
-  }
-};
+
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [eventsList, setEventsList] = useState<Event[]>(getInitialCachedEvents);
+  const [eventsList, setEventsList] = useState<Event[]>([]);
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
   const { showDashboard, logout } = useAdminAuth();
 
