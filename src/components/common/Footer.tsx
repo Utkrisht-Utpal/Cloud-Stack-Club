@@ -176,7 +176,7 @@ export const Footer: React.FC = () => {
         {/* Bottom Footer Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
           <div className="flex items-center gap-1.5">
-            <span>© 2026 {siteConfig.name}. All rights reserved. v1.0.20</span>
+            <span>© 2026 {siteConfig.name}. All rights reserved. v3.01.0003</span>
           </div>
 
           <div className="flex items-center gap-1">

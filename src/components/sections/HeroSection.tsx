@@ -171,7 +171,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
                 cloud-stack-club@cu:~
               </span>
             </div>
-            <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-extrabold">● v2026.2 (Active)</span>
+            <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-extrabold">● v2026.3 (Active)</span>
           </div>
           <div className="pt-3 font-mono text-xs sm:text-sm space-y-2">
             <p className="flex items-center gap-2">
