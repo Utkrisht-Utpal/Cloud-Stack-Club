@@ -16,11 +16,12 @@ import type { Event } from '../types/database';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { lazyWithRetry } from '../utils/lazyWithRetry';
 
+import { AdminDashboard } from '../components/admin/AdminDashboard';
+import { AdminLoginModal } from '../components/admin/AdminLoginModal';
+
 // Code-splitting with auto-retry on 404 deployment stale chunks
 const JoinModal = lazyWithRetry(() => import('../components/common/JoinModal'), 'JoinModal');
 const EventRegisterModal = lazyWithRetry(() => import('../components/common/EventRegisterModal'), 'EventRegisterModal');
-const AdminLoginModal = lazyWithRetry(() => import('../components/admin/AdminLoginModal'), 'AdminLoginModal');
-const AdminDashboard = lazyWithRetry(() => import('../components/admin/AdminDashboard'), 'AdminDashboard');
 const EventPdfModal = lazyWithRetry(() => import('../components/admin/EventPdfModal'), 'EventPdfModal');
 
 const getInitialCachedEvents = (): Event[] => {
@@ -67,21 +68,7 @@ export const MainLayout: React.FC = () => {
         <CloudBackground />
         <Navbar isAdminDashboard={true} onAdminLogout={logout} />
         <ErrorBoundary>
-          <Suspense
-            fallback={
-              <div className="min-h-screen pt-28 px-4 max-w-7xl mx-auto space-y-6">
-                <div className="h-12 w-96 bg-slate-200 dark:bg-slate-800/80 rounded-2xl animate-pulse" />
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="h-24 bg-slate-200 dark:bg-slate-800/60 rounded-3xl animate-pulse" />
-                  ))}
-                </div>
-                <div className="h-96 bg-slate-200 dark:bg-slate-800/50 rounded-3xl animate-pulse" />
-              </div>
-            }
-          >
-            <AdminDashboard />
-          </Suspense>
+          <AdminDashboard />
         </ErrorBoundary>
         <Footer />
       </div>
