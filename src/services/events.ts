@@ -145,7 +145,7 @@ export const getEvents = async (): Promise<Event[]> => {
   }
 
   try {
-    // 2500ms Fast Timeout Race for Supabase fetch to prevent 20-25s network hangs on cold starts
+    // 15000ms Timeout Race for Supabase fetch (allows existing large base64 events to finish loading)
     const fetchPromise = supabase
       .from('events')
       .select('id, title, category, description, date, start_time, location, image_url, pdf_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at')
@@ -153,7 +153,7 @@ export const getEvents = async (): Promise<Event[]> => {
       .order('date', { ascending: true });
 
     const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: 'Database fetch timeout' } }), 2500)
+      setTimeout(() => resolve({ data: null, error: { message: 'Database fetch timeout' } }), 15000)
     );
 
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
@@ -207,19 +207,27 @@ export const uploadEventPdf = async (file: File, eventId: string): Promise<strin
     try {
       const fileExt = file.name.split('.').pop() || 'pdf';
       const filePath = `schedules/${eventId}_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKETS.EVENT_PDFS)
         .upload(filePath, file, { upsert: true });
 
-      if (!uploadError) {
+      if (uploadError) {
+        console.warn('Supabase PDF storage upload RLS/Permission notice:', uploadError.message);
+      } else if (uploadData) {
         const { data } = supabase.storage
           .from(STORAGE_BUCKETS.EVENT_PDFS)
           .getPublicUrl(filePath);
         if (data?.publicUrl) return data.publicUrl;
       }
     } catch (err) {
-      console.warn('Supabase PDF storage upload notice:', err);
+      console.warn('Supabase PDF storage upload exception:', err);
     }
+  }
+
+  // Fallback: Only convert to base64 if small (<500KB) to prevent breaking DB payload limits
+  if (file.size > 500 * 1024) {
+    console.warn('PDF file is larger than 500KB and storage upload policy is locked. Skipping base64 fallback to protect database payload limit.');
+    return '';
   }
 
   return new Promise((resolve) => {
@@ -238,18 +246,20 @@ export const uploadEventImage = async (file: File, eventId: string): Promise<str
     try {
       const fileExt = file.name.split('.').pop() || 'jpg';
       const filePath = `posters/${eventId}_${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKETS.EVENT_IMAGES)
         .upload(filePath, file, { upsert: true });
 
-      if (!uploadError) {
+      if (uploadError) {
+        console.warn('Supabase image storage upload RLS/Permission notice:', uploadError.message);
+      } else if (uploadData) {
         const { data } = supabase.storage
           .from(STORAGE_BUCKETS.EVENT_IMAGES)
           .getPublicUrl(filePath);
         if (data?.publicUrl) return data.publicUrl;
       }
     } catch (err) {
-      console.warn('Supabase storage upload notice:', err);
+      console.warn('Supabase image storage upload exception:', err);
     }
   }
 
