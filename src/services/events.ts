@@ -59,7 +59,9 @@ export const saveStoredCategory = (eventId: string, category: string | null) => 
 export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Use LOCAL date (not UTC) so status transitions happen at local midnight, not UTC midnight
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const nowMs = Date.now();
 
   for (const evt of eventsList) {
@@ -110,7 +112,9 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
 export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
   if (!eventsList || eventsList.length === 0) return [];
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Use LOCAL date (not UTC) so sorting matches local midnight transition
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   return [...eventsList].sort((a, b) => {
       const aDateStr = a.date ? a.date.split('T')[0] : '';
@@ -391,7 +395,8 @@ export const updateEventAdmin = async (
 
   // Recalculate status based on date if date is provided and status is not explicitly cancelled
   if (eventPayload.date && eventPayload.status !== 'cancelled') {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const _now = new Date();
+    const todayStr = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
     const newDateStr = eventPayload.date.split('T')[0];
     if (newDateStr === todayStr) {
       eventPayload.status = 'live';
