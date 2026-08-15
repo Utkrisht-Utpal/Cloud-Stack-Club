@@ -53,8 +53,11 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
       if (!hasTriggeredRef.current) {
         hasTriggeredRef.current = true;
-        // Open popup immediately as soon as real DB data arrives (~150ms total time)
-        setIsOpen(true);
+        // Delay opening popup by 1 second (1000ms) after event data is ready
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 1000);
+        return () => clearTimeout(timer);
       }
     } else {
       if (isOpen) {
