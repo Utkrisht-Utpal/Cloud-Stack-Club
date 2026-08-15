@@ -266,7 +266,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                           animate={{ opacity: 1, x: 0, scale: 1 }}
                           exit={{ opacity: 0, x: -8, scale: 0.96 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute sm:left-full sm:top-1/2 sm:-translate-y-1/2 sm:ml-3 right-0 top-full mt-2 w-72 sm:w-80 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl z-[9999] text-left space-y-2.5"
+                          className="absolute left-0 bottom-full mb-2 w-[calc(100vw-3.5rem)] max-w-[290px] sm:max-w-none sm:bottom-auto sm:left-full sm:right-auto sm:top-1/2 sm:mb-0 sm:-translate-y-1/2 sm:ml-3 sm:w-80 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 shadow-2xl z-[9999] text-left space-y-2.5"
                         >
                           <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-white">
