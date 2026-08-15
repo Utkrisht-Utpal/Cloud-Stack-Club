@@ -103,11 +103,13 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
           <CustomSelect
             value={selectedRoleId}
             onChange={(val) => setSelectedRoleId(val)}
-            options={roles.map((r) => ({
-              value: r.id,
-              label: r.name,
-              description: r.description || undefined,
-            }))}
+            options={[...roles]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((r) => ({
+                value: r.id,
+                label: r.name,
+                description: r.description || undefined,
+              }))}
             triggerClassName="w-full h-11 px-3.5 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all duration-300 text-xs font-semibold text-left"
           />
 
