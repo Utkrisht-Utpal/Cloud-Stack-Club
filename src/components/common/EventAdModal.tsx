@@ -56,7 +56,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
         // Wait 0.5s (500ms) so fresh database event data is fully loaded, eliminating any previous event flash
         const timer = setTimeout(() => {
           setIsOpen(true);
-        }, 500);
+        }, 350);
         return () => clearTimeout(timer);
       }
     } else {
@@ -86,27 +86,27 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   const eventDateFormatted = activeAdEvent.date
     ? new Date(activeAdEvent.date).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : 'Date TBD';
 
   const regStartFormatted = activeAdEvent.registration_start
     ? new Date(activeAdEvent.registration_start).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : null;
 
   const regEndFormatted = activeAdEvent.registration_end
     ? new Date(activeAdEvent.registration_end).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : null;
 
   const statusInfo = getEventStatusInfo(activeAdEvent.date);
@@ -158,13 +158,12 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                        statusInfo.type === 'ongoing'
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusInfo.type === 'ongoing'
                           ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse'
                           : statusInfo.type === 'completed'
-                          ? 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/40'
-                          : 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/20'
-                      }`}
+                            ? 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/40'
+                            : 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/20'
+                        }`}
                     >
                       <Sparkles className="w-3 h-3 text-current" />
                       <span>{statusInfo.type === 'ongoing' ? 'ONGOING EVENT' : statusInfo.label}</span>
