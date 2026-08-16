@@ -50,12 +50,12 @@ export const FloatingMobileCTA: React.FC<FloatingMobileCTAProps> = ({ onJoinClic
           transition={{ duration: 0.25 }}
           className="fixed bottom-4 left-4 right-4 z-40 md:hidden"
         >
-          <div className="p-3 rounded-2xl glass-panel bg-slate-900/90 border-blue-500/30 shadow-2xl flex items-center justify-between gap-3 text-white">
+          <div className="p-3 rounded-2xl glass-panel bg-[#e6ecf5] dark:bg-slate-900/90 border border-white/80 dark:border-blue-500/30 shadow-2xl flex items-center justify-between gap-3 text-slate-900 dark:text-white">
             <div className="flex items-center gap-2 pl-2">
-              <Sparkles className="w-5 h-5 text-sky-400 animate-pulse" />
+              <Sparkles className="w-5 h-5 text-blue-600 dark:text-sky-400 animate-pulse shrink-0" />
               <div className="flex flex-col">
-                <span className="text-xs font-bold">Cloud Stack Club</span>
-                <span className="text-[10px] text-slate-400">Empowering student builders</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Cloud Stack Club</span>
+                <span className="text-[10px] text-slate-600 dark:text-slate-400 font-medium">Empowering student builders</span>
               </div>
             </div>
             <Button

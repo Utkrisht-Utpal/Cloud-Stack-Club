@@ -32,7 +32,7 @@ export const ClubLogo: React.FC<ClubLogoProps> = ({
           <span className="font-black text-lg sm:text-xl tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
             Cloud Stack <span className="text-blue-600 dark:text-sky-400">Club</span>
           </span>
-          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-widest uppercase">
+          <span className="text-[10px] font-extrabold text-slate-600 dark:text-slate-400 tracking-widest uppercase">
             Chandigarh University
           </span>
         </div>
