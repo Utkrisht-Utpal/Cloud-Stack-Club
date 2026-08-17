@@ -179,10 +179,14 @@ export const Footer: React.FC = () => {
             <span>© 2026 {siteConfig.name}. All rights reserved. v3.01.0003</span>
           </div>
 
-          <div className="flex items-center gap-1">
-            <span>Built with</span>
-            <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse inline" />
-            <span>by Utkrisht Utpal</span>
+          <div className="flex flex-col items-center justify-center gap-0.5 text-center">
+            <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span>Designed & built with</span>
+              <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse inline" />
+            </div>
+            <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+              Utkrisht Utpal · Sushant Kumar
+            </div>
           </div>
 
           {/* Personal Social Icons LinkedIn & GitHub only*/}
