@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, useOutletContext } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { ThemeProvider } from './context/ThemeContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import { MainLayout } from './layouts/MainLayout';
@@ -29,6 +30,7 @@ export const App: React.FC = () => {
             </Route>
           </Routes>
           <Analytics />
+          <SpeedInsights />
         </BrowserRouter>
       </AdminAuthProvider>
     </ThemeProvider>
