@@ -27,22 +27,17 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     if (userDismissedRef.current) return;
 
     const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    // Find the latest active upcoming event whose deadline or date is not over
+    // Find the nearest active upcoming or live event whose event date is not over
     const validUpcomingEvent = events.find((evt) => {
       // Exclude deleted, cancelled, or completed events
       if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any) || evt.status === ('completed' as any)) return false;
 
-      // Check registration end deadline if set
-      if (evt.registration_end) {
-        const endDate = new Date(evt.registration_end);
-        endDate.setHours(23, 59, 59, 999);
-        if (endDate < now) return false;
-      } else if (evt.date) {
-        // Fallback check event date
-        const eventDate = new Date(evt.date);
-        eventDate.setHours(23, 59, 59, 999);
-        if (eventDate < now) return false;
+      // Event is valid if its event date is today or in the future
+      if (evt.date) {
+        const eventDateStr = evt.date.split('T')[0];
+        if (eventDateStr < todayStr) return false;
       }
 
       return true;
