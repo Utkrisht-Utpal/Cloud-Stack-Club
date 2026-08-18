@@ -23,6 +23,8 @@ import {
   Sparkles,
   MessageSquare,
   AlertTriangle,
+  RefreshCw,
+  ShieldCheck,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -84,7 +86,8 @@ const getInitialFeedbacksCache = (): ContactFeedback[] => {
 };
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'applications' | 'events' | 'forms' | 'members' | 'feedbacks'>('applications');
+  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks'>('members');
+  const [membersSubTab, setMembersSubTab] = useState<'applications' | 'active' | 'core'>('applications');
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -98,6 +101,8 @@ export const AdminDashboard: React.FC = () => {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
   const [memberFilter, setMemberFilter] = useState<'all' | 'members' | 'core'>('all');
+  const [deptFilter, setDeptFilter] = useState<string>('all');
+  const [isSyncingMembers, setIsSyncingMembers] = useState(false);
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
 
   // Events State (Direct Real DB Fetching)
@@ -568,6 +573,43 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
+  const handleSyncMembers = async () => {
+    setIsSyncingMembers(true);
+    try {
+      await Promise.all([loadPendingApps(), loadAllMembers()]);
+      setActionSuccess('Synchronized member records successfully!');
+      setTimeout(() => setActionSuccess(null), 2000);
+    } catch (err: any) {
+      console.error('Error syncing members:', err);
+    } finally {
+      setIsSyncingMembers(false);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return 'CS';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const departmentOptions = React.useMemo(() => {
+    const depts = new Set<string>();
+    membersList.forEach((m) => {
+      if (m.department && m.department.trim()) {
+        depts.add(m.department.trim());
+      }
+    });
+    pendingApplications.forEach((m) => {
+      if (m.department && m.department.trim()) {
+        depts.add(m.department.trim());
+      }
+    });
+
+    const list = Array.from(depts).sort().map((d) => ({ value: d, label: d }));
+    return [{ value: 'all', label: 'All Departments' }, ...list];
+  }, [membersList, pendingApplications]);
+
   const filteredMembers = membersList.filter((m) => {
     const matchesSearch =
       m.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
@@ -576,9 +618,26 @@ export const AdminDashboard: React.FC = () => {
       m.email.toLowerCase().includes(memberSearch.toLowerCase());
 
     if (!matchesSearch) return false;
+    if (deptFilter !== 'all' && m.department !== deptFilter) return false;
 
-    if (memberFilter === 'members') return !m.is_core_member;
-    if (memberFilter === 'core') return m.is_core_member;
+    if (membersSubTab === 'core') return m.is_core_member;
+    if (membersSubTab === 'active') {
+      if (memberFilter === 'members') return !m.is_core_member;
+      if (memberFilter === 'core') return m.is_core_member;
+      return true;
+    }
+    return true;
+  });
+
+  const filteredApplications = pendingApplications.filter((app) => {
+    const matchesSearch =
+      app.name.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      (app.uid || '').toLowerCase().includes(memberSearch.toLowerCase()) ||
+      app.registration_id.toLowerCase().includes(memberSearch.toLowerCase()) ||
+      app.email.toLowerCase().includes(memberSearch.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (deptFilter !== 'all' && app.department !== deptFilter) return false;
     return true;
   });
 
@@ -590,23 +649,6 @@ export const AdminDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none min-w-0">
             <button
-              onClick={() => setActiveTab('applications')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTab === 'applications'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <UserCheck className="w-4 h-4" />
-              <span>Membership Applications</span>
-              {pendingApplications.length > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
-                  {pendingApplications.length}
-                </span>
-              )}
-            </button>
-
-            <button
               onClick={() => setActiveTab('members')}
               className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
                 activeTab === 'members'
@@ -615,10 +657,16 @@ export const AdminDashboard: React.FC = () => {
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>Members & Core Directory</span>
-              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                {membersList.length}
-              </span>
+              <span>Members Management</span>
+              {pendingApplications.length > 0 ? (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+                  {pendingApplications.length}
+                </span>
+              ) : (
+                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  {membersList.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -667,209 +715,412 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Tab Content 1: Pending Membership Applications */}
-        {activeTab === 'applications' && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex items-center justify-between">
+        {/* Tab Content: Members Management */}
+        {activeTab === 'members' && (
+          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+            {/* Top Action Bar: Title + Sync Records Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800/80">
               <div>
-                <h2 className="text-base font-bold">Pending Membership Applications</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Review applicant details, verify their CUIMS screenshot, and approve or reject applications.
+                <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600 dark:text-sky-400" />
+                  <span>Members Management</span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                  Manage applicant onboarding, active member directory, and executive core council.
                 </p>
               </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSyncMembers}
+                  disabled={isSyncingMembers}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 border border-slate-200 dark:border-slate-700 shadow-sm"
+                  title="Synchronize records with Supabase"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingMembers ? 'animate-spin text-blue-600' : ''}`} />
+                  <span>{isSyncingMembers ? 'Syncing...' : 'Sync Records'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Metric Header Cards (Sub-Navigation) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              {/* Card 1: Applications */}
               <button
-                onClick={loadPendingApps}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+                type="button"
+                onClick={() => setMembersSubTab('applications')}
+                className={`p-4 rounded-2xl text-left transition-all duration-200 cursor-pointer relative overflow-hidden border ${
+                  membersSubTab === 'applications'
+                    ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500/60 ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/10'
+                    : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/80'
+                }`}
               >
-                Refresh List
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Applications
+                  </span>
+                  <div className={`p-2 rounded-xl ${
+                    membersSubTab === 'applications'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                  }`}>
+                    <UserCheck className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    {pendingApplications.length}
+                  </span>
+                  {pendingApplications.length > 0 ? (
+                    <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                      ● Pending Review
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                      ✔ Queue Clear
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Card 2: Active Directory */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMembersSubTab('active');
+                  setMemberFilter('all');
+                }}
+                className={`p-4 rounded-2xl text-left transition-all duration-200 cursor-pointer relative overflow-hidden border ${
+                  membersSubTab === 'active'
+                    ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500/60 ring-2 ring-blue-500/50 shadow-lg shadow-blue-500/10'
+                    : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/80'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Active Directory
+                  </span>
+                  <div className={`p-2 rounded-xl ${
+                    membersSubTab === 'active'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-100 dark:bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                  }`}>
+                    <Users className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    {membersList.length}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    Verified Members
+                  </span>
+                </div>
+              </button>
+
+              {/* Card 3: Core Council */}
+              <button
+                type="button"
+                onClick={() => {
+                  setMembersSubTab('core');
+                }}
+                className={`p-4 rounded-2xl text-left transition-all duration-200 cursor-pointer relative overflow-hidden border ${
+                  membersSubTab === 'core'
+                    ? 'bg-amber-50/80 dark:bg-amber-500/10 border-amber-500/60 ring-2 ring-amber-500/50 shadow-lg shadow-amber-500/10'
+                    : 'bg-slate-50/70 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/80'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Core Council
+                  </span>
+                  <div className={`p-2 rounded-xl ${
+                    membersSubTab === 'core'
+                      ? 'bg-amber-500 text-white shadow-sm'
+                      : 'bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  }`}>
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-slate-900 dark:text-white">
+                    {membersList.filter((m) => m.is_core_member).length}
+                  </span>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    Executive Leadership
+                  </span>
+                </div>
               </button>
             </div>
 
-            {loadingApplications ? (
-              <div className="py-12 text-center text-xs text-slate-500">Loading pending applications...</div>
-            ) : pendingApplications.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500 space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
-                <p className="font-semibold text-slate-700 dark:text-slate-300">All caught up!</p>
-                <p className="text-slate-500">There are no pending membership applications to review.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-3 px-4">Applicant</th>
-                      <th className="py-3 px-4">UID / Reg ID</th>
-                      <th className="py-3 px-4">Dept & Year</th>
-                      <th className="py-3 px-4">CUIMS Verification</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                    {pendingApplications.map((app) => (
-                      <tr key={app.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-slate-900 dark:text-white">{app.name}</div>
-                          <div className="text-[11px] text-slate-500">{app.email}</div>
-                          {app.phone && <div className="text-[10px] text-slate-400">{app.phone}</div>}
-                        </td>
-                        <td className="py-3.5 px-4 font-mono">
-                          <div className="text-blue-600 dark:text-sky-400 font-bold">{app.registration_id}</div>
-                          <div className="text-slate-500 text-[11px]">{app.uid}</div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div>{app.department || 'N/A'}</div>
-                          <div className="text-slate-500 text-[11px]">{app.year || 'N/A'}</div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          {app.verification_file_url ? (
-                            <button
-                              onClick={() => setSelectedDocFile({ path: app.verification_file_url!, name: app.name })}
-                              className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>View Screenshot</span>
-                            </button>
-                          ) : (
-                            <span className="text-slate-400 italic text-[11px]">No File</span>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleApprove(app)}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 font-extrabold text-[11px] flex items-center gap-1 cursor-pointer"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Approve</span>
-                            </button>
-                            <button
-                              onClick={() => handleReject(app)}
-                              className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              <span>Reject</span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab Content 2: Members Directory & Core Team CRUD */}
-        {activeTab === 'members' && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-bold">Active Members & Core Team Directory</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Manage active club members, assign executive core roles, or remove members.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
-                {/* Download Button Dropdown (Positioned to the Left of Filter Dropdown) */}
-                <DownloadDropdown
-                  members={filteredMembers}
-                  currentFilter={memberFilter}
-                  searchQuery={memberSearch}
-                />
-
-                {/* Filter Dropdown */}
-                <div className="w-full sm:w-48 shrink-0">
-                  <CustomSelect
-                    value={memberFilter}
-                    onChange={(val) => setMemberFilter(val as 'all' | 'members' | 'core')}
-                    options={[
-                      { value: 'all', label: `All (${membersList.length})` },
-                      { value: 'members', label: `Members (${membersList.filter((m) => !m.is_core_member).length})` },
-                      { value: 'core', label: `Core Members (${membersList.filter((m) => m.is_core_member).length})` },
-                    ]}
-                    triggerClassName="w-full h-10 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
-                  />
-                </div>
-
-                {/* Search Box */}
-                <div className="relative w-full sm:w-64">
+            {/* Search & Filtering Controls Toolbar */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+                {/* Search Bar */}
+                <div className="relative flex-1 min-w-[220px]">
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
-                    placeholder="Search by name, UID, Reg ID..."
-                    className="w-full pl-9 pr-3 h-10 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium"
+                    placeholder="Search name, UID, email, Reg ID..."
+                    className="w-full pl-9 pr-3 h-10 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium text-slate-900 dark:text-white placeholder:text-slate-400"
+                  />
+                  {memberSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setMemberSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 text-xs"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Department Dropdown Filter */}
+                <div className="w-full sm:w-48 shrink-0">
+                  <CustomSelect
+                    value={deptFilter}
+                    onChange={(val) => setDeptFilter(val)}
+                    options={departmentOptions}
+                    triggerClassName="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
                   />
                 </div>
+
+                {/* Category Filter Dropdown (Active tab only) */}
+                {membersSubTab === 'active' && (
+                  <div className="w-full sm:w-44 shrink-0">
+                    <CustomSelect
+                      value={memberFilter}
+                      onChange={(val) => setMemberFilter(val as 'all' | 'members' | 'core')}
+                      options={[
+                        { value: 'all', label: `All (${membersList.length})` },
+                        { value: 'members', label: `General (${membersList.filter((m) => !m.is_core_member).length})` },
+                        { value: 'core', label: `Core (${membersList.filter((m) => m.is_core_member).length})` },
+                      ]}
+                      triggerClassName="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Right Side: Download Dropdown (for directory views) */}
+              <div className="flex items-center gap-2 shrink-0">
+                {(membersSubTab === 'active' || membersSubTab === 'core') && (
+                  <DownloadDropdown
+                    members={filteredMembers}
+                    currentFilter={membersSubTab === 'core' ? 'core' : memberFilter}
+                    searchQuery={memberSearch}
+                  />
+                )}
               </div>
             </div>
 
-            {loadingMembers ? (
-              <div className="py-12 text-center text-xs text-slate-500">Loading members directory...</div>
-            ) : (
-              <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-lg border border-slate-100 dark:border-slate-800/60 custom-scrollbar pr-1">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-3 px-4 font-semibold">Member Name</th>
-                      <th className="py-3 px-4 font-semibold">Reg ID & UID</th>
-                      <th className="py-3 px-4 font-semibold">Department & Year</th>
-                      <th className="py-3 px-4 font-semibold">Role / Core Status</th>
-                      <th className="py-3 px-4 text-right font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                    {filteredMembers.map((member) => (
-                      <tr key={member.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4">
-                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                            <span>{member.name}</span>
-                            {member.is_core_member && (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-500/15 text-blue-600 dark:text-sky-400">
-                                {member.role?.name || 'Core Member'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-500">{member.email}</div>
-                        </td>
-                        <td className="py-3.5 px-4 font-mono">
-                          <div className="text-blue-600 dark:text-sky-400 font-bold">{member.registration_id}</div>
-                          <div className="text-slate-500 text-[11px]">{member.uid}</div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div>{member.department || 'N/A'}</div>
-                          <div className="text-slate-500 text-[11px]">{member.year || 'N/A'}</div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <button
-                            onClick={() => setSelectedMemberForRole(member)}
-                            className={`px-3.5 py-1.5 rounded-full text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 shadow-sm ${
-                              member.is_core_member
-                                ? 'bg-amber-100/90 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 hover:bg-amber-200'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                            }`}
-                            title="Click to manage core responsibility or convert to normal user"
-                          >
-                            {member.is_core_member ? '★ Core Member' : 'Make Core Member'}
-                          </button>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => handleDeleteMember(member.id, member.name)}
-                            className="p-1.5 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
-                            title="Delete Member"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* View 1: Applications */}
+            {membersSubTab === 'applications' && (
+              <div className="space-y-4">
+                {loadingApplications ? (
+                  <div className="py-16 text-center text-xs text-slate-500">Loading pending applications...</div>
+                ) : filteredApplications.length === 0 ? (
+                  <div className="py-14 text-center text-xs text-slate-500 space-y-3 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50/50 dark:bg-slate-900/40 p-8">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-sm">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">All Caught Up!</p>
+                      <p className="text-slate-500 max-w-sm mx-auto text-[11px] leading-relaxed mt-1">
+                        There are no pending membership applications waiting for review. New applications submitted via the join form will appear here.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] font-bold">
+                          <th className="py-3 px-4">Applicant</th>
+                          <th className="py-3 px-4">IDs & Credentials</th>
+                          <th className="py-3 px-4">Academic Details</th>
+                          <th className="py-3 px-4">CUIMS Verification</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                        {filteredApplications.map((app) => (
+                          <tr key={app.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 text-white font-black text-[11px] tracking-wide flex items-center justify-center shrink-0 shadow-sm">
+                                  {getInitials(app.name)}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 dark:text-white text-[13px]">{app.name}</div>
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400">{app.email}</div>
+                                  {app.phone && <div className="text-[10px] text-slate-400 font-mono">{app.phone}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="space-y-1">
+                                <span className="inline-block font-mono bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 px-2 py-0.5 rounded-lg text-[11px] font-bold border border-blue-200/50 dark:border-transparent">
+                                  {app.registration_id}
+                                </span>
+                                <div className="text-slate-500 dark:text-slate-400 text-[11px] font-mono pl-0.5">
+                                  UID: {app.uid}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="space-y-0.5">
+                                <div className="font-bold text-slate-900 dark:text-slate-200 text-xs">{app.department || 'N/A'}</div>
+                                <div className="text-slate-500 text-[11px]">{app.year ? `Year ${app.year}` : 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              {app.verification_file_url ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedDocFile({ path: app.verification_file_url!, name: app.name })}
+                                  className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer border border-blue-200/60 dark:border-transparent transition-colors"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View Screenshot</span>
+                                </button>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">No File</span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleApprove(app)}
+                                  className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 font-extrabold text-[11px] flex items-center gap-1 cursor-pointer border border-emerald-500/20 transition-all shadow-sm"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Approve</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReject(app)}
+                                  className="px-3.5 py-1.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 font-bold text-[11px] flex items-center gap-1 cursor-pointer border border-red-500/20 transition-all"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  <span>Reject</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* View 2 & 3: Active Directory & Core Council */}
+            {(membersSubTab === 'active' || membersSubTab === 'core') && (
+              <div className="space-y-4">
+                {loadingMembers ? (
+                  <div className="py-16 text-center text-xs text-slate-500">Loading members directory...</div>
+                ) : filteredMembers.length === 0 ? (
+                  <div className="py-14 text-center text-xs text-slate-500 space-y-3 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50/50 dark:bg-slate-900/40 p-8">
+                    <Users className="w-8 h-8 text-slate-400 mx-auto opacity-70" />
+                    <div>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">No Members Found</p>
+                      <p className="text-slate-500 text-[11px] mt-1">
+                        No records match the current filter or search criteria.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto overflow-y-auto max-h-[560px] rounded-2xl border border-slate-200/80 dark:border-slate-800 custom-scrollbar shadow-sm">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-sm">
+                        <tr className="text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] font-bold">
+                          <th className="py-3 px-4">Member Info</th>
+                          <th className="py-3 px-4">IDs & Credentials</th>
+                          <th className="py-3 px-4">Academic Details</th>
+                          <th className="py-3 px-4">Role Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                        {filteredMembers.map((member) => (
+                          <tr key={member.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 text-white font-black text-[11px] tracking-wide flex items-center justify-center shrink-0 shadow-sm">
+                                  {getInitials(member.name)}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 dark:text-white text-[13px] flex items-center gap-2">
+                                    <span>{member.name}</span>
+                                    {member.is_core_member && (
+                                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-500/20">
+                                        {member.role?.name || 'Core Member'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 dark:text-slate-400">{member.email}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="space-y-1">
+                                <span className="inline-block font-mono bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 px-2 py-0.5 rounded-lg text-[11px] font-bold border border-blue-200/50 dark:border-transparent">
+                                  {member.registration_id}
+                                </span>
+                                <div className="text-slate-500 dark:text-slate-400 text-[11px] font-mono pl-0.5">
+                                  UID: {member.uid}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="space-y-0.5">
+                                <div className="font-bold text-slate-900 dark:text-slate-200 text-xs">{member.department || 'N/A'}</div>
+                                <div className="text-slate-500 text-[11px]">{member.year ? `Year ${member.year}` : 'N/A'}</div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedMemberForRole(member)}
+                                className={`px-3.5 py-1.5 rounded-full text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1.5 shadow-sm border ${
+                                  member.is_core_member
+                                    ? 'bg-amber-100/90 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-300/60 dark:border-amber-500/30 hover:bg-amber-200 dark:hover:bg-amber-500/30'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                }`}
+                                title="Click to manage core responsibility or convert to regular member"
+                              >
+                                {member.is_core_member ? (
+                                  <>
+                                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                    <span>★ Core Member</span>
+                                  </>
+                                ) : (
+                                  <span>Make Core Member</span>
+                                )}
+                              </button>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMember(member.id, member.name)}
+                                className="p-2 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                                title="Delete Member"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>
