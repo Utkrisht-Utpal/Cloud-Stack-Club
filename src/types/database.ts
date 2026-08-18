@@ -144,6 +144,7 @@ export interface ContactFeedback {
   id: string;
   name: string;
   email: string;
+  university_id?: string;
   message: string;
   status: FeedbackStatus;
   created_at: string;
