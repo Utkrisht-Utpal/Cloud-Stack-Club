@@ -1656,18 +1656,18 @@ export const AdminDashboard: React.FC = () => {
                     {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).map((f: any, idx) => (
                       <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
-                        <td className="py-3.5 px-4 min-w-[180px]">
-                          <div className="space-y-1">
+                        <td className="py-3.5 px-4 min-w-[230px]">
+                          <div className="space-y-1.5">
                             <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
-                            {feedbackViewTab === 'event' ? (
-                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            {feedbackViewTab === 'event' && (f.university_id || f.registration_id) ? (
+                              <div className="flex items-center gap-1.5 flex-nowrap">
                                 {f.university_id && (
-                                  <span className="px-2 py-0.5 rounded-md text-[10px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-300 font-mono font-bold">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-300 font-mono font-bold whitespace-nowrap border border-blue-200/60 dark:border-blue-500/20">
                                     UID: {f.university_id}
                                   </span>
                                 )}
                                 {f.registration_id && (
-                                  <span className="px-2 py-0.5 rounded-md text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono font-bold">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono font-bold whitespace-nowrap border border-emerald-200/60 dark:border-emerald-500/20">
                                     Reg: {f.registration_id}
                                   </span>
                                 )}
@@ -1675,7 +1675,7 @@ export const AdminDashboard: React.FC = () => {
                             ) : null}
                             <a
                               href={`mailto:${f.email}`}
-                              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono block"
+                              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono block truncate"
                             >
                               {f.email}
                             </a>
@@ -1754,7 +1754,7 @@ export const AdminDashboard: React.FC = () => {
                                 { value: 'resolved', label: '✅ Resolved' },
                                 { value: 'archived', label: '📁 Archived' },
                               ]}
-                              triggerClassName={`min-w-[140px] w-auto h-9 px-3 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                              triggerClassName={`min-w-[150px] sm:min-w-[155px] w-auto h-9 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${
                                 f.status === 'pending' || f.status === 'unread'
                                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                   : f.status === 'in_progress'

@@ -55,21 +55,27 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       if (!containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldDropUp = spaceBelow < 220 && rect.top > 200;
+      const menuWidth = Math.max(rect.width, 160);
+      let menuLeft = rect.left;
+      if (menuLeft + menuWidth > viewportWidth - 12) {
+        menuLeft = Math.max(12, viewportWidth - menuWidth - 12);
+      }
 
       if (shouldDropUp) {
         setPortalStyle({
           bottom: viewportHeight - rect.top + 4,
-          left: rect.left,
-          width: rect.width,
+          left: menuLeft,
+          width: menuWidth,
           dropUp: true,
         });
       } else {
         setPortalStyle({
           top: rect.bottom + 4,
-          left: rect.left,
-          width: rect.width,
+          left: menuLeft,
+          width: menuWidth,
           dropUp: false,
         });
       }
@@ -151,6 +157,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 bottom: portalStyle.bottom !== undefined ? `${portalStyle.bottom}px` : 'auto',
                 left: `${portalStyle.left}px`,
                 width: `${portalStyle.width}px`,
+                minWidth: '160px',
                 zIndex: 99999,
               }}
               className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-48 custom-scrollbar focus:outline-none"
@@ -171,11 +178,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                         : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300'
                     }`}
                   >
-                    <div className="flex flex-col text-left min-w-0 flex-1">
-                      <span className="text-xs sm:text-sm font-bold text-left">{option.label}</span>
+                    <div className="flex flex-col text-left min-w-0 flex-1 whitespace-nowrap">
+                      <span className="text-xs sm:text-sm font-bold text-left whitespace-nowrap">{option.label}</span>
                       {option.description && (
                         <span
-                          className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 ${
+                          className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 whitespace-nowrap ${
                             isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
                           }`}
                         >

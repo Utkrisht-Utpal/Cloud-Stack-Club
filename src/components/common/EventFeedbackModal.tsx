@@ -235,9 +235,9 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   <button
                     type="button"
                     onClick={resetAndClose}
-                    className="px-5 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+                    className="px-6 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
                   >
-                    Done & Close
+                    Done
                   </button>
                 </div>
               </motion.div>
