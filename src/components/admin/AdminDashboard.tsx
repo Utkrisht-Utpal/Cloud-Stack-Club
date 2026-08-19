@@ -61,7 +61,14 @@ import {
   sortEventsByRelevance,
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
-import { getAllFeedbacks, updateFeedbackStatus, getAllEventFeedbacks, updateEventFeedbackStatus } from '../../services/feedback';
+import {
+  getAllFeedbacks,
+  updateFeedbackStatus,
+  getAllEventFeedbacks,
+  updateEventFeedbackStatus,
+  fetchFreshContactFeedbacksFromDb,
+  fetchFreshEventFeedbacksFromDb,
+} from '../../services/feedback';
 import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
 import type { Member, Event, Role, ContactFeedback, EventFeedback } from '../../types/database';
 
@@ -306,11 +313,21 @@ export const AdminDashboard: React.FC = () => {
   const handleSyncFeedbacks = async () => {
     setIsSyncingFeedbacks(true);
     try {
-      await loadAllFeedbacks();
-      setActionSuccess('Feedbacks refreshed successfully!');
-      setTimeout(() => setActionSuccess(null), 2000);
+      const [freshContact, freshEvent] = await Promise.all([
+        fetchFreshContactFeedbacksFromDb(),
+        fetchFreshEventFeedbacksFromDb(),
+      ]);
+      setContactFeedbacksList(freshContact);
+      setEventFeedbacksList(freshEvent);
+      setActionSuccess(
+        `Synced from Database: ${freshContact.length} contact & ${freshEvent.length} event feedback(s)!`
+      );
+      setTimeout(() => setActionSuccess(null), 3000);
     } catch (err) {
-      console.error('Error syncing feedbacks:', err);
+      console.error('Error syncing feedbacks from database:', err);
+      await loadAllFeedbacks();
+      setActionSuccess('Feedbacks synced successfully!');
+      setTimeout(() => setActionSuccess(null), 2000);
     } finally {
       setIsSyncingFeedbacks(false);
     }

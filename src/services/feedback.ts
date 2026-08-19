@@ -66,6 +66,41 @@ export const submitFeedback = async (
   return newFeedback;
 };
 
+export const fetchFreshContactFeedbacksFromDb = async (): Promise<ContactFeedback[]> => {
+  if (!isSupabaseConfigured()) {
+    const cached = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
+    return cached ? JSON.parse(cached) : [];
+  }
+
+  const { data, error } = await supabase
+    .from('contact_feedbacks')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching contact feedbacks from database:', error);
+    throw error;
+  }
+
+  const rawDbList = (data as any[]) || [];
+  const dbList: ContactFeedback[] = rawDbList
+    .filter((f) => !f.event_id && !f.event_title && f.feedback_type !== 'event')
+    .map((f) => ({
+      id: f.id,
+      name: f.name,
+      email: f.email,
+      message: f.message,
+      status: f.status || 'pending',
+      created_at: f.created_at,
+    }));
+
+  try {
+    localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(dbList));
+  } catch (e) {}
+
+  return dbList;
+};
+
 export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
   let localList: ContactFeedback[] = [];
 
@@ -83,58 +118,11 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
   }
 
   try {
-    const { data, error } = await supabase
-      .from('contact_feedbacks')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      const rawDbList = (data as any[]) || [];
-      // Strict filter: contact feedbacks must not be event-specific
-      const dbList: ContactFeedback[] = rawDbList
-        .filter((f) => !f.event_id && !f.event_title && f.feedback_type !== 'event')
-        .map((f) => ({
-          id: f.id,
-          name: f.name,
-          email: f.email,
-          message: f.message,
-          status: f.status || 'pending',
-          created_at: f.created_at,
-        }));
-
-      const seenIds = new Set<string>();
-      const seenSignatures = new Set<string>();
-      const combined: ContactFeedback[] = [];
-
-      dbList.forEach((f) => {
-        const sig = `${(f.name || '').toLowerCase().trim()}|${(f.email || '').toLowerCase().trim()}|${(f.message || '').toLowerCase().trim()}`;
-        if (!seenIds.has(f.id) && !seenSignatures.has(sig)) {
-          seenIds.add(f.id);
-          seenSignatures.add(sig);
-          combined.push(f);
-        }
-      });
-
-      localList.forEach((f) => {
-        const sig = `${(f.name || '').toLowerCase().trim()}|${(f.email || '').toLowerCase().trim()}|${(f.message || '').toLowerCase().trim()}`;
-        if (!seenIds.has(f.id) && !seenSignatures.has(sig)) {
-          seenIds.add(f.id);
-          seenSignatures.add(sig);
-          combined.push(f);
-        }
-      });
-
-      try {
-        localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(combined));
-      } catch (e) {}
-
-      return combined.sort(
-        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-      );
-    }
-  } catch (e) {}
-
-  return localList;
+    const dbList = await fetchFreshContactFeedbacksFromDb();
+    return dbList;
+  } catch (e) {
+    return localList;
+  }
 };
 
 export const updateFeedbackStatus = async (
@@ -260,6 +248,60 @@ export const submitEventFeedback = async (
   return newEventFeedback;
 };
 
+export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]> => {
+  if (!isSupabaseConfigured()) {
+    const cached = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+    return cached ? JSON.parse(cached) : [];
+  }
+
+  let dbList: EventFeedback[] = [];
+
+  // Attempt joined query with events table via event_id foreign key
+  const { data, error } = await supabase
+    .from('event_feedbacks')
+    .select('*, events:event_id(id, title, status, date, location)')
+    .order('created_at', { ascending: false });
+
+  if (!error && data) {
+    dbList = (data as any[]).map((f) => ({
+      id: f.id,
+      name: f.name,
+      email: f.email,
+      university_id: f.university_id,
+      registration_id: f.registration_id,
+      event_id: f.event_id,
+      event_title: f.events?.title || f.event_title || 'Event',
+      event_rating: f.event_rating,
+      engagement_rating: f.engagement_rating,
+      coordination_rating: f.coordination_rating,
+      message: f.message,
+      status: f.status || 'pending',
+      created_at: f.created_at,
+    }));
+  } else {
+    // Fallback simple query if join alias differs
+    const { data: simpleData, error: simpleError } = await supabase
+      .from('event_feedbacks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (simpleError) {
+      console.error('Error fetching event feedbacks from database:', simpleError);
+      throw simpleError;
+    }
+
+    if (simpleData) {
+      dbList = simpleData as EventFeedback[];
+    }
+  }
+
+  try {
+    localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(dbList));
+  } catch (e) {}
+
+  return dbList;
+};
+
 export const getAllEventFeedbacks = async (): Promise<EventFeedback[]> => {
   let localList: EventFeedback[] = [];
 
@@ -268,35 +310,6 @@ export const getAllEventFeedbacks = async (): Promise<EventFeedback[]> => {
     if (cached) {
       localList = JSON.parse(cached);
     }
-
-    // Recover any event feedback items previously cached in contact feedback storage
-    const oldContactCache = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
-    if (oldContactCache) {
-      const parsed = JSON.parse(oldContactCache);
-      if (Array.isArray(parsed)) {
-        parsed.forEach((item: any) => {
-          if (item.event_id || item.event_title || item.feedback_type === 'event') {
-            if (!localList.some((e) => e.id === item.id)) {
-              localList.push({
-                id: item.id,
-                name: item.name || '',
-                email: item.email || '',
-                university_id: item.university_id || '',
-                registration_id: item.registration_id || '',
-                event_id: item.event_id || '',
-                event_title: item.event_title || 'Event',
-                event_rating: item.event_rating || 5,
-                engagement_rating: item.engagement_rating || 5,
-                coordination_rating: item.coordination_rating || '10 / 10',
-                message: item.message || '',
-                status: item.status || 'pending',
-                created_at: item.created_at || new Date().toISOString(),
-              });
-            }
-          }
-        });
-      }
-    }
   } catch (e) {}
 
   if (!isSupabaseConfigured()) {
@@ -304,71 +317,11 @@ export const getAllEventFeedbacks = async (): Promise<EventFeedback[]> => {
   }
 
   try {
-    let dbList: EventFeedback[] = [];
-
-    // Attempt joined query with events table via event_id foreign key
-    const { data, error } = await supabase
-      .from('event_feedbacks')
-      .select('*, events:event_id(id, title, status, date, location)')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      dbList = (data as any[]).map((f) => ({
-        id: f.id,
-        name: f.name,
-        email: f.email,
-        university_id: f.university_id,
-        registration_id: f.registration_id,
-        event_id: f.event_id,
-        event_title: f.events?.title || f.event_title || 'Event',
-        event_rating: f.event_rating,
-        engagement_rating: f.engagement_rating,
-        coordination_rating: f.coordination_rating,
-        message: f.message,
-        status: f.status || 'pending',
-        created_at: f.created_at,
-      }));
-    } else {
-      // Fallback simple query if join alias differs
-      const { data: simpleData, error: simpleError } = await supabase
-        .from('event_feedbacks')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!simpleError && simpleData) {
-        dbList = simpleData as EventFeedback[];
-      }
-    }
-
-    if (dbList.length > 0 || !error) {
-      const seenIds = new Set<string>();
-      const combined: EventFeedback[] = [];
-
-      dbList.forEach((f) => {
-        if (!seenIds.has(f.id)) {
-          seenIds.add(f.id);
-          combined.push(f);
-        }
-      });
-
-      localList.forEach((f) => {
-        if (!seenIds.has(f.id)) {
-          seenIds.add(f.id);
-          combined.push(f);
-        }
-      });
-
-      try {
-        localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(combined));
-      } catch (e) {}
-
-      return combined.sort(
-        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-      );
-    }
-  } catch (e) {}
-
-  return localList;
+    const dbList = await fetchFreshEventFeedbacksFromDb();
+    return dbList;
+  } catch (e) {
+    return localList;
+  }
 };
 
 export const updateEventFeedbackStatus = async (
