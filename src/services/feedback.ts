@@ -72,7 +72,9 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
   try {
     const cached = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
     if (cached) {
-      localList = JSON.parse(cached);
+      localList = (JSON.parse(cached) as any[]).filter(
+        (f) => !f.event_id && !f.event_title && f.feedback_type !== 'event'
+      );
     }
   } catch (e) {}
 
@@ -87,7 +89,18 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      const dbList = (data as ContactFeedback[]) || [];
+      const rawDbList = (data as any[]) || [];
+      // Strict filter: contact feedbacks must not be event-specific
+      const dbList: ContactFeedback[] = rawDbList
+        .filter((f) => !f.event_id && !f.event_title && f.feedback_type !== 'event')
+        .map((f) => ({
+          id: f.id,
+          name: f.name,
+          email: f.email,
+          message: f.message,
+          status: f.status || 'pending',
+          created_at: f.created_at,
+        }));
 
       const seenIds = new Set<string>();
       const seenSignatures = new Set<string>();
@@ -254,6 +267,35 @@ export const getAllEventFeedbacks = async (): Promise<EventFeedback[]> => {
     const cached = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
     if (cached) {
       localList = JSON.parse(cached);
+    }
+
+    // Recover any event feedback items previously cached in contact feedback storage
+    const oldContactCache = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
+    if (oldContactCache) {
+      const parsed = JSON.parse(oldContactCache);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item: any) => {
+          if (item.event_id || item.event_title || item.feedback_type === 'event') {
+            if (!localList.some((e) => e.id === item.id)) {
+              localList.push({
+                id: item.id,
+                name: item.name || '',
+                email: item.email || '',
+                university_id: item.university_id || '',
+                registration_id: item.registration_id || '',
+                event_id: item.event_id || '',
+                event_title: item.event_title || 'Event',
+                event_rating: item.event_rating || 5,
+                engagement_rating: item.engagement_rating || 5,
+                coordination_rating: item.coordination_rating || '10 / 10',
+                message: item.message || '',
+                status: item.status || 'pending',
+                created_at: item.created_at || new Date().toISOString(),
+              });
+            }
+          }
+        });
+      }
     }
   } catch (e) {}
 

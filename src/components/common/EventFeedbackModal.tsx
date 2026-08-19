@@ -177,165 +177,167 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-hidden">
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 20 }}
+          exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col"
+          className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col"
         >
-          {/* Header */}
-          <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-purple-50/60 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-slate-900 flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
-                <Sparkles className="w-3 h-3 text-amber-500" />
-                <span>Event Experience Feedback</span>
+          {/* Compact Header */}
+          <div className="px-5 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-purple-50/60 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-slate-900 flex items-center justify-between gap-3">
+            <div className="space-y-0.5 min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  <Sparkles className="w-2.5 h-2.5 text-amber-500" />
+                  <span>Feedback</span>
+                </div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
+                  {event.title}
+                </h3>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                {event.title}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Share your honest rating and feedback to help us craft even better upcoming experiences.
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                Share your rating and feedback to help us craft better upcoming experiences.
               </p>
             </div>
 
             <button
               type="button"
               onClick={resetAndClose}
-              className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
+              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-white/80 dark:hover:bg-slate-800 transition-all cursor-pointer shrink-0"
               aria-label="Close Feedback Modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Body Content */}
-          <div className="p-5 sm:p-7 overflow-y-auto space-y-6 custom-scrollbar">
+          {/* Form Body - Compact & Non-Scrollable */}
+          <div className="p-4 sm:p-5">
             {isSubmitted ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="py-12 text-center space-y-4"
+                className="py-8 text-center space-y-3"
               >
-                <div className="w-16 h-16 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
-                  <CheckCircle2 className="w-9 h-9" />
+                <div className="w-14 h-14 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-inner">
+                  <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <div className="space-y-1.5">
-                  <h4 className="text-2xl font-black text-slate-900 dark:text-white">
+                <div className="space-y-1">
+                  <h4 className="text-xl font-black text-slate-900 dark:text-white">
                     Thank You for Your Feedback!
                   </h4>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-                    Your valuable review for <strong className="text-blue-600 dark:text-sky-400">{event.title}</strong> has been recorded and submitted to the Cloud Stack Club team.
+                  <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+                    Your valuable review for <strong className="text-blue-600 dark:text-sky-400">{event.title}</strong> has been recorded.
                   </p>
                 </div>
-                <div className="pt-4">
+                <div className="pt-2">
                   <button
                     type="button"
                     onClick={resetAndClose}
-                    className="px-6 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
+                    className="px-5 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-lg shadow-blue-500/25 transition-all cursor-pointer"
                   >
                     Done & Close
                   </button>
                 </div>
               </motion.div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 {error && (
-                  <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2.5">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
+                  <div className="py-2 px-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-[11px] font-semibold flex items-center gap-2">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
 
                 {/* 1. Name & Email Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       Your Name <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         required
                         placeholder="e.g., Rahul Sharma"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                        className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       Email Address <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="email"
                         required
                         placeholder="e.g., rahul@cumail.in"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                        className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* 2. University ID & Registration ID Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       University ID (UID) <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <GraduationCap className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <GraduationCap className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         required
                         placeholder="e.g., 24BCF10026"
                         value={universityId}
                         onChange={(e) => setUniversityId(e.target.value.toUpperCase())}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-bold font-mono text-blue-600 dark:text-sky-400 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
+                        className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-bold font-mono text-blue-600 dark:text-sky-400 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                       Registration ID <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
-                      <Ticket className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <Ticket className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
                         required
                         placeholder="e.g., CSC-2026-AD9026"
                         value={registrationId}
                         onChange={(e) => setRegistrationId(e.target.value.toUpperCase())}
-                        className="w-full pl-10 pr-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
+                        className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* 3. Event Rating & Engagement Rating (Each in single clean line) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* 3. Event Rating & Engagement Rating (Single Line Each) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Event Rating */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2 flex flex-col justify-between">
-                    <div className="flex items-center justify-between gap-1.5 flex-nowrap">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-1.5">
+                    <div className="flex items-center justify-between gap-1 flex-nowrap">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         Event Rating <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                      <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                         {getRatingLabel(hoverEventRating || eventRating)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 sm:gap-1.5">
+                    <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (hoverEventRating || eventRating);
                         return (
@@ -345,10 +347,10 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                             onClick={() => setEventRating(star)}
                             onMouseEnter={() => setHoverEventRating(star)}
                             onMouseLeave={() => setHoverEventRating(null)}
-                            className="p-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-500/15 transition-all transform hover:scale-125 cursor-pointer"
+                            className="p-0.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-500/15 transition-all transform hover:scale-125 cursor-pointer"
                           >
                             <Star
-                              className={`w-6 h-6 transition-colors ${
+                              className={`w-5 h-5 transition-colors ${
                                 active
                                   ? 'text-amber-500 fill-amber-400 drop-shadow-sm'
                                   : 'text-slate-300 dark:text-slate-600'
@@ -360,18 +362,18 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Engagement Rating (Single Line Label & Score) */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2 flex flex-col justify-between">
-                    <div className="flex items-center justify-between gap-1.5 flex-nowrap">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                  {/* Engagement Rating (Single Line) */}
+                  <div className="p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-1.5">
+                    <div className="flex items-center justify-between gap-1 flex-nowrap">
+                      <label className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         Engagement Rating <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                      <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                         {getEngagementLabel(hoverEngagementRating || engagementRating)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 sm:gap-1.5">
+                    <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (hoverEngagementRating || engagementRating);
                         return (
@@ -381,10 +383,10 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                             onClick={() => setEngagementRating(star)}
                             onMouseEnter={() => setHoverEngagementRating(star)}
                             onMouseLeave={() => setHoverEngagementRating(null)}
-                            className="p-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-all transform hover:scale-125 cursor-pointer"
+                            className="p-0.5 rounded-md hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-all transform hover:scale-125 cursor-pointer"
                           >
                             <Star
-                              className={`w-6 h-6 transition-colors ${
+                              className={`w-5 h-5 transition-colors ${
                                 active
                                   ? 'text-indigo-500 fill-indigo-400 drop-shadow-sm'
                                   : 'text-slate-300 dark:text-slate-600'
@@ -397,13 +399,13 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Coordination and Management (Single Line 1-10 Scale in Subtle Green) */}
-                <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/60 space-y-2.5">
-                  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
-                      Coordination & Management <span className="text-rose-500">*</span>
+                {/* 4. Coordination & Event Management (Single Line 1-10 Scale in Subtle Green) */}
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/60 space-y-2">
+                  <div className="flex items-center justify-between gap-2 flex-nowrap">
+                    <label className="text-[10px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
+                      Coordination & Event Management <span className="text-rose-500">*</span>
                     </label>
-                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                    <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       {getCoordinationLabel(hoverCoordinationRating || coordinationRating)}
                     </span>
                   </div>
@@ -420,9 +422,9 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                           onClick={() => setCoordinationRating(score)}
                           onMouseEnter={() => setHoverCoordinationRating(score)}
                           onMouseLeave={() => setHoverCoordinationRating(null)}
-                          className={`h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center border ${
+                          className={`h-7 sm:h-8 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center border ${
                             isSelected
-                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-md shadow-emerald-500/25 scale-[1.05]'
+                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-sm shadow-emerald-500/25 scale-[1.05]'
                               : isHovered
                               ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border-emerald-400'
                               : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
@@ -434,7 +436,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                     })}
                   </div>
 
-                  <div className="flex items-center justify-between text-[10px] font-bold text-emerald-700/60 dark:text-emerald-400/60 px-0.5">
+                  <div className="flex items-center justify-between text-[9px] font-bold text-emerald-700/60 dark:text-emerald-400/60 px-0.5">
                     <span>1 - Poor</span>
                     <span>5 - Average</span>
                     <span>10 - Outstanding</span>
@@ -442,26 +444,26 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                 </div>
 
                 {/* 5. Detailed Feedback / Comments */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                     Your Feedback & Suggestions <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     required
-                    rows={3}
-                    placeholder="Tell us what you liked most about the speakers, hands-on sessions, or topics you want in the future..."
+                    rows={2}
+                    placeholder="Tell us what you liked most about the session, speakers, or topics for future events..."
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
-                    className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none leading-relaxed"
+                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none leading-relaxed min-h-[58px]"
                   />
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex items-center justify-end gap-2.5 pt-1">
                   <button
                     type="button"
                     onClick={resetAndClose}
-                    className="px-5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -469,11 +471,11 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-md shadow-blue-500/25 transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {isSubmitting ? (
                       <>
-                        <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         <span>Submitting...</span>
                       </>
                     ) : (

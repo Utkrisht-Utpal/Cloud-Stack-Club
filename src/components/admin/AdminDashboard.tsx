@@ -1617,11 +1617,15 @@ export const AdminDashboard: React.FC = () => {
                   <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                     <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
                       <th className="py-3.5 px-4 font-bold">#</th>
-                      <th className="py-3.5 px-4 font-bold">SENDER DETAILS</th>
+                      <th className="py-3.5 px-4 font-bold">
+                        {feedbackViewTab === 'event' ? 'ATTENDEE DETAILS' : 'SENDER DETAILS'}
+                      </th>
                       {feedbackViewTab === 'event' && (
-                        <th className="py-3.5 px-4 font-bold">EVENT</th>
+                        <th className="py-3.5 px-4 font-bold">EVENT & RATINGS</th>
                       )}
-                      <th className="py-3.5 px-4 font-bold">MESSAGE / FEEDBACK</th>
+                      <th className="py-3.5 px-4 font-bold">
+                        {feedbackViewTab === 'event' ? 'DETAILED FEEDBACK' : 'MESSAGE / INQUIRY'}
+                      </th>
                       <th className="py-3.5 px-4 font-bold">SUBMISSION DATE</th>
                       <th className="py-3.5 px-4 text-right font-bold">STATUS & ACTION</th>
                     </tr>
@@ -1630,57 +1634,59 @@ export const AdminDashboard: React.FC = () => {
                     {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).map((f: any, idx) => (
                       <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
-                        <td className="py-3.5 px-4">
-                          <div className="space-y-0.5">
+                        <td className="py-3.5 px-4 min-w-[180px]">
+                          <div className="space-y-1">
                             <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
-                            {f.university_id && (
-                              <div className="text-[11px] text-blue-600 dark:text-sky-400 font-mono font-bold">
-                                UID: {f.university_id}
+                            {feedbackViewTab === 'event' ? (
+                              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                {f.university_id && (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-300 font-mono font-bold">
+                                    UID: {f.university_id}
+                                  </span>
+                                )}
+                                {f.registration_id && (
+                                  <span className="px-2 py-0.5 rounded-md text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono font-bold">
+                                    Reg: {f.registration_id}
+                                  </span>
+                                )}
                               </div>
-                            )}
-                            {f.registration_id && (
-                              <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
-                                Reg ID: {f.registration_id}
-                              </div>
-                            )}
+                            ) : null}
                             <a
                               href={`mailto:${f.email}`}
-                              className="text-[11px] text-slate-500 hover:underline font-mono block mt-0.5"
+                              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono block"
                             >
                               {f.email}
                             </a>
                           </div>
                         </td>
                         {feedbackViewTab === 'event' && (
-                          <td className="py-3.5 px-4 min-w-[140px]">
+                          <td className="py-3.5 px-4 min-w-[200px]">
                             <div className="space-y-1.5">
                               <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 text-xs font-bold">
                                 {f.event_title || eventsList.find((e) => e.id === f.event_id)?.title || 'Event Feedback'}
                               </span>
-                              {(f.event_rating !== undefined || f.engagement_rating !== undefined) && (
-                                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-                                  {f.event_rating !== undefined && (
-                                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                                      ⭐ {f.event_rating}/5 Event
-                                    </span>
-                                  )}
-                                  {f.engagement_rating !== undefined && (
-                                    <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
-                                      🔥 {f.engagement_rating}/5 Eng.
-                                    </span>
-                                  )}
-                                </div>
-                              )}
-                              {f.coordination_rating && (
-                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                                  {f.coordination_rating}
-                                </div>
-                              )}
+                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                {f.event_rating !== undefined && (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                                    ⭐ {f.event_rating}/5 Event
+                                  </span>
+                                )}
+                                {f.engagement_rating !== undefined && (
+                                  <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
+                                    🔥 {f.engagement_rating}/5 Eng.
+                                  </span>
+                                )}
+                                {f.coordination_rating && (
+                                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                    🌿 {f.coordination_rating}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </td>
                         )}
                         <td className="py-3.5 px-4 min-w-[280px]">
-                          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl">
+                          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl text-xs">
                             {f.message}
                           </div>
                         </td>
