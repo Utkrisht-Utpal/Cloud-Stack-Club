@@ -22,14 +22,6 @@ interface EventFeedbackModalProps {
   onSuccessToast?: () => void;
 }
 
-const COORDINATION_OPTIONS = [
-  { value: '🌟 Excellent - Flawlessly Organized', label: '🌟 Excellent', desc: 'Flawlessly coordinated & on time' },
-  { value: '👍 Very Good - Well Coordinated', label: '👍 Very Good', desc: 'Smooth execution & clear communication' },
-  { value: '👌 Good - Met Expectations', label: '👌 Good', desc: 'Decent arrangements & coordination' },
-  { value: '⚠️ Average - Few Hiccups', label: '⚠️ Average', desc: 'Minor delays or coordination issues' },
-  { value: '❌ Poor - Needs Improvement', label: '❌ Poor', desc: 'Disorganized & lacked management' },
-];
-
 export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   isOpen,
   onClose,
@@ -44,7 +36,8 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const [hoverEventRating, setHoverEventRating] = useState<number | null>(null);
   const [engagementRating, setEngagementRating] = useState<number>(5);
   const [hoverEngagementRating, setHoverEngagementRating] = useState<number | null>(null);
-  const [coordinationRating, setCoordinationRating] = useState<string>(COORDINATION_OPTIONS[0].value);
+  const [coordinationRating, setCoordinationRating] = useState<number>(10);
+  const [hoverCoordinationRating, setHoverCoordinationRating] = useState<number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +83,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
         event_title: event.title,
         event_rating: eventRating,
         engagement_rating: engagementRating,
-        coordination_rating: coordinationRating,
+        coordination_rating: `${coordinationRating} / 10 - ${getCoordinationLabel(coordinationRating).replace(/^\d+\s*\/\s*\d+\s*-\s*/, '')}`,
         message: feedbackText.trim(),
       });
 
@@ -115,7 +108,8 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     setRegistrationId('');
     setEventRating(5);
     setEngagementRating(5);
-    setCoordinationRating(COORDINATION_OPTIONS[0].value);
+    setCoordinationRating(10);
+    setHoverCoordinationRating(null);
     setFeedbackText('');
     onClose();
   };
@@ -123,15 +117,15 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const getRatingLabel = (score: number) => {
     switch (score) {
       case 1:
-        return '1 / 5 - Needs Major Improvement';
+        return '1 / 5 - Needs Improvement';
       case 2:
         return '2 / 5 - Below Expectations';
       case 3:
-        return '3 / 5 - Average / Satisfactory';
+        return '3 / 5 - Satisfactory';
       case 4:
         return '4 / 5 - Very Good';
       case 5:
-        return '5 / 5 - Outstanding & Exceptional';
+        return '5 / 5 - Outstanding';
       default:
         return `${score} / 5`;
     }
@@ -140,7 +134,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const getEngagementLabel = (score: number) => {
     switch (score) {
       case 1:
-        return '1 / 5 - Very Low Engagement';
+        return '1 / 5 - Low Engagement';
       case 2:
         return '2 / 5 - Somewhat Passive';
       case 3:
@@ -148,9 +142,36 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       case 4:
         return '4 / 5 - Highly Engaging';
       case 5:
-        return '5 / 5 - Super Interactive & Captivating';
+        return '5 / 5 - Super Interactive';
       default:
         return `${score} / 5`;
+    }
+  };
+
+  const getCoordinationLabel = (score: number) => {
+    switch (score) {
+      case 10:
+        return '10 / 10 - Flawless & Outstanding';
+      case 9:
+        return '9 / 10 - Exceptional Execution';
+      case 8:
+        return '8 / 10 - Very Well Coordinated';
+      case 7:
+        return '7 / 10 - Good Management';
+      case 6:
+        return '6 / 10 - Satisfactory';
+      case 5:
+        return '5 / 10 - Average Arrangements';
+      case 4:
+        return '4 / 10 - Minor Coordination Issues';
+      case 3:
+        return '3 / 10 - Noticeable Delays';
+      case 2:
+        return '2 / 10 - Poorly Managed';
+      case 1:
+        return '1 / 10 - Disorganized';
+      default:
+        return `${score} / 10`;
     }
   };
 
@@ -301,20 +322,20 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Event Rating & Engagement Rating Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60">
+                {/* 3. Event Rating & Engagement Rating (Each in single clean line) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {/* Event Rating */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2 flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-1.5 flex-nowrap">
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         Event Rating <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+                      <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                         {getRatingLabel(hoverEventRating || eventRating)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 sm:gap-1.5">
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (hoverEventRating || eventRating);
                         return (
@@ -324,7 +345,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                             onClick={() => setEventRating(star)}
                             onMouseEnter={() => setHoverEventRating(star)}
                             onMouseLeave={() => setHoverEventRating(null)}
-                            className="p-1.5 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-500/15 transition-all transform hover:scale-125 cursor-pointer"
+                            className="p-1 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-500/15 transition-all transform hover:scale-125 cursor-pointer"
                           >
                             <Star
                               className={`w-6 h-6 transition-colors ${
@@ -339,18 +360,18 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Engagement Rating */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  {/* Engagement Rating (Single Line Label & Score) */}
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2 flex flex-col justify-between">
+                    <div className="flex items-center justify-between gap-1.5 flex-nowrap">
+                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         Engagement Rating <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                      <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
                         {getEngagementLabel(hoverEngagementRating || engagementRating)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 sm:gap-1.5">
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (hoverEngagementRating || engagementRating);
                         return (
@@ -360,7 +381,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                             onClick={() => setEngagementRating(star)}
                             onMouseEnter={() => setHoverEngagementRating(star)}
                             onMouseLeave={() => setHoverEngagementRating(null)}
-                            className="p-1.5 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-all transform hover:scale-125 cursor-pointer"
+                            className="p-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-all transform hover:scale-125 cursor-pointer"
                           >
                             <Star
                               className={`w-6 h-6 transition-colors ${
@@ -376,30 +397,47 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   </div>
                 </div>
 
-                {/* 4. Coordination and Management */}
-                <div className="space-y-2">
-                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    How was the coordination and management of the event? <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {COORDINATION_OPTIONS.map((opt) => {
-                      const selected = coordinationRating === opt.value;
+                {/* 4. Coordination and Management (Single Line 1-10 Scale in Subtle Green) */}
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/60 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
+                      Coordination & Management <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                      {getCoordinationLabel(hoverCoordinationRating || coordinationRating)}
+                    </span>
+                  </div>
+
+                  {/* 1 to 10 Scale Single Row */}
+                  <div className="grid grid-cols-10 gap-1 sm:gap-1.5">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => {
+                      const isSelected = coordinationRating === score;
+                      const isHovered = hoverCoordinationRating !== null && hoverCoordinationRating >= score;
                       return (
                         <button
-                          key={opt.value}
+                          key={score}
                           type="button"
-                          onClick={() => setCoordinationRating(opt.value)}
-                          className={`p-3 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
-                            selected
-                              ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-500 ring-2 ring-blue-500/20 text-blue-900 dark:text-white'
-                              : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
+                          onClick={() => setCoordinationRating(score)}
+                          onMouseEnter={() => setHoverCoordinationRating(score)}
+                          onMouseLeave={() => setHoverCoordinationRating(null)}
+                          className={`h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center border ${
+                            isSelected
+                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-md shadow-emerald-500/25 scale-[1.05]'
+                              : isHovered
+                              ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border-emerald-400'
+                              : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
                           }`}
                         >
-                          <span className="text-xs font-bold">{opt.label}</span>
-                          <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{opt.desc}</span>
+                          {score}
                         </button>
                       );
                     })}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-bold text-emerald-700/60 dark:text-emerald-400/60 px-0.5">
+                    <span>1 - Poor</span>
+                    <span>5 - Average</span>
+                    <span>10 - Outstanding</span>
                   </div>
                 </div>
 
