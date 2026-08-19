@@ -23,6 +23,7 @@ import {
   Sparkles,
   MessageSquare,
   AlertTriangle,
+  AlertCircle,
   Shield,
   RefreshCw,
 } from 'lucide-react';
@@ -109,6 +110,20 @@ export const AdminDashboard: React.FC = () => {
   const [loadingApplications, setLoadingApplications] = useState(true);
   const [selectedDocFile, setSelectedDocFile] = useState<{ path: string; name: string } | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Helper to get the calendar date immediately before a given YYYY-MM-DD
+  const getDayBefore = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length !== 3) return '';
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    const d = new Date(year, month, day);
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
 
   // Active Members & Roles State
   const [membersList, setMembersList] = useState<Member[]>([]);
@@ -476,17 +491,16 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!newEventData.title || !newEventData.date || !newEventData.time) return;
 
-    if (newEventData.registration_end && newEventData.date) {
-      const eventDateObj = new Date(newEventData.date);
-      const regEndObj = new Date(newEventData.registration_end);
-      eventDateObj.setHours(0, 0, 0, 0);
-      regEndObj.setHours(0, 0, 0, 0);
+    if (newEventData.registration_enabled && newEventData.registration_end && newEventData.date) {
+      const regEnd = newEventData.registration_end.split('T')[0];
+      const eventDate = newEventData.date.split('T')[0];
 
-      if (regEndObj > eventDateObj) {
-        const confirmSave = window.confirm(
-          `⚠️ WARNING: Registration Deadline (${newEventData.registration_end}) is set AFTER the Event Date (${newEventData.date})!\n\nAre you sure you want to save this event with a deadline after the event date?`
+      if (regEnd >= eventDate) {
+        setActionError(
+          `Registration deadline (${regEnd}) cannot be on or after the event date (${eventDate}). The latest allowed registration deadline is ${getDayBefore(eventDate)}.`
         );
-        if (!confirmSave) return;
+        setTimeout(() => setActionError(null), 4500);
+        return;
       }
     }
 
@@ -588,17 +602,16 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!editingEvent || !editEventData.title) return;
 
-    if (editEventData.registration_end && editEventData.date) {
-      const eventDateObj = new Date(editEventData.date);
-      const regEndObj = new Date(editEventData.registration_end);
-      eventDateObj.setHours(0, 0, 0, 0);
-      regEndObj.setHours(0, 0, 0, 0);
+    if (editEventData.registration_enabled && editEventData.registration_end && editEventData.date) {
+      const regEnd = editEventData.registration_end.split('T')[0];
+      const eventDate = editEventData.date.split('T')[0];
 
-      if (regEndObj > eventDateObj) {
-        const confirmSave = window.confirm(
-          `⚠️ WARNING: Registration Deadline (${editEventData.registration_end}) is set AFTER the Event Date (${editEventData.date})!\n\nAre you sure you want to save this event with a deadline after the event date?`
+      if (regEnd >= eventDate) {
+        setActionError(
+          `Registration deadline (${regEnd}) cannot be on or after the event date (${eventDate}). The latest allowed registration deadline is ${getDayBefore(eventDate)}.`
         );
-        if (!confirmSave) return;
+        setTimeout(() => setActionError(null), 4500);
+        return;
       }
     }
 
@@ -1953,7 +1966,15 @@ export const AdminDashboard: React.FC = () => {
               <DatePicker
                 label="Event Date *"
                 value={newEventData.date}
-                onChange={(val) => setNewEventData({ ...newEventData, date: val })}
+                onChange={(val) => {
+                  const dayBefore = getDayBefore(val);
+                  const shouldResetEnd = newEventData.registration_end && val && newEventData.registration_end >= val;
+                  setNewEventData({
+                    ...newEventData,
+                    date: val,
+                    registration_end: shouldResetEnd ? dayBefore : newEventData.registration_end,
+                  });
+                }}
                 placeholder="Select date"
               />
 
@@ -2044,6 +2065,7 @@ export const AdminDashboard: React.FC = () => {
                         value={newEventData.registration_start}
                         onChange={(val) => setNewEventData({ ...newEventData, registration_start: val })}
                         placeholder="Select start date"
+                        max={newEventData.registration_end || (newEventData.date ? getDayBefore(newEventData.date) : undefined)}
                       />
                     </div>
 
@@ -2053,14 +2075,16 @@ export const AdminDashboard: React.FC = () => {
                         value={newEventData.registration_end}
                         onChange={(val) => setNewEventData({ ...newEventData, registration_end: val })}
                         placeholder="Select end date"
+                        min={newEventData.registration_start || undefined}
+                        max={newEventData.date ? getDayBefore(newEventData.date) : undefined}
                       />
                     </div>
                   </div>
 
-                  {newEventData.registration_end && newEventData.date && new Date(newEventData.registration_end) > new Date(newEventData.date) && (
-                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
-                      <span>Warning: Registration Deadline ({newEventData.registration_end}) crosses after Event Date ({newEventData.date}).</span>
+                  {newEventData.registration_end && newEventData.date && newEventData.registration_end >= newEventData.date && (
+                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                      <span>Registration deadline cannot be on or after the event date ({newEventData.date}). Latest allowed deadline is {getDayBefore(newEventData.date)}.</span>
                     </div>
                   )}
                 </>
