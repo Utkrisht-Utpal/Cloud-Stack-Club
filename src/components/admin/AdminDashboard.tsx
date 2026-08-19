@@ -593,13 +593,6 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
-  const getInitials = (name: string) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
   const handleSyncRecords = async () => {
     setIsSyncingMembers(true);
     try {
@@ -942,15 +935,10 @@ export const AdminDashboard: React.FC = () => {
                       {filteredApplications.map((app) => (
                         <tr key={app.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm">
-                                {getInitials(app.name)}
-                              </div>
-                              <div>
-                                <div className="font-bold text-slate-900 dark:text-white text-xs">{app.name}</div>
-                                <div className="text-[11px] text-slate-500">{app.email}</div>
-                                {app.phone && <div className="text-[10px] text-slate-400">{app.phone}</div>}
-                              </div>
+                            <div>
+                              <div className="font-bold text-slate-900 dark:text-white text-xs">{app.name}</div>
+                              <div className="text-[11px] text-slate-500">{app.email}</div>
+                              {app.phone && <div className="text-[10px] text-slate-400">{app.phone}</div>}
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono">
@@ -1023,21 +1011,16 @@ export const AdminDashboard: React.FC = () => {
                       {filteredMembers.map((member) => (
                         <tr key={member.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm">
-                                {getInitials(member.name)}
+                            <div>
+                              <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 flex-wrap">
+                                <span>{member.name}</span>
+                                {member.is_core_member && member.role?.name && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-sky-300">
+                                    {member.role.name}
+                                  </span>
+                                )}
                               </div>
-                              <div>
-                                <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 flex-wrap">
-                                  <span>{member.name}</span>
-                                  {member.is_core_member && member.role?.name && (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-sky-300">
-                                      {member.role.name}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-[11px] text-slate-500">{member.email}</div>
-                              </div>
+                              <div className="text-[11px] text-slate-500">{member.email}</div>
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono">
