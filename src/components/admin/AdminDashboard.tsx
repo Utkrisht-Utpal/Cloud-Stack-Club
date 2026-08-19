@@ -32,7 +32,6 @@ import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
 import { EventPdfModal } from './EventPdfModal';
 import { EventPosterModal } from './EventPosterModal';
-import { DownloadDropdown } from './DownloadDropdown';
 import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
@@ -63,7 +62,7 @@ import {
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import { getAllFeedbacks, updateFeedbackStatus } from '../../services/feedback';
-import { exportFeedbacksToPdf } from '../../utils/exportDirectory';
+import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
 import type { Member, Event, Role, ContactFeedback } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
@@ -648,6 +647,34 @@ export const AdminDashboard: React.FC = () => {
     });
   }, [pendingApplications, memberSearch]);
 
+  const handleExportMembersExcel = () => {
+    const currentMembers =
+      memberViewTab === 'applications'
+        ? (filteredApplications as any)
+        : filteredMembers;
+    exportMembersToExcel(
+      currentMembers,
+      memberViewTab === 'core' ? 'core' : 'all',
+      memberSearch
+    );
+    setActionSuccess('Downloaded members list as Excel spreadsheet!');
+    setTimeout(() => setActionSuccess(null), 2000);
+  };
+
+  const handleExportMembersPdf = () => {
+    const currentMembers =
+      memberViewTab === 'applications'
+        ? (filteredApplications as any)
+        : filteredMembers;
+    exportMembersToPdf(
+      currentMembers,
+      memberViewTab === 'core' ? 'core' : 'all',
+      memberSearch
+    );
+    setActionSuccess('Downloaded members list as PDF document!');
+    setTimeout(() => setActionSuccess(null), 2000);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -858,17 +885,28 @@ export const AdminDashboard: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-end">
-                {/* Download Button Dropdown */}
-                <DownloadDropdown
-                  members={
-                    memberViewTab === 'applications'
-                      ? (filteredApplications as any)
-                      : filteredMembers
-                  }
-                  currentFilter={memberViewTab === 'core' ? 'core' : 'all'}
-                  searchQuery={memberSearch}
-                />
+              <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end flex-wrap sm:flex-nowrap">
+                {/* Individual Excel Button */}
+                <button
+                  type="button"
+                  onClick={handleExportMembersExcel}
+                  className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
+                  title="Download as Excel"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>Download as Excel</span>
+                </button>
+
+                {/* Individual PDF Button */}
+                <button
+                  type="button"
+                  onClick={handleExportMembersPdf}
+                  className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
+                  title="Download as PDF"
+                >
+                  <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span>Download as PDF</span>
+                </button>
               </div>
             </div>
 
