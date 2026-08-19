@@ -38,6 +38,7 @@ import { getEventRegistrationCountsMap } from '../../services/registrationForms'
 import { CustomSelect } from '../ui/CustomSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { TimePicker } from '../ui/TimePicker';
+import { generateUUID } from '../../utils/uuid';
 import { CustomCheckbox } from '../ui/CustomCheckbox';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { AlertModal } from '../ui/AlertModal';
@@ -505,7 +506,7 @@ export const AdminDashboard: React.FC = () => {
 
     setIsUploadingMedia(true);
     try {
-      const eventId = crypto.randomUUID();
+      const eventId = generateUUID();
       const autoSlug =
         newEventData.title
           .toLowerCase()

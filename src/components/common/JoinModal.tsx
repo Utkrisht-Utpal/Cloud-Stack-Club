@@ -10,8 +10,6 @@ import {
   Calendar,
   Upload,
   Send,
-  AlertCircle,
-  ArrowRight,
   CheckCircle2,
   HelpCircle,
   X,
@@ -20,6 +18,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CustomSelect } from '../ui/CustomSelect';
+import { ErrorPopupModal } from './ErrorPopupModal';
 import { submitMemberApplication, checkMemberDuplicate } from '../../services/supabase';
 
 interface JoinModalProps {
@@ -67,7 +66,15 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.uid) return;
+    if (!formData.name.trim() || !formData.email.trim() || !formData.uid.trim()) {
+      setError('Please fill in your Name, Email, and University ID (UID).');
+      return;
+    }
+
+    if (formData.uid.trim().length !== 10) {
+      setError('University ID (UID) must be exactly 10 alphanumeric characters.');
+      return;
+    }
 
     if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone.trim())) {
       setError('Phone number is required and must be exactly 10 digits.');
@@ -222,10 +229,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 <input
                   type="text"
                   required
-                  maxLength={11}
+                  maxLength={10}
                   value={formData.uid}
-                  onChange={(e) => setFormData({ ...formData, uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 11).toUpperCase() })}
-                  placeholder="University ID (e.g. 24BCF10003)"
+                  onChange={(e) => setFormData({ ...formData, uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase() })}
+                  placeholder="University ID (UID)"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
               </div>
@@ -393,36 +400,12 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 </span>
               </div>
 
-              {error && (
-                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-600 dark:text-red-400 space-y-1.5 leading-relaxed">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div className="flex-1 space-y-1">
-                      <p className="font-semibold">{error}</p>
-                      {error.toLowerCase().includes('contact form') && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleModalClose();
-                            setTimeout(() => {
-                              const contactEl = document.getElementById('contact');
-                              if (contactEl) {
-                                contactEl.scrollIntoView({ behavior: 'smooth' });
-                              } else {
-                                window.location.hash = '#contact';
-                              }
-                            }, 100);
-                          }}
-                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-sky-400 underline hover:text-blue-700 dark:hover:text-sky-300 cursor-pointer pt-0.5"
-                        >
-                          <span>Go to Contact Form</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Top Centered Error Popup Modal */}
+              <ErrorPopupModal
+                isOpen={!!error}
+                message={error}
+                onClose={() => setError(null)}
+              />
 
               <div className="pt-2">
                 <Button

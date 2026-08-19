@@ -37,7 +37,16 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   const [expandedRegId, setExpandedRegId] = useState<string | null>(null);
 
   // Team details cache: reg.id -> team info
-  const [teamMap, setTeamMap] = useState<Record<string, { team_name: string; members: any[] }>>({});
+  const [teamMap, setTeamMap] = useState<
+    Record<
+      string,
+      {
+        team_name: string;
+        registration_number?: string | null;
+        members: any[];
+      }
+    >
+  >({});
   
   // Custom form questions & answers state
   const [formFields, setFormFields] = useState<EventFormField[]>([]);
@@ -57,7 +66,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       setRegistrations(data);
 
       // Fetch team details for team registrations
-      const newTeamMap: Record<string, { team_name: string; members: any[] }> = {};
+      const newTeamMap: Record<
+        string,
+        {
+          team_name: string;
+          registration_number?: string | null;
+          members: any[];
+        }
+      > = {};
       for (const reg of data) {
         if (reg.team_id) {
           const teamInfo = await getTeamDetailsForRegistration(reg.team_id);
@@ -120,6 +136,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         exportRows.push({
           'S.No': serialNo,
           'Registration No': r.registration_number || '',
+          'Team Reg ID': teamInfo.registration_number || '',
           'Team Name': teamInfo.team_name || '',
           'Member Role': 'Team Leader',
           'Member Name': r.registrant_name || '',
@@ -139,7 +156,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
           exportRows.push({
             'S.No': '',
-            'Registration No': r.registration_number || '',
+            'Registration No': m.registration_number || '',
+            'Team Reg ID': teamInfo.registration_number || '',
             'Team Name': teamInfo.team_name || '',
             'Member Role': `Teammate #${mIdx + 2}`,
             'Member Name': m.name || '',
@@ -155,6 +173,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         exportRows.push({
           'S.No': serialNo,
           'Registration No': r.registration_number || '',
+          'Team Reg ID': '',
           'Team Name': '',
           'Member Role': 'Individual Registrant',
           'Member Name': r.registrant_name || '',
@@ -245,7 +264,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         teamInfo.members.forEach((m, mIdx) => {
           tableRows.push([
             '',
-            r.registration_number || '',
+            m.registration_number || r.registration_number || '',
             teamInfo.team_name || '',
             `Teammate #${mIdx + 2}`,
             m.name || '',
@@ -433,9 +452,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                 {teamInfo ? (
                                   <div className="p-4 rounded-2xl bg-indigo-50/80 dark:bg-slate-800/80 border border-indigo-200/80 dark:border-slate-700/80 space-y-3">
                                     <div className="flex items-center justify-between border-b border-indigo-200 dark:border-slate-700 pb-2">
-                                      <div className="font-extrabold text-indigo-900 dark:text-indigo-300 text-sm flex items-center gap-2">
+                                      <div className="font-extrabold text-indigo-900 dark:text-indigo-300 text-sm flex items-center gap-2 flex-wrap">
                                         <Users2 className="w-4 h-4 text-indigo-500" />
                                         <span>Team: {teamInfo.team_name}</span>
+                                        {teamInfo.registration_number && (
+                                          <span className="font-mono text-xs font-bold text-indigo-600 dark:text-sky-400 bg-white/70 dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-slate-700">
+                                            ID: {teamInfo.registration_number}
+                                          </span>
+                                        )}
                                       </div>
                                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-500/20 text-indigo-700 dark:text-indigo-300">
                                         {teamInfo.members.length + 1} Total Members
@@ -445,7 +469,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-1">
                                       {/* Leader */}
                                       <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-indigo-200 dark:border-slate-700 space-y-1">
-                                        <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400">Team Leader</div>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400">Team Leader</span>
+                                          {r.registration_number && (
+                                            <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-sky-400">
+                                              {r.registration_number}
+                                            </span>
+                                          )}
+                                        </div>
                                         <div className="font-bold text-slate-900 dark:text-white">{r.registrant_name}</div>
                                         <div className="text-[11px] text-slate-500">{r.registrant_email}</div>
                                         {r.uid && <div className="text-[10px] font-mono text-slate-400">UID: {r.uid}</div>}
@@ -454,7 +485,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                       {/* Teammates */}
                                       {teamInfo.members.map((m, mIdx) => (
                                         <div key={mIdx} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-1">
-                                          <div className="text-[10px] font-bold text-slate-400 uppercase">Teammate #{mIdx + 2}</div>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">Teammate #{mIdx + 2}</span>
+                                            {m.registration_number && (
+                                              <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-sky-400">
+                                                {m.registration_number}
+                                              </span>
+                                            )}
+                                          </div>
                                           <div className="font-bold text-slate-900 dark:text-white">{m.name}</div>
                                           <div className="text-[11px] text-slate-500">{m.email}</div>
                                           {m.uid && <div className="text-[10px] font-mono text-slate-400">UID: {m.uid}</div>}

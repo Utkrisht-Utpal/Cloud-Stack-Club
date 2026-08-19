@@ -6,15 +6,19 @@ import {
   Sparkles,
   Send,
   CheckCircle2,
-  AlertCircle,
   User,
   Mail,
   Phone,
   GraduationCap,
   Ticket,
 } from 'lucide-react';
-import { submitEventFeedback } from '../../services/feedback';
+import {
+  submitEventFeedback,
+  verifyEventRegistration,
+  checkExistingFeedbackForEvent,
+} from '../../services/feedback';
 import type { Event } from '../../types/database';
+import { ErrorPopupModal } from './ErrorPopupModal';
 
 interface EventFeedbackModalProps {
   isOpen: boolean;
@@ -62,8 +66,12 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       setError('Please enter your University ID (UID).');
       return;
     }
+    if (universityId.trim().length !== 10) {
+      setError('University ID (UID) must be exactly 10 alphanumeric characters.');
+      return;
+    }
     if (!registrationId.trim()) {
-      setError('Please enter your Registration ID (e.g., CSC-2026-XXXX).');
+      setError('Please enter your Registration ID.');
       return;
     }
     if (!phone.trim() || !/^\d{10}$/.test(phone.trim())) {
@@ -78,12 +86,38 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     setIsSubmitting(true);
 
     try {
+      // 1. Check if feedback has already been submitted for this UID or Registration ID
+      const duplicateCheck = await checkExistingFeedbackForEvent(
+        event.id,
+        universityId.trim(),
+        registrationId.trim()
+      );
+      if (duplicateCheck.alreadySubmitted) {
+        setError('Feedback has already been submitted for this event with your UID or Registration ID. Thank you!');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 2. Strict Verification: Validate that UID and Registration ID are bound to each other for this event
+      const verification = await verifyEventRegistration(
+        event.id,
+        universityId.trim(),
+        registrationId.trim()
+      );
+
+      if (!verification.isValid) {
+        setError(verification.error || 'Invalid Registration ID or UID for this event.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // 3. Submit feedback
       await submitEventFeedback({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
-        university_id: universityId.trim(),
-        registration_id: registrationId.trim(),
+        university_id: universityId.trim().toUpperCase(),
+        registration_id: registrationId.trim().toUpperCase(),
         event_id: event.id,
         event_title: event.title,
         event_rating: eventRating,
@@ -230,12 +264,12 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
               </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-3">
-                {error && (
-                  <div className="py-2 px-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-[11px] font-semibold flex items-center gap-2">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{error}</span>
-                  </div>
-                )}
+                {/* Top Centered Error Popup Modal */}
+                <ErrorPopupModal
+                  isOpen={!!error}
+                  message={error}
+                  onClose={() => setError(null)}
+                />
 
                 {/* 1. Name & Email Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -285,9 +319,10 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                       <input
                         type="text"
                         required
-                        placeholder="e.g., 24BCF10026"
+                        maxLength={10}
+                        placeholder="University ID (UID)"
                         value={universityId}
-                        onChange={(e) => setUniversityId(e.target.value.toUpperCase())}
+                        onChange={(e) => setUniversityId(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase())}
                         className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-bold font-mono text-blue-600 dark:text-sky-400 placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
                       />
                     </div>
@@ -302,7 +337,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                       <input
                         type="text"
                         required
-                        placeholder="e.g., CSC-2026-AD9026"
+                        placeholder="Registration ID"
                         value={registrationId}
                         onChange={(e) => setRegistrationId(e.target.value.toUpperCase())}
                         className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
@@ -333,10 +368,10 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Event Rating (Single Line) */}
-                  <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
+                  {/* Event Rating (Single Line Box with matched height & outer label) */}
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-1 flex-nowrap">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
                         Event Rating <span className="text-rose-500">*</span>
                       </label>
                       <span className="text-xs font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
@@ -344,7 +379,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="w-full h-[42px] sm:h-[48px] px-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between sm:justify-start gap-1 sm:gap-2">
                       {[1, 2, 3, 4, 5].map((star) => {
                         const active = star <= (hoverEventRating || eventRating);
                         return (

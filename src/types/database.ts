@@ -97,6 +97,7 @@ export interface EventTeam {
   id: string;
   event_id: string;
   team_name: string;
+  registration_number?: string | null;
   created_by_registration_id: string | null;
   created_at: string;
   members?: EventTeamMember[];
@@ -108,6 +109,8 @@ export interface EventTeamMember {
   name: string;
   uid: string | null;
   email: string;
+  phone?: string | null;
+  registration_number?: string | null;
   member_id: string | null;
   created_at: string;
 }
@@ -144,6 +147,8 @@ export interface ContactFeedback {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  subject?: string;
   message: string;
   status: FeedbackStatus;
   created_at: string;
@@ -175,7 +180,7 @@ export interface EventRegistrationPayload {
   member_id?: string;
   is_member?: boolean;
   team_name?: string;
-  team_members?: { name: string; email: string; uid?: string }[];
+  team_members?: { name: string; email: string; uid?: string; phone?: string; registration_number?: string }[];
   answers?: { field_id: string; answer_text?: string; answer_json?: any; file_url?: string }[];
 }
 

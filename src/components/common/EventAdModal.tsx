@@ -21,7 +21,6 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [activeAdEvent, setActiveAdEvent] = useState<Event | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const { isAdminLoggedIn } = useAdminAuth();
-  const hasTriggeredRef = useRef(false);
   const userDismissedRef = useRef(false);
 
   useEffect(() => {
@@ -47,19 +46,9 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
     if (validUpcomingEvent) {
       setActiveAdEvent(validUpcomingEvent);
-
-      if (!hasTriggeredRef.current) {
-        hasTriggeredRef.current = true;
-        // Wait 300ms so fresh database event data is fully loaded, eliminating any previous event flash
-        const timer = setTimeout(() => {
-          setIsOpen(true);
-        }, 150);
-        return () => clearTimeout(timer);
-      }
+      setIsOpen(true);
     } else {
-      if (isOpen) {
-        setIsOpen(false);
-      }
+      setIsOpen(false);
     }
   }, [events]);
 

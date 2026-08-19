@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured, STORAGE_BUCKETS } from '../lib/supabase';
+import { generateUUID } from '../utils/uuid';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
 const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
@@ -105,7 +106,7 @@ export const submitMemberApplication = async (
     throw new Error(dupCheck.message || `A registration with this ${dupCheck.field} already exists.`);
   }
 
-  const memberId = crypto.randomUUID();
+  const memberId = generateUUID();
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
   const regId = `CSC-${new Date().getFullYear()}-${randomSuffix}`;
 

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, MapPin, Send, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
+import { Mail, MapPin, Send, CheckCircle2, Sparkles } from 'lucide-react';
 import { siteConfig } from '../../constants/siteConfig';
 import { Button } from '../ui/Button';
 import { SectionTitle } from '../ui/SectionTitle';
+import { ErrorPopupModal } from '../common/ErrorPopupModal';
 import { submitFeedback } from '../../services/supabase';
 
 // Clean SVG icons for LinkedIn and Instagram
@@ -228,12 +229,12 @@ export const ContactSection: React.FC = () => {
                       />
                     </div>
 
-                    {error && (
-                      <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400">
-                        <AlertCircle className="w-4 h-4 shrink-0" />
-                        <span>{error}</span>
-                      </div>
-                    )}
+                    {/* Top Centered Error Popup Modal */}
+                    <ErrorPopupModal
+                      isOpen={!!error}
+                      message={error}
+                      onClose={() => setError(null)}
+                    />
 
                     <Button
                       type="submit"

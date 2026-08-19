@@ -360,3 +360,307 @@ export const updateEventFeedbackStatus = async (
     return false;
   }
 };
+
+/* =========================================================================
+   3. EVENT REGISTRATION & UID STRICT BINDING VERIFICATION
+   ========================================================================= */
+
+export interface VerifyEventRegistrationResult {
+  isValid: boolean;
+  error?: string;
+  registrantName?: string;
+  registrantEmail?: string;
+  registrantPhone?: string;
+  isTeamMember?: boolean;
+  teamName?: string;
+}
+
+/**
+ * Validates that the entered Registration ID and University ID (UID) are strictly bound
+ * and belong to the same attendee for the specified event.
+ */
+export const verifyEventRegistration = async (
+  eventId: string,
+  universityId: string,
+  registrationId: string
+): Promise<VerifyEventRegistrationResult> => {
+  const normUid = (universityId || '').trim().toUpperCase();
+  const normReg = (registrationId || '').trim().toUpperCase();
+
+  if (!normUid || !normReg) {
+    return {
+      isValid: false,
+      error: 'Both University ID (UID) and Registration ID are required.',
+    };
+  }
+
+  // 1. Resolve targetEventId UUID if slug or title passed
+  let targetEventId = eventId;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
+
+  if (!isUuid && isSupabaseConfigured()) {
+    try {
+      const { data: eventBySlug } = await supabase
+        .from('events')
+        .select('id')
+        .eq('slug', targetEventId)
+        .maybeSingle();
+
+      if (eventBySlug && (eventBySlug as any).id) {
+        targetEventId = (eventBySlug as any).id;
+      } else {
+        const { data: eventByTitle } = await supabase
+          .from('events')
+          .select('id')
+          .ilike('title', `%${targetEventId}%`)
+          .maybeSingle();
+
+        if (eventByTitle && (eventByTitle as any).id) {
+          targetEventId = (eventByTitle as any).id;
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. Query Supabase database for exact binding
+  if (isSupabaseConfigured()) {
+    try {
+      // 2.1 Check primary registrations table (Individual Registrants & Team Leaders)
+      const { data: primaryRegs, error: pError } = await supabase
+        .from('event_registrations')
+        .select('id, event_id, uid, registration_number, registrant_name, registrant_email, registrant_phone, team_id')
+        .eq('event_id', targetEventId);
+
+      if (!pError && primaryRegs && primaryRegs.length > 0) {
+        // Test 1: Exact match for UID and Registration ID
+        const exactMatch = primaryRegs.find(
+          (r) =>
+            (r.registration_number || '').trim().toUpperCase() === normReg &&
+            (r.uid || '').trim().toUpperCase() === normUid
+        );
+
+        if (exactMatch) {
+          return {
+            isValid: true,
+            registrantName: exactMatch.registrant_name,
+            registrantEmail: exactMatch.registrant_email,
+            registrantPhone: exactMatch.registrant_phone || undefined,
+            isTeamMember: false,
+          };
+        }
+
+        // Test 2: Registration ID exists under this event, but UID is different
+        const regMismatch = primaryRegs.find(
+          (r) => (r.registration_number || '').trim().toUpperCase() === normReg
+        );
+        if (regMismatch) {
+          return {
+            isValid: false,
+            error: `Registration ID "${normReg}" belongs to UID "${regMismatch.uid || 'another student'}" for this event. Please verify your UID and Registration ID.`,
+          };
+        }
+
+        // Test 3: UID is registered for this event, but with a different Registration ID
+        const uidMismatch = primaryRegs.find(
+          (r) => (r.uid || '').trim().toUpperCase() === normUid
+        );
+        if (uidMismatch) {
+          return {
+            isValid: false,
+            error: `The UID "${normUid}" is registered with Registration ID "${uidMismatch.registration_number}". Please enter that Registration ID.`,
+          };
+        }
+      }
+
+      // 2.2 Check team members table (Teammates)
+      const { data: teamsForEvent } = await supabase
+        .from('event_teams')
+        .select('id, team_name, registration_number')
+        .eq('event_id', targetEventId);
+
+      let teamMembers: any[] = [];
+      if (teamsForEvent && teamsForEvent.length > 0) {
+        const teamIds = teamsForEvent.map((t) => t.id);
+        const { data: tmData, error: tmError } = await supabase
+          .from('event_team_members')
+          .select('id, team_id, name, email, phone, uid, registration_number')
+          .in('team_id', teamIds);
+
+        if (!tmError && tmData) {
+          teamMembers = tmData;
+        }
+
+        if (teamMembers.length > 0) {
+          // Exact match in team members
+          const exactMember = teamMembers.find(
+            (m) =>
+              (m.registration_number || '').trim().toUpperCase() === normReg &&
+              (m.uid || '').trim().toUpperCase() === normUid
+          );
+
+          if (exactMember) {
+            const teamObj = teamsForEvent.find((t) => t.id === exactMember.team_id);
+            return {
+              isValid: true,
+              registrantName: exactMember.name,
+              registrantEmail: exactMember.email,
+              registrantPhone: exactMember.phone || undefined,
+              isTeamMember: true,
+              teamName: teamObj?.team_name,
+            };
+          }
+
+          // Check if normReg is the Team Registration ID (e.g. REG-20260819-AXT1IM)
+          const teamByReg = teamsForEvent.find(
+            (t: any) => (t.registration_number || '').trim().toUpperCase() === normReg
+          );
+
+          if (teamByReg) {
+            // Check if UID is the leader of this team
+            const leaderMatch = primaryRegs?.find(
+              (r) => r.team_id === teamByReg.id && (r.uid || '').trim().toUpperCase() === normUid
+            );
+            if (leaderMatch) {
+              return {
+                isValid: true,
+                registrantName: leaderMatch.registrant_name,
+                registrantEmail: leaderMatch.registrant_email,
+                registrantPhone: leaderMatch.registrant_phone || undefined,
+                isTeamMember: false,
+                teamName: teamByReg.team_name,
+              };
+            }
+
+            // Check if UID is a teammate in this team
+            const memberMatch = teamMembers.find(
+              (m) => m.team_id === teamByReg.id && (m.uid || '').trim().toUpperCase() === normUid
+            );
+            if (memberMatch) {
+              return {
+                isValid: true,
+                registrantName: memberMatch.name,
+                registrantEmail: memberMatch.email,
+                registrantPhone: memberMatch.phone || undefined,
+                isTeamMember: true,
+                teamName: teamByReg.team_name,
+              };
+            }
+          }
+
+          // Registration ID found in team members, but UID mismatch
+          const memberRegMismatch = teamMembers.find(
+            (m) => (m.registration_number || '').trim().toUpperCase() === normReg
+          );
+          if (memberRegMismatch) {
+            return {
+              isValid: false,
+              error: `Registration ID "${normReg}" belongs to UID "${memberRegMismatch.uid || 'another student'}" on the team. Please enter your own matching UID.`,
+            };
+          }
+
+          // UID found in team members, but Registration ID mismatch
+          const memberUidMismatch = teamMembers.find(
+            (m) => (m.uid || '').trim().toUpperCase() === normUid
+          );
+          if (memberUidMismatch && !normReg.includes('*')) {
+            const teamObj = teamsForEvent.find((t) => t.id === memberUidMismatch.team_id);
+            return {
+              isValid: false,
+              error: `The UID "${normUid}" is registered in team "${teamObj?.team_name || 'your team'}". Please enter your Team Registration ID (${teamObj?.registration_number || 'on your pass'}).`,
+            };
+          }
+        }
+      }
+
+      return {
+        isValid: false,
+        error: `No event registration found for UID "${normUid}" and Registration ID "${normReg}" for this event. Please make sure you are registered and check your Registration Pass.`,
+      };
+    } catch (err) {
+      console.warn('Error during event registration verification against Supabase:', err);
+    }
+  }
+
+  // 3. Offline / Local Storage fallback verification
+  try {
+    const localKeys = [`csc_event_regs_${targetEventId}`, 'csc_all_event_regs'];
+    for (const key of localKeys) {
+      const cached = localStorage.getItem(key);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const match = parsed.find(
+            (r) =>
+              (r.event_id || '').toLowerCase() === targetEventId.toLowerCase() &&
+              (r.registration_number || '').trim().toUpperCase() === normReg &&
+              (r.uid || '').trim().toUpperCase() === normUid
+          );
+          if (match) {
+            return {
+              isValid: true,
+              registrantName: match.registrant_name,
+              registrantEmail: match.registrant_email,
+            };
+          }
+        }
+      }
+    }
+  } catch {}
+
+  // If Supabase is not configured and no local cache, allow submission
+  return { isValid: true };
+};
+
+/**
+ * Checks whether feedback has already been submitted for this event by the given UID or Registration ID.
+ */
+export const checkExistingFeedbackForEvent = async (
+  eventId: string,
+  universityId: string,
+  registrationId: string
+): Promise<{ alreadySubmitted: boolean }> => {
+  const normUid = (universityId || '').trim().toUpperCase();
+  const normReg = (registrationId || '').trim().toUpperCase();
+
+  if (!normUid && !normReg) return { alreadySubmitted: false };
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: existingFeedbacks, error } = await supabase
+        .from('event_feedbacks')
+        .select('id, university_id, registration_id')
+        .eq('event_id', eventId);
+
+      if (!error && existingFeedbacks && existingFeedbacks.length > 0) {
+        const duplicate = existingFeedbacks.some(
+          (f) =>
+            (f.university_id && f.university_id.trim().toUpperCase() === normUid) ||
+            (f.registration_id && f.registration_id.trim().toUpperCase() === normReg)
+        );
+
+        if (duplicate) {
+          return { alreadySubmitted: true };
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Local storage check
+  try {
+    const cached = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+    if (cached) {
+      const list: EventFeedback[] = JSON.parse(cached);
+      const duplicate = list.some(
+        (f) =>
+          f.event_id === eventId &&
+          ((f.university_id && f.university_id.trim().toUpperCase() === normUid) ||
+            (f.registration_id && f.registration_id.trim().toUpperCase() === normReg))
+      );
+      if (duplicate) {
+        return { alreadySubmitted: true };
+      }
+    }
+  } catch (e) {}
+
+  return { alreadySubmitted: false };
+};

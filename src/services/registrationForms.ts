@@ -387,7 +387,17 @@ export const getEventRegistrationsService = async (
 
 export const getTeamDetailsForRegistration = async (
   teamId: string
-): Promise<{ team_name: string; members: Array<{ name: string; email: string; uid?: string | null }> } | null> => {
+): Promise<{
+  team_name: string;
+  registration_number?: string | null;
+  members: Array<{
+    name: string;
+    email: string;
+    phone?: string | null;
+    uid?: string | null;
+    registration_number?: string | null;
+  }>;
+} | null> => {
   if (!isSupabaseConfigured()) {
     const localTeam = localStorage.getItem(`csc_team_${teamId}`);
     return localTeam ? JSON.parse(localTeam) : null;
@@ -400,7 +410,10 @@ export const getTeamDetailsForRegistration = async (
       .eq('id', teamId)
       .maybeSingle();
 
-    if (!team) return null;
+    if (!team) {
+      const localTeam = localStorage.getItem(`csc_team_${teamId}`);
+      return localTeam ? JSON.parse(localTeam) : null;
+    }
 
     const { data: members } = await supabase
       .from('event_team_members')
@@ -409,10 +422,12 @@ export const getTeamDetailsForRegistration = async (
 
     return {
       team_name: (team as any).team_name,
+      registration_number: (team as any).registration_number || null,
       members: (members as any[]) || [],
     };
   } catch {
-    return null;
+    const localTeam = localStorage.getItem(`csc_team_${teamId}`);
+    return localTeam ? JSON.parse(localTeam) : null;
   }
 };
 

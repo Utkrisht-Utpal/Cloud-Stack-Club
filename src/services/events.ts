@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured, STORAGE_BUCKETS } from '../lib/supabase';
+import { generateUUID } from '../utils/uuid';
 import type { Event } from '../types/database';
 
 const CUSTOM_EVENTS_KEY = 'csc_custom_events_list';
@@ -307,7 +308,7 @@ export const uploadEventImage = async (file: File, eventId: string): Promise<str
 };
 
 export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> => {
-  const eventId = eventPayload.id || crypto.randomUUID();
+  const eventId = eventPayload.id || generateUUID();
   const createdEvent: Event = {
     id: eventId,
     title: eventPayload.title || 'New Event',

@@ -11,13 +11,13 @@ import {
   Clock, 
   MapPin, 
   CheckCircle2, 
-  AlertCircle, 
   Plus, 
   Trash2, 
   ArrowRight
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
+import { ErrorPopupModal } from './ErrorPopupModal';
 import { getFormForEvent } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
 import { formatEventTime } from '../../utils/formatters';
@@ -116,7 +116,20 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.email.trim() || !formData.uid.trim()) {
-      setError('Please fill in Name, Email (@example.com), and University ID (UID) for the team leader.');
+      setError(
+        isTeamRegistration
+          ? 'Please fill in Name, Email (@example.com), and University ID (UID) for the team leader.'
+          : 'Please fill in Name, Email (@example.com), and University ID (UID).'
+      );
+      return;
+    }
+
+    if (formData.uid.trim().length !== 10) {
+      setError(
+        isTeamRegistration
+          ? 'University ID (UID) for the team leader must be exactly 10 alphanumeric characters.'
+          : 'University ID (UID) must be exactly 10 alphanumeric characters.'
+      );
       return;
     }
 
@@ -134,6 +147,10 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
         const m = teamMembers[i];
         if (!m.name.trim() || !m.email.trim() || !m.uid.trim()) {
           setError(`Please fill in Name, Email (@example.com), and University ID (UID) for Teammate #${i + 2}.`);
+          return;
+        }
+        if (m.uid.trim().length !== 10) {
+          setError(`University ID (UID) for Teammate #${i + 2} must be exactly 10 alphanumeric characters.`);
           return;
         }
       }
@@ -224,40 +241,139 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           {/* Ticket Pass Box */}
           <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-3 text-left max-w-md mx-auto shadow-inner">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
-              <span className="text-[10px] font-black uppercase text-slate-400">Registration Pass</span>
+              <span className="text-[10px] font-black uppercase text-slate-400">
+                {registrationResult.team ? `Team Pass • ${registrationResult.team.team_name}` : 'Registration Pass'}
+              </span>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                 Confirmed
               </span>
             </div>
 
             <div className="space-y-1">
-              <div className="text-[11px] font-bold text-slate-400 uppercase">Registration ID</div>
-              <div className="text-lg font-mono font-black text-blue-600 dark:text-sky-400">
-                {registrationResult.registration_number || `REG-${Date.now().toString().slice(-6)}`}
+              <div className="text-[11px] font-bold text-slate-400 uppercase">
+                {registrationResult.team ? 'Team Registration ID' : 'Registration Pass ID'}
+              </div>
+              <div className="text-xl font-mono font-black text-blue-600 dark:text-sky-400">
+                {registrationResult.team
+                  ? (registrationResult.team.registration_number || 'REG-CONFIRMED')
+                  : (() => {
+                      const regId = registrationResult.registration_number || '';
+                      const parts = regId.split('-');
+                      if (parts.length === 3) {
+                        return `${parts[0]}-${parts[1]}-******`;
+                      }
+                      return 'REG-CONFIRMED';
+                    })()}
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+            {/* Date and Venue below Team Registration ID in Bigger and Bold Font */}
+            <div className="grid grid-cols-2 gap-3 py-2 border-y border-slate-200/80 dark:border-slate-700/80">
               <div>
-                <div className="text-[10px] font-bold text-slate-400">Registrant Name</div>
-                <div className="font-bold text-slate-900 dark:text-white truncate">{formData.name}</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">Date</div>
+                <div className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {formattedDate}
+                </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold text-slate-400">University ID (UID)</div>
-                <div className="font-bold text-slate-900 dark:text-white truncate">{formData.uid}</div>
+                <div className="text-[10px] font-bold uppercase text-slate-400">Venue</div>
+                <div className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {event.location || 'CU Campus'}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs pt-1">
-              <div>
-                <div className="text-[10px] font-bold text-slate-400">Date</div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{formattedDate}</div>
+            {/* Individual Registrant Details (If Individual Registration) */}
+            {!registrationResult.team && (
+              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">Registrant Name</div>
+                  <div className="font-bold text-slate-900 dark:text-white truncate">{formData.name}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-bold uppercase text-slate-400">University ID (UID)</div>
+                  <div className="font-bold text-slate-900 dark:text-white font-mono">{formData.uid}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] font-bold text-slate-400">Venue</div>
-                <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{event.location || 'CU Campus'}</div>
+            )}
+
+            {/* Team Passes Section (If Team Registration - Includes Leader & Teammates) */}
+            {registrationResult.team && (
+              <div className="pt-2 space-y-2.5">
+                <div className="text-[11px] font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                  <Users2 className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>Team Passes ({(registrationResult.team.members?.length || 0) + 1} Members)</span>
+                </div>
+
+                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                  {/* 1. Team Leader Pass */}
+                  {(() => {
+                    const leaderReg = registrationResult.registration_number || '';
+                    const parts = leaderReg.split('-');
+                    const maskedLeaderPassId =
+                      parts.length === 3 && parts[2].length >= 2
+                        ? `${parts[0]}-${parts[1]}-${parts[2].slice(0, 2)}****`
+                        : 'REG-LEADER-****';
+
+                    return (
+                      <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 truncate">
+                            Team Leader: {formData.name}
+                          </div>
+                          {formData.uid && (
+                            <div className="text-[10px] font-mono text-slate-600 dark:text-slate-300 truncate">
+                              UID: <span className="font-bold">{formData.uid}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-[9px] font-bold uppercase text-slate-400">Pass ID</div>
+                          <div className="text-xs font-mono font-black text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-slate-700">
+                            {maskedLeaderPassId}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 2. Teammate Passes */}
+                  {registrationResult.team.members &&
+                    registrationResult.team.members.map((m, mIdx) => {
+                      const mReg = m.registration_number || '';
+                      const parts = mReg.split('-');
+                      const maskedPassId =
+                        parts.length === 3 && parts[2].length >= 2
+                          ? `${parts[0]}-${parts[1]}-${parts[2].slice(0, 2)}****`
+                          : 'REG-MEMBER-****';
+
+                      return (
+                        <div
+                          key={mIdx}
+                          className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 truncate">
+                              Teammate #{mIdx + 2}: {m.name}
+                            </div>
+                            {m.uid && (
+                              <div className="text-[10px] font-mono text-slate-600 dark:text-slate-300 truncate">
+                                UID: <span className="font-bold">{m.uid}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[9px] font-bold uppercase text-slate-400">Pass ID</div>
+                            <div className="text-xs font-mono font-black text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-slate-700">
+                              {maskedPassId}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <button
@@ -300,13 +416,12 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             </div>
           </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="p-3.5 rounded-2xl bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30 text-xs font-bold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+          {/* Top Centered Error Popup Modal */}
+          <ErrorPopupModal
+            isOpen={!!error}
+            message={error}
+            onClose={() => setError(null)}
+          />
 
           {/* Section 1: Standard Student Information */}
           <div className="space-y-3">
@@ -327,7 +442,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="John Doe"
+                    placeholder="Rahul Sharma"
                     className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -344,7 +459,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="@example.com"
+                    placeholder="rahul@example.com"
                     className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
                 </div>
@@ -361,10 +476,16 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                   <input
                     type="text"
                     required
+                    maxLength={10}
                     value={formData.uid}
-                    onChange={(e) => setFormData({ ...formData, uid: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase(),
+                      })
+                    }
                     placeholder="University ID (UID)"
-                    className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                    className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-mono font-bold uppercase border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
                 </div>
               </div>
@@ -487,11 +608,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                         <input
                           type="text"
                           required
-                          maxLength={11}
-                          placeholder="UID (Max 11 Alpha-numeric) *"
+                          maxLength={10}
+                          placeholder="UID *"
                           value={m.uid}
-                          onChange={(e) => handleUpdateTeamMember(idx, 'uid', e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 11).toUpperCase())}
-                          className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
+                          onChange={(e) => handleUpdateTeamMember(idx, 'uid', e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase())}
+                          className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs font-mono font-bold uppercase border border-slate-200 dark:border-slate-700"
                         />
                       </div>
                     </div>

@@ -31,7 +31,14 @@ export const MainLayout: React.FC = () => {
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('Welcome to Cloud Stack Club! Your application has been submitted successfully.');
-  const [eventsList, setEventsList] = useState<Event[]>([]);
+  const [eventsList, setEventsList] = useState<Event[]>(() => {
+    try {
+      const cached = localStorage.getItem('csc_custom_events_list');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
   const { showDashboard, logout } = useAdminAuth();
 
