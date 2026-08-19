@@ -5,6 +5,9 @@ export interface SubmitFeedbackPayload {
   name: string;
   email: string;
   university_id?: string;
+  event_id?: string;
+  event_title?: string;
+  feedback_type?: 'contact' | 'event' | string;
   message: string;
 }
 
@@ -19,6 +22,9 @@ export const submitFeedback = async (
     name: payload.name.trim(),
     email: payload.email.trim(),
     university_id: payload.university_id ? payload.university_id.trim() : undefined,
+    event_id: payload.event_id ? payload.event_id.trim() : undefined,
+    event_title: payload.event_title ? payload.event_title.trim() : undefined,
+    feedback_type: payload.feedback_type || (payload.event_id ? 'event' : 'contact'),
     message: payload.message.trim(),
     status: 'pending',
     created_at: new Date().toISOString(),
@@ -43,6 +49,15 @@ export const submitFeedback = async (
     };
     if (payload.university_id && payload.university_id.trim()) {
       insertObj.university_id = payload.university_id.trim();
+    }
+    if (payload.event_id && payload.event_id.trim()) {
+      insertObj.event_id = payload.event_id.trim();
+    }
+    if (payload.event_title && payload.event_title.trim()) {
+      insertObj.event_title = payload.event_title.trim();
+    }
+    if (payload.feedback_type) {
+      insertObj.feedback_type = payload.feedback_type;
     }
 
     const { data, error } = await supabase

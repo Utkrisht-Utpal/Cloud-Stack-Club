@@ -145,6 +145,9 @@ export interface ContactFeedback {
   name: string;
   email: string;
   university_id?: string;
+  event_id?: string;
+  event_title?: string;
+  feedback_type?: 'contact' | 'event' | string;
   message: string;
   status: FeedbackStatus;
   created_at: string;
@@ -430,6 +433,10 @@ export interface Database {
           id?: string;
           name: string;
           email: string;
+          university_id?: string;
+          event_id?: string;
+          event_title?: string;
+          feedback_type?: 'contact' | 'event' | string;
           message: string;
           status?: FeedbackStatus;
           created_at?: string;
@@ -438,6 +445,10 @@ export interface Database {
           id?: string;
           name?: string;
           email?: string;
+          university_id?: string;
+          event_id?: string;
+          event_title?: string;
+          feedback_type?: 'contact' | 'event' | string;
           message?: string;
           status?: FeedbackStatus;
           created_at?: string;

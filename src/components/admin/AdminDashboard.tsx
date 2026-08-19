@@ -176,8 +176,56 @@ export const AdminDashboard: React.FC = () => {
   // Contact & Feedbacks State (Instant Cache Initialization)
   const [feedbacksList, setFeedbacksList] = useState<ContactFeedback[]>(getInitialFeedbacksCache);
   const [loadingFeedbacks, setLoadingFeedbacks] = useState(() => getInitialFeedbacksCache().length === 0);
+  const [feedbackViewTab, setFeedbackViewTab] = useState<'contact' | 'event'>('contact');
+  const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<string>('all');
   const [feedbackSearch, setFeedbackSearch] = useState('');
   const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved' | 'archived'>('all');
+  const [isSyncingFeedbacks, setIsSyncingFeedbacks] = useState(false);
+
+  const contactFormFeedbacks = useMemo(() => {
+    return feedbacksList.filter((f) => !f.event_id && f.feedback_type !== 'event');
+  }, [feedbacksList]);
+
+  const eventFeedbacks = useMemo(() => {
+    return feedbacksList.filter((f) => Boolean(f.event_id || f.event_title || f.feedback_type === 'event'));
+  }, [feedbacksList]);
+
+  const filteredFeedbacks = useMemo(() => {
+    return feedbacksList.filter((f) => {
+      // 1. Tab view category filter
+      const isEvent = Boolean(f.event_id || f.event_title || f.feedback_type === 'event');
+      if (feedbackViewTab === 'contact' && isEvent) return false;
+      if (feedbackViewTab === 'event' && !isEvent) return false;
+
+      // 2. Specific event filter (only when in event tab)
+      if (feedbackViewTab === 'event' && selectedFeedbackEvent !== 'all') {
+        const matchId = (f.event_id || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
+        const matchTitle = (f.event_title || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
+        if (!matchId && !matchTitle) return false;
+      }
+
+      // 3. Status filter
+      if (feedbackFilter === 'pending' && !(f.status === 'pending' || f.status === 'unread')) return false;
+      if (feedbackFilter === 'in_progress' && f.status !== 'in_progress') return false;
+      if (feedbackFilter === 'resolved' && !(f.status === 'resolved' || f.status === 'responded')) return false;
+      if (feedbackFilter === 'archived' && f.status !== 'archived') return false;
+
+      // 4. Search query
+      const query = feedbackSearch.toLowerCase().trim();
+      if (query) {
+        const matchName = (f.name || '').toLowerCase().includes(query);
+        const matchEmail = (f.email || '').toLowerCase().includes(query);
+        const matchUid = (f.university_id || '').toLowerCase().includes(query);
+        const matchMsg = (f.message || '').toLowerCase().includes(query);
+        const matchEvent = (f.event_title || '').toLowerCase().includes(query);
+        if (!matchName && !matchEmail && !matchUid && !matchMsg && !matchEvent) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [feedbacksList, feedbackViewTab, selectedFeedbackEvent, feedbackFilter, feedbackSearch]);
 
   const loadPendingApps = async () => {
     try {
@@ -235,6 +283,19 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleSyncFeedbacks = async () => {
+    setIsSyncingFeedbacks(true);
+    try {
+      await loadAllFeedbacks();
+      setActionSuccess('Feedbacks refreshed successfully!');
+      setTimeout(() => setActionSuccess(null), 2000);
+    } catch (err) {
+      console.error('Error syncing feedbacks:', err);
+    } finally {
+      setIsSyncingFeedbacks(false);
+    }
+  };
+
   const handleUpdateFeedbackStatus = async (id: string, newStatus: any) => {
     setFeedbacksList((prev) =>
       prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
@@ -247,24 +308,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleExportFeedbacksPdf = () => {
-    const filtered = feedbacksList.filter((f) => {
-      const matchSearch =
-        !feedbackSearch ||
-        f.name.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
-        f.email.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
-        f.message.toLowerCase().includes(feedbackSearch.toLowerCase());
-
-      const matchStatus =
-        feedbackFilter === 'all' ||
-        (feedbackFilter === 'pending' && (f.status === 'pending' || f.status === 'unread')) ||
-        (feedbackFilter === 'in_progress' && f.status === 'in_progress') ||
-        (feedbackFilter === 'resolved' && (f.status === 'resolved' || f.status === 'responded')) ||
-        (feedbackFilter === 'archived' && f.status === 'archived');
-
-      return matchSearch && matchStatus;
-    });
-
-    exportFeedbacksToPdf(filtered, feedbackFilter, feedbackSearch);
+    exportFeedbacksToPdf(filteredFeedbacks, feedbackFilter, feedbackSearch);
     setActionSuccess('Feedbacks PDF downloaded successfully!');
     setTimeout(() => setActionSuccess(null), 2000);
   };
@@ -1360,209 +1404,265 @@ export const AdminDashboard: React.FC = () => {
         {/* Tab Content 5: Contact & Feedbacks Management */}
         {activeTab === 'feedbacks' && (
           <div className="space-y-6">
-            {/* Stat Cards Header */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div className="neumorphic-card p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center font-bold shrink-0">
-                  <MessageSquare className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold uppercase text-slate-500">Total Feedbacks</div>
-                  <div className="text-xl font-black text-slate-900 dark:text-white">{feedbacksList.length}</div>
-                </div>
+            {/* Header / Subtitle + Sync Button */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2.5">
+                  <MessageSquare className="w-6 h-6 text-blue-600 dark:text-sky-400" />
+                  <span>Contact & Event Feedbacks</span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Manage contact inquiries, general suggestions, and event-specific reviews.
+                </p>
               </div>
 
-              <div className="neumorphic-card p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold shrink-0">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold uppercase text-slate-500">Pending</div>
-                  <div className="text-xl font-black text-amber-600 dark:text-amber-400">
-                    {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
-                  </div>
-                </div>
-              </div>
-
-              <div className="neumorphic-card p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold shrink-0">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold uppercase text-slate-500">In Progress</div>
-                  <div className="text-xl font-black text-indigo-600 dark:text-indigo-400">
-                    {feedbacksList.filter((f) => f.status === 'in_progress').length}
-                  </div>
-                </div>
-              </div>
-
-              <div className="neumorphic-card p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-[11px] font-bold uppercase text-slate-500">Resolved</div>
-                  <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                    {feedbacksList.filter((f) => f.status === 'resolved' || f.status === 'responded').length}
-                  </div>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={handleSyncFeedbacks}
+                disabled={isSyncingFeedbacks}
+                className="h-10 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-sky-400 ${isSyncingFeedbacks ? 'animate-spin' : ''}`} />
+                <span>{isSyncingFeedbacks ? 'Syncing...' : 'Sync Feedbacks'}</span>
+              </button>
             </div>
 
-            {/* Filter & Search Controls */}
-            <div className="neumorphic-card p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* 2 Interactive Overview & View Switcher Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1: CONTACT FORM */}
+              <button
+                type="button"
+                onClick={() => setFeedbackViewTab('contact')}
+                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                  feedbackViewTab === 'contact'
+                    ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                    : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                    CONTACT FORM
+                  </span>
+                  <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2.5">
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                    {contactFormFeedbacks.length}
+                  </span>
+                  {contactFormFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length === 0 ? (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      ✓ All Handled
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      ⚠️ {contactFormFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length} Pending
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              {/* Card 2: EVENT FEEDBACK */}
+              <button
+                type="button"
+                onClick={() => setFeedbackViewTab('event')}
+                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                  feedbackViewTab === 'event'
+                    ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                    : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                    EVENT FEEDBACK
+                  </span>
+                  <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2.5">
+                  <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                    {eventFeedbacks.length}
+                  </span>
+                  {eventFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length === 0 ? (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      ✓ All Handled
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                      ⚠️ {eventFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length} Pending
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               {/* Status Filter Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
                 {(['all', 'pending', 'in_progress', 'resolved', 'archived'] as const).map((st) => (
                   <button
                     key={st}
+                    type="button"
                     onClick={() => setFeedbackFilter(st)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer ${feedbackFilter === st
-                      ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer ${
+                      feedbackFilter === st
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60'
+                    }`}
                   >
                     {st.replace('_', ' ')}
                   </button>
                 ))}
               </div>
 
-              {/* Search Bar & Download PDF Button Side-by-Side */}
-              <div className="flex items-center gap-2.5 w-full sm:w-auto">
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-end flex-wrap sm:flex-nowrap">
+                {/* Event Dropdown filter when in Event Feedback view */}
+                {feedbackViewTab === 'event' && (
+                  <div className="w-48 sm:w-56 shrink-0">
+                    <CustomSelect
+                      value={selectedFeedbackEvent}
+                      onChange={(val) => setSelectedFeedbackEvent(val)}
+                      options={[
+                        { value: 'all', label: '• All Events' },
+                        ...eventsList.map((e) => ({ value: e.id, label: `• ${e.title}` })),
+                      ]}
+                      triggerClassName="w-full h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
+                    />
+                  </div>
+                )}
+
+                {/* Search Box */}
+                <div className="relative flex-1 sm:w-60">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search sender, email..."
+                    placeholder="Search sender, email, query..."
                     value={feedbackSearch}
                     onChange={(e) => setFeedbackSearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 text-xs font-medium border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+                    className="w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium text-slate-900 dark:text-white placeholder:text-slate-400"
                   />
                 </div>
 
+                {/* Download PDF Button */}
                 <button
                   type="button"
                   onClick={handleExportFeedbacksPdf}
-                  className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-md shadow-blue-500/20 flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  className="h-11 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
                   title="Download filtered feedbacks as PDF"
                 >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Download PDF</span>
+                  <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  <span>Download as PDF</span>
                 </button>
               </div>
             </div>
 
-            {/* Feedbacks Data Table */}
-            <div className="neumorphic-card overflow-hidden">
-              {loadingFeedbacks ? (
-                <div className="p-12 text-center text-slate-400 text-sm font-semibold">
-                  Loading user feedbacks...
-                </div>
-              ) : feedbacksList.filter((f) => {
-                const matchSearch =
-                  f.name.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
-                  f.email.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
-                  (f.university_id && f.university_id.toLowerCase().includes(feedbackSearch.toLowerCase())) ||
-                  f.message.toLowerCase().includes(feedbackSearch.toLowerCase());
-                if (!matchSearch) return false;
-                if (feedbackFilter === 'pending') return f.status === 'pending' || f.status === 'unread';
-                if (feedbackFilter === 'in_progress') return f.status === 'in_progress';
-                if (feedbackFilter === 'resolved') return f.status === 'resolved' || f.status === 'responded';
-                if (feedbackFilter === 'archived') return f.status === 'archived';
-                return true;
-              }).length === 0 ? (
-                <div className="p-12 text-center space-y-2">
-                  <MessageSquare className="w-8 h-8 text-slate-400 mx-auto" />
-                  <div className="text-slate-600 dark:text-slate-400 font-bold text-sm">No feedbacks found</div>
-                  <div className="text-xs text-slate-400">User submissions from the Contact Us form will appear here.</div>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-200/80 dark:border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-500 bg-slate-50/50 dark:bg-slate-900/50">
-                        <th className="py-3 px-4">#</th>
-                        <th className="py-3 px-4">Sender Details</th>
-                        <th className="py-3 px-4">Message / Feedback</th>
-                        <th className="py-3 px-4">Submission Date & Time</th>
-                        <th className="py-3 px-4">Status & Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/60 text-xs">
-                      {feedbacksList
-                        .filter((f) => {
-                          const matchSearch =
-                            f.name.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
-                            f.email.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
-                            (f.university_id && f.university_id.toLowerCase().includes(feedbackSearch.toLowerCase())) ||
-                            f.message.toLowerCase().includes(feedbackSearch.toLowerCase());
-                          if (!matchSearch) return false;
-                          if (feedbackFilter === 'pending') return f.status === 'pending' || f.status === 'unread';
-                          if (feedbackFilter === 'in_progress') return f.status === 'in_progress';
-                          if (feedbackFilter === 'resolved') return f.status === 'resolved' || f.status === 'responded';
-                          if (feedbackFilter === 'archived') return f.status === 'archived';
-                          return true;
-                        })
-                        .map((f, idx) => (
-                          <tr key={f.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
-                            <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
-                            <td className="py-3.5 px-4 space-y-0.5 min-w-[160px]">
-                              <div className="font-bold text-slate-900 dark:text-white">{f.name}</div>
-                              {f.university_id && (
-                                <div className="text-[11px] text-blue-600 dark:text-sky-400 font-mono font-bold">
-                                  UID: {f.university_id}
-                                </div>
-                              )}
-                              <a
-                                href={`mailto:${f.email}`}
-                                className="text-[11px] text-slate-500 hover:underline font-mono block"
-                              >
-                                {f.email}
-                              </a>
-                            </td>
-                            <td className="py-3.5 px-4 min-w-[280px]">
-                              <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl">
-                                {f.message}
+            {/* Table Area */}
+            {loadingFeedbacks ? (
+              <div className="py-16 text-center text-xs text-slate-500">
+                Loading user feedbacks...
+              </div>
+            ) : filteredFeedbacks.length === 0 ? (
+              <div className="py-14 text-center text-xs text-slate-500 space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
+                <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">No feedbacks found</p>
+                <p className="text-slate-500">
+                  {feedbackSearch || selectedFeedbackEvent !== 'all' || feedbackFilter !== 'all'
+                    ? 'No submissions match your active search or filter.'
+                    : feedbackViewTab === 'event'
+                    ? 'There are no event-specific feedbacks submitted yet.'
+                    : 'There are no contact form feedbacks to display.'}
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-2xl border border-slate-200/80 dark:border-slate-800 custom-scrollbar">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
+                      <th className="py-3.5 px-4 font-bold">#</th>
+                      <th className="py-3.5 px-4 font-bold">SENDER DETAILS</th>
+                      {feedbackViewTab === 'event' && (
+                        <th className="py-3.5 px-4 font-bold">EVENT</th>
+                      )}
+                      <th className="py-3.5 px-4 font-bold">MESSAGE / FEEDBACK</th>
+                      <th className="py-3.5 px-4 font-bold">SUBMISSION DATE</th>
+                      <th className="py-3.5 px-4 text-right font-bold">STATUS & ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                    {filteredFeedbacks.map((f, idx) => (
+                      <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                        <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
+                        <td className="py-3.5 px-4">
+                          <div>
+                            <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
+                            {f.university_id && (
+                              <div className="text-[11px] text-blue-600 dark:text-sky-400 font-mono font-bold">
+                                UID: {f.university_id}
                               </div>
-                            </td>
-                            <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
-                              {f.created_at
-                                ? `${new Date(f.created_at).toLocaleDateString('en-GB')} • ${new Date(f.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
-                                : 'N/A'}
-                            </td>
-                            <td className="py-3.5 px-4 whitespace-nowrap">
-                              <CustomSelect
-                                value={
-                                  f.status === 'unread'
-                                    ? 'pending'
-                                    : f.status === 'responded'
-                                      ? 'resolved'
-                                      : f.status
-                                }
-                                onChange={(newVal) => handleUpdateFeedbackStatus(f.id, newVal)}
-                                options={[
-                                  { value: 'pending', label: '⏳ Pending' },
-                                  { value: 'in_progress', label: '🔄 In Progress' },
-                                  { value: 'resolved', label: '✅ Resolved' },
-                                  { value: 'archived', label: '📁 Archived' },
-                                ]}
-                                triggerClassName={`min-w-[160px] w-auto h-9 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${f.status === 'pending' || f.status === 'unread'
+                            )}
+                            <a
+                              href={`mailto:${f.email}`}
+                              className="text-[11px] text-slate-500 hover:underline font-mono block mt-0.5"
+                            >
+                              {f.email}
+                            </a>
+                          </div>
+                        </td>
+                        {feedbackViewTab === 'event' && (
+                          <td className="py-3.5 px-4">
+                            <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 text-xs font-bold">
+                              {f.event_title || eventsList.find((e) => e.id === f.event_id)?.title || 'Event Feedback'}
+                            </span>
+                          </td>
+                        )}
+                        <td className="py-3.5 px-4 min-w-[280px]">
+                          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl">
+                            {f.message}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
+                          {f.created_at
+                            ? `${new Date(f.created_at).toLocaleDateString('en-GB')} • ${new Date(f.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                            : 'N/A'}
+                        </td>
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <div className="inline-block text-left">
+                            <CustomSelect
+                              value={
+                                f.status === 'unread'
+                                  ? 'pending'
+                                  : f.status === 'responded'
+                                    ? 'resolved'
+                                    : f.status
+                              }
+                              onChange={(newVal) => handleUpdateFeedbackStatus(f.id, newVal)}
+                              options={[
+                                { value: 'pending', label: '⏳ Pending' },
+                                { value: 'in_progress', label: '🔄 In Progress' },
+                                { value: 'resolved', label: '✅ Resolved' },
+                                { value: 'archived', label: '📁 Archived' },
+                              ]}
+                              triggerClassName={`min-w-[140px] w-auto h-9 px-3 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${
+                                f.status === 'pending' || f.status === 'unread'
                                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                   : f.status === 'in_progress'
                                     ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-500/30'
                                     : f.status === 'resolved' || f.status === 'responded'
                                       ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                                       : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
-                                  }`}
-                              />
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+                              }`}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
