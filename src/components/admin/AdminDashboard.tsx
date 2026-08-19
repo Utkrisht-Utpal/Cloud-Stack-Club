@@ -89,7 +89,6 @@ const getInitialFeedbacksCache = (): ContactFeedback[] => {
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory' | 'core'>('directory');
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
 
   // Pending Applications State
@@ -595,17 +594,6 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
-  const availableDepartments = useMemo(() => {
-    const depts = new Set<string>();
-    membersList.forEach((m) => {
-      if (m.department && m.department.trim()) depts.add(m.department.trim());
-    });
-    pendingApplications.forEach((m) => {
-      if (m.department && m.department.trim()) depts.add(m.department.trim());
-    });
-    return Array.from(depts).sort();
-  }, [membersList, pendingApplications]);
-
   const getInitials = (name: string) => {
     if (!name) return 'U';
     const parts = name.trim().split(/\s+/);
@@ -640,15 +628,9 @@ export const AdminDashboard: React.FC = () => {
 
       if (memberViewTab === 'core' && !m.is_core_member) return false;
 
-      if (selectedDepartment !== 'all') {
-        if ((m.department || '').toLowerCase() !== selectedDepartment.toLowerCase()) {
-          return false;
-        }
-      }
-
       return true;
     });
-  }, [membersList, memberSearch, memberViewTab, selectedDepartment]);
+  }, [membersList, memberSearch, memberViewTab]);
 
   const filteredApplications = useMemo(() => {
     return pendingApplications.filter((app) => {
@@ -662,15 +644,9 @@ export const AdminDashboard: React.FC = () => {
 
       if (!matchesSearch) return false;
 
-      if (selectedDepartment !== 'all') {
-        if ((app.department || '').toLowerCase() !== selectedDepartment.toLowerCase()) {
-          return false;
-        }
-      }
-
       return true;
     });
-  }, [pendingApplications, memberSearch, selectedDepartment]);
+  }, [pendingApplications, memberSearch]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8">
@@ -883,19 +859,6 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-end">
-                {/* Department Filter Dropdown */}
-                <div className="w-44 sm:w-52 shrink-0">
-                  <CustomSelect
-                    value={selectedDepartment}
-                    onChange={(val) => setSelectedDepartment(val)}
-                    options={[
-                      { value: 'all', label: '• All Departments' },
-                      ...availableDepartments.map((d) => ({ value: d, label: `• ${d}` })),
-                    ]}
-                    triggerClassName="w-full h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
-                  />
-                </div>
-
                 {/* Download Button Dropdown */}
                 <DownloadDropdown
                   members={
@@ -920,7 +883,7 @@ export const AdminDashboard: React.FC = () => {
                   <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
                   <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">All caught up!</p>
                   <p className="text-slate-500">
-                    {memberSearch || selectedDepartment !== 'all'
+                    {memberSearch
                       ? 'No applications match your search filter.'
                       : 'There are no pending membership applications to review.'}
                   </p>
