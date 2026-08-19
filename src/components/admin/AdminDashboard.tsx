@@ -942,10 +942,12 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono">
-                            <div className="inline-block px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-sky-400 font-bold text-[11px]">
+                            <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
                               {app.registration_id}
                             </div>
-                            <div className="text-slate-500 text-[11px] mt-0.5">UID: {app.uid || 'N/A'}</div>
+                            <div className="text-slate-500 text-[11px] mt-0.5">
+                              {app.uid ? `UID: ${app.uid}` : 'UID: N/A'}
+                            </div>
                           </td>
                           <td className="py-3.5 px-4">
                             <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{app.department || 'N/A'}</div>
@@ -1024,10 +1026,12 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono">
-                            <div className="inline-block px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-sky-400 font-bold text-[11px]">
+                            <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
                               {member.registration_id}
                             </div>
-                            <div className="text-slate-500 text-[11px] mt-0.5">UID: {member.uid || 'N/A'}</div>
+                            <div className="text-slate-500 text-[11px] mt-0.5">
+                              {member.uid ? `UID: ${member.uid}` : 'UID: N/A'}
+                            </div>
                           </td>
                           <td className="py-3.5 px-4">
                             <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{member.department || 'N/A'}</div>
@@ -1056,7 +1060,7 @@ export const AdminDashboard: React.FC = () => {
                           <td className="py-3.5 px-4 text-right">
                             <button
                               onClick={() => handleDeleteMember(member.id, member.name)}
-                              className="p-1.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/15 transition-colors cursor-pointer inline-flex items-center justify-center"
                               title="Delete Member"
                             >
                               <Trash2 className="w-4 h-4" />
