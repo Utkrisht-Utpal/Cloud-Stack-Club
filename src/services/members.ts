@@ -47,7 +47,7 @@ export const checkMemberDuplicate = async (
       return {
         isDuplicate: true,
         field: 'UID',
-        message: `A member with UID "${cleanUid}" already exists.`,
+        message: `A member with UID "${cleanUid}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`,
       };
     }
   }
@@ -64,7 +64,7 @@ export const checkMemberDuplicate = async (
       return {
         isDuplicate: true,
         field: 'Email',
-        message: `A member with Email "${cleanEmail}" already exists.`,
+        message: `A member with Email "${cleanEmail}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`,
       };
     }
   }
@@ -81,7 +81,7 @@ export const checkMemberDuplicate = async (
       return {
         isDuplicate: true,
         field: 'Mobile Number',
-        message: `A member with Mobile Number "${cleanPhone}" already exists.`,
+        message: `A member with Mobile Number "${cleanPhone}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`,
       };
     }
   }
@@ -150,25 +150,25 @@ export const submitMemberApplication = async (
 
   if (memberError || !memberData) {
     if (memberError?.message?.includes('members_uid_key') || memberError?.message?.includes('uid')) {
-      throw new Error(`A member with UID "${uid.trim()}" already exists.`);
+      throw new Error(`A member with UID "${uid.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
     }
     if (memberError?.message?.includes('members_email_key') || memberError?.message?.includes('email')) {
-      throw new Error(`A member with Email "${email.trim()}" already exists.`);
+      throw new Error(`A member with Email "${email.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
     }
     if (memberError?.message?.includes('phone')) {
-      throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists.`);
+      throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
     }
 
     const { error: fallbackError } = await supabase.from('members').insert(insertPayload);
     if (fallbackError) {
       if (fallbackError.message?.includes('uid')) {
-        throw new Error(`A member with UID "${uid.trim()}" already exists.`);
+        throw new Error(`A member with UID "${uid.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
       }
       if (fallbackError.message?.includes('email')) {
-        throw new Error(`A member with Email "${email.trim()}" already exists.`);
+        throw new Error(`A member with Email "${email.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
       }
       if (fallbackError.message?.includes('phone')) {
-        throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists.`);
+        throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
       }
       console.error('Error inserting member application:', fallbackError.message);
       throw new Error(`Membership application failed: ${fallbackError.message}`);

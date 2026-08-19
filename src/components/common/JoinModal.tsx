@@ -1,6 +1,23 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, User, Mail, GraduationCap, Phone, Building2, Calendar, Upload, Send, AlertCircle, CheckCircle2, HelpCircle, X, ExternalLink } from 'lucide-react';
+import {
+  Sparkles,
+  User,
+  Mail,
+  GraduationCap,
+  Phone,
+  Building2,
+  Calendar,
+  Upload,
+  Send,
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  HelpCircle,
+  X,
+  ExternalLink,
+} from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { CustomSelect } from '../ui/CustomSelect';
@@ -37,8 +54,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 10 * 1024 * 1024) {
-        setError('File size must be under 10 MB.');
+      if (file.size > 1 * 1024 * 1024) {
+        setError('File size exceeds 1 MB limit. Please upload an image under 1 MB.');
+        e.target.value = '';
+        setVerificationFile(null);
         return;
       }
       setVerificationFile(file);
@@ -316,10 +335,16 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                   </div>
                 </div>
 
+                {/* 1MB Image Warning Notice Banner */}
+                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-medium">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Please upload an image of <strong>less than 1 MB</strong> (PNG, JPEG, WEBP).</span>
+                </div>
+
                 <input
                   type="file"
                   required
-                  accept="image/*,application/pdf"
+                  accept="image/png,image/jpeg,image/webp,image/jpg"
                   onChange={handleFileChange}
                   className="w-full h-11 px-3.5 py-2 text-xs text-slate-600 dark:text-slate-400 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/60 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-700 dark:file:bg-slate-800 dark:file:text-sky-400 hover:file:bg-blue-200 cursor-pointer"
                 />
@@ -330,9 +355,33 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-400">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-600 dark:text-red-400 space-y-1.5 leading-relaxed">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div className="flex-1 space-y-1">
+                      <p className="font-semibold">{error}</p>
+                      {error.toLowerCase().includes('contact form') && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleModalClose();
+                            setTimeout(() => {
+                              const contactEl = document.getElementById('contact');
+                              if (contactEl) {
+                                contactEl.scrollIntoView({ behavior: 'smooth' });
+                              } else {
+                                window.location.hash = '#contact';
+                              }
+                            }, 100);
+                          }}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-sky-400 underline hover:text-blue-700 dark:hover:text-sky-300 cursor-pointer pt-0.5"
+                        >
+                          <span>Go to Contact Form</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 
