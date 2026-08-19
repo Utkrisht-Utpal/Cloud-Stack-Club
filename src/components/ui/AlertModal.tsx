@@ -101,8 +101,9 @@ export const AlertModal: React.FC<AlertModalProps> = ({
                         <a
                           key={index}
                           href="/#contact"
-                          onClick={(e) => {
+                          onClick={() => {
                             onClose();
+                            window.dispatchEvent(new CustomEvent('close-all-modals'));
                             if (window.location.pathname === '/') {
                               const el = document.getElementById('contact');
                               if (el) el.scrollIntoView({ behavior: 'smooth' });

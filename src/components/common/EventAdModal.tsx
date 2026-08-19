@@ -54,16 +54,30 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.setProperty('overflow', 'hidden', 'important');
-      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-    } else {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      const count = parseInt(document.body.dataset.modalCount || '0', 10) + 1;
+      document.body.dataset.modalCount = count.toString();
+      if (count === 1) {
+        document.body.style.setProperty('overflow', 'hidden', 'important');
+        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+      }
+
+      return () => {
+        const newCount = Math.max(0, parseInt(document.body.dataset.modalCount || '1', 10) - 1);
+        document.body.dataset.modalCount = newCount.toString();
+        if (newCount === 0) {
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
+        }
+      };
     }
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleCloseAll = () => {
+      if (isOpen) setIsOpen(false);
     };
+    window.addEventListener('close-all-modals', handleCloseAll);
+    return () => window.removeEventListener('close-all-modals', handleCloseAll);
   }, [isOpen]);
 
   const handleClose = () => {

@@ -29,17 +29,31 @@ export const ErrorPopupModal: React.FC<ErrorPopupModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.setProperty('overflow', 'hidden', 'important');
-      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-    } else {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
+      const count = parseInt(document.body.dataset.modalCount || '0', 10) + 1;
+      document.body.dataset.modalCount = count.toString();
+      if (count === 1) {
+        document.body.style.setProperty('overflow', 'hidden', 'important');
+        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+      }
+
+      return () => {
+        const newCount = Math.max(0, parseInt(document.body.dataset.modalCount || '1', 10) - 1);
+        document.body.dataset.modalCount = newCount.toString();
+        if (newCount === 0) {
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
+        }
+      };
     }
-    return () => {
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-    };
   }, [isOpen]);
+
+  useEffect(() => {
+    const handleCloseAll = () => {
+      if (isOpen) onClose();
+    };
+    window.addEventListener('close-all-modals', handleCloseAll);
+    return () => window.removeEventListener('close-all-modals', handleCloseAll);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !message) return null;
 
@@ -101,8 +115,9 @@ export const ErrorPopupModal: React.FC<ErrorPopupModalProps> = ({
                   <a
                     key={index}
                     href="/#contact"
-                    onClick={(e) => {
+                    onClick={() => {
                       onClose();
+                      window.dispatchEvent(new CustomEvent('close-all-modals'));
                       // Let standard anchor navigation handle it, but if on same page, scroll smooth
                       if (window.location.pathname === '/') {
                         const el = document.getElementById('contact');
