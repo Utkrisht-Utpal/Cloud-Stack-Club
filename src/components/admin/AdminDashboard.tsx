@@ -61,9 +61,9 @@ import {
   sortEventsByRelevance,
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
-import { getAllFeedbacks, updateFeedbackStatus } from '../../services/feedback';
+import { getAllFeedbacks, updateFeedbackStatus, getAllEventFeedbacks, updateEventFeedbackStatus } from '../../services/feedback';
 import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
-import type { Member, Event, Role, ContactFeedback } from '../../types/database';
+import type { Member, Event, Role, ContactFeedback, EventFeedback } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
   { value: 'Hackathons', label: 'Hackathons' },
@@ -74,11 +74,18 @@ const EVENT_CATEGORY_OPTIONS = [
   { value: 'Bootcamps', label: 'Bootcamps' },
 ];
 
-
-
-const getInitialFeedbacksCache = (): ContactFeedback[] => {
+const getInitialContactFeedbacksCache = (): ContactFeedback[] => {
   try {
     const cached = localStorage.getItem('csc_contact_feedbacks');
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+};
+
+const getInitialEventFeedbacksCache = (): EventFeedback[] => {
+  try {
+    const cached = localStorage.getItem('csc_event_feedbacks');
     return cached ? JSON.parse(cached) : [];
   } catch {
     return [];
@@ -173,59 +180,66 @@ export const AdminDashboard: React.FC = () => {
     });
   };
 
-  // Contact & Feedbacks State (Instant Cache Initialization)
-  const [feedbacksList, setFeedbacksList] = useState<ContactFeedback[]>(getInitialFeedbacksCache);
-  const [loadingFeedbacks, setLoadingFeedbacks] = useState(() => getInitialFeedbacksCache().length === 0);
+  // Contact & Event Feedbacks State (Separate Cached Tables)
+  const [contactFeedbacksList, setContactFeedbacksList] = useState<ContactFeedback[]>(getInitialContactFeedbacksCache);
+  const [eventFeedbacksList, setEventFeedbacksList] = useState<EventFeedback[]>(getInitialEventFeedbacksCache);
+  const [loadingFeedbacks, setLoadingFeedbacks] = useState(() => getInitialContactFeedbacksCache().length === 0 && getInitialEventFeedbacksCache().length === 0);
   const [feedbackViewTab, setFeedbackViewTab] = useState<'contact' | 'event'>('contact');
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<string>('all');
   const [feedbackSearch, setFeedbackSearch] = useState('');
   const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved' | 'archived'>('all');
   const [isSyncingFeedbacks, setIsSyncingFeedbacks] = useState(false);
 
-  const contactFormFeedbacks = useMemo(() => {
-    return feedbacksList.filter((f) => !f.event_id && f.feedback_type !== 'event');
-  }, [feedbacksList]);
-
-  const eventFeedbacks = useMemo(() => {
-    return feedbacksList.filter((f) => Boolean(f.event_id || f.event_title || f.feedback_type === 'event'));
-  }, [feedbacksList]);
-
-  const filteredFeedbacks = useMemo(() => {
-    return feedbacksList.filter((f) => {
-      // 1. Tab view category filter
-      const isEvent = Boolean(f.event_id || f.event_title || f.feedback_type === 'event');
-      if (feedbackViewTab === 'contact' && isEvent) return false;
-      if (feedbackViewTab === 'event' && !isEvent) return false;
-
-      // 2. Specific event filter (only when in event tab)
-      if (feedbackViewTab === 'event' && selectedFeedbackEvent !== 'all') {
-        const matchId = (f.event_id || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
-        const matchTitle = (f.event_title || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
-        if (!matchId && !matchTitle) return false;
-      }
-
-      // 3. Status filter
+  const filteredContactFeedbacks = useMemo(() => {
+    return contactFeedbacksList.filter((f) => {
       if (feedbackFilter === 'pending' && !(f.status === 'pending' || f.status === 'unread')) return false;
       if (feedbackFilter === 'in_progress' && f.status !== 'in_progress') return false;
       if (feedbackFilter === 'resolved' && !(f.status === 'resolved' || f.status === 'responded')) return false;
       if (feedbackFilter === 'archived' && f.status !== 'archived') return false;
 
-      // 4. Search query
       const query = feedbackSearch.toLowerCase().trim();
       if (query) {
         const matchName = (f.name || '').toLowerCase().includes(query);
         const matchEmail = (f.email || '').toLowerCase().includes(query);
-        const matchUid = (f.university_id || '').toLowerCase().includes(query);
         const matchMsg = (f.message || '').toLowerCase().includes(query);
-        const matchEvent = (f.event_title || '').toLowerCase().includes(query);
-        if (!matchName && !matchEmail && !matchUid && !matchMsg && !matchEvent) {
+        if (!matchName && !matchEmail && !matchMsg) {
           return false;
         }
       }
 
       return true;
     });
-  }, [feedbacksList, feedbackViewTab, selectedFeedbackEvent, feedbackFilter, feedbackSearch]);
+  }, [contactFeedbacksList, feedbackFilter, feedbackSearch]);
+
+  const filteredEventFeedbacks = useMemo(() => {
+    return eventFeedbacksList.filter((f) => {
+      if (selectedFeedbackEvent !== 'all') {
+        const matchId = (f.event_id || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
+        const matchTitle = (f.event_title || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
+        if (!matchId && !matchTitle) return false;
+      }
+
+      if (feedbackFilter === 'pending' && !(f.status === 'pending' || f.status === 'unread')) return false;
+      if (feedbackFilter === 'in_progress' && f.status !== 'in_progress') return false;
+      if (feedbackFilter === 'resolved' && !(f.status === 'resolved' || f.status === 'responded')) return false;
+      if (feedbackFilter === 'archived' && f.status !== 'archived') return false;
+
+      const query = feedbackSearch.toLowerCase().trim();
+      if (query) {
+        const matchName = (f.name || '').toLowerCase().includes(query);
+        const matchEmail = (f.email || '').toLowerCase().includes(query);
+        const matchUid = (f.university_id || '').toLowerCase().includes(query);
+        const matchRegId = (f.registration_id || '').toLowerCase().includes(query);
+        const matchMsg = (f.message || '').toLowerCase().includes(query);
+        const matchEvent = (f.event_title || '').toLowerCase().includes(query);
+        if (!matchName && !matchEmail && !matchUid && !matchRegId && !matchMsg && !matchEvent) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [eventFeedbacksList, selectedFeedbackEvent, feedbackFilter, feedbackSearch]);
 
   const loadPendingApps = async () => {
     try {
@@ -274,8 +288,12 @@ export const AdminDashboard: React.FC = () => {
 
   const loadAllFeedbacks = async () => {
     try {
-      const fbs = await getAllFeedbacks();
-      if (fbs) setFeedbacksList(fbs);
+      const [cFeedbacks, eFeedbacks] = await Promise.all([
+        getAllFeedbacks(),
+        getAllEventFeedbacks(),
+      ]);
+      if (cFeedbacks) setContactFeedbacksList(cFeedbacks);
+      if (eFeedbacks) setEventFeedbacksList(eFeedbacks);
     } catch (err) {
       console.error('Error fetching feedbacks:', err);
     } finally {
@@ -296,19 +314,34 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleUpdateFeedbackStatus = async (id: string, newStatus: any) => {
-    setFeedbacksList((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
-    );
-    const success = await updateFeedbackStatus(id, newStatus);
-    if (success) {
-      setActionSuccess(`Feedback status updated to "${newStatus.toUpperCase()}"`);
-      setTimeout(() => setActionSuccess(null), 2000);
+  const handleUpdateFeedbackStatus = async (id: string, newStatus: any, isEvent: boolean) => {
+    if (isEvent) {
+      setEventFeedbacksList((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
+      );
+      const success = await updateEventFeedbackStatus(id, newStatus);
+      if (success) {
+        setActionSuccess(`Event feedback status updated to "${newStatus.toUpperCase()}"`);
+        setTimeout(() => setActionSuccess(null), 2000);
+      }
+    } else {
+      setContactFeedbacksList((prev) =>
+        prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
+      );
+      const success = await updateFeedbackStatus(id, newStatus);
+      if (success) {
+        setActionSuccess(`Contact feedback status updated to "${newStatus.toUpperCase()}"`);
+        setTimeout(() => setActionSuccess(null), 2000);
+      }
     }
   };
 
   const handleExportFeedbacksPdf = () => {
-    exportFeedbacksToPdf(filteredFeedbacks, feedbackFilter, feedbackSearch);
+    if (feedbackViewTab === 'event') {
+      exportFeedbacksToPdf(filteredEventFeedbacks as any, feedbackFilter, feedbackSearch);
+    } else {
+      exportFeedbacksToPdf(filteredContactFeedbacks as any, feedbackFilter, feedbackSearch);
+    }
     setActionSuccess('Feedbacks PDF downloaded successfully!');
     setTimeout(() => setActionSuccess(null), 2000);
   };
@@ -776,9 +809,11 @@ export const AdminDashboard: React.FC = () => {
             >
               <MessageSquare className="w-4 h-4" />
               <span>Contact & Feedbacks</span>
-              {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length > 0 && (
+              {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
                 <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
-                  {feedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
+                  {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                    eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
                 </span>
               )}
             </button>
@@ -1449,15 +1484,15 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-baseline gap-2.5">
                   <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {contactFormFeedbacks.length}
+                    {contactFeedbacksList.length}
                   </span>
-                  {contactFormFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length === 0 ? (
+                  {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length === 0 ? (
                     <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       ✓ All Handled
                     </span>
                   ) : (
                     <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                      ⚠️ {contactFormFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length} Pending
+                      ⚠️ {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length} Pending
                     </span>
                   )}
                 </div>
@@ -1483,15 +1518,15 @@ export const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex items-baseline gap-2.5">
                   <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {eventFeedbacks.length}
+                    {eventFeedbacksList.length}
                   </span>
-                  {eventFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length === 0 ? (
+                  {eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length === 0 ? (
                     <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
                       ✓ All Handled
                     </span>
                   ) : (
                     <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                      ⚠️ {eventFeedbacks.filter((f) => f.status === 'pending' || f.status === 'unread').length} Pending
+                      ⚠️ {eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length} Pending
                     </span>
                   )}
                 </div>
@@ -1539,7 +1574,7 @@ export const AdminDashboard: React.FC = () => {
                   <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search sender, email, query..."
+                    placeholder={feedbackViewTab === 'event' ? "Search sender, UID, Reg ID..." : "Search sender, email, query..."}
                     value={feedbackSearch}
                     onChange={(e) => setFeedbackSearch(e.target.value)}
                     className="w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium text-slate-900 dark:text-white placeholder:text-slate-400"
@@ -1562,9 +1597,9 @@ export const AdminDashboard: React.FC = () => {
             {/* Table Area */}
             {loadingFeedbacks ? (
               <div className="py-16 text-center text-xs text-slate-500">
-                Loading user feedbacks...
+                Loading feedbacks...
               </div>
-            ) : filteredFeedbacks.length === 0 ? (
+            ) : (feedbackViewTab === 'event' ? filteredEventFeedbacks.length : filteredContactFeedbacks.length) === 0 ? (
               <div className="py-14 text-center text-xs text-slate-500 space-y-2 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
                 <CheckCircle2 className="w-8 h-8 text-emerald-500 mx-auto opacity-80" />
                 <p className="font-bold text-slate-700 dark:text-slate-300 text-sm">No feedbacks found</p>
@@ -1592,15 +1627,20 @@ export const AdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                    {filteredFeedbacks.map((f, idx) => (
+                    {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).map((f: any, idx) => (
                       <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
                         <td className="py-3.5 px-4">
-                          <div>
+                          <div className="space-y-0.5">
                             <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
                             {f.university_id && (
                               <div className="text-[11px] text-blue-600 dark:text-sky-400 font-mono font-bold">
                                 UID: {f.university_id}
+                              </div>
+                            )}
+                            {f.registration_id && (
+                              <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                                Reg ID: {f.registration_id}
                               </div>
                             )}
                             <a
@@ -1612,10 +1652,31 @@ export const AdminDashboard: React.FC = () => {
                           </div>
                         </td>
                         {feedbackViewTab === 'event' && (
-                          <td className="py-3.5 px-4">
-                            <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 text-xs font-bold">
-                              {f.event_title || eventsList.find((e) => e.id === f.event_id)?.title || 'Event Feedback'}
-                            </span>
+                          <td className="py-3.5 px-4 min-w-[140px]">
+                            <div className="space-y-1.5">
+                              <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 text-xs font-bold">
+                                {f.event_title || eventsList.find((e) => e.id === f.event_id)?.title || 'Event Feedback'}
+                              </span>
+                              {(f.event_rating !== undefined || f.engagement_rating !== undefined) && (
+                                <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                  {f.event_rating !== undefined && (
+                                    <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                                      ⭐ {f.event_rating}/5 Event
+                                    </span>
+                                  )}
+                                  {f.engagement_rating !== undefined && (
+                                    <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
+                                      🔥 {f.engagement_rating}/5 Eng.
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {f.coordination_rating && (
+                                <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                                  {f.coordination_rating}
+                                </div>
+                              )}
+                            </div>
                           </td>
                         )}
                         <td className="py-3.5 px-4 min-w-[280px]">
@@ -1638,7 +1699,7 @@ export const AdminDashboard: React.FC = () => {
                                     ? 'resolved'
                                     : f.status
                               }
-                              onChange={(newVal) => handleUpdateFeedbackStatus(f.id, newVal)}
+                              onChange={(newVal) => handleUpdateFeedbackStatus(f.id, newVal, feedbackViewTab === 'event')}
                               options={[
                                 { value: 'pending', label: '⏳ Pending' },
                                 { value: 'in_progress', label: '🔄 In Progress' },

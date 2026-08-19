@@ -1,17 +1,17 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import type { ContactFeedback } from '../types/database';
+import type { ContactFeedback, EventFeedback, FeedbackStatus } from '../types/database';
+
+/* =========================================================================
+   1. CONTACT FORM FEEDBACK SERVICES (Table: contact_feedbacks)
+   ========================================================================= */
 
 export interface SubmitFeedbackPayload {
   name: string;
   email: string;
-  university_id?: string;
-  event_id?: string;
-  event_title?: string;
-  feedback_type?: 'contact' | 'event' | string;
   message: string;
 }
 
-const LOCAL_FEEDBACKS_KEY = 'csc_contact_feedbacks';
+const LOCAL_CONTACT_FEEDBACKS_KEY = 'csc_contact_feedbacks';
 
 export const submitFeedback = async (
   payload: SubmitFeedbackPayload
@@ -21,10 +21,6 @@ export const submitFeedback = async (
     id: tempId,
     name: payload.name.trim(),
     email: payload.email.trim(),
-    university_id: payload.university_id ? payload.university_id.trim() : undefined,
-    event_id: payload.event_id ? payload.event_id.trim() : undefined,
-    event_title: payload.event_title ? payload.event_title.trim() : undefined,
-    feedback_type: payload.feedback_type || (payload.event_id ? 'event' : 'contact'),
     message: payload.message.trim(),
     status: 'pending',
     created_at: new Date().toISOString(),
@@ -32,33 +28,21 @@ export const submitFeedback = async (
 
   if (!isSupabaseConfigured()) {
     try {
-      const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+      const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
       const list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
       list.unshift(newFeedback);
-      localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
+      localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
     } catch (e) {}
     return newFeedback;
   }
 
   try {
-    const insertObj: any = {
+    const insertObj = {
       name: payload.name.trim(),
       email: payload.email.trim(),
       message: payload.message.trim(),
-      status: 'pending',
+      status: 'pending' as FeedbackStatus,
     };
-    if (payload.university_id && payload.university_id.trim()) {
-      insertObj.university_id = payload.university_id.trim();
-    }
-    if (payload.event_id && payload.event_id.trim()) {
-      insertObj.event_id = payload.event_id.trim();
-    }
-    if (payload.event_title && payload.event_title.trim()) {
-      insertObj.event_title = payload.event_title.trim();
-    }
-    if (payload.feedback_type) {
-      insertObj.feedback_type = payload.feedback_type;
-    }
 
     const { data, error } = await supabase
       .from('contact_feedbacks')
@@ -68,38 +52,14 @@ export const submitFeedback = async (
 
     if (!error && data) {
       const dbFeedback = data as ContactFeedback;
-      // Update local storage with canonical DB object
       try {
-        const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+        const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
         let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
         list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
         list.unshift(dbFeedback);
-        localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
+        localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
       } catch (e) {}
-
       return dbFeedback;
-    }
-
-    // Graceful fallback: If Supabase table doesn't have university_id column yet, retry insert without it
-    if (error && insertObj.university_id) {
-      delete insertObj.university_id;
-      const retry = await supabase
-        .from('contact_feedbacks')
-        .insert(insertObj)
-        .select('*')
-        .maybeSingle();
-
-      if (!retry.error && retry.data) {
-        const fallbackFeedback = { ...(retry.data as ContactFeedback), university_id: payload.university_id?.trim() };
-        try {
-          const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
-          let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
-          list = list.filter((f) => f.id !== tempId && f.id !== fallbackFeedback.id);
-          list.unshift(fallbackFeedback);
-          localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
-        } catch (e) {}
-        return fallbackFeedback;
-      }
     }
   } catch (e) {}
 
@@ -110,7 +70,7 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
   let localList: ContactFeedback[] = [];
 
   try {
-    const cached = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+    const cached = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
     if (cached) {
       localList = JSON.parse(cached);
     }
@@ -129,7 +89,6 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
     if (!error && data) {
       const dbList = (data as ContactFeedback[]) || [];
 
-      // Deduplicate by signature (name + email + message) & ID
       const seenIds = new Set<string>();
       const seenSignatures = new Set<string>();
       const combined: ContactFeedback[] = [];
@@ -152,9 +111,8 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
         }
       });
 
-      // Update local storage with clean deduplicated list
       try {
-        localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(combined));
+        localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(combined));
       } catch (e) {}
 
       return combined.sort(
@@ -168,15 +126,14 @@ export const getAllFeedbacks = async (): Promise<ContactFeedback[]> => {
 
 export const updateFeedbackStatus = async (
   id: string,
-  status: 'pending' | 'in_progress' | 'resolved' | 'archived' | 'read' | 'unread' | 'responded'
+  status: FeedbackStatus
 ): Promise<boolean> => {
-  // Update local storage
   try {
-    const cached = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+    const cached = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
     if (cached) {
       const list: ContactFeedback[] = JSON.parse(cached);
       const updated = list.map((f) => (f.id === id ? { ...f, status } : f));
-      localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(updated));
+      localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(updated));
     }
   } catch (e) {}
 
@@ -187,6 +144,182 @@ export const updateFeedbackStatus = async (
   try {
     const { error } = await supabase
       .from('contact_feedbacks')
+      .update({ status })
+      .eq('id', id);
+
+    return !error;
+  } catch (e) {
+    return false;
+  }
+};
+
+/* =========================================================================
+   2. EVENT-SPECIFIC FEEDBACK SERVICES (Table: event_feedbacks)
+   ========================================================================= */
+
+export interface SubmitEventFeedbackPayload {
+  name: string;
+  email: string;
+  university_id: string;
+  registration_id: string;
+  event_id: string;
+  event_title: string;
+  event_rating: number;
+  engagement_rating: number;
+  coordination_rating: string;
+  message: string;
+}
+
+const LOCAL_EVENT_FEEDBACKS_KEY = 'csc_event_feedbacks';
+
+export const submitEventFeedback = async (
+  payload: SubmitEventFeedbackPayload
+): Promise<EventFeedback> => {
+  const tempId = 'efb-' + Date.now();
+  const newEventFeedback: EventFeedback = {
+    id: tempId,
+    name: payload.name.trim(),
+    email: payload.email.trim(),
+    university_id: payload.university_id.trim(),
+    registration_id: payload.registration_id.trim(),
+    event_id: payload.event_id.trim(),
+    event_title: payload.event_title.trim(),
+    event_rating: payload.event_rating,
+    engagement_rating: payload.engagement_rating,
+    coordination_rating: payload.coordination_rating.trim(),
+    message: payload.message.trim(),
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  };
+
+  if (!isSupabaseConfigured()) {
+    try {
+      const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+      const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+      list.unshift(newEventFeedback);
+      localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+    } catch (e) {}
+    return newEventFeedback;
+  }
+
+  try {
+    const insertObj = {
+      name: payload.name.trim(),
+      email: payload.email.trim(),
+      university_id: payload.university_id.trim(),
+      registration_id: payload.registration_id.trim(),
+      event_id: payload.event_id.trim(),
+      event_title: payload.event_title.trim(),
+      event_rating: payload.event_rating,
+      engagement_rating: payload.engagement_rating,
+      coordination_rating: payload.coordination_rating.trim(),
+      message: payload.message.trim(),
+      status: 'pending' as FeedbackStatus,
+    };
+
+    const { data, error } = await supabase
+      .from('event_feedbacks')
+      .insert(insertObj)
+      .select('*')
+      .maybeSingle();
+
+    if (!error && data) {
+      const dbEventFeedback = data as EventFeedback;
+      try {
+        const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+        let list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+        list = list.filter((f) => f.id !== tempId && f.id !== dbEventFeedback.id);
+        list.unshift(dbEventFeedback);
+        localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+      } catch (e) {}
+      return dbEventFeedback;
+    }
+  } catch (e) {}
+
+  // Fallback to local storage
+  try {
+    const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+    const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+    list.unshift(newEventFeedback);
+    localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+  } catch (e) {}
+
+  return newEventFeedback;
+};
+
+export const getAllEventFeedbacks = async (): Promise<EventFeedback[]> => {
+  let localList: EventFeedback[] = [];
+
+  try {
+    const cached = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+    if (cached) {
+      localList = JSON.parse(cached);
+    }
+  } catch (e) {}
+
+  if (!isSupabaseConfigured()) {
+    return localList;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('event_feedbacks')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      const dbList = (data as EventFeedback[]) || [];
+
+      const seenIds = new Set<string>();
+      const combined: EventFeedback[] = [];
+
+      dbList.forEach((f) => {
+        if (!seenIds.has(f.id)) {
+          seenIds.add(f.id);
+          combined.push(f);
+        }
+      });
+
+      localList.forEach((f) => {
+        if (!seenIds.has(f.id)) {
+          seenIds.add(f.id);
+          combined.push(f);
+        }
+      });
+
+      try {
+        localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(combined));
+      } catch (e) {}
+
+      return combined.sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+    }
+  } catch (e) {}
+
+  return localList;
+};
+
+export const updateEventFeedbackStatus = async (
+  id: string,
+  status: FeedbackStatus
+): Promise<boolean> => {
+  try {
+    const cached = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+    if (cached) {
+      const list: EventFeedback[] = JSON.parse(cached);
+      const updated = list.map((f) => (f.id === id ? { ...f, status } : f));
+      localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(updated));
+    }
+  } catch (e) {}
+
+  if (!isSupabaseConfigured()) {
+    return true;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('event_feedbacks')
       .update({ status })
       .eq('id', id);
 

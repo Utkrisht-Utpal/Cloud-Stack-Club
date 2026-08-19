@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { Member, ContactFeedback } from '../types/database';
+import type { Member, ContactFeedback, EventFeedback } from '../types/database';
 
 export const exportMembersToExcel = (
   members: Member[],
@@ -119,7 +119,7 @@ export const exportMembersToPdf = (
 };
 
 export const exportFeedbacksToPdf = (
-  feedbacks: ContactFeedback[],
+  feedbacks: (ContactFeedback | EventFeedback)[],
   filterType: string,
   searchQuery: string
 ) => {
@@ -129,7 +129,7 @@ export const exportFeedbacksToPdf = (
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(15, 23, 42);
-  doc.text('Cloud Stack Club — Contact & Feedbacks Directory', 14, 15);
+  doc.text('Cloud Stack Club — Feedbacks & Inquiries Directory', 14, 15);
 
   // Subtitle / Metadata
   doc.setFont('helvetica', 'normal');
@@ -143,39 +143,49 @@ export const exportFeedbacksToPdf = (
   doc.text(`Filter: ${filterText} (${feedbacks.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
 
   // Table Data mapping
-  const tableRows = feedbacks.map((f, index) => [
-    (index + 1).toString(),
-    f.name || 'N/A',
-    f.university_id || 'N/A',
-    f.email || 'N/A',
-    f.message || 'N/A',
-    (f.status || 'pending').toUpperCase(),
-    f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A',
-  ]);
+  const tableRows = feedbacks.map((f, index) => {
+    const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
+    const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
+    const eventName = 'event_title' in f && f.event_title ? f.event_title : ('event_id' in f && f.event_id ? 'Event Feedback' : 'Contact Form');
+
+    return [
+      (index + 1).toString(),
+      f.name || 'N/A',
+      uid,
+      regId,
+      eventName,
+      f.email || 'N/A',
+      f.message || 'N/A',
+      (f.status || 'pending').toUpperCase(),
+      f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A',
+    ];
+  });
 
   autoTable(doc, {
     startY: 27,
-    head: [['#', 'Sender Name', 'University UID', 'Email', 'Message / Feedback Query', 'Status', 'Received Date']],
+    head: [['#', 'Sender Name', 'UID', 'Reg ID', 'Category / Event', 'Email', 'Message / Feedback', 'Status', 'Received Date']],
     body: tableRows,
     theme: 'grid',
     headStyles: {
       fillColor: [37, 99, 235],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 9,
+      fontSize: 8.5,
     },
     bodyStyles: {
-      fontSize: 8.5,
+      fontSize: 8,
       textColor: [30, 41, 59],
     },
     columnStyles: {
-      0: { cellWidth: 10 },
-      1: { cellWidth: 35 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 48 },
-      4: { cellWidth: 92 },
-      5: { cellWidth: 25 },
-      6: { cellWidth: 25 },
+      0: { cellWidth: 8 },
+      1: { cellWidth: 30 },
+      2: { cellWidth: 22 },
+      3: { cellWidth: 26 },
+      4: { cellWidth: 32 },
+      5: { cellWidth: 38 },
+      6: { cellWidth: 70 },
+      7: { cellWidth: 20 },
+      8: { cellWidth: 22 },
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],

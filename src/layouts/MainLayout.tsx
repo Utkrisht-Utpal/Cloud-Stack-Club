@@ -23,14 +23,14 @@ import { AdminLoginModal } from '../components/admin/AdminLoginModal';
 const JoinModal = lazyWithRetry(() => import('../components/common/JoinModal'), 'JoinModal');
 const EventRegisterModal = lazyWithRetry(() => import('../components/common/EventRegisterModal'), 'EventRegisterModal');
 const EventPdfModal = lazyWithRetry(() => import('../components/admin/EventPdfModal'), 'EventPdfModal');
-
-
-
+const EventFeedbackModal = lazyWithRetry(() => import('../components/common/EventFeedbackModal'), 'EventFeedbackModal');
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
+  const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('Welcome to Cloud Stack Club! Your application has been submitted successfully.');
   const [eventsList, setEventsList] = useState<Event[]>([]);
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
   const { showDashboard, logout } = useAdminAuth();
@@ -83,7 +83,13 @@ export const MainLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-grow relative z-10">
-        <Outlet context={{ onJoinClick: handleOpenJoinModal, onRegisterEventClick: (evt: Event) => setSelectedRegisterEvent(evt) }} />
+        <Outlet
+          context={{
+            onJoinClick: handleOpenJoinModal,
+            onRegisterEventClick: (evt: Event) => setSelectedRegisterEvent(evt),
+            onFeedbackEventClick: (evt: Event) => setSelectedFeedbackEvent(evt),
+          }}
+        />
       </main>
 
       {/* Floating CTA on Mobile */}
@@ -97,6 +103,7 @@ export const MainLayout: React.FC = () => {
         events={eventsList}
         onRegisterClick={(targetEvent) => setSelectedRegisterEvent(targetEvent)}
         onViewPdfClick={(url, title) => setSelectedAdPdf({ url, title })}
+        onFeedbackClick={(targetEvent) => setSelectedFeedbackEvent(targetEvent)}
       />
 
       {/* Code-split Non-Critical Modals (Loaded on demand or in background after initial popup fetch) */}
@@ -107,7 +114,23 @@ export const MainLayout: React.FC = () => {
             isOpen={!!selectedRegisterEvent}
             onClose={() => setSelectedRegisterEvent(null)}
             event={selectedRegisterEvent}
-            onSuccessToast={() => setShowSuccessToast(true)}
+            onSuccessToast={() => {
+              setToastMessage('Registration completed successfully! See you at the event.');
+              setShowSuccessToast(true);
+            }}
+          />
+        )}
+
+        {/* Event Feedback Modal */}
+        {selectedFeedbackEvent && (
+          <EventFeedbackModal
+            isOpen={!!selectedFeedbackEvent}
+            onClose={() => setSelectedFeedbackEvent(null)}
+            event={selectedFeedbackEvent}
+            onSuccessToast={() => {
+              setToastMessage('Thank you! Your event feedback has been submitted successfully.');
+              setShowSuccessToast(true);
+            }}
           />
         )}
 
@@ -126,7 +149,10 @@ export const MainLayout: React.FC = () => {
           <JoinModal
             isOpen={joinModalOpen}
             onClose={handleCloseJoinModal}
-            onSuccessToast={() => setShowSuccessToast(true)}
+            onSuccessToast={() => {
+              setToastMessage('Welcome to Cloud Stack Club! Your application has been submitted successfully.');
+              setShowSuccessToast(true);
+            }}
           />
         )}
 
@@ -137,7 +163,7 @@ export const MainLayout: React.FC = () => {
       {/* Toast Notification */}
       <Toast
         isVisible={showSuccessToast}
-        message="Welcome to Cloud Stack Club! Your application has been submitted successfully."
+        message={toastMessage}
         onClose={() => setShowSuccessToast(false)}
       />
     </div>

@@ -144,10 +144,22 @@ export interface ContactFeedback {
   id: string;
   name: string;
   email: string;
-  university_id?: string;
-  event_id?: string;
-  event_title?: string;
-  feedback_type?: 'contact' | 'event' | string;
+  message: string;
+  status: FeedbackStatus;
+  created_at: string;
+}
+
+export interface EventFeedback {
+  id: string;
+  name: string;
+  email: string;
+  university_id: string;
+  registration_id: string;
+  event_id: string;
+  event_title: string;
+  event_rating: number;
+  engagement_rating: number;
+  coordination_rating: string;
   message: string;
   status: FeedbackStatus;
   created_at: string;
@@ -433,10 +445,33 @@ export interface Database {
           id?: string;
           name: string;
           email: string;
-          university_id?: string;
-          event_id?: string;
-          event_title?: string;
-          feedback_type?: 'contact' | 'event' | string;
+          message: string;
+          status?: FeedbackStatus;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          email?: string;
+          message?: string;
+          status?: FeedbackStatus;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      event_feedbacks: {
+        Row: EventFeedback;
+        Insert: {
+          id?: string;
+          name: string;
+          email: string;
+          university_id: string;
+          registration_id: string;
+          event_id: string;
+          event_title: string;
+          event_rating: number;
+          engagement_rating: number;
+          coordination_rating: string;
           message: string;
           status?: FeedbackStatus;
           created_at?: string;
@@ -446,9 +481,12 @@ export interface Database {
           name?: string;
           email?: string;
           university_id?: string;
+          registration_id?: string;
           event_id?: string;
           event_title?: string;
-          feedback_type?: 'contact' | 'event' | string;
+          event_rating?: number;
+          engagement_rating?: number;
+          coordination_rating?: string;
           message?: string;
           status?: FeedbackStatus;
           created_at?: string;

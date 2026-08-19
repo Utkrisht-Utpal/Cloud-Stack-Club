@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, MapPin, Sparkles, ArrowRight, FileText, Users2, Ticket, Timer } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Sparkles, ArrowRight, FileText, Users2, Ticket, Timer, MessageSquare } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { formatEventTime, getEventStatusInfo, isRegistrationActive } from '../../utils/formatters';
 import type { Event } from '../../types/database';
@@ -9,12 +9,14 @@ interface EventAdModalProps {
   events: Event[];
   onRegisterClick?: (event: Event) => void;
   onViewPdfClick?: (pdfUrl: string, title: string) => void;
+  onFeedbackClick?: (event: Event) => void;
 }
 
 export const EventAdModal: React.FC<EventAdModalProps> = ({
   events,
   onRegisterClick,
   onViewPdfClick,
+  onFeedbackClick,
 }) => {
   const [activeAdEvent, setActiveAdEvent] = useState<Event | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -106,6 +108,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   const statusInfo = getEventStatusInfo(activeAdEvent.date);
   const regOpen = isRegistrationActive(activeAdEvent);
+  const isOngoing = statusInfo.type === 'ongoing' || activeAdEvent.status === 'live';
 
   return (
     <AnimatePresence>
@@ -255,6 +258,29 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
+                {/* Give Event Feedback Button (Shown when event is ongoing or live) */}
+                {isOngoing && onFeedbackClick && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleClose();
+                      onFeedbackClick(activeAdEvent);
+                    }}
+                    className={`w-full sm:flex-1 py-3 px-6 rounded-2xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      activeAdEvent.registration_enabled && regOpen
+                        ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white border border-slate-300/80 dark:border-slate-700 shadow-sm'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30'
+                    }`}
+                  >
+                    <MessageSquare className={`w-4 h-4 ${
+                      activeAdEvent.registration_enabled && regOpen
+                        ? 'text-blue-600 dark:text-sky-400'
+                        : 'text-white'
+                    }`} />
+                    <span>Give Event Feedback</span>
+                  </button>
+                )}
+
                 {activeAdEvent.registration_enabled && (
                   regOpen && onRegisterClick ? (
                     <button
