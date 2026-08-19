@@ -27,6 +27,20 @@ export const ErrorPopupModal: React.FC<ErrorPopupModalProps> = ({
     return () => clearTimeout(timer);
   }, [isOpen, message, duration, onClose]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.setProperty('overflow', 'hidden', 'important');
+      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !message) return null;
 
   return (
@@ -81,7 +95,28 @@ export const ErrorPopupModal: React.FC<ErrorPopupModalProps> = ({
 
           {/* Error Message */}
           <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-w-xs sm:max-w-sm mx-auto mb-5">
-            {message}
+            {message.split(/(contact form)/i).map((part, index) => {
+              if (part.toLowerCase() === 'contact form') {
+                return (
+                  <a
+                    key={index}
+                    href="/#contact"
+                    onClick={(e) => {
+                      onClose();
+                      // Let standard anchor navigation handle it, but if on same page, scroll smooth
+                      if (window.location.pathname === '/') {
+                        const el = document.getElementById('contact');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }
+                    }}
+                    className="underline underline-offset-2 text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 transition-colors font-bold"
+                  >
+                    {part}
+                  </a>
+                );
+              }
+              return part;
+            })}
           </p>
 
           {/* Okay Button in Bottom Centre matching theme */}

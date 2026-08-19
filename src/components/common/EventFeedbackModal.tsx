@@ -48,6 +48,20 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.setProperty('overflow', 'hidden', 'important');
+      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+    } else {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {

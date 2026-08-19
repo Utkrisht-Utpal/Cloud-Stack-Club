@@ -100,7 +100,27 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                   {title}
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                  {message}
+                  {message.split(/(contact form)/i).map((part, index) => {
+                    if (part.toLowerCase() === 'contact form') {
+                      return (
+                        <a
+                          key={index}
+                          href="/#contact"
+                          onClick={(e) => {
+                            onClose();
+                            if (window.location.pathname === '/') {
+                              const el = document.getElementById('contact');
+                              if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            }
+                          }}
+                          className="underline underline-offset-2 text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 transition-colors font-bold"
+                        >
+                          {part}
+                        </a>
+                      );
+                    }
+                    return part;
+                  })}
                 </p>
               </div>
             </div>

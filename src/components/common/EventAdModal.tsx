@@ -54,12 +54,15 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.setProperty('overflow', 'hidden', 'important');
+      document.documentElement.style.setProperty('overflow', 'hidden', 'important');
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, [isOpen]);
 
