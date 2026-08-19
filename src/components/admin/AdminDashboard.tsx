@@ -1561,8 +1561,8 @@ export const AdminDashboard: React.FC = () => {
                       value={selectedFeedbackEvent}
                       onChange={(val) => setSelectedFeedbackEvent(val)}
                       options={[
-                        { value: 'all', label: '• All Events' },
-                        ...eventsList.map((e) => ({ value: e.id, label: `• ${e.title}` })),
+                        { value: 'all', label: 'All Events' },
+                        ...eventsList.map((e) => ({ value: e.id, label: e.title })),
                       ]}
                       triggerClassName="w-full h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
                     />
