@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, ExternalLink } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { supabase, STORAGE_BUCKETS } from '../../lib/supabase';
+import { resolveMediaUrl, R2_FOLDERS } from '../../lib/r2Storage';
 
 interface VerificationDocModalProps {
   isOpen: boolean;
@@ -32,27 +32,12 @@ export const VerificationDocModal: React.FC<VerificationDocModalProps> = ({
     const isPdfFile = filePath.toLowerCase().endsWith('.pdf');
     setIsPdf(isPdfFile);
 
-    // Get signed URL for private bucket registration-files
-    supabase.storage
-      .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-      .createSignedUrl(filePath, 3600)
-      .then(({ data, error }) => {
-        if (!error && data?.signedUrl) {
-          setDocUrl(data.signedUrl);
-        } else {
-          // Fallback to public URL
-          const { data: publicData } = supabase.storage
-            .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-            .getPublicUrl(filePath);
-          setDocUrl(publicData.publicUrl);
-        }
-      })
-      .catch((err) => {
-        console.error('Error fetching signed document URL:', err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    // Resolve R2 public URL for the verification document
+    const url = resolveMediaUrl(
+      filePath.startsWith('http') ? filePath : `${R2_FOLDERS.REGISTRATION_FILES}/${filePath}`
+    );
+    setDocUrl(url);
+    setLoading(false);
   }, [filePath, isOpen]);
 
   return (

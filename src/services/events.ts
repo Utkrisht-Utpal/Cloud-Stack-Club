@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured, STORAGE_BUCKETS } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { uploadToR2, deleteFromR2, resolveMediaUrl, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import type { Event } from '../types/database';
 
@@ -193,45 +194,25 @@ export const getEvents = async (): Promise<Event[]> => {
 
 export const getEventPdfViewerUrl = (pdfPathOrUrl: string | null): string => {
   if (!pdfPathOrUrl) return '';
-  if (
-    pdfPathOrUrl.startsWith('http://') ||
-    pdfPathOrUrl.startsWith('https://') ||
-    pdfPathOrUrl.startsWith('data:') ||
-    pdfPathOrUrl.startsWith('blob:')
-  ) {
-    return pdfPathOrUrl;
-  }
-  const { data } = supabase.storage
-    .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-    .getPublicUrl(pdfPathOrUrl);
-  return data.publicUrl;
+  return resolveMediaUrl(pdfPathOrUrl);
 };
 
 export const uploadEventPdf = async (file: File, eventId: string): Promise<string> => {
-  if (isSupabaseConfigured()) {
+  // Upload to Cloudflare R2 via Worker proxy
+  if (isR2Configured()) {
     try {
       const fileExt = file.name.split('.').pop() || 'pdf';
       const filePath = `schedules/${eventId}_${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKETS.EVENT_PDFS)
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        console.warn('Supabase PDF storage upload RLS/Permission notice:', uploadError.message);
-      } else if (uploadData) {
-        const { data } = supabase.storage
-          .from(STORAGE_BUCKETS.EVENT_PDFS)
-          .getPublicUrl(filePath);
-        if (data?.publicUrl) return data.publicUrl;
-      }
+      const publicUrl = await uploadToR2(R2_FOLDERS.EVENT_PDFS, filePath, file);
+      return publicUrl;
     } catch (err) {
-      console.warn('Supabase PDF storage upload exception:', err);
+      console.warn('R2 PDF upload exception:', err);
     }
   }
 
   // Fallback: Only convert to base64 if small (<500KB) to prevent breaking DB payload limits
   if (file.size > 500 * 1024) {
-    console.warn('PDF file is larger than 500KB and storage upload policy is locked. Skipping base64 fallback to protect database payload limit.');
+    console.warn('PDF file is larger than 500KB and storage upload failed. Skipping base64 fallback to protect database payload limit.');
     return '';
   }
 
@@ -246,25 +227,15 @@ export const uploadEventPdf = async (file: File, eventId: string): Promise<strin
 };
 
 export const uploadEventImage = async (file: File, eventId: string): Promise<string> => {
-  // If Supabase is configured, upload directly to Supabase Storage Bucket for tiny CDN URLs
-  if (isSupabaseConfigured()) {
+  // Upload to Cloudflare R2 via Worker proxy
+  if (isR2Configured()) {
     try {
       const fileExt = file.name.split('.').pop() || 'jpg';
       const filePath = `posters/${eventId}_${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKETS.EVENT_IMAGES)
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        console.warn('Supabase image storage upload RLS/Permission notice:', uploadError.message);
-      } else if (uploadData) {
-        const { data } = supabase.storage
-          .from(STORAGE_BUCKETS.EVENT_IMAGES)
-          .getPublicUrl(filePath);
-        if (data?.publicUrl) return data.publicUrl;
-      }
+      const publicUrl = await uploadToR2(R2_FOLDERS.EVENT_IMAGES, filePath, file);
+      return publicUrl;
     } catch (err) {
-      console.warn('Supabase image storage upload exception:', err);
+      console.warn('R2 image upload exception:', err);
     }
   }
 
@@ -531,12 +502,12 @@ export const deleteEventAdmin = async (
 
   if (!isSupabaseConfigured()) return;
 
-  // 2. Clean up files from Supabase storage buckets if stored as path
-  if (existingPdfUrl && !existingPdfUrl.startsWith('data:') && !existingPdfUrl.startsWith('http')) {
-    await supabase.storage.from(STORAGE_BUCKETS.REGISTRATION_FILES).remove([existingPdfUrl]).catch(() => {});
+  // 2. Clean up files from R2 storage if stored as URL or path
+  if (existingPdfUrl && !existingPdfUrl.startsWith('data:')) {
+    await deleteFromR2(existingPdfUrl).catch(() => {});
   }
-  if (existingImageUrl && !existingImageUrl.startsWith('data:') && !existingImageUrl.startsWith('http')) {
-    await supabase.storage.from(STORAGE_BUCKETS.EVENT_IMAGES).remove([existingImageUrl]).catch(() => {});
+  if (existingImageUrl && !existingImageUrl.startsWith('data:')) {
+    await deleteFromR2(existingImageUrl).catch(() => {});
   }
 
   // 3. Attempt RPC delete_event_admin (sets status = 'cancelled', pdf_url = NULL, image_url = NULL)

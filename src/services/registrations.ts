@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured, STORAGE_BUCKETS, getStoragePath } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { uploadToR2, bulkDeleteFromR2, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import type { EventRegistrationPayload, EventRegistration } from '../types/database';
 
@@ -414,28 +415,18 @@ export const uploadRegistrationFile = async (
   registrationId: string,
   file: File
 ): Promise<string> => {
-  if (!isSupabaseConfigured()) {
-    throw new Error('Supabase is not configured yet.');
+  if (!isR2Configured()) {
+    throw new Error('R2 storage is not configured yet.');
   }
 
-  const filePath = getStoragePath.registrationFile(eventId, registrationId, file.name);
-
-  const { error } = await supabase.storage
-    .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-    .upload(filePath, file, {
-      upsert: true,
-    });
-
-  if (error) {
-    console.error('Error uploading registration file:', error.message);
-    throw error;
-  }
+  const filePath = `${eventId}/${registrationId}/${file.name}`;
+  await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, file);
 
   return filePath;
 };
 
 /**
- * Approve membership registration and permanently delete uploaded verification files from Storage.
+ * Approve membership registration and permanently delete uploaded verification files from R2 Storage.
  */
 export const approveMembershipRegistration = async (
   registrationId: string,
@@ -445,15 +436,12 @@ export const approveMembershipRegistration = async (
     throw new Error('Supabase is not configured yet.');
   }
 
-  // 1. Delete physical files from private registration-files storage bucket
+  // 1. Delete physical files from R2 registration-files storage
   if (filePathsToDelete.length > 0) {
-    const { error: storageError } = await supabase.storage
-      .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-      .remove(filePathsToDelete);
-
-    if (storageError) {
-      console.warn('Warning: Storage files deletion encountered an error:', storageError.message);
-    }
+    const fullPaths = filePathsToDelete.map((p) => `${R2_FOLDERS.REGISTRATION_FILES}/${p}`);
+    await bulkDeleteFromR2(fullPaths).catch((err) => {
+      console.warn('Warning: R2 files deletion encountered an error:', err);
+    });
   }
 
   // 2. Call DB function to confirm status and clear file references in DB

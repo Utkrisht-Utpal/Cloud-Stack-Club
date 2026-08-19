@@ -1,4 +1,5 @@
-import { supabase, isSupabaseConfigured, STORAGE_BUCKETS } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { uploadToR2, deleteFromR2, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
@@ -112,16 +113,12 @@ export const submitMemberApplication = async (
 
   let filePath: string | null = null;
 
-  // 1. If verification document is provided, upload it to private storage bucket FIRST
+  // 1. If verification document is provided, upload it to R2 storage FIRST
   if (verificationFile) {
     try {
       filePath = `membership/${memberId}/${verificationFile.name}`;
-      const { error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-        .upload(filePath, verificationFile, { upsert: true });
-
-      if (uploadError) {
-        console.warn('Storage upload notice:', uploadError.message);
+      if (isR2Configured()) {
+        await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, verificationFile);
       }
     } catch (uploadErr) {
       console.warn('Storage upload error:', uploadErr);
@@ -216,10 +213,8 @@ export const getPendingMemberApplications = async (): Promise<Member[]> => {
         const filePath = m.verification_file_url;
         m.verification_file_url = null;
 
-        // Clean up from storage & update DB asynchronously
-        supabase.storage
-          .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-          .remove([filePath])
+        // Clean up from R2 storage & update DB asynchronously
+        deleteFromR2(`${R2_FOLDERS.REGISTRATION_FILES}/${filePath}`)
           .then(() => {
             supabase
               .from('members')
@@ -242,11 +237,9 @@ export const approveMemberApplicationService = async (
     throw new Error('Supabase is not configured.');
   }
 
-  // 1. Delete physical document from private storage bucket
+  // 1. Delete physical document from R2 storage
   if (verificationFilePath) {
-    await supabase.storage
-      .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-      .remove([verificationFilePath])
+    await deleteFromR2(`${R2_FOLDERS.REGISTRATION_FILES}/${verificationFilePath}`)
       .catch((err) => console.warn('Storage cleanup warning:', err));
   }
 
@@ -281,11 +274,9 @@ export const rejectMemberApplicationService = async (
     return;
   }
 
-  // 1. Delete physical document from private storage bucket
+  // 1. Delete physical document from R2 storage
   if (verificationFilePath) {
-    await supabase.storage
-      .from(STORAGE_BUCKETS.REGISTRATION_FILES)
-      .remove([verificationFilePath])
+    await deleteFromR2(`${R2_FOLDERS.REGISTRATION_FILES}/${verificationFilePath}`)
       .catch(() => {});
   }
 

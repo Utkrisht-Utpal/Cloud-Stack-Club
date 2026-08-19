@@ -19,24 +19,3 @@ export const supabase = createClient<Database, 'public', any>(supabaseUrl, supab
     autoRefreshToken: true,
   },
 });
-
-/**
- * Storage bucket constants matching database migrations
- */
-export const STORAGE_BUCKETS = {
-  EVENT_IMAGES: 'event-images',
-  EVENT_PDFS: 'event-pdfs',
-  REGISTRATION_FILES: 'registration-files',
-} as const;
-
-/**
- * Helper utility to build predictable storage paths
- */
-export const getStoragePath = {
-  eventImage: (eventId: string, filename: string = 'cover.webp') => 
-    `event-images/${eventId}/${filename}`,
-  eventPdf: (eventId: string, filename: string = 'details.pdf') => 
-    `event-pdfs/${eventId}/${filename}`,
-  registrationFile: (eventId: string, registrationId: string, filename: string) => 
-    `registration-files/${eventId}/${registrationId}/${filename}`,
-};
