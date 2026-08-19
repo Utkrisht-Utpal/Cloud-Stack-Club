@@ -1685,12 +1685,19 @@ export const AdminDashboard: React.FC = () => {
                                 )}
                               </div>
                             ) : null}
-                            <a
-                              href={`mailto:${f.email}`}
-                              className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono block truncate"
-                            >
-                              {f.email}
-                            </a>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <a
+                                href={`mailto:${f.email}`}
+                                className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono truncate"
+                              >
+                                {f.email}
+                              </a>
+                              {f.phone && (
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                  • 📞 {f.phone}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         {feedbackViewTab === 'event' && (
@@ -1721,11 +1728,6 @@ export const AdminDashboard: React.FC = () => {
                                     {f.event_rating !== undefined && (
                                       <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
                                         ⭐ {f.event_rating}/5 Event
-                                      </span>
-                                    )}
-                                    {f.engagement_rating !== undefined && (
-                                      <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
-                                        🔥 {f.engagement_rating}/5 Eng.
                                       </span>
                                     )}
                                     {f.coordination_rating && (

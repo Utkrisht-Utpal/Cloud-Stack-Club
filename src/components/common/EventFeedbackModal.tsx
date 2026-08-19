@@ -9,6 +9,7 @@ import {
   AlertCircle,
   User,
   Mail,
+  Phone,
   GraduationCap,
   Ticket,
 } from 'lucide-react';
@@ -30,12 +31,11 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [universityId, setUniversityId] = useState('');
   const [registrationId, setRegistrationId] = useState('');
   const [eventRating, setEventRating] = useState<number>(5);
   const [hoverEventRating, setHoverEventRating] = useState<number | null>(null);
-  const [engagementRating, setEngagementRating] = useState<number>(5);
-  const [hoverEngagementRating, setHoverEngagementRating] = useState<number | null>(null);
   const [coordinationRating, setCoordinationRating] = useState<number>(10);
   const [hoverCoordinationRating, setHoverCoordinationRating] = useState<number | null>(null);
   const [feedbackText, setFeedbackText] = useState('');
@@ -66,6 +66,10 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       setError('Please enter your Registration ID (e.g., CSC-2026-XXXX).');
       return;
     }
+    if (!phone.trim() || !/^\d{10}$/.test(phone.trim())) {
+      setError('Phone number is required and must be exactly 10 digits.');
+      return;
+    }
     if (!feedbackText.trim() || feedbackText.trim().length < 5) {
       setError('Please provide your feedback or comments (minimum 5 characters).');
       return;
@@ -77,12 +81,12 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       await submitEventFeedback({
         name: name.trim(),
         email: email.trim(),
+        phone: phone.trim(),
         university_id: universityId.trim(),
         registration_id: registrationId.trim(),
         event_id: event.id,
         event_title: event.title,
         event_rating: eventRating,
-        engagement_rating: engagementRating,
         coordination_rating: `${coordinationRating} / 10 - ${getCoordinationLabel(coordinationRating).replace(/^\d+\s*\/\s*\d+\s*-\s*/, '')}`,
         message: feedbackText.trim(),
       });
@@ -104,10 +108,10 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     setError(null);
     setName('');
     setEmail('');
+    setPhone('');
     setUniversityId('');
     setRegistrationId('');
     setEventRating(5);
-    setEngagementRating(5);
     setCoordinationRating(10);
     setHoverCoordinationRating(null);
     setFeedbackText('');
@@ -126,23 +130,6 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
         return '4 / 5 - Very Good';
       case 5:
         return '5 / 5 - Outstanding';
-      default:
-        return `${score} / 5`;
-    }
-  };
-
-  const getEngagementLabel = (score: number) => {
-    switch (score) {
-      case 1:
-        return '1 / 5 - Low Engagement';
-      case 2:
-        return '2 / 5 - Somewhat Passive';
-      case 3:
-        return '3 / 5 - Moderately Interactive';
-      case 4:
-        return '4 / 5 - Highly Engaging';
-      case 5:
-        return '5 / 5 - Super Interactive';
       default:
         return `${score} / 5`;
     }
@@ -324,9 +311,29 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   </div>
                 </div>
 
-                {/* 3. Event Rating & Engagement Rating (Single Line Each) */}
+                {/* 3. Phone Number & Event Rating (Single Line Each) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* Event Rating */}
+                  {/* Phone Number (Required 10 Digits) */}
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Phone Number <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="tel"
+                        required
+                        pattern="[0-9]{10}"
+                        maxLength={10}
+                        placeholder="10-digit Phone Number"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Event Rating (Single Line) */}
                   <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
                     <div className="flex items-center justify-between gap-1 flex-nowrap">
                       <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
@@ -353,42 +360,6 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                               className={`w-5 sm:w-6 h-5 sm:h-6 transition-colors ${
                                 active
                                   ? 'text-amber-500 fill-amber-400 drop-shadow-sm'
-                                  : 'text-slate-300 dark:text-slate-600'
-                              }`}
-                            />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Engagement Rating (Single Line) */}
-                  <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
-                    <div className="flex items-center justify-between gap-1 flex-nowrap">
-                      <label className="text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        Engagement Rating <span className="text-rose-500">*</span>
-                      </label>
-                      <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                        {getEngagementLabel(hoverEngagementRating || engagementRating)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      {[1, 2, 3, 4, 5].map((star) => {
-                        const active = star <= (hoverEngagementRating || engagementRating);
-                        return (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setEngagementRating(star)}
-                            onMouseEnter={() => setHoverEngagementRating(star)}
-                            onMouseLeave={() => setHoverEngagementRating(null)}
-                            className="p-1 rounded-xl hover:bg-indigo-50 dark:hover:bg-indigo-500/15 transition-all transform hover:scale-125 cursor-pointer"
-                          >
-                            <Star
-                              className={`w-5 sm:w-6 h-5 sm:h-6 transition-colors ${
-                                active
-                                  ? 'text-indigo-500 fill-indigo-400 drop-shadow-sm'
                                   : 'text-slate-300 dark:text-slate-600'
                               }`}
                             />

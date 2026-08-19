@@ -161,12 +161,13 @@ export const updateFeedbackStatus = async (
 export interface SubmitEventFeedbackPayload {
   name: string;
   email: string;
+  phone?: string;
   university_id: string;
   registration_id: string;
   event_id: string;
   event_title: string;
   event_rating: number;
-  engagement_rating: number;
+  engagement_rating?: number;
   coordination_rating: string;
   message: string;
 }
@@ -181,6 +182,7 @@ export const submitEventFeedback = async (
     id: tempId,
     name: payload.name.trim(),
     email: payload.email.trim(),
+    phone: payload.phone?.trim() || undefined,
     university_id: payload.university_id.trim(),
     registration_id: payload.registration_id.trim(),
     event_id: payload.event_id.trim(),
@@ -204,19 +206,23 @@ export const submitEventFeedback = async (
   }
 
   try {
-    const insertObj = {
+    const insertObj: any = {
       name: payload.name.trim(),
       email: payload.email.trim(),
+      phone: payload.phone?.trim() || null,
       university_id: payload.university_id.trim(),
       registration_id: payload.registration_id.trim(),
       event_id: payload.event_id.trim(),
       event_title: payload.event_title.trim(),
       event_rating: payload.event_rating,
-      engagement_rating: payload.engagement_rating,
       coordination_rating: payload.coordination_rating.trim(),
       message: payload.message.trim(),
       status: 'pending' as FeedbackStatus,
     };
+
+    if (payload.engagement_rating !== undefined) {
+      insertObj.engagement_rating = payload.engagement_rating;
+    }
 
     const { data, error } = await supabase
       .from('event_feedbacks')
@@ -224,28 +230,29 @@ export const submitEventFeedback = async (
       .select('*')
       .maybeSingle();
 
-    if (!error && data) {
-      const dbEventFeedback = data as EventFeedback;
-      try {
-        const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
-        let list: EventFeedback[] = existing ? JSON.parse(existing) : [];
-        list = list.filter((f) => f.id !== tempId && f.id !== dbEventFeedback.id);
-        list.unshift(dbEventFeedback);
-        localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
-      } catch (e) {}
-      return dbEventFeedback;
+    if (error) {
+      console.warn('Supabase event feedback insert error:', error);
+      // Fallback local save if database schema lacks newly added columns
+      const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+      const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+      list.unshift(newEventFeedback);
+      localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+      return newEventFeedback;
     }
-  } catch (e) {}
 
-  // Fallback to local storage
-  try {
-    const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
-    const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
-    list.unshift(newEventFeedback);
-    localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
-  } catch (e) {}
+    // Cache locally
+    try {
+      const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+      const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+      list.unshift(data || newEventFeedback);
+      localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+    } catch (e) {}
 
-  return newEventFeedback;
+    return data || newEventFeedback;
+  } catch (err: any) {
+    console.error('Error in submitEventFeedback:', err);
+    return newEventFeedback;
+  }
 };
 
 export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]> => {
@@ -267,6 +274,7 @@ export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]>
       id: f.id,
       name: f.name,
       email: f.email,
+      phone: f.phone,
       university_id: f.university_id,
       registration_id: f.registration_id,
       event_id: f.event_id,

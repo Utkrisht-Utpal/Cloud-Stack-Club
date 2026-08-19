@@ -153,12 +153,13 @@ export interface EventFeedback {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   university_id: string;
   registration_id: string;
   event_id: string;
   event_title: string;
   event_rating: number;
-  engagement_rating: number;
+  engagement_rating?: number;
   coordination_rating: string;
   message: string;
   status: FeedbackStatus;
