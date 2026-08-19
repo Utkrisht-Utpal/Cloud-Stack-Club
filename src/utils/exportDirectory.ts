@@ -121,7 +121,8 @@ export const exportMembersToPdf = (
 export const exportFeedbacksToPdf = (
   feedbacks: (ContactFeedback | EventFeedback)[],
   filterType: string,
-  searchQuery: string
+  searchQuery: string,
+  eventsList?: { id: string; title: string; status?: string }[]
 ) => {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -142,11 +143,21 @@ export const exportFeedbacksToPdf = (
 
   doc.text(`Filter: ${filterText} (${feedbacks.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
 
+  const eventMap = new Map((eventsList || []).map((e) => [e.id, e]));
+
   // Table Data mapping
   const tableRows = feedbacks.map((f, index) => {
     const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
     const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
-    const eventName = 'event_title' in f && f.event_title ? f.event_title : ('event_id' in f && f.event_id ? 'Event Feedback' : 'Contact Form');
+    let eventName = 'Contact Form';
+    if ('event_id' in f && f.event_id) {
+      const matched = eventMap.get(f.event_id);
+      if (matched) {
+        eventName = `${matched.title}${matched.status === 'cancelled' ? ' (Cancelled)' : ''}`;
+      } else {
+        eventName = f.event_title || 'Event Feedback';
+      }
+    }
 
     return [
       (index + 1).toString(),

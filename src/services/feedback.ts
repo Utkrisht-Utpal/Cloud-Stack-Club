@@ -304,14 +304,43 @@ export const getAllEventFeedbacks = async (): Promise<EventFeedback[]> => {
   }
 
   try {
+    let dbList: EventFeedback[] = [];
+
+    // Attempt joined query with events table via event_id foreign key
     const { data, error } = await supabase
       .from('event_feedbacks')
-      .select('*')
+      .select('*, events:event_id(id, title, status, date, location)')
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      const dbList = (data as EventFeedback[]) || [];
+      dbList = (data as any[]).map((f) => ({
+        id: f.id,
+        name: f.name,
+        email: f.email,
+        university_id: f.university_id,
+        registration_id: f.registration_id,
+        event_id: f.event_id,
+        event_title: f.events?.title || f.event_title || 'Event',
+        event_rating: f.event_rating,
+        engagement_rating: f.engagement_rating,
+        coordination_rating: f.coordination_rating,
+        message: f.message,
+        status: f.status || 'pending',
+        created_at: f.created_at,
+      }));
+    } else {
+      // Fallback simple query if join alias differs
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('event_feedbacks')
+        .select('*')
+        .order('created_at', { ascending: false });
 
+      if (!simpleError && simpleData) {
+        dbList = simpleData as EventFeedback[];
+      }
+    }
+
+    if (dbList.length > 0 || !error) {
       const seenIds = new Set<string>();
       const combined: EventFeedback[] = [];
 

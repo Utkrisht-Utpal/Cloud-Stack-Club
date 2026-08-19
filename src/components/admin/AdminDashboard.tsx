@@ -214,9 +214,9 @@ export const AdminDashboard: React.FC = () => {
   const filteredEventFeedbacks = useMemo(() => {
     return eventFeedbacksList.filter((f) => {
       if (selectedFeedbackEvent !== 'all') {
-        const matchId = (f.event_id || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
-        const matchTitle = (f.event_title || '').toLowerCase() === selectedFeedbackEvent.toLowerCase();
-        if (!matchId && !matchTitle) return false;
+        if (String(f.event_id || '').trim().toLowerCase() !== selectedFeedbackEvent.trim().toLowerCase()) {
+          return false;
+        }
       }
 
       if (feedbackFilter === 'pending' && !(f.status === 'pending' || f.status === 'unread')) return false;
@@ -231,7 +231,9 @@ export const AdminDashboard: React.FC = () => {
         const matchUid = (f.university_id || '').toLowerCase().includes(query);
         const matchRegId = (f.registration_id || '').toLowerCase().includes(query);
         const matchMsg = (f.message || '').toLowerCase().includes(query);
-        const matchEvent = (f.event_title || '').toLowerCase().includes(query);
+        const matchedEvent = eventsList.find((e) => e.id === f.event_id);
+        const eventTitleStr = (matchedEvent?.title || f.event_title || '').toLowerCase();
+        const matchEvent = eventTitleStr.includes(query);
         if (!matchName && !matchEmail && !matchUid && !matchRegId && !matchMsg && !matchEvent) {
           return false;
         }
@@ -239,7 +241,7 @@ export const AdminDashboard: React.FC = () => {
 
       return true;
     });
-  }, [eventFeedbacksList, selectedFeedbackEvent, feedbackFilter, feedbackSearch]);
+  }, [eventFeedbacksList, eventsList, selectedFeedbackEvent, feedbackFilter, feedbackSearch]);
 
   const loadPendingApps = async () => {
     try {
@@ -338,7 +340,7 @@ export const AdminDashboard: React.FC = () => {
 
   const handleExportFeedbacksPdf = () => {
     if (feedbackViewTab === 'event') {
-      exportFeedbacksToPdf(filteredEventFeedbacks as any, feedbackFilter, feedbackSearch);
+      exportFeedbacksToPdf(filteredEventFeedbacks as any, feedbackFilter, feedbackSearch, eventsList);
     } else {
       exportFeedbacksToPdf(filteredContactFeedbacks as any, feedbackFilter, feedbackSearch);
     }
@@ -1562,7 +1564,10 @@ export const AdminDashboard: React.FC = () => {
                       onChange={(val) => setSelectedFeedbackEvent(val)}
                       options={[
                         { value: 'all', label: 'All Events' },
-                        ...eventsList.map((e) => ({ value: e.id, label: e.title })),
+                        ...eventsList.map((e) => ({
+                          value: e.id,
+                          label: `${e.title}${e.status === 'cancelled' ? ' (Cancelled)' : ''}`,
+                        })),
                       ]}
                       triggerClassName="w-full h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between transition-all shadow-sm"
                     />
@@ -1661,28 +1666,48 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                         {feedbackViewTab === 'event' && (
                           <td className="py-3.5 px-4 min-w-[200px]">
-                            <div className="space-y-1.5">
-                              <span className="inline-block px-2.5 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300 text-xs font-bold">
-                                {f.event_title || eventsList.find((e) => e.id === f.event_id)?.title || 'Event Feedback'}
-                              </span>
-                              <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-                                {f.event_rating !== undefined && (
-                                  <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                                    ⭐ {f.event_rating}/5 Event
-                                  </span>
-                                )}
-                                {f.engagement_rating !== undefined && (
-                                  <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
-                                    🔥 {f.engagement_rating}/5 Eng.
-                                  </span>
-                                )}
-                                {f.coordination_rating && (
-                                  <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                                    🌿 {f.coordination_rating}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            {(() => {
+                              const matchedEvent = eventsList.find((e) => e.id === f.event_id);
+                              const eventTitle = matchedEvent ? matchedEvent.title : (f.event_title || 'Event Feedback');
+                              const isEventCancelled = matchedEvent?.status === 'cancelled';
+                              return (
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span
+                                      className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${
+                                        isEventCancelled
+                                          ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                          : 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300'
+                                      }`}
+                                    >
+                                      {eventTitle}
+                                    </span>
+                                    {isEventCancelled && (
+                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                                        Cancelled
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                    {f.event_rating !== undefined && (
+                                      <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                                        ⭐ {f.event_rating}/5 Event
+                                      </span>
+                                    )}
+                                    {f.engagement_rating !== undefined && (
+                                      <span className="px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-700 dark:text-indigo-300">
+                                        🔥 {f.engagement_rating}/5 Eng.
+                                      </span>
+                                    )}
+                                    {f.coordination_rating && (
+                                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                        🌿 {f.coordination_rating}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </td>
                         )}
                         <td className="py-3.5 px-4 min-w-[280px]">
