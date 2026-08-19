@@ -22,7 +22,6 @@ import {
   Maximize2,
   Sparkles,
   MessageSquare,
-  AlertTriangle,
   AlertCircle,
   Shield,
   RefreshCw,
@@ -2328,7 +2327,15 @@ export const AdminDashboard: React.FC = () => {
               <DatePicker
                 label="Event Date *"
                 value={editEventData.date}
-                onChange={(val) => setEditEventData({ ...editEventData, date: val })}
+                onChange={(val) => {
+                  const dayBefore = getDayBefore(val);
+                  const shouldResetEnd = editEventData.registration_end && val && editEventData.registration_end >= val;
+                  setEditEventData({
+                    ...editEventData,
+                    date: val,
+                    registration_end: shouldResetEnd ? dayBefore : editEventData.registration_end,
+                  });
+                }}
                 placeholder="Select date"
               />
 
@@ -2418,6 +2425,7 @@ export const AdminDashboard: React.FC = () => {
                         value={editEventData.registration_start}
                         onChange={(val) => setEditEventData({ ...editEventData, registration_start: val })}
                         placeholder="Select start date"
+                        max={editEventData.registration_end || (editEventData.date ? getDayBefore(editEventData.date) : undefined)}
                       />
                     </div>
 
@@ -2427,14 +2435,16 @@ export const AdminDashboard: React.FC = () => {
                         value={editEventData.registration_end}
                         onChange={(val) => setEditEventData({ ...editEventData, registration_end: val })}
                         placeholder="Select end date"
+                        min={editEventData.registration_start || undefined}
+                        max={editEventData.date ? getDayBefore(editEventData.date) : undefined}
                       />
                     </div>
                   </div>
 
-                  {editEventData.registration_end && editEventData.date && new Date(editEventData.registration_end) > new Date(editEventData.date) && (
-                    <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 shrink-0 text-amber-500" />
-                      <span>Warning: Registration Deadline ({editEventData.registration_end}) crosses after Event Date ({editEventData.date}).</span>
+                  {editEventData.registration_end && editEventData.date && editEventData.registration_end >= editEventData.date && (
+                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                      <span>Registration deadline cannot be on or after the event date ({editEventData.date}). Latest allowed deadline is {getDayBefore(editEventData.date)}.</span>
                     </div>
                   )}
                 </>
@@ -2523,6 +2533,21 @@ export const AdminDashboard: React.FC = () => {
                 <CheckCircle2 className="w-4 h-4" />
               </div>
               <span className="text-xs sm:text-sm font-bold leading-snug">{actionSuccess}</span>
+            </motion.div>
+          )}
+
+          {actionError && (
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3.5 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border border-rose-500/40 shadow-2xl shadow-rose-500/10 backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-lg pointer-events-none"
+            >
+              <div className="p-1.5 rounded-full bg-rose-500/20 text-rose-400 shrink-0">
+                <AlertCircle className="w-4 h-4" />
+              </div>
+              <span className="text-xs sm:text-sm font-bold leading-snug">{actionError}</span>
             </motion.div>
           )}
         </AnimatePresence>
