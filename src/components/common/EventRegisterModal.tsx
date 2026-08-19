@@ -120,8 +120,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       return;
     }
 
-    if (formData.phone.trim() && !/^\d{10}$/.test(formData.phone.trim())) {
-      setError('Phone number must be exactly 10 digits.');
+    if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone.trim())) {
+      setError('Phone number is required and must be exactly 10 digits.');
       return;
     }
 
@@ -141,10 +141,16 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
     // Check required custom questions
     for (const field of customFields) {
+      const ans = customAnswers[field.field_key];
       if (field.required) {
-        const ans = customAnswers[field.field_key];
         if (!ans || (typeof ans === 'string' && !ans.trim())) {
           setError(`Please answer the required question: "${field.label}"`);
+          return;
+        }
+      }
+      if (field.field_type === 'phone' && (field.required || ans)) {
+        if (!ans || !/^\d{10}$/.test(String(ans).trim())) {
+          setError(`Phone number for "${field.label}" must be exactly 10 digits.`);
           return;
         }
       }
@@ -365,12 +371,14 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Phone Number
+                  Phone Number <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="tel"
+                    required
+                    pattern="[0-9]{10}"
                     maxLength={10}
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
@@ -552,6 +560,17 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                         {field.help_text || 'Agree / Confirm'}
                       </span>
                     </label>
+                  ) : field.field_type === 'phone' ? (
+                    <input
+                      type="tel"
+                      required={field.required}
+                      maxLength={10}
+                      pattern="[0-9]{10}"
+                      value={customAnswers[field.field_key] || ''}
+                      onChange={(e) => setCustomAnswers({ ...customAnswers, [field.field_key]: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      placeholder={field.placeholder || '10-digit Phone Number'}
+                      className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                    />
                   ) : (
                     <input
                       type={field.field_type === 'number' ? 'number' : 'text'}

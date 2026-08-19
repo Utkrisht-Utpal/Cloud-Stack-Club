@@ -69,8 +69,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.uid) return;
 
-    if (formData.phone.trim() && !/^\d{10}$/.test(formData.phone.trim())) {
-      setError('Phone number must be exactly 10 digits.');
+    if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone.trim())) {
+      setError('Phone number is required and must be exactly 10 digits.');
       return;
     }
 
@@ -199,10 +199,12 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                    Phone Number
+                    <span>Phone Number <span className="text-rose-500">*</span></span>
                   </label>
                   <input
                     type="tel"
+                    required
+                    pattern="[0-9]{10}"
                     maxLength={10}
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
