@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles,
@@ -11,7 +11,6 @@ import {
   Upload,
   Send,
   AlertCircle,
-  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   HelpCircle,
@@ -50,6 +49,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
   const [error, setError] = useState<string | null>(null);
   const [registeredNumber, setRegisteredNumber] = useState<string | null>(null);
   const [showCuimsHelp, setShowCuimsHelp] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -127,6 +127,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
       year: '1st Year',
     });
     setVerificationFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setError(null);
     onClose();
   };
@@ -335,19 +336,55 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                   </div>
                 </div>
 
-                {/* 1MB Image Warning Notice Banner */}
-                <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-medium">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
-                  <span>Please upload an image of <strong>less than 1 MB</strong> (PNG, JPEG, WEBP).</span>
-                </div>
-
+                {/* Hidden Native File Input */}
                 <input
+                  ref={fileInputRef}
                   type="file"
-                  required
                   accept="image/png,image/jpeg,image/webp,image/jpg"
                   onChange={handleFileChange}
-                  className="w-full h-11 px-3.5 py-2 text-xs text-slate-600 dark:text-slate-400 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/60 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-100 file:text-blue-700 dark:file:bg-slate-800 dark:file:text-sky-400 hover:file:bg-blue-200 cursor-pointer"
+                  className="hidden"
                 />
+
+                {/* Styled Custom File Picker Button / Box */}
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full h-11 px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/60 hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all flex items-center justify-between gap-3 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <button
+                      type="button"
+                      className="px-3 py-1 rounded-lg text-xs font-semibold bg-blue-100 dark:bg-slate-800 text-blue-700 dark:text-sky-400 group-hover:bg-blue-200 dark:group-hover:bg-slate-700 transition-colors shrink-0 pointer-events-none"
+                    >
+                      Choose file
+                    </button>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                      {verificationFile ? (
+                        <span className="font-semibold text-slate-900 dark:text-slate-200">
+                          {verificationFile.name} ({Math.round(verificationFile.size / 1024)} KB)
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 dark:text-slate-500">
+                          Upload image of less than 1 MB (PNG, JPEG, WEBP)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+
+                  {verificationFile && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVerificationFile(null);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                      className="p-1 text-slate-400 hover:text-rose-500 transition-colors shrink-0 cursor-pointer"
+                      title="Remove file"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
 
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
                   Verification files are deleted automatically upon membership approval by admin.
