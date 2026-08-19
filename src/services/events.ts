@@ -59,7 +59,9 @@ export const saveStoredCategory = (eventId: string, category: string | null) => 
 export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Use LOCAL date (not UTC) so status transitions happen at local midnight, not UTC midnight
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const nowMs = Date.now();
 
   for (const evt of eventsList) {
@@ -110,7 +112,9 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
 export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
   if (!eventsList || eventsList.length === 0) return [];
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Use LOCAL date (not UTC) so sorting matches local midnight transition
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
   return [...eventsList].sort((a, b) => {
       const aDateStr = a.date ? a.date.split('T')[0] : '';
@@ -145,14 +149,21 @@ export const getEvents = async (): Promise<Event[]> => {
   }
 
   try {
-    const { data, error } = await supabase
+    // 15000ms Timeout Race for Supabase fetch (allows existing large base64 events to finish loading)
+    const fetchPromise = supabase
       .from('events')
-      .select('*')
+      .select('id, title, category, description, date, start_time, location, image_url, pdf_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at')
       .neq('status', 'cancelled')
       .order('date', { ascending: true });
 
-    if (error) {
-      console.warn('Error fetching events from DB:', error.message);
+    const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: { message: 'Database fetch timeout' } }), 15000)
+    );
+
+    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+
+    if (error || !data) {
+      if (error) console.warn('Supabase DB fetch notice:', error.message);
       const localEvents = getLocalCustomEvents();
       return sortEventsByRelevance(localEvents);
     }
@@ -166,6 +177,11 @@ export const getEvents = async (): Promise<Event[]> => {
 
     // Background non-blocking status sync (0ms load time optimization)
     autoSyncEventStatuses(eventsWithCat).catch(() => {});
+
+    // Save to local storage for instant cached hydration on next visit
+    try {
+      localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(eventsWithCat));
+    } catch {}
 
     return sortEventsByRelevance(eventsWithCat);
   } catch {
@@ -190,7 +206,34 @@ export const getEventPdfViewerUrl = (pdfPathOrUrl: string | null): string => {
   return data.publicUrl;
 };
 
-export const uploadEventPdf = async (file: File, _eventId: string): Promise<string> => {
+export const uploadEventPdf = async (file: File, eventId: string): Promise<string> => {
+  if (isSupabaseConfigured()) {
+    try {
+      const fileExt = file.name.split('.').pop() || 'pdf';
+      const filePath = `schedules/${eventId}_${Date.now()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKETS.EVENT_PDFS)
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.warn('Supabase PDF storage upload RLS/Permission notice:', uploadError.message);
+      } else if (uploadData) {
+        const { data } = supabase.storage
+          .from(STORAGE_BUCKETS.EVENT_PDFS)
+          .getPublicUrl(filePath);
+        if (data?.publicUrl) return data.publicUrl;
+      }
+    } catch (err) {
+      console.warn('Supabase PDF storage upload exception:', err);
+    }
+  }
+
+  // Fallback: Only convert to base64 if small (<500KB) to prevent breaking DB payload limits
+  if (file.size > 500 * 1024) {
+    console.warn('PDF file is larger than 500KB and storage upload policy is locked. Skipping base64 fallback to protect database payload limit.');
+    return '';
+  }
+
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -201,11 +244,62 @@ export const uploadEventPdf = async (file: File, _eventId: string): Promise<stri
   });
 };
 
-export const uploadEventImage = async (file: File, _eventId: string): Promise<string> => {
+export const uploadEventImage = async (file: File, eventId: string): Promise<string> => {
+  // If Supabase is configured, upload directly to Supabase Storage Bucket for tiny CDN URLs
+  if (isSupabaseConfigured()) {
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const filePath = `posters/${eventId}_${Date.now()}.${fileExt}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKETS.EVENT_IMAGES)
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.warn('Supabase image storage upload RLS/Permission notice:', uploadError.message);
+      } else if (uploadData) {
+        const { data } = supabase.storage
+          .from(STORAGE_BUCKETS.EVENT_IMAGES)
+          .getPublicUrl(filePath);
+        if (data?.publicUrl) return data.publicUrl;
+      }
+    } catch (err) {
+      console.warn('Supabase image storage upload exception:', err);
+    }
+  }
+
+  // Fallback: Compress image via Canvas to <50KB max base64 size (prevents 7MB DB bloat)
   return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onloadend = () => {
-      resolve((reader.result as string) || '');
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800; // max dimension 800px
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7)); // 70% quality JPEG compression (~40KB)
+        } else {
+          resolve((e.target?.result as string) || '');
+        }
+      };
+      img.onerror = () => resolve((e.target?.result as string) || '');
+      img.src = (e.target?.result as string) || '';
     };
     reader.onerror = () => resolve('');
     reader.readAsDataURL(file);
@@ -301,7 +395,8 @@ export const updateEventAdmin = async (
 
   // Recalculate status based on date if date is provided and status is not explicitly cancelled
   if (eventPayload.date && eventPayload.status !== 'cancelled') {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const _now = new Date();
+    const todayStr = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
     const newDateStr = eventPayload.date.split('T')[0];
     if (newDateStr === todayStr) {
       eventPayload.status = 'live';

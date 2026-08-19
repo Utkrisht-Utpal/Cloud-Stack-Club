@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Menu, X, ArrowRight, LogOut } from 'lucide-react';
+import { Sun, Moon, Menu, X, ArrowRight, LogOut, ShieldCheck } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useAdminAuth } from '../../context/AdminAuthContext';
 import { siteConfig } from '../../constants/siteConfig';
 import { Button } from '../ui/Button';
 import { ClubLogo } from '../ui/ClubLogo';
@@ -16,11 +17,20 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboard, onAdminLogout }) => {
   const { theme, toggleTheme } = useTheme();
+  const { openAdminModal, isAdminLoggedIn, setShowDashboard } = useAdminAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
   const location = useLocation();
   const navigate = useNavigate();
+
+  const handleAdminClick = () => {
+    if (isAdminLoggedIn) {
+      setShowDashboard(true);
+    } else {
+      openAdminModal();
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -149,7 +159,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
             </nav>
           )}
 
-          {/* Right: CU Logo (Image 2) + Theme Toggle + Join Button */}
+          {/* Right: CU Logo (Image 2) + Theme Toggle + Admin Login + Join Button */}
           <div className="hidden md:flex items-center gap-4">
             <CULogo size="sm" />
 
@@ -165,6 +175,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
             >
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </motion.button>
+
+            {/* Admin Login Button */}
+            {!isAdminDashboard && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleAdminClick}
+                className="p-2.5 rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
+                title={isAdminLoggedIn ? "Admin Panel" : "Admin Login"}
+                aria-label={isAdminLoggedIn ? "Admin Panel" : "Admin Login"}
+              >
+                <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+              </motion.button>
+            )}
 
             {/* Logout (admin) or Join Club (public) */}
             {isAdminDashboard ? (
@@ -245,6 +269,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                     <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400 opacity-70" />
                   </button>
                 ))}
+
+                {!isAdminDashboard && (
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleAdminClick();
+                    }}
+                    className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-[#dce3f0] dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                      <span>{isAdminLoggedIn ? 'Admin Management Panel' : 'Admin Login Portal'}</span>
+                    </span>
+                    <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400 opacity-70" />
+                  </button>
+                )}
 
                 <div className="pt-4 border-t border-slate-300/80 dark:border-slate-800">
                   <Button

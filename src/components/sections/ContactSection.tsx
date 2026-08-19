@@ -24,6 +24,7 @@ export const ContactSection: React.FC = () => {
   const { openAdminModal } = useAdminAuth();
   const [formData, setFormData] = useState({
     name: '',
+    university_id: '',
     email: '',
     message: '',
   });
@@ -41,12 +42,13 @@ export const ContactSection: React.FC = () => {
     try {
       await submitFeedback({
         name: formData.name.trim(),
+        university_id: formData.university_id.trim(),
         email: formData.email.trim(),
         message: formData.message.trim(),
       });
 
       setIsSubmitted(true);
-      setFormData({ name: '', email: '', message: '' });
+      setFormData({ name: '', university_id: '', email: '', message: '' });
 
       // Automatically reset back to normal form after 3 seconds
       setTimeout(() => {
@@ -209,19 +211,35 @@ export const ContactSection: React.FC = () => {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                      <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                        Your Name
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        required
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="e.g. Rahul Sharma"
-                        className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                          Your Name
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="e.g. Rahul Sharma"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="university_id" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                          University ID
+                        </label>
+                        <input
+                          type="text"
+                          id="university_id"
+                          value={formData.university_id}
+                          onChange={(e) => setFormData({ ...formData, university_id: e.target.value })}
+                          placeholder="e.g. 23BCS10145"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
+                        />
+                      </div>
                     </div>
 
                     <div>

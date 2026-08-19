@@ -146,6 +146,7 @@ export const exportFeedbacksToPdf = (
   const tableRows = feedbacks.map((f, index) => [
     (index + 1).toString(),
     f.name || 'N/A',
+    f.university_id || 'N/A',
     f.email || 'N/A',
     f.message || 'N/A',
     (f.status || 'pending').toUpperCase(),
@@ -154,7 +155,7 @@ export const exportFeedbacksToPdf = (
 
   autoTable(doc, {
     startY: 27,
-    head: [['#', 'Sender Name', 'Email', 'Message / Feedback Query', 'Status', 'Received Date']],
+    head: [['#', 'Sender Name', 'University UID', 'Email', 'Message / Feedback Query', 'Status', 'Received Date']],
     body: tableRows,
     theme: 'grid',
     headStyles: {
@@ -169,11 +170,12 @@ export const exportFeedbacksToPdf = (
     },
     columnStyles: {
       0: { cellWidth: 10 },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 55 },
-      3: { cellWidth: 110 },
-      4: { cellWidth: 25 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 48 },
+      4: { cellWidth: 92 },
       5: { cellWidth: 25 },
+      6: { cellWidth: 25 },
     },
     alternateRowStyles: {
       fillColor: [248, 250, 252],

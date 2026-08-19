@@ -9,7 +9,7 @@ export const getRoles = async (): Promise<Role[]> => {
   const { data, error } = await supabase
     .from('roles')
     .select('*')
-    .order('display_order', { ascending: true });
+    .order('name', { ascending: true });
 
   if (error) {
     console.error('Error fetching roles:', error.message);

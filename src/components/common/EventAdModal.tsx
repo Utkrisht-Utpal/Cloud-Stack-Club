@@ -20,44 +20,43 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const { isAdminLoggedIn } = useAdminAuth();
   const hasTriggeredRef = useRef(false);
-  const isInitialCacheRef = useRef(events && events.length > 0);
+  const userDismissedRef = useRef(false);
 
   useEffect(() => {
-    // Prevent duplicate ad triggers on page load / re-renders
-    if (hasTriggeredRef.current) return;
     if (!events || events.length === 0) return;
+    if (userDismissedRef.current) return;
 
     const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-    // Find the latest active upcoming event whose deadline or date is not over
+    // Find the nearest active upcoming or live event whose event date is not over
     const validUpcomingEvent = events.find((evt) => {
-      // Exclude deleted or cancelled events
-      if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any)) return false;
+      // Exclude deleted, cancelled, or completed events
+      if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any) || evt.status === ('completed' as any)) return false;
 
-      // Check registration end deadline if set
-      if (evt.registration_end) {
-        const endDate = new Date(evt.registration_end);
-        endDate.setHours(23, 59, 59, 999);
-        if (endDate < now) return false;
-      } else if (evt.date) {
-        // Fallback check event date
-        const eventDate = new Date(evt.date);
-        eventDate.setHours(23, 59, 59, 999);
-        if (eventDate < now) return false;
+      // Event is valid if its event date is today or in the future
+      if (evt.date) {
+        const eventDateStr = evt.date.split('T')[0];
+        if (eventDateStr < todayStr) return false;
       }
 
       return true;
     });
 
     if (validUpcomingEvent) {
-      hasTriggeredRef.current = true;
       setActiveAdEvent(validUpcomingEvent);
-      // If loaded from local storage cache -> 780ms delay
-      // If fetched live from DB -> 0ms immediate trigger as soon as DB data arrives
-      if (isInitialCacheRef.current) {
-        setTimeout(() => setIsOpen(true), 780);
-      } else {
-        setIsOpen(true);
+
+      if (!hasTriggeredRef.current) {
+        hasTriggeredRef.current = true;
+        // Wait 300ms so fresh database event data is fully loaded, eliminating any previous event flash
+        const timer = setTimeout(() => {
+          setIsOpen(true);
+        }, 150);
+        return () => clearTimeout(timer);
+      }
+    } else {
+      if (isOpen) {
+        setIsOpen(false);
       }
     }
   }, [events]);
@@ -74,6 +73,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   }, [isOpen]);
 
   const handleClose = () => {
+    userDismissedRef.current = true;
     setIsOpen(false);
   };
 
@@ -81,27 +81,27 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   const eventDateFormatted = activeAdEvent.date
     ? new Date(activeAdEvent.date).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : 'Date TBD';
 
   const regStartFormatted = activeAdEvent.registration_start
     ? new Date(activeAdEvent.registration_start).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : null;
 
   const regEndFormatted = activeAdEvent.registration_end
     ? new Date(activeAdEvent.registration_end).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
     : null;
 
   const statusInfo = getEventStatusInfo(activeAdEvent.date);
@@ -153,13 +153,12 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <div
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
-                        statusInfo.type === 'ongoing'
-                          ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse'
-                          : statusInfo.type === 'completed'
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusInfo.type === 'ongoing'
+                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse'
+                        : statusInfo.type === 'completed'
                           ? 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/40'
                           : 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/20'
-                      }`}
+                        }`}
                     >
                       <Sparkles className="w-3 h-3 text-current" />
                       <span>{statusInfo.type === 'ongoing' ? 'ONGOING EVENT' : statusInfo.label}</span>

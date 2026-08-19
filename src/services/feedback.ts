@@ -4,6 +4,7 @@ import type { ContactFeedback } from '../types/database';
 export interface SubmitFeedbackPayload {
   name: string;
   email: string;
+  university_id?: string;
   message: string;
 }
 
@@ -17,6 +18,7 @@ export const submitFeedback = async (
     id: tempId,
     name: payload.name.trim(),
     email: payload.email.trim(),
+    university_id: payload.university_id ? payload.university_id.trim() : undefined,
     message: payload.message.trim(),
     status: 'pending',
     created_at: new Date().toISOString(),
@@ -33,14 +35,19 @@ export const submitFeedback = async (
   }
 
   try {
+    const insertObj: any = {
+      name: payload.name.trim(),
+      email: payload.email.trim(),
+      message: payload.message.trim(),
+      status: 'pending',
+    };
+    if (payload.university_id && payload.university_id.trim()) {
+      insertObj.university_id = payload.university_id.trim();
+    }
+
     const { data, error } = await supabase
       .from('contact_feedbacks')
-      .insert({
-        name: payload.name.trim(),
-        email: payload.email.trim(),
-        message: payload.message.trim(),
-        status: 'pending',
-      })
+      .insert(insertObj)
       .select('*')
       .maybeSingle();
 
@@ -56,6 +63,28 @@ export const submitFeedback = async (
       } catch (e) {}
 
       return dbFeedback;
+    }
+
+    // Graceful fallback: If Supabase table doesn't have university_id column yet, retry insert without it
+    if (error && insertObj.university_id) {
+      delete insertObj.university_id;
+      const retry = await supabase
+        .from('contact_feedbacks')
+        .insert(insertObj)
+        .select('*')
+        .maybeSingle();
+
+      if (!retry.error && retry.data) {
+        const fallbackFeedback = { ...(retry.data as ContactFeedback), university_id: payload.university_id?.trim() };
+        try {
+          const existing = localStorage.getItem(LOCAL_FEEDBACKS_KEY);
+          let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
+          list = list.filter((f) => f.id !== tempId && f.id !== fallbackFeedback.id);
+          list.unshift(fallbackFeedback);
+          localStorage.setItem(LOCAL_FEEDBACKS_KEY, JSON.stringify(list));
+        } catch (e) {}
+        return fallbackFeedback;
+      }
     }
   } catch (e) {}
 
