@@ -25,24 +25,70 @@ export const registerForEvent = async (
   let targetEventId = event_id;
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
 
-  if (!isUuid && isSupabaseConfigured()) {
-    const { data: eventBySlug } = await supabase
-      .from('events')
-      .select('id')
-      .eq('slug', targetEventId)
-      .maybeSingle();
+  let targetEventObj: any = null;
 
-    if (eventBySlug && (eventBySlug as any).id) {
-      targetEventId = (eventBySlug as any).id;
-    } else {
-      const { data: eventByTitle } = await supabase
+  if (isSupabaseConfigured()) {
+    if (isUuid) {
+      const { data: evtById } = await supabase
         .from('events')
-        .select('id')
-        .ilike('title', `%${targetEventId}%`)
+        .select('id, title, registration_enabled, registration_start, registration_end, max_registrations')
+        .eq('id', targetEventId)
+        .maybeSingle();
+      targetEventObj = evtById;
+    } else {
+      const { data: eventBySlug } = await supabase
+        .from('events')
+        .select('id, title, registration_enabled, registration_start, registration_end, max_registrations')
+        .eq('slug', targetEventId)
         .maybeSingle();
 
-      if (eventByTitle && (eventByTitle as any).id) {
-        targetEventId = (eventByTitle as any).id;
+      if (eventBySlug && (eventBySlug as any).id) {
+        targetEventId = (eventBySlug as any).id;
+        targetEventObj = eventBySlug;
+      } else {
+        const { data: eventByTitle } = await supabase
+          .from('events')
+          .select('id, title, registration_enabled, registration_start, registration_end, max_registrations')
+          .ilike('title', `%${targetEventId}%`)
+          .maybeSingle();
+
+        if (eventByTitle && (eventByTitle as any).id) {
+          targetEventId = (eventByTitle as any).id;
+          targetEventObj = eventByTitle;
+        }
+      }
+    }
+  }
+
+  // 0.0 Strict Registration Deadline & Status Pre-Check before writing to database
+  if (targetEventObj) {
+    if (targetEventObj.registration_enabled === false) {
+      throw new Error('Registration is currently closed for this event.');
+    }
+
+    const now = new Date();
+
+    if (targetEventObj.registration_start) {
+      const startStr = typeof targetEventObj.registration_start === 'string' ? targetEventObj.registration_start.split('T')[0] : '';
+      const [sy, sm, sd] = startStr.split('-').map(Number);
+      const startDate = (sy && sm && sd)
+        ? new Date(sy, sm - 1, sd, 0, 0, 0, 0)
+        : new Date(targetEventObj.registration_start);
+
+      if (startDate > now) {
+        throw new Error('Registration for this event has not opened yet.');
+      }
+    }
+
+    if (targetEventObj.registration_end) {
+      const endStr = typeof targetEventObj.registration_end === 'string' ? targetEventObj.registration_end.split('T')[0] : '';
+      const [ey, em, ed] = endStr.split('-').map(Number);
+      const endDate = (ey && em && ed)
+        ? new Date(ey, em - 1, ed, 23, 59, 59, 999)
+        : new Date(targetEventObj.registration_end);
+
+      if (endDate < now) {
+        throw new Error('Registration for this event has closed.');
       }
     }
   }
@@ -197,197 +243,210 @@ export const registerForEvent = async (
 
   let validMembers: any[] = [];
 
-  // 2. If team registration, create event team and team members
-  if (isTeamRegistration && isSupabaseConfigured()) {
-    const teamPayloadWithRegNum = {
-      id: team_id,
-      event_id: targetEventId,
-      team_name: team_name!.trim(),
-      registration_number: teamRegistrationNumber,
-      created_by_registration_id: null,
-    };
-
-    const { error: teamError } = await supabase
-      .from('event_teams')
-      .insert(teamPayloadWithRegNum);
-
-    if (teamError) {
-      console.warn('Initial team insert with registration_number failed, trying basic insert:', teamError.message);
-      const { error: retryError } = await supabase
-        .from('event_teams')
-        .insert({
-          id: team_id,
-          event_id: targetEventId,
-          team_name: team_name!.trim(),
-          created_by_registration_id: null,
-        });
-
-      if (retryError) {
-        console.error('Fatal team insert error:', retryError.message);
-        throw new Error(`Failed to create team: ${retryError.message}`);
-      }
-    }
-
-    if (team_members && team_members.length > 0) {
-      validMembers = await Promise.all(
-        team_members.slice(0, 5).map(async (m) => {
-          let isMember = false;
-          const mUidNorm = m.uid ? m.uid.trim().toUpperCase() : '';
-          const mEmailNorm = m.email ? m.email.trim() : '';
-          // Each team member gets their 6-char ID starting with the same 2-char team prefix (e.g. REG-20260819-AX91LP)
-          const memberRegNumber = `REG-${todayStr}-${teamPrefix}${generateRandomCode(4)}`;
-
-          if (isSupabaseConfigured() && (mUidNorm || mEmailNorm)) {
-            if (mUidNorm) {
-              const { data: mem } = await supabase
-                .from('members')
-                .select('id')
-                .ilike('uid', mUidNorm)
-                .maybeSingle();
-              if (mem) isMember = true;
-            }
-
-            if (!isMember && mEmailNorm) {
-              const { data: mem } = await supabase
-                .from('members')
-                .select('id')
-                .ilike('email', mEmailNorm)
-                .maybeSingle();
-              if (mem) isMember = true;
-            }
-          }
-
-          return {
-            id: generateUUID(),
-            team_id,
-            name: m.name.trim(),
-            email: m.email.trim(),
-            phone: m.phone ? m.phone.trim() : null,
-            uid: mUidNorm || null,
-            registration_number: memberRegNumber,
-            is_member: isMember,
-          };
-        })
-      );
-
-      const { error: tmErr } = await supabase.from('event_team_members').insert(validMembers);
-      if (tmErr) {
-        console.warn('Team members insert with registration_number/phone failed, retrying with basic columns:', tmErr.message);
-        const basicMembers = validMembers.map((vm) => ({
-          id: vm.id,
-          team_id: vm.team_id,
-          name: vm.name,
-          email: vm.email,
-          uid: vm.uid,
-          is_member: vm.is_member,
-        }));
-        await supabase.from('event_team_members').insert(basicMembers);
-      }
-    }
-  } else if (isTeamRegistration) {
-    if (team_members && team_members.length > 0) {
-      validMembers = team_members.slice(0, 5).map((m) => ({
-        id: generateUUID(),
-        team_id,
-        name: m.name.trim(),
-        email: m.email.trim(),
-        phone: m.phone ? m.phone.trim() : null,
-        uid: m.uid ? m.uid.trim().toUpperCase() : null,
-        registration_number: `REG-${todayStr}-${teamPrefix}${generateRandomCode(4)}`,
-        is_member: false,
-      }));
-    }
-  }
-
-  // 4. Create primary event registration record
   let createdRegistration: EventRegistration;
 
-  const regInsertPayload = {
-    id: primaryRegistrationId,
-    registration_number: primaryRegNumber,
-    event_id: targetEventId,
-    member_id,
-    registrant_name,
-    registrant_email,
-    registrant_phone: registrant_phone || null,
-    uid: uid ? uid.trim().toUpperCase() : null,
-    is_member,
-    team_id,
-    status: 'registered' as const,
-  };
+  try {
+    // 2. If team registration, create event team and team members
+    if (isTeamRegistration && isSupabaseConfigured()) {
+      const teamPayloadWithRegNum = {
+        id: team_id,
+        event_id: targetEventId,
+        team_name: team_name!.trim(),
+        registration_number: teamRegistrationNumber,
+        created_by_registration_id: null,
+      };
 
-  const { data: regData, error: regError } = await supabase
-    .from('event_registrations')
-    .insert(regInsertPayload)
-    .select('*')
-    .maybeSingle();
-
-  if (regError) {
-    console.warn('Registration insert with select failed, trying direct insert:', regError.message);
-    const { error: insertOnlyError } = await supabase
-      .from('event_registrations')
-      .insert(regInsertPayload);
-
-    if (insertOnlyError) {
-      console.error('Fatal registration insert error:', insertOnlyError.message);
-      throw new Error(`Registration failed: ${insertOnlyError.message}`);
-    }
-  }
-
-  createdRegistration = (regData as EventRegistration) || {
-    id: primaryRegistrationId,
-    registration_number: primaryRegNumber,
-    event_id: targetEventId,
-    member_id,
-    registrant_name,
-    registrant_email,
-    registrant_phone: registrant_phone || null,
-    uid: uid ? uid.trim().toUpperCase() : null,
-    is_member,
-    team_id,
-    status: 'registered',
-    submitted_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-
-  // 5. Ensure team's created_by_registration_id is linked in Supabase
-  if (team_id && isSupabaseConfigured()) {
-    try {
-      await supabase
+      const { error: teamError } = await supabase
         .from('event_teams')
-        .update({ created_by_registration_id: primaryRegistrationId })
-        .eq('id', team_id);
-    } catch (e) {}
-  }
+        .insert(teamPayloadWithRegNum);
 
-  // Attach full team object with member registration numbers to returned object
-  if (team_id && isTeamRegistration) {
-    createdRegistration.team = {
-      id: team_id,
+      if (teamError) {
+        console.warn('Initial team insert with registration_number failed, trying basic insert:', teamError.message);
+        const { error: retryError } = await supabase
+          .from('event_teams')
+          .insert({
+            id: team_id,
+            event_id: targetEventId,
+            team_name: team_name!.trim(),
+            created_by_registration_id: null,
+          });
+
+        if (retryError) {
+          console.error('Fatal team insert error:', retryError.message);
+          throw new Error(`Failed to create team: ${retryError.message}`);
+        }
+      }
+
+      if (team_members && team_members.length > 0) {
+        validMembers = await Promise.all(
+          team_members.slice(0, 5).map(async (m) => {
+            let isMember = false;
+            const mUidNorm = m.uid ? m.uid.trim().toUpperCase() : '';
+            const mEmailNorm = m.email ? m.email.trim() : '';
+            // Each team member gets their 6-char ID starting with the same 2-char team prefix (e.g. REG-20260819-AX91LP)
+            const memberRegNumber = `REG-${todayStr}-${teamPrefix}${generateRandomCode(4)}`;
+
+            if (isSupabaseConfigured() && (mUidNorm || mEmailNorm)) {
+              if (mUidNorm) {
+                const { data: mem } = await supabase
+                  .from('members')
+                  .select('id')
+                  .ilike('uid', mUidNorm)
+                  .maybeSingle();
+                if (mem) isMember = true;
+              }
+
+              if (!isMember && mEmailNorm) {
+                const { data: mem } = await supabase
+                  .from('members')
+                  .select('id')
+                  .ilike('email', mEmailNorm)
+                  .maybeSingle();
+                if (mem) isMember = true;
+              }
+            }
+
+            return {
+              id: generateUUID(),
+              team_id,
+              name: m.name.trim(),
+              email: m.email.trim(),
+              phone: m.phone ? m.phone.trim() : null,
+              uid: mUidNorm || null,
+              registration_number: memberRegNumber,
+              is_member: isMember,
+            };
+          })
+        );
+
+        const { error: tmErr } = await supabase.from('event_team_members').insert(validMembers);
+        if (tmErr) {
+          console.warn('Team members insert with registration_number/phone failed, retrying with basic columns:', tmErr.message);
+          const basicMembers = validMembers.map((vm) => ({
+            id: vm.id,
+            team_id: vm.team_id,
+            name: vm.name,
+            email: vm.email,
+            uid: vm.uid,
+            is_member: vm.is_member,
+          }));
+          await supabase.from('event_team_members').insert(basicMembers);
+        }
+      }
+    } else if (isTeamRegistration) {
+      if (team_members && team_members.length > 0) {
+        validMembers = team_members.slice(0, 5).map((m) => ({
+          id: generateUUID(),
+          team_id,
+          name: m.name.trim(),
+          email: m.email.trim(),
+          phone: m.phone ? m.phone.trim() : null,
+          uid: m.uid ? m.uid.trim().toUpperCase() : null,
+          registration_number: `REG-${todayStr}-${teamPrefix}${generateRandomCode(4)}`,
+          is_member: false,
+        }));
+      }
+    }
+
+    // 4. Create primary event registration record
+    const regInsertPayload = {
+      id: primaryRegistrationId,
+      registration_number: primaryRegNumber,
       event_id: targetEventId,
-      team_name: team_name!.trim(),
-      registration_number: teamRegistrationNumber,
-      created_by_registration_id: primaryRegistrationId,
-      created_at: new Date().toISOString(),
-      members: validMembers,
+      member_id,
+      registrant_name,
+      registrant_email,
+      registrant_phone: registrant_phone || null,
+      uid: uid ? uid.trim().toUpperCase() : null,
+      is_member,
+      team_id,
+      status: 'registered' as const,
     };
 
-    try {
-      localStorage.setItem(`csc_team_${team_id}`, JSON.stringify(createdRegistration.team));
-    } catch {}
-  }
+    const { data: regData, error: regError } = await supabase
+      .from('event_registrations')
+      .insert(regInsertPayload)
+      .select('*')
+      .maybeSingle();
 
-  // 6. Save form field answers
-  if (answers && answers.length > 0) {
-    const answerRecords = answers.map((ans) => ({
-      registration_id: createdRegistration.id,
-      field_id: ans.field_id,
-      answer_text: ans.answer_text || null,
-      answer_json: ans.answer_json || null,
-      file_url: ans.file_url || null,
-    }));
+    if (regError) {
+      console.warn('Registration insert with select failed, trying direct insert:', regError.message);
+      const { error: insertOnlyError } = await supabase
+        .from('event_registrations')
+        .insert(regInsertPayload);
 
-    await supabase.from('registration_answers').insert(answerRecords);
+      if (insertOnlyError) {
+        console.error('Fatal registration insert error:', insertOnlyError.message);
+        throw new Error(`Registration failed: ${insertOnlyError.message}`);
+      }
+    }
+
+    createdRegistration = (regData as EventRegistration) || {
+      id: primaryRegistrationId,
+      registration_number: primaryRegNumber,
+      event_id: targetEventId,
+      member_id,
+      registrant_name,
+      registrant_email,
+      registrant_phone: registrant_phone || null,
+      uid: uid ? uid.trim().toUpperCase() : null,
+      is_member,
+      team_id,
+      status: 'registered',
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // 5. Ensure team's created_by_registration_id is linked in Supabase
+    if (team_id && isSupabaseConfigured()) {
+      try {
+        await supabase
+          .from('event_teams')
+          .update({ created_by_registration_id: primaryRegistrationId })
+          .eq('id', team_id);
+      } catch (e) {}
+    }
+
+    // Attach full team object with member registration numbers to returned object
+    if (team_id && isTeamRegistration) {
+      createdRegistration.team = {
+        id: team_id,
+        event_id: targetEventId,
+        team_name: team_name!.trim(),
+        registration_number: teamRegistrationNumber,
+        created_by_registration_id: primaryRegistrationId,
+        created_at: new Date().toISOString(),
+        members: validMembers,
+      };
+
+      try {
+        localStorage.setItem(`csc_team_${team_id}`, JSON.stringify(createdRegistration.team));
+      } catch {}
+    }
+
+    // 6. Save form field answers
+    if (answers && answers.length > 0) {
+      const answerRecords = answers.map((ans) => ({
+        registration_id: createdRegistration.id,
+        field_id: ans.field_id,
+        answer_text: ans.answer_text || null,
+        answer_json: ans.answer_json || null,
+        file_url: ans.file_url || null,
+      }));
+
+      await supabase.from('registration_answers').insert(answerRecords);
+    }
+  } catch (err: any) {
+    // Clean up / rollback any created team or team members if registration failed
+    if (team_id && isSupabaseConfigured()) {
+      try {
+        await supabase.from('event_team_members').delete().eq('team_id', team_id);
+        await supabase.from('event_teams').delete().eq('id', team_id);
+      } catch (cleanupErr) {
+        console.warn('Failed to rollback orphaned team after registration error:', cleanupErr);
+      }
+    }
+    throw err;
   }
 
   // Save to local storage caches for instant offline resilience and fallback

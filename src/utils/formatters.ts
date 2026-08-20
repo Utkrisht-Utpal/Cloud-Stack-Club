@@ -66,15 +66,23 @@ export const isRegistrationActive = (evt?: any): boolean => {
 
   // If registration start is set and in future
   if (evt.registration_start) {
-    const startDate = new Date(evt.registration_start);
-    startDate.setHours(0, 0, 0, 0);
+    const startStr = typeof evt.registration_start === 'string' ? evt.registration_start.split('T')[0] : '';
+    const [sy, sm, sd] = startStr.split('-').map(Number);
+    const startDate = (sy && sm && sd)
+      ? new Date(sy, sm - 1, sd, 0, 0, 0, 0)
+      : new Date(evt.registration_start);
+
     if (startDate > now) return false;
   }
 
-  // If registration end date has passed
+  // If registration end date has passed (active throughout the entire end day until 23:59:59.999)
   if (evt.registration_end) {
-    const endDate = new Date(evt.registration_end);
-    endDate.setHours(23, 59, 59, 999);
+    const endStr = typeof evt.registration_end === 'string' ? evt.registration_end.split('T')[0] : '';
+    const [ey, em, ed] = endStr.split('-').map(Number);
+    const endDate = (ey && em && ed)
+      ? new Date(ey, em - 1, ed, 23, 59, 59, 999)
+      : new Date(evt.registration_end);
+
     if (endDate < now) return false;
   }
 

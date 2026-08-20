@@ -89,7 +89,12 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
 
     // 3. If registration_end deadline has passed -> update DB registration_enabled to false
     if (evt.registration_end && evt.registration_enabled) {
-      const regEndMs = new Date(evt.registration_end).setHours(23, 59, 59, 999);
+      const endStr = typeof evt.registration_end === 'string' ? evt.registration_end.split('T')[0] : '';
+      const [ey, em, ed] = endStr.split('-').map(Number);
+      const regEndMs = (ey && em && ed)
+        ? new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime()
+        : new Date(evt.registration_end).setHours(23, 59, 59, 999);
+
       if (regEndMs < nowMs) {
         updates.registration_enabled = false;
         evt.registration_enabled = false;
