@@ -467,7 +467,7 @@ export const verifyEventRegistration = async (
         if (uidMismatch) {
           return {
             isValid: false,
-            error: `The UID "${normUid}" is registered with Registration ID "${uidMismatch.registration_number}". Please enter that Registration ID.`,
+            error: `The UID "${normUid}" is not registered with Registration ID. Please enter that Registration ID.`,
           };
         }
       }
