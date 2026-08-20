@@ -432,7 +432,7 @@ export const verifyEventRegistration = async (
         .eq('event_id', targetEventId);
 
       if (!pError && primaryRegs && primaryRegs.length > 0) {
-        // Test 1: Exact match for UID and Registration ID
+        // Test 1: Exact match for UID and Registration ID in primary registrations
         const exactMatch = primaryRegs.find(
           (r) =>
             (r.registration_number || '').trim().toUpperCase() === normReg &&
@@ -448,37 +448,14 @@ export const verifyEventRegistration = async (
             isTeamMember: false,
           };
         }
-
-        // Test 2: Registration ID exists under this event, but UID is different
-        const regMismatch = primaryRegs.find(
-          (r) => (r.registration_number || '').trim().toUpperCase() === normReg
-        );
-        if (regMismatch) {
-          return {
-            isValid: false,
-            error: `Registration ID "${normReg}" belongs to UID "${regMismatch.uid || 'another student'}" for this event. Please verify your UID and Registration ID.`,
-          };
-        }
-
-        // Test 3: UID is registered for this event, but with a different Registration ID
-        const uidMismatch = primaryRegs.find(
-          (r) => (r.uid || '').trim().toUpperCase() === normUid
-        );
-        if (uidMismatch) {
-          return {
-            isValid: false,
-            error: `The UID "${normUid}" is not registered with Registration ID. Please enter that Registration ID.`,
-          };
-        }
       }
 
-      // 2.2 Check team members table (Teammates)
+      // 2.2 Check team members table (Teammates & Team Registration Numbers)
       const { data: teamsForEvent } = await supabase
         .from('event_teams')
         .select('id, team_name, registration_number')
         .eq('event_id', targetEventId);
 
-      let teamMembers: any[] = [];
       if (teamsForEvent && teamsForEvent.length > 0) {
         const teamIds = teamsForEvent.map((t) => t.id);
         const { data: tmData, error: tmError } = await supabase
@@ -486,12 +463,10 @@ export const verifyEventRegistration = async (
           .select('id, team_id, name, email, phone, uid, registration_number')
           .in('team_id', teamIds);
 
-        if (!tmError && tmData) {
-          teamMembers = tmData;
-        }
+        const teamMembers = (!tmError && tmData) ? tmData : [];
 
         if (teamMembers.length > 0) {
-          // Exact match in team members
+          // Exact match with individual team member registration number
           const exactMember = teamMembers.find(
             (m) =>
               (m.registration_number || '').trim().toUpperCase() === normReg &&
@@ -546,35 +521,13 @@ export const verifyEventRegistration = async (
               };
             }
           }
-
-          // Registration ID found in team members, but UID mismatch
-          const memberRegMismatch = teamMembers.find(
-            (m) => (m.registration_number || '').trim().toUpperCase() === normReg
-          );
-          if (memberRegMismatch) {
-            return {
-              isValid: false,
-              error: `Registration ID "${normReg}" belongs to UID "${memberRegMismatch.uid || 'another student'}" on the team. Please enter your own matching UID.`,
-            };
-          }
-
-          // UID found in team members, but Registration ID mismatch
-          const memberUidMismatch = teamMembers.find(
-            (m) => (m.uid || '').trim().toUpperCase() === normUid
-          );
-          if (memberUidMismatch && !normReg.includes('*')) {
-            const teamObj = teamsForEvent.find((t) => t.id === memberUidMismatch.team_id);
-            return {
-              isValid: false,
-              error: `The UID "${normUid}" is registered in team "${teamObj?.team_name || 'your team'}". Please enter your Team Registration ID (${teamObj?.registration_number || 'on your pass'}).`,
-            };
-          }
         }
       }
 
+      // If no valid match was found, return a generic error without exposing any IDs
       return {
         isValid: false,
-        error: `No event registration found for UID "${normUid}" and Registration ID "${normReg}" for this event. Please make sure you are registered and check your Registration Pass.`,
+        error: `The entered UID or Registration ID is not associated with this event. Please verify your details.`,
       };
     } catch (err) {
       console.warn('Error during event registration verification against Supabase:', err);
