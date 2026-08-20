@@ -14,16 +14,14 @@ import { getEvents } from '../services/events';
 import type { Event } from '../types/database';
 
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { lazyWithRetry } from '../utils/lazyWithRetry';
 
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { AdminLoginModal } from '../components/admin/AdminLoginModal';
 
-// Code-splitting with auto-retry on 404 deployment stale chunks
-const JoinModal = lazyWithRetry(() => import('../components/common/JoinModal'), 'JoinModal');
-const EventRegisterModal = lazyWithRetry(() => import('../components/common/EventRegisterModal'), 'EventRegisterModal');
-const EventPdfModal = lazyWithRetry(() => import('../components/admin/EventPdfModal'), 'EventPdfModal');
-const EventFeedbackModal = lazyWithRetry(() => import('../components/common/EventFeedbackModal'), 'EventFeedbackModal');
+import { JoinModal } from '../components/common/JoinModal';
+import { EventRegisterModal } from '../components/common/EventRegisterModal';
+import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
+import { EventPdfModal } from '../components/admin/EventPdfModal';
 
 export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
