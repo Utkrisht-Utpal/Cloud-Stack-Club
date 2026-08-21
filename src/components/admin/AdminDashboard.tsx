@@ -102,7 +102,8 @@ const getInitialEventFeedbacksCache = (): EventFeedback[] => {
 
 export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks'>('members');
-  const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory' | 'core'>('directory');
+  const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
+  const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
 
   // Pending Applications State
@@ -727,11 +728,12 @@ export const AdminDashboard: React.FC = () => {
 
       if (!matchesSearch) return false;
 
-      if (memberViewTab === 'core' && !m.is_core_member) return false;
+      if (memberFilter === 'member' && m.is_core_member) return false;
+      if (memberFilter === 'core' && !m.is_core_member) return false;
 
       return true;
     });
-  }, [membersList, memberSearch, memberViewTab]);
+  }, [membersList, memberSearch, memberFilter]);
 
   const filteredApplications = useMemo(() => {
     return pendingApplications.filter((app) => {
@@ -756,7 +758,7 @@ export const AdminDashboard: React.FC = () => {
         : filteredMembers;
     exportMembersToExcel(
       currentMembers,
-      memberViewTab === 'core' ? 'core' : 'all',
+      memberViewTab === 'applications' ? 'all' : memberFilter === 'core' ? 'core' : memberFilter === 'member' ? 'members' : 'all',
       memberSearch
     );
     setActionSuccess('Downloaded members list as Excel spreadsheet!');
@@ -770,7 +772,7 @@ export const AdminDashboard: React.FC = () => {
         : filteredMembers;
     exportMembersToPdf(
       currentMembers,
-      memberViewTab === 'core' ? 'core' : 'all',
+      memberViewTab === 'applications' ? 'all' : memberFilter === 'core' ? 'core' : memberFilter === 'member' ? 'members' : 'all',
       memberSearch
     );
     setActionSuccess('Downloaded members list as PDF document!');
@@ -882,13 +884,13 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            {/* 3 Interactive Overview & View Switcher Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 2 Interactive Overview & View Switcher Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Card 1: APPLICATIONS */}
               <button
                 type="button"
                 onClick={() => setMemberViewTab('applications')}
-                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                className={`p-5 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
                   memberViewTab === 'applications'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -922,7 +924,7 @@ export const AdminDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setMemberViewTab('directory')}
-                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                className={`p-5 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
                   memberViewTab === 'directory'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -945,40 +947,12 @@ export const AdminDashboard: React.FC = () => {
                   </span>
                 </div>
               </button>
-
-              {/* Card 3: CORE COUNCIL */}
-              <button
-                type="button"
-                onClick={() => setMemberViewTab('core')}
-                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
-                  memberViewTab === 'core'
-                    ? 'bg-amber-50/50 dark:bg-amber-950/25 border-2 border-amber-400 dark:border-amber-500 ring-2 ring-amber-400/30 shadow-md'
-                    : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-                    CORE COUNCIL
-                  </span>
-                  <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="flex items-baseline gap-2.5">
-                  <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                    {membersList.filter((m) => m.is_core_member).length}
-                  </span>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                    Executive Leadership
-                  </span>
-                </div>
-              </button>
             </div>
 
-            {/* Filter & Search Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              {/* Search Box */}
-              <div className="relative flex-1">
+            {/* Unified Single Row Controls for Search, Filters, and Export Actions */}
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+              {/* Search Box (flex-1 - largest available space) */}
+              <div className="relative flex-1 min-w-[200px]">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
@@ -989,28 +963,68 @@ export const AdminDashboard: React.FC = () => {
                 />
               </div>
 
-              <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end flex-wrap sm:flex-nowrap">
-                {/* Individual Excel Button */}
-                <button
-                  type="button"
-                  onClick={handleExportMembersExcel}
-                  className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
-                  title="Download as Excel"
-                >
-                  <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Download as Excel</span>
-                </button>
+              {/* Controls Group: Filters + Export Buttons in single row alignment */}
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-between lg:justify-end shrink-0">
+                {/* Filter Pill Buttons (All, Member, Core Member) */}
+                {memberViewTab === 'directory' && (
+                  <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shrink-0">
+                    {(
+                      [
+                        { id: 'all', label: 'All', count: membersList.length },
+                        { id: 'member', label: 'Member', count: membersList.filter((m) => !m.is_core_member).length },
+                        { id: 'core', label: 'Core Member', count: membersList.filter((m) => m.is_core_member).length },
+                      ] as const
+                    ).map((f) => {
+                      const isActive = memberFilter === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          type="button"
+                          onClick={() => setMemberFilter(f.id)}
+                          className={`h-9 px-3 sm:px-3.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                            isActive
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/50'
+                          }`}
+                        >
+                          <span>{f.label}</span>
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
+                              isActive
+                                ? 'bg-white/20 text-white'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                            }`}
+                          >
+                            {f.count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
-                {/* Individual PDF Button */}
-                <button
-                  type="button"
-                  onClick={handleExportMembersPdf}
-                  className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
-                  title="Download as PDF"
-                >
-                  <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  <span>Download as PDF</span>
-                </button>
+                {/* Action Buttons: Excel & PDF */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleExportMembersExcel}
+                    className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+                    title="Download as Excel"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Download as Excel</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportMembersPdf}
+                    className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+                    title="Download as PDF"
+                  >
+                    <FileText className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                    <span>Download as PDF</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1104,8 +1118,10 @@ export const AdminDashboard: React.FC = () => {
             ) : (
               filteredMembers.length === 0 ? (
                 <div className="py-14 text-center text-xs text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
-                  {memberViewTab === 'core'
+                  {memberFilter === 'core'
                     ? 'No core members found matching your search or filters.'
+                    : memberFilter === 'member'
+                    ? 'No general members found matching your search or filters.'
                     : 'No members found matching your search or filters.'}
                 </div>
               ) : (
