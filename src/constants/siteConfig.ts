@@ -11,7 +11,7 @@ export const siteConfig: SiteConfig = {
     jointSecretary: 'Bani Kaur',
   },
   contact: {
-    email: 'cloudstack@cumail.in',
+    email: 'cloudstackclub@cumail.in',
     location: 'Chandigarh University, Mohali, Punjab',
     socials: {
       instagram: 'https://www.instagram.com/cloud_stackclub?igsh=Z3l3dm1uamlsNms1',
