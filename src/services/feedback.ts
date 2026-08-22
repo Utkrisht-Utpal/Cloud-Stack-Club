@@ -263,13 +263,18 @@ export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]>
 
   let dbList: EventFeedback[] = [];
 
-  // Attempt joined query with events table via event_id foreign key
   const { data, error } = await supabase
     .from('event_feedbacks')
-    .select('*, events:event_id(id, title, status, date, location)')
+    .select('*')
     .order('created_at', { ascending: false });
 
-  if (!error && data) {
+  if (error) {
+    console.error('Error fetching event feedbacks from database:', error.message);
+    const cached = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+    return cached ? JSON.parse(cached) : [];
+  }
+
+  if (data) {
     dbList = (data as any[]).map((f) => ({
       id: f.id,
       name: f.name,
@@ -278,7 +283,7 @@ export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]>
       university_id: f.university_id,
       registration_id: f.registration_id,
       event_id: f.event_id,
-      event_title: f.events?.title || f.event_title || 'Event',
+      event_title: f.event_title || 'Event',
       event_rating: f.event_rating,
       engagement_rating: f.engagement_rating,
       coordination_rating: f.coordination_rating,
@@ -286,21 +291,6 @@ export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]>
       status: f.status || 'pending',
       created_at: f.created_at,
     }));
-  } else {
-    // Fallback simple query if join alias differs
-    const { data: simpleData, error: simpleError } = await supabase
-      .from('event_feedbacks')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (simpleError) {
-      console.error('Error fetching event feedbacks from database:', simpleError);
-      throw simpleError;
-    }
-
-    if (simpleData) {
-      dbList = simpleData as EventFeedback[];
-    }
   }
 
   try {
