@@ -534,16 +534,6 @@ export const RolesManagementModal: React.FC<RolesManagementModalProps> = ({
               ))}
             </div>
           )}
-
-          <div className="flex justify-end pt-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewingRoleForMembers(null)}
-            >
-              Close
-            </Button>
-          </div>
         </div>
       </Modal>
     </>
