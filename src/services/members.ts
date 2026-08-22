@@ -37,15 +37,15 @@ export const checkMemberDuplicate = async (
   const cleanEmail = email.trim();
   const cleanPhone = phone?.trim() || '';
 
-  // 1. Check UID duplicate in members table
+  // 1. Check UID duplicate in members table (only active or pending members are blocked)
   if (cleanUid) {
     const { data: existingUid } = await supabase
       .from('members')
-      .select('id, uid')
+      .select('id, uid, status')
       .ilike('uid', cleanUid)
       .maybeSingle();
 
-    if (existingUid) {
+    if (existingUid && existingUid.status !== 'inactive') {
       return {
         isDuplicate: true,
         field: 'UID',
@@ -54,15 +54,15 @@ export const checkMemberDuplicate = async (
     }
   }
 
-  // 2. Check Email duplicate in members table
+  // 2. Check Email duplicate in members table (only active or pending members are blocked)
   if (cleanEmail) {
     const { data: existingEmail } = await supabase
       .from('members')
-      .select('id, email')
+      .select('id, email, status')
       .ilike('email', cleanEmail)
       .maybeSingle();
 
-    if (existingEmail) {
+    if (existingEmail && existingEmail.status !== 'inactive') {
       return {
         isDuplicate: true,
         field: 'Email',
@@ -71,15 +71,15 @@ export const checkMemberDuplicate = async (
     }
   }
 
-  // 3. Check Mobile Number duplicate in members table (if phone is provided)
+  // 3. Check Mobile Number duplicate in members table (only active or pending members are blocked)
   if (cleanPhone) {
     const { data: existingPhone } = await supabase
       .from('members')
-      .select('id, phone')
+      .select('id, phone, status')
       .eq('phone', cleanPhone)
       .maybeSingle();
 
-    if (existingPhone) {
+    if (existingPhone && existingPhone.status !== 'inactive') {
       return {
         isDuplicate: true,
         field: 'Mobile Number',
@@ -100,16 +100,43 @@ export const submitMemberApplication = async (
   }
 
   const { name, email, phone, uid, department, year } = payload;
+  const cleanUid = uid.trim();
+  const cleanEmail = email.trim();
+  const cleanPhone = phone?.trim() || null;
 
-  // Check for existing duplicate UID, Email, or Mobile Number BEFORE processing!
-  const dupCheck = await checkMemberDuplicate(uid, email, phone);
+  // Check for existing duplicate UID, Email, or Mobile Number (active or pending) BEFORE processing!
+  const dupCheck = await checkMemberDuplicate(cleanUid, cleanEmail, cleanPhone || undefined);
   if (dupCheck.isDuplicate) {
     throw new Error(dupCheck.message || `A registration with this ${dupCheck.field} already exists.`);
   }
 
-  const memberId = generateUUID();
-  const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const regId = `CSC-${new Date().getFullYear()}-${randomSuffix}`;
+  // Check if an inactive member record exists matching UID or Email
+  let existingInactiveMember: any = null;
+  if (isSupabaseConfigured()) {
+    if (cleanUid) {
+      const { data: memByUid } = await supabase
+        .from('members')
+        .select('*')
+        .ilike('uid', cleanUid)
+        .maybeSingle();
+      if (memByUid && memByUid.status === 'inactive') {
+        existingInactiveMember = memByUid;
+      }
+    }
+    if (!existingInactiveMember && cleanEmail) {
+      const { data: memByEmail } = await supabase
+        .from('members')
+        .select('*')
+        .ilike('email', cleanEmail)
+        .maybeSingle();
+      if (memByEmail && memByEmail.status === 'inactive') {
+        existingInactiveMember = memByEmail;
+      }
+    }
+  }
+
+  const memberId = existingInactiveMember ? existingInactiveMember.id : generateUUID();
+  const regId = existingInactiveMember?.registration_id || `CSC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
   let filePath: string | null = null;
 
@@ -125,14 +152,57 @@ export const submitMemberApplication = async (
     }
   }
 
-  // 2. Insert member application record into Supabase `members` table with ID and verification_file_url included!
+  // 2. If existing inactive member found -> UPDATE status back to 'pending' so it appears in pending applications
+  if (existingInactiveMember) {
+    const updatePayload: any = {
+      name: name.trim(),
+      email: cleanEmail,
+      phone: cleanPhone,
+      uid: cleanUid,
+      department: department?.trim() || null,
+      year: year || null,
+      status: 'pending' as const,
+      is_core_member: false,
+      verification_file_url: filePath,
+      created_at: new Date().toISOString(), // Reset created_at so it shows at the top of pending applications
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: updatedData, error: updateError } = await supabase
+      .from('members')
+      .update(updatePayload)
+      .eq('id', existingInactiveMember.id)
+      .select('*')
+      .maybeSingle();
+
+    if (updateError) {
+      console.error('Error reactivating inactive member application:', updateError.message);
+      throw new Error(`Membership re-application failed: ${updateError.message}`);
+    }
+
+    // Remove from local inactive cache if present
+    try {
+      const stored = localStorage.getItem(INACTIVE_MEMBERS_KEY);
+      if (stored) {
+        const list = JSON.parse(stored).filter((id: string) => id !== existingInactiveMember.id);
+        localStorage.setItem(INACTIVE_MEMBERS_KEY, JSON.stringify(list));
+      }
+    } catch {}
+
+    return (updatedData as Member) || {
+      ...existingInactiveMember,
+      ...updatePayload,
+    };
+  }
+
+  // 3. Otherwise, INSERT brand new member record
   const insertPayload = {
     id: memberId,
     registration_id: regId,
-    uid: uid.trim(),
+    uid: cleanUid,
     name: name.trim(),
-    email: email.trim(),
-    phone: phone?.trim() || null,
+    email: cleanEmail,
+    phone: cleanPhone,
     department: department?.trim() || null,
     year: year || null,
     status: 'pending' as const,
@@ -148,25 +218,25 @@ export const submitMemberApplication = async (
 
   if (memberError || !memberData) {
     if (memberError?.message?.includes('members_uid_key') || memberError?.message?.includes('uid')) {
-      throw new Error(`A member with UID "${uid.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
+      throw new Error(`A member with UID "${cleanUid}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
     }
     if (memberError?.message?.includes('members_email_key') || memberError?.message?.includes('email')) {
-      throw new Error(`A member with Email "${email.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
+      throw new Error(`A member with Email "${cleanEmail}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
     }
     if (memberError?.message?.includes('phone')) {
-      throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
+      throw new Error(`A member with Mobile Number "${cleanPhone}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
     }
 
     const { error: fallbackError } = await supabase.from('members').insert(insertPayload);
     if (fallbackError) {
       if (fallbackError.message?.includes('uid')) {
-        throw new Error(`A member with UID "${uid.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
+        throw new Error(`A member with UID "${cleanUid}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
       }
       if (fallbackError.message?.includes('email')) {
-        throw new Error(`A member with Email "${email.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
+        throw new Error(`A member with Email "${cleanEmail}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
       }
       if (fallbackError.message?.includes('phone')) {
-        throw new Error(`A member with Mobile Number "${phone?.trim()}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
+        throw new Error(`A member with Mobile Number "${cleanPhone}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
       }
       console.error('Error inserting member application:', fallbackError.message);
       throw new Error(`Membership application failed: ${fallbackError.message}`);
