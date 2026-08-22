@@ -30,6 +30,7 @@ import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
+import { RolesManagementModal } from './RolesManagementModal';
 import { EventPdfModal } from './EventPdfModal';
 import { EventPosterModal } from './EventPosterModal';
 import { EventFormBuilder } from './EventFormBuilder';
@@ -132,6 +133,7 @@ export const AdminDashboard: React.FC = () => {
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
   const [selectedMemberForRole, setSelectedMemberForRole] = useState<Member | null>(null);
+  const [isRolesCrudModalOpen, setIsRolesCrudModalOpen] = useState(false);
 
   // Events State (Direct Real DB Fetching)
   const [eventsList, setEventsList] = useState<Event[]>([]);
@@ -873,15 +875,26 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleSyncRecords}
-                disabled={isSyncingMembers}
-                className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm self-start sm:self-auto shrink-0"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingMembers ? 'animate-spin text-blue-500' : ''}`} />
-                <span>{isSyncingMembers ? 'Syncing...' : 'Sync Records'}</span>
-              </button>
+              <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsRolesCrudModalOpen(true)}
+                  className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Shield className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Roles</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSyncRecords}
+                  disabled={isSyncingMembers}
+                  className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingMembers ? 'animate-spin text-blue-500' : ''}`} />
+                  <span>{isSyncingMembers ? 'Syncing...' : 'Sync Records'}</span>
+                </button>
+              </div>
             </div>
 
             {/* 2 Interactive Overview & View Switcher Cards */}
@@ -2493,6 +2506,16 @@ export const AdminDashboard: React.FC = () => {
           member={selectedMemberForRole}
           roles={rolesList}
           onSuccess={() => loadAllMembers()}
+        />
+
+        {/* Roles CRUD Management Modal */}
+        <RolesManagementModal
+          isOpen={isRolesCrudModalOpen}
+          onClose={() => setIsRolesCrudModalOpen(false)}
+          members={membersList}
+          onRolesUpdated={() => {
+            loadAllMembers();
+          }}
         />
 
         {/* Event PDF Viewer Modal */}
