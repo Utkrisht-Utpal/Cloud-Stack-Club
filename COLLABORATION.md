@@ -175,12 +175,16 @@ cloud-stack-club/
 │   │   └── ui/                # Reusable UI (Button, Card, Modal, Toast …)
 │   ├── constants/
 │   │   ├── data.ts            # All site content (domains, events, pillars …)
-│   │   ├── siteConfig.ts      # Club metadata, links, contact info
-│   │   └── emailConfig.ts     # EmailJS credentials & recipient list
+│   │   └── siteConfig.ts      # Club metadata, links, contact info
 │   ├── context/
 │   │   └── ThemeContext.tsx   # Dark / light theme provider
 │   ├── services/
-│   │   └── emailService.ts    # EmailJS integration (join + contact forms)
+│   │   ├── supabase.ts        # Supabase client & Gateway
+│   │   ├── members.ts         # Member applications & directory
+│   │   ├── events.ts          # Events CRUD & scheduling
+│   │   ├── registrations.ts   # Event solo & team registrations
+│   │   ├── feedback.ts        # Event & contact feedback
+│   │   └── roles.ts           # Club role management
 │   ├── styles/
 │   │   └── index.css          # Tailwind, neumorphism & glassmorphism utilities
 │   ├── types/index.ts         # Global TypeScript types
@@ -198,7 +202,6 @@ cloud-stack-club/
 | Domains, events, core values      | `src/constants/data.ts`                       |
 | A page section's layout / content | `src/components/sections/<SectionName>.tsx`   |
 | Global card / UI styles           | `src/styles/index.css`                        |
-| Email recipient list              | `src/constants/emailConfig.ts`                |
 | Navigation links                  | `src/components/common/Navbar.tsx`            |
 
 ---
@@ -216,7 +219,7 @@ cloud-stack-club/
 | Framer Motion    | ~12.x   | Animations                |
 | React Router DOM | v7      | Client-side routing       |
 | Lucide React     | latest  | Icons                     |
-| @emailjs/browser | latest  | Form email delivery       |
+| Supabase         | v2      | Database & Auth backend   |
 
 ### Code Style
 
