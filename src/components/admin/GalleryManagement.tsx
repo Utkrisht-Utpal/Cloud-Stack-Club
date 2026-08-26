@@ -11,7 +11,6 @@ import {
   AlertCircle,
   RefreshCw,
   Eye,
-  ArrowUpDown,
   FileImage,
   Layers,
   X,
@@ -75,7 +74,6 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   // Edit Caption State
   const [editingPhoto, setEditingPhoto] = useState<GalleryPhoto | null>(null);
   const [editCaptionText, setEditCaptionText] = useState('');
-  const [editOrderNum, setEditOrderNum] = useState<number>(0);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
   // Preview State
@@ -272,7 +270,6 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   const handleStartEdit = (photo: GalleryPhoto) => {
     setEditingPhoto(photo);
     setEditCaptionText(photo.caption || '');
-    setEditOrderNum(photo.display_order ?? 0);
   };
 
   const executeUpdatePhoto = async (e: React.FormEvent) => {
@@ -283,7 +280,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
     try {
       const updated = await updateGalleryPhoto(editingPhoto.id, {
         caption: editCaptionText,
-        display_order: Number(editOrderNum) || 0,
+        display_order: editingPhoto.display_order ?? 0,
       });
 
       setPhotosList((prev) =>
@@ -787,20 +784,6 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
               placeholder="Enter caption..."
               value={editCaptionText}
               onChange={(e) => setEditCaptionText(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-              <span>Display Order Rank</span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={editOrderNum}
-              onChange={(e) => setEditOrderNum(parseInt(e.target.value) || 0)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/40"
             />
           </div>

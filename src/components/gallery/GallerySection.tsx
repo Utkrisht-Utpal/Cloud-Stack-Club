@@ -6,13 +6,13 @@ import {
   MapPin,
   Tag,
   Search,
-  Maximize2,
   Image as ImageIcon,
   FolderOpen,
   ArrowUpRight,
 } from 'lucide-react';
 import { getGalleryGroupedByEvent } from '../../services/gallery';
 import { GalleryLightbox } from './GalleryLightbox';
+import { JustifiedGallery } from './JustifiedGallery';
 import type { EventWithGallery, GalleryPhoto } from '../../types/database';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
@@ -250,7 +250,7 @@ export const GallerySection: React.FC = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: eventIndex * 0.08 }}
-                className="p-4 sm:p-6 lg:p-7 rounded-3xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-md backdrop-blur-xl space-y-5 relative overflow-hidden group"
+                className="p-4 sm:p-6 lg:p-7 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-md space-y-5 relative overflow-hidden group [content-visibility:auto] [contain-intrinsic-size:400px]"
               >
                 {/* Ambient Light Glow */}
                 <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/5 dark:bg-blue-500/10 blur-3xl pointer-events-none" />
@@ -299,36 +299,12 @@ export const GallerySection: React.FC = () => {
                   )}
                 </div>
 
-                {/* Natural Aspect Ratio Gallery Rows (Photos respect their natural proportions and size) */}
-                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                  {eventItem.photos.map((photo, photoIndex) => (
-                    <motion.div
-                      key={photo.id}
-                      whileHover={{ y: -2, scale: 1.01 }}
-                      transition={{ duration: 0.15 }}
-                      onClick={() => openLightbox(eventItem.photos, photoIndex)}
-                      className="relative h-48 sm:h-56 md:h-64 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all cursor-pointer group shrink-0 max-w-full"
-                    >
-                      {/* Natural Aspect Ratio Image - width adapts strictly to photo aspect ratio */}
-                      <img
-                        src={photo.image_url}
-                        alt={photo.caption || eventItem.title}
-                        loading="lazy"
-                        className="h-full w-auto object-cover max-w-full block group-hover:scale-105 transition-transform duration-500 ease-out"
-                      />
-
-                      {/* Bottom Caption Overlay */}
-                      <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent flex items-end justify-between gap-2">
-                        <span className="text-xs font-semibold text-white/95 line-clamp-1 drop-shadow-md">
-                          {photo.caption || eventItem.title}
-                        </span>
-                        <div className="p-1 rounded-lg bg-white/20 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity text-white shrink-0 shadow-sm">
-                          <Maximize2 className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+                {/* Google Photos Style Responsive Justified Layout */}
+                <JustifiedGallery
+                  photos={eventItem.photos}
+                  eventTitle={eventItem.title}
+                  onPhotoClick={(photoIndex) => openLightbox(eventItem.photos, photoIndex)}
+                />
               </motion.section>
             ))}
           </div>
