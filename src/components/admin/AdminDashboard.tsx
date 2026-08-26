@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Shield,
   RefreshCw,
+  Camera,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -35,6 +36,7 @@ import { EventPdfModal } from './EventPdfModal';
 import { EventPosterModal } from './EventPosterModal';
 import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
+import { GalleryManagement } from './GalleryManagement';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { CustomSelect } from '../ui/CustomSelect';
 import { DatePicker } from '../ui/DatePicker';
@@ -102,7 +104,7 @@ const getInitialEventFeedbacksCache = (): EventFeedback[] => {
 };
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
@@ -852,6 +854,18 @@ export const AdminDashboard: React.FC = () => {
                     eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'gallery'
+                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Camera className="w-4 h-4" />
+              <span>Event Gallery</span>
             </button>
           </div>
         </div>
@@ -1817,6 +1831,11 @@ export const AdminDashboard: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* Tab Content 6: Event Gallery Management */}
+        {activeTab === 'gallery' && (
+          <GalleryManagement events={eventsList} />
         )}
 
         {/* Create Event Modal */}
