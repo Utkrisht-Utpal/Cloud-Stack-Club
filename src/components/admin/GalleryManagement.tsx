@@ -14,6 +14,7 @@ import {
   ArrowUpDown,
   FileImage,
   Layers,
+  X,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -141,7 +142,14 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       const validFiles = Array.from(e.target.files).filter((f) =>
         f.type.startsWith('image/')
       );
-      setUploadFiles(validFiles);
+      // Append newly picked files without duplicates
+      setUploadFiles((prev) => {
+        const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
+        const newUnique = validFiles.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+        return [...prev, ...newUnique];
+      });
+      // Clear input so selecting more files or re-selecting works immediately
+      e.target.value = '';
     }
   };
 
@@ -151,19 +159,33 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       const validFiles = Array.from(e.dataTransfer.files).filter((f) =>
         f.type.startsWith('image/')
       );
-      setUploadFiles(validFiles);
+      setUploadFiles((prev) => {
+        const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
+        const newUnique = validFiles.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+        return [...prev, ...newUnique];
+      });
     }
+  };
+
+  const removeUploadFile = (index: number) => {
+    setUploadFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleStartUpload = () => {
     if (!selectedEventId || selectedEventId === 'all') {
-      if (events.length > 0) {
+      const defaultId = getMostRecentPassedEventId(events);
+      if (defaultId) {
+        setSelectedEventId(defaultId);
+      } else if (events.length > 0) {
         setSelectedEventId(events[0].id);
       }
     }
     setUploadFiles([]);
     setUploadCaption('');
     setUploadProgress(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     setIsUploadModalOpen(true);
   };
 
@@ -194,6 +216,9 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       setIsUploadModalOpen(false);
       setUploadFiles([]);
       setUploadCaption('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
       setStatusMsg({
         type: 'success',
         text: `Successfully uploaded ${created.length} photo(s) to the gallery!`,
@@ -575,17 +600,51 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
             </div>
           </div>
 
-          {/* Selected Files Count Preview */}
+          {/* Selected Files Count Preview & Chips */}
           {uploadFiles.length > 0 && (
-            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-700 dark:text-sky-400 flex items-center justify-between">
-              <span>{uploadFiles.length} photo(s) selected for upload</span>
-              <button
-                type="button"
-                onClick={() => setUploadFiles([])}
-                className="text-[11px] text-red-500 hover:underline cursor-pointer"
-              >
-                Clear all
-              </button>
+            <div className="space-y-2">
+              <div className="p-2.5 px-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-xs font-bold text-blue-700 dark:text-sky-400 flex items-center justify-between">
+                <span>{uploadFiles.length} photo(s) selected</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadFiles([]);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                  className="text-[11px] text-red-500 hover:underline cursor-pointer font-semibold"
+                >
+                  Clear all
+                </button>
+              </div>
+
+              {/* Scrollable chip list with individual remove buttons */}
+              <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                {uploadFiles.map((file, idx) => (
+                  <div
+                    key={`${file.name}_${file.size}_${idx}`}
+                    className="p-2 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileImage className="w-4 h-4 text-blue-500 shrink-0" />
+                      <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {file.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                        ({(file.size / 1024).toFixed(0)} KB)
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => removeUploadFile(idx)}
+                      className="p-1 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                      title="Remove photo"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
