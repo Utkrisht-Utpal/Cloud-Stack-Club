@@ -299,26 +299,26 @@ export const GallerySection: React.FC = () => {
                   )}
                 </div>
 
-                {/* Google Photos Style Justified Flex Row Grid */}
-                <div className="flex flex-wrap gap-2.5 sm:gap-3">
+                {/* Natural Aspect Ratio Gallery Rows (Photos respect their natural proportions and size) */}
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   {eventItem.photos.map((photo, photoIndex) => (
                     <motion.div
                       key={photo.id}
                       whileHover={{ y: -2, scale: 1.01 }}
                       transition={{ duration: 0.15 }}
                       onClick={() => openLightbox(eventItem.photos, photoIndex)}
-                      className="relative h-44 sm:h-52 md:h-60 lg:h-64 flex-grow rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all cursor-pointer group min-w-[130px] sm:min-w-[190px]"
+                      className="relative h-48 sm:h-56 md:h-64 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all cursor-pointer group shrink-0 max-w-full"
                     >
-                      {/* Full-bleed Photo with Smooth Zoom */}
+                      {/* Natural Aspect Ratio Image - width adapts strictly to photo aspect ratio */}
                       <img
                         src={photo.image_url}
                         alt={photo.caption || eventItem.title}
                         loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                        className="h-full w-auto object-cover max-w-full block group-hover:scale-105 transition-transform duration-500 ease-out"
                       />
 
                       {/* Bottom Caption Overlay */}
-                      <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent flex items-end justify-between gap-2">
+                      <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent flex items-end justify-between gap-2">
                         <span className="text-xs font-semibold text-white/95 line-clamp-1 drop-shadow-md">
                           {photo.caption || eventItem.title}
                         </span>
@@ -328,9 +328,6 @@ export const GallerySection: React.FC = () => {
                       </div>
                     </motion.div>
                   ))}
-
-                  {/* Spacer to prevent single leftover photo in the last row from stretching excessively */}
-                  <div className="flex-grow-[8] h-0 min-w-0 pointer-events-none" />
                 </div>
               </motion.section>
             ))}
