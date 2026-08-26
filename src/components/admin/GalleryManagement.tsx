@@ -454,9 +454,11 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
                   {selectedEvent.title}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 max-w-xl font-medium leading-relaxed">
-                  {selectedEvent.description || 'No description provided for this event.'}
-                </p>
+                {selectedEvent.description && selectedEvent.description.trim() && (
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 max-w-xl font-medium leading-relaxed">
+                    {selectedEvent.description}
+                  </p>
+                )}
               </div>
 
               <Button
@@ -521,7 +523,8 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                   {visiblePhotos.map((photo) => (
                     <div
                       key={photo.id}
-                      className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm aspect-square flex flex-col justify-end"
+                      onClick={() => setPreviewPhoto(photo)}
+                      className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm aspect-square flex flex-col justify-end cursor-pointer"
                     >
                       <img
                         src={photo.image_url}
@@ -530,42 +533,37 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                         loading="lazy"
                       />
 
-                      {/* Gradient Overlay & Actions on Hover */}
-                      <div className="relative z-10 p-2.5 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-1">
+                      {/* Top Action Buttons (Edit & Delete on Top Right) */}
+                      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           type="button"
-                          onClick={() => setPreviewPhoto(photo)}
-                          className="p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-white transition-all cursor-pointer"
-                          title="Preview Full Image"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEdit(photo);
+                          }}
+                          className="p-1.5 rounded-lg bg-blue-600/90 hover:bg-blue-600 text-white transition-all cursor-pointer shadow-md"
+                          title="Edit Caption / Order"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(photo)}
-                            className="p-1.5 rounded-lg bg-blue-600/80 hover:bg-blue-600 text-white transition-all cursor-pointer"
-                            title="Edit Caption / Order"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setPhotoToDelete(photo)}
-                            className="p-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all cursor-pointer"
-                            title="Delete Photo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPhotoToDelete(photo);
+                          }}
+                          className="p-1.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white transition-all cursor-pointer shadow-md"
+                          title="Delete Photo"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
 
-                      {/* Caption badge if present */}
+                      {/* Caption Badge at Bottom: single line truncate, no wrap */}
                       {photo.caption && (
-                        <div className="absolute top-2 left-2 right-2 z-10">
-                          <span className="px-2 py-0.5 rounded-md bg-slate-950/70 backdrop-blur-md text-[10px] font-medium text-white truncate block">
+                        <div className="absolute bottom-2 left-2 right-2 z-10 pointer-events-none">
+                          <span className="px-2 py-0.5 rounded-md bg-slate-950/75 backdrop-blur-md text-[10px] font-medium text-white truncate block max-w-full shadow-sm">
                             {photo.caption}
                           </span>
                         </div>
