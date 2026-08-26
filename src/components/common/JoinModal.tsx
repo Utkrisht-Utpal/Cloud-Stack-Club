@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
   User,
@@ -14,12 +14,15 @@ import {
   HelpCircle,
   X,
   ExternalLink,
-} from 'lucide-react';
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
-import { CustomSelect } from '../ui/CustomSelect';
-import { ErrorPopupModal } from './ErrorPopupModal';
-import { submitMemberApplication, checkMemberDuplicate } from '../../services/supabase';
+} from "lucide-react";
+import { Modal } from "../ui/Modal";
+import { Button } from "../ui/Button";
+import { CustomSelect } from "../ui/CustomSelect";
+import { ErrorPopupModal } from "./ErrorPopupModal";
+import {
+  submitMemberApplication,
+  checkMemberDuplicate,
+} from "../../services/supabase";
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -28,20 +31,24 @@ interface JoinModalProps {
 }
 
 const YEAR_OPTIONS = [
-  { value: '1st Year', label: '1st Year' },
-  { value: '2nd Year', label: '2nd Year' },
-  { value: '3rd Year', label: '3rd Year' },
-  { value: '4th Year', label: '4th Year' },
+  { value: "1st Year", label: "1st Year" },
+  { value: "2nd Year", label: "2nd Year" },
+  { value: "3rd Year", label: "3rd Year" },
+  { value: "4th Year", label: "4th Year" },
 ];
 
-export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccessToast }) => {
+export const JoinModal: React.FC<JoinModalProps> = ({
+  isOpen,
+  onClose,
+  onSuccessToast,
+}) => {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    uid: '',
-    department: '',
-    year: '1st Year',
+    name: "",
+    email: "",
+    phone: "",
+    uid: "",
+    department: "",
+    year: "1st Year",
   });
   const [verificationFile, setVerificationFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,8 +61,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.size > 1 * 1024 * 1024) {
-        setError('File size exceeds 1 MB limit. Please upload an image under 1 MB.');
-        e.target.value = '';
+        setError(
+          "File size exceeds 1 MB limit. Please upload an image under 1 MB.",
+        );
+        e.target.value = "";
         setVerificationFile(null);
         return;
       }
@@ -66,24 +75,32 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.uid.trim()) {
-      setError('Please fill in your Name, Email, and University ID (UID).');
+    if (
+      !formData.name.trim() ||
+      !formData.email.trim() ||
+      !formData.uid.trim()
+    ) {
+      setError("Please fill in your Name, Email, and University ID (UID).");
       return;
     }
 
     if (formData.uid.trim().length !== 10) {
-      setError('University ID (UID) must be exactly 10 alphanumeric characters.');
+      setError(
+        "University ID (UID) must be exactly 10 alphanumeric characters.",
+      );
       return;
     }
 
     if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone.trim())) {
-      setError('Phone number is required and must be exactly 10 digits.');
+      setError("Phone number is required and must be exactly 10 digits.");
       return;
     }
 
     // Enforce required CUIMS verification document upload
     if (!verificationFile) {
-      setError('CUIMS verification screenshot or document is required to apply for membership.');
+      setError(
+        "CUIMS verification screenshot or document is required to apply for membership.",
+      );
       return;
     }
 
@@ -92,9 +109,16 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
 
     try {
       // 1. Check for duplicates in UID, Email, or Mobile Number before attempting registration
-      const dupCheck = await checkMemberDuplicate(formData.uid, formData.email, formData.phone);
+      const dupCheck = await checkMemberDuplicate(
+        formData.uid,
+        formData.email,
+        formData.phone,
+      );
       if (dupCheck.isDuplicate) {
-        setError(dupCheck.message || `A member with this ${dupCheck.field} already exists.`);
+        setError(
+          dupCheck.message ||
+            `A member with this ${dupCheck.field} already exists.`,
+        );
         setIsSubmitting(false);
         return;
       }
@@ -109,14 +133,17 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
           department: formData.department.trim() || undefined,
           year: formData.year,
         },
-        verificationFile
+        verificationFile,
       );
 
       setRegisteredNumber(newMember.registration_id);
       onSuccessToast();
     } catch (err: any) {
-      console.error('Membership application submission error:', err);
-      setError(err?.message || 'Failed to submit membership application. Please try again.');
+      console.error("Membership application submission error:", err);
+      setError(
+        err?.message ||
+          "Failed to submit membership application. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -126,21 +153,25 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
     setRegisteredNumber(null);
     setShowCuimsHelp(false);
     setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      uid: '',
-      department: '',
-      year: '1st Year',
+      name: "",
+      email: "",
+      phone: "",
+      uid: "",
+      department: "",
+      year: "1st Year",
     });
     setVerificationFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setError(null);
     onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleModalClose} title="Join Cloud Stack Club">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleModalClose}
+      title="Join Cloud Stack Club"
+    >
       <div className="space-y-4">
         {registeredNumber ? (
           <div className="text-center py-6 space-y-4">
@@ -148,19 +179,32 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               <CheckCircle2 className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Membership Application Submitted!</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Membership Application Submitted!
+              </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                We will let you know after successful verification of your membership registration.
+                We will let you know after successful verification of your
+                membership registration.
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono text-center">
-              <span className="text-xs text-slate-500 block uppercase">Member Registration ID</span>
-              <span className="text-base font-extrabold text-blue-600 dark:text-sky-400 mt-0.5 block">{registeredNumber}</span>
+              <span className="text-xs text-slate-500 block uppercase">
+                Member Registration ID
+              </span>
+              <span className="text-base font-extrabold text-blue-600 dark:text-sky-400 mt-0.5 block">
+                {registeredNumber}
+              </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-              Your uploaded verification document will be safely deleted automatically upon membership approval by the admin.
+              Your uploaded verification document will be safely deleted
+              automatically upon membership approval by the admin.
             </p>
-            <Button variant="primary" size="md" className="w-full mt-2" onClick={handleModalClose}>
+            <Button
+              variant="primary"
+              size="md"
+              className="w-full mt-2"
+              onClick={handleModalClose}
+            >
               Done
             </Button>
           </div>
@@ -168,20 +212,29 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
           <>
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-sky-400 text-xs font-semibold">
               <Sparkles className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
-              <span>Apply for membership in Chandigarh University's premier cloud developer network.</span>
+              <span>
+                Apply for membership in Chandigarh University's premier cloud
+                developer network.
+              </span>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3.5 pt-1">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                <label
+                  htmlFor="fullName"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
+                >
                   <User className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                   Full Name *
                 </label>
                 <input
                   type="text"
+                  id="fullName"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="e.g. Rahul Sharma"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
@@ -189,32 +242,49 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                  <label
+                    htmlFor="studentMail"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
+                  >
                     <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                     Student Email *
                   </label>
                   <input
                     type="email"
+                    id="studentMail"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     placeholder="@example.com"
                     className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                  <label
+                    htmlFor="phoneNo"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
+                  >
                     <Phone className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                    <span>Phone Number <span className="text-rose-500">*</span></span>
+                    <span>
+                      Phone Number <span className="text-rose-500">*</span>
+                    </span>
                   </label>
                   <input
                     type="tel"
+                    id="phoneNo"
                     required
                     pattern="[0-9]{10}"
                     maxLength={10}
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        phone: e.target.value.replace(/\D/g, "").slice(0, 10),
+                      })
+                    }
                     placeholder="10-digit Phone Number"
                     className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                   />
@@ -222,16 +292,28 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                <label
+                  htmlFor="uid"
+                  className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
+                >
                   <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                   University ID (UID) *
                 </label>
                 <input
                   type="text"
+                  id="uid"
                   required
                   maxLength={10}
                   value={formData.uid}
-                  onChange={(e) => setFormData({ ...formData, uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase() })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      uid: e.target.value
+                        .replace(/[^a-zA-Z0-9]/g, "")
+                        .slice(0, 10)
+                        .toUpperCase(),
+                    })
+                  }
                   placeholder="University ID (UID)"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
@@ -240,15 +322,21 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               {/* Department & Year of Study Pill Grid with Equal Height */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <label
+                    htmlFor="branch"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5"
+                  >
                     <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                     Department / Branch *
                   </label>
                   <input
                     type="text"
+                    id="branch"
                     required
                     value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, department: e.target.value })
+                    }
                     placeholder="e.g. CSE / AI & ML / MCA"
                     className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                   />
@@ -256,7 +344,9 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
 
                 <CustomSelect
                   label="Year of Study"
-                  icon={<Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />}
+                  icon={
+                    <Calendar className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                  }
                   value={formData.year}
                   onChange={(val) => setFormData({ ...formData, year: val })}
                   options={YEAR_OPTIONS}
@@ -267,7 +357,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
               {/* Verification File Upload Header & Side Popover Trigger */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <label
+                    htmlFor="cuimsVerification"
+                    className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+                  >
                     <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     <span>CUIMS VERIFICATION SCREENSHOT *</span>
                   </label>
@@ -284,7 +377,9 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                       className="px-2.5 py-1 rounded-full text-slate-600 dark:text-slate-300 hover:bg-blue-100/90 dark:hover:bg-blue-500/25 hover:text-blue-600 dark:hover:text-sky-400 transition-all flex items-center gap-1.5 text-xs font-semibold shrink-0 whitespace-nowrap cursor-pointer"
                     >
                       <HelpCircle className="w-4 h-4 shrink-0 text-blue-600 dark:text-sky-400" />
-                      <span className="whitespace-nowrap font-medium">How to get screenshot?</span>
+                      <span className="whitespace-nowrap font-medium">
+                        How to get screenshot?
+                      </span>
                     </button>
 
                     {/* Popover Menu opening vertically centered to the RIGHT SIDE */}
@@ -312,7 +407,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                           </div>
 
                           <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
-                            Attention Everyone! Complete your club registration on CUIMS:
+                            Attention Everyone! Complete your club registration
+                            on CUIMS:
                           </p>
 
                           <ol className="text-[11px] text-slate-800 dark:text-slate-200 space-y-1.5 list-decimal list-inside font-semibold bg-slate-50 dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-700/60">
@@ -329,15 +425,30 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                               </a>
                               )
                             </li>
-                            <li>Go to <strong>Student Relation Management System</strong></li>
-                            <li>Select <strong>Club & Society</strong></li>
-                            <li>Click on <strong>Register Entity</strong></li>
-                            <li>Search for <strong>Cloud Stack Club</strong></li>
-                            <li>Click <strong>Join</strong> and take a screenshot!</li>
+                            <li>
+                              Go to{" "}
+                              <strong>
+                                Student Relation Management System
+                              </strong>
+                            </li>
+                            <li>
+                              Select <strong>Club & Society</strong>
+                            </li>
+                            <li>
+                              Click on <strong>Register Entity</strong>
+                            </li>
+                            <li>
+                              Search for <strong>Cloud Stack Club</strong>
+                            </li>
+                            <li>
+                              Click <strong>Join</strong> and take a screenshot!
+                            </li>
                           </ol>
 
                           <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
-                            Upload the screenshot here. Verification files are deleted automatically upon membership approval by admin.
+                            Upload the screenshot here. Verification files are
+                            deleted automatically upon membership approval by
+                            admin.
                           </p>
                         </motion.div>
                       )}
@@ -348,6 +459,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 {/* Hidden Native File Input */}
                 <input
                   ref={fileInputRef}
+                  id="cuimsVerification"
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/jpg"
                   onChange={handleFileChange}
@@ -369,7 +481,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                     <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
                       {verificationFile ? (
                         <span className="font-semibold text-slate-900 dark:text-slate-200">
-                          {verificationFile.name} ({Math.round(verificationFile.size / 1024)} KB)
+                          {verificationFile.name} (
+                          {Math.round(verificationFile.size / 1024)} KB)
                         </span>
                       ) : (
                         <span className="text-slate-400 dark:text-slate-500">
@@ -385,7 +498,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                       onClick={(e) => {
                         e.stopPropagation();
                         setVerificationFile(null);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
+                        if (fileInputRef.current)
+                          fileInputRef.current.value = "";
                       }}
                       className="p-1 text-slate-400 hover:text-rose-500 transition-colors shrink-0 cursor-pointer"
                       title="Remove file"
@@ -396,7 +510,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                 </div>
 
                 <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
-                  Verification files are deleted automatically upon membership approval by admin.
+                  Verification files are deleted automatically upon membership
+                  approval by admin.
                 </span>
               </div>
 
@@ -416,7 +531,9 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, onSuccess
                   icon={<Send className="w-4 h-4" />}
                   className="w-full"
                 >
-                  {isSubmitting ? 'Submitting Application...' : 'Submit Application'}
+                  {isSubmitting
+                    ? "Submitting Application..."
+                    : "Submit Application"}
                 </Button>
               </div>
             </form>

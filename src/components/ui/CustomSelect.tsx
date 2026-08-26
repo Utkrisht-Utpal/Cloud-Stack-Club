@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown, Check } from "lucide-react";
 
 export interface SelectOption {
   value: string;
@@ -26,7 +26,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   options,
-  placeholder = 'Select option',
+  placeholder = "Select option",
   icon,
   showDot = false,
   triggerClassName,
@@ -83,12 +83,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
     updatePos();
 
-    window.addEventListener('resize', updatePos);
-    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
 
     return () => {
-      window.removeEventListener('resize', updatePos);
-      window.removeEventListener('scroll', updatePos, true);
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
     };
   }, [isOpen]);
 
@@ -104,20 +104,23 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const defaultTriggerClass = `w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-900/90 text-slate-900 dark:text-white flex items-center justify-between transition-all duration-300 border ${
     isOpen
-      ? 'border-blue-500 ring-2 ring-blue-500/30 shadow-md'
-      : 'border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600'
+      ? "border-blue-500 ring-2 ring-blue-500/30 shadow-md"
+      : "border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600"
   }`;
 
   return (
     <div className="relative space-y-1.5" ref={containerRef}>
       {label && (
-        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+        <label
+          htmlFor="yos"
+          className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
+        >
           {icon}
           {label}
         </label>
@@ -126,16 +129,21 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       {/* Select Trigger Box */}
       <button
         type="button"
+        id="yos"
         onClick={() => setIsOpen(!isOpen)}
         className={triggerClassName || defaultTriggerClass}
       >
         <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 text-left min-w-0 flex-1 whitespace-nowrap">
-          {showDot && <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />}
-          <span className="whitespace-nowrap truncate">{selectedOption ? selectedOption.label : placeholder}</span>
+          {showDot && (
+            <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />
+          )}
+          <span className="whitespace-nowrap truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
         </span>
         <ChevronDown
           className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 shrink-0 ml-2 ${
-            isOpen ? 'rotate-180' : 'rotate-0'
+            isOpen ? "rotate-180" : "rotate-0"
           }`}
         />
       </button>
@@ -147,17 +155,27 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           <AnimatePresence>
             <motion.div
               ref={menuRef}
-              initial={{ opacity: 0, y: portalStyle.dropUp ? 8 : -8, scale: 0.98 }}
+              initial={{
+                opacity: 0,
+                y: portalStyle.dropUp ? 8 : -8,
+                scale: 0.98,
+              }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: portalStyle.dropUp ? 8 : -8, scale: 0.98 }}
-              transition={{ duration: 0.15, ease: 'easeOut' }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
               style={{
-                position: 'fixed',
-                top: portalStyle.top !== undefined ? `${portalStyle.top}px` : 'auto',
-                bottom: portalStyle.bottom !== undefined ? `${portalStyle.bottom}px` : 'auto',
+                position: "fixed",
+                top:
+                  portalStyle.top !== undefined
+                    ? `${portalStyle.top}px`
+                    : "auto",
+                bottom:
+                  portalStyle.bottom !== undefined
+                    ? `${portalStyle.bottom}px`
+                    : "auto",
                 left: `${portalStyle.left}px`,
                 width: `${portalStyle.width}px`,
-                minWidth: '160px',
+                minWidth: "160px",
                 zIndex: 99999,
               }}
               className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-48 custom-scrollbar focus:outline-none"
@@ -174,29 +192,35 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     }}
                     className={`w-full px-3.5 py-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
                       isSelected
-                        ? 'bg-blue-600 text-white font-semibold shadow-md'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300'
+                        ? "bg-blue-600 text-white font-semibold shadow-md"
+                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300"
                     }`}
                   >
                     <div className="flex flex-col text-left min-w-0 flex-1 whitespace-nowrap">
-                      <span className="text-xs sm:text-sm font-bold text-left whitespace-nowrap">{option.label}</span>
+                      <span className="text-xs sm:text-sm font-bold text-left whitespace-nowrap">
+                        {option.label}
+                      </span>
                       {option.description && (
                         <span
                           className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 whitespace-nowrap ${
-                            isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
+                            isSelected
+                              ? "text-blue-100"
+                              : "text-slate-500 dark:text-slate-400"
                           }`}
                         >
                           {option.description}
                         </span>
                       )}
                     </div>
-                    {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                    {isSelected && (
+                      <Check className="w-4 h-4 text-white shrink-0" />
+                    )}
                   </button>
                 );
               })}
             </motion.div>
           </AnimatePresence>,
-          document.body
+          document.body,
         )}
     </div>
   );
