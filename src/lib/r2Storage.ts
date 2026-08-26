@@ -124,4 +124,5 @@ export const R2_FOLDERS = {
   EVENT_IMAGES: 'event-images',
   EVENT_PDFS: 'event-pdfs',
   REGISTRATION_FILES: 'registration-files',
+  GALLERY: 'event-gallery',
 } as const;

@@ -171,6 +171,20 @@ export interface EventFeedback {
   created_at: string;
 }
 
+export interface GalleryPhoto {
+  id: string;
+  event_id: string;
+  image_url: string;
+  caption: string | null;
+  display_order: number;
+  created_at: string;
+  event?: Event | null;
+}
+
+export interface EventWithGallery extends Event {
+  photos: GalleryPhoto[];
+}
+
 export interface EventRegistrationPayload {
   event_id: string;
   registrant_name: string;
@@ -498,6 +512,41 @@ export interface Database {
           created_at?: string;
         };
         Relationships: [];
+      };
+      event_gallery: {
+        Row: {
+          id: string;
+          event_id: string;
+          image_url: string;
+          caption: string | null;
+          display_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          event_id: string;
+          image_url: string;
+          caption?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          event_id?: string;
+          image_url?: string;
+          caption?: string | null;
+          display_order?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_gallery_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          }
+        ];
       };
     };
     Views: {

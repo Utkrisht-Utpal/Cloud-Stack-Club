@@ -1,6 +1,6 @@
 import React from 'react';
-import { GalleryComingSoon } from '../components/coming-soon/GalleryComingSoon';
+import { GallerySection } from '../components/gallery/GallerySection';
 
 export const GalleryPage: React.FC = () => {
-  return <GalleryComingSoon />;
+  return <GallerySection />;
 };
