@@ -132,20 +132,21 @@ export const JustifiedGallery: React.FC<JustifiedGalleryProps> = ({
   const rows: LayoutRow[] = useMemo(() => {
     if (!containerWidth || photos.length === 0) return [];
 
-    let targetRowHeight = 260;
+    // Base target row height based on container width
+    let baseTargetHeight = 360;
     let gap = 12;
 
     if (containerWidth < 500) {
-      targetRowHeight = 160;
+      baseTargetHeight = 220;
       gap = 8;
     } else if (containerWidth < 768) {
-      targetRowHeight = 200;
+      baseTargetHeight = 280;
       gap = 10;
     } else if (containerWidth < 1100) {
-      targetRowHeight = 240;
+      baseTargetHeight = 330;
       gap = 12;
     } else {
-      targetRowHeight = 270;
+      baseTargetHeight = 370;
       gap = 14;
     }
 
@@ -164,6 +165,10 @@ export const JustifiedGallery: React.FC<JustifiedGalleryProps> = ({
       currentRow.push(item);
       currentAspectRatioSum += item.aspectRatio;
 
+      // Adjust target height for this row: if row has portrait images, give it slightly more height
+      const hasPortrait = currentRow.some((r) => r.aspectRatio < 0.95);
+      const targetRowHeight = hasPortrait ? Math.round(baseTargetHeight * 1.1) : baseTargetHeight;
+
       const availableWidth = containerWidth - (currentRow.length - 1) * gap;
       const calculatedHeight = availableWidth / currentAspectRatioSum;
 
@@ -175,7 +180,7 @@ export const JustifiedGallery: React.FC<JustifiedGalleryProps> = ({
 
           if (
             Math.abs(prevHeight - targetRowHeight) < Math.abs(calculatedHeight - targetRowHeight) &&
-            prevHeight <= targetRowHeight * 1.35
+            prevHeight <= targetRowHeight * 1.3
           ) {
             currentRow.pop();
             const finalizedRowHeight = prevAvail / prevSum;
@@ -225,10 +230,13 @@ export const JustifiedGallery: React.FC<JustifiedGalleryProps> = ({
     }
 
     if (currentRow.length > 0) {
+      const hasPortrait = currentRow.some((r) => r.aspectRatio < 0.95);
+      const targetRowHeight = hasPortrait ? Math.round(baseTargetHeight * 1.1) : baseTargetHeight;
+
       const availableWidth = containerWidth - (currentRow.length - 1) * gap;
       const calculatedHeight = availableWidth / currentAspectRatioSum;
 
-      if (calculatedHeight > targetRowHeight * 1.35) {
+      if (calculatedHeight > targetRowHeight * 1.3) {
         const rowItems: LayoutItem[] = currentRow.map((rItem) => {
           const w = Math.min(
             Math.round(rItem.aspectRatio * targetRowHeight),
@@ -293,7 +301,7 @@ export const JustifiedGallery: React.FC<JustifiedGalleryProps> = ({
                     height: `${item.height}px`,
                   }}
                   onClick={() => onPhotoClick(item.originalIndex)}
-                  className="group relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-200 cursor-pointer shrink-0 select-none will-change-transform"
+                  className="group/photo relative rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-200 cursor-pointer shrink-0 select-none will-change-transform"
                 >
                   <img
                     src={item.photo.image_url}
@@ -301,17 +309,20 @@ export const JustifiedGallery: React.FC<JustifiedGalleryProps> = ({
                     loading="lazy"
                     decoding="async"
                     onLoad={(e) => handleImageLoad(e, item.photo.image_url)}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ease-out"
+                    className="w-full h-full object-cover group-hover/photo:scale-105 transition-transform duration-300 ease-out"
                   />
 
-                  <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent flex items-end justify-between gap-2 pointer-events-none">
-                    <span className="text-xs sm:text-sm font-semibold text-white/95 truncate drop-shadow-md">
-                      {item.photo.caption || eventTitle}
-                    </span>
-                    <div className="p-1 rounded-lg bg-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity text-white shrink-0 shadow-sm">
-                      <Maximize2 className="w-3.5 h-3.5" />
+                  {/* Bottom Caption Overlay - Only shown if caption is present */}
+                  {item.photo.caption && item.photo.caption.trim() && (
+                    <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 bg-gradient-to-t from-slate-950/85 via-slate-950/40 to-transparent flex items-end justify-between gap-2 pointer-events-none">
+                      <span className="text-xs sm:text-sm font-semibold text-white/95 truncate drop-shadow-md">
+                        {item.photo.caption}
+                      </span>
+                      <div className="p-1 rounded-lg bg-white/20 backdrop-blur-sm opacity-0 group-hover/photo:opacity-100 transition-opacity text-white shrink-0 shadow-sm">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>

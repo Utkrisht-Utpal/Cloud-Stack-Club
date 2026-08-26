@@ -250,7 +250,7 @@ export const GallerySection: React.FC = () => {
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: eventIndex * 0.08 }}
-                className="p-4 sm:p-6 lg:p-7 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-md space-y-5 relative overflow-hidden group [content-visibility:auto] [contain-intrinsic-size:400px]"
+                className="p-4 sm:p-6 lg:p-7 rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-800 shadow-md space-y-5 relative overflow-hidden [content-visibility:auto] [contain-intrinsic-size:400px]"
               >
                 {/* Ambient Light Glow */}
                 <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-blue-500/5 dark:bg-blue-500/10 blur-3xl pointer-events-none" />

@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Download, Calendar } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import type { GalleryPhoto } from '../../types/database';
 
 interface GalleryLightboxProps {
@@ -163,26 +163,12 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
           />
         </div>
 
-        {/* Bottom Caption & Meta Bar */}
-        {(currentPhoto.caption || currentPhoto.event?.description) && (
-          <div className="absolute bottom-0 inset-x-0 z-20 p-4 sm:p-6 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent flex flex-col items-center text-center max-w-2xl mx-auto space-y-1">
-            {currentPhoto.caption && (
-              <p className="text-sm sm:text-base font-semibold text-white tracking-wide">
-                {currentPhoto.caption}
-              </p>
-            )}
-            {currentPhoto.event?.date && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                <span>
-                  {new Date(currentPhoto.event.date).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-              </div>
-            )}
+        {/* Bottom Caption Bar: Only show if caption exists, no date */}
+        {currentPhoto.caption && currentPhoto.caption.trim() && (
+          <div className="absolute bottom-0 inset-x-0 z-20 p-4 sm:p-6 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent flex flex-col items-center text-center max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base font-semibold text-white tracking-wide">
+              {currentPhoto.caption}
+            </p>
           </div>
         )}
       </div>
