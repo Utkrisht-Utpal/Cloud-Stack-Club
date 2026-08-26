@@ -45,14 +45,41 @@ export const uploadToR2 = async (folder: string, path: string, file: File): Prom
 };
 
 /**
+ * Extract clean R2 object key from a full public URL or relative path.
+ */
+export const extractR2Path = (fullPathOrUrl: string): string => {
+  if (!fullPathOrUrl) return '';
+  let clean = fullPathOrUrl.trim();
+
+  // If full URL with protocol (e.g. https://pub-xxx.r2.dev/event-gallery/...)
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    try {
+      const parsed = new URL(clean);
+      clean = decodeURIComponent(parsed.pathname).replace(/^\/+/, '');
+    } catch {
+      if (R2_PUBLIC_URL && clean.startsWith(R2_PUBLIC_URL)) {
+        clean = clean.replace(R2_PUBLIC_URL, '').replace(/^\/+/, '');
+      }
+    }
+  } else if (R2_PUBLIC_URL && clean.startsWith(R2_PUBLIC_URL)) {
+    clean = clean.replace(R2_PUBLIC_URL, '').replace(/^\/+/, '');
+  }
+
+  return clean.replace(/^\/+/, '');
+};
+
+/**
  * Delete a file from R2 via the Cloudflare Worker proxy.
  * @param fullPathOrUrl - Either a full R2 public URL or a relative path
  */
 export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
-  // Extract relative path from full URL if needed
-  const path = fullPathOrUrl.startsWith(R2_PUBLIC_URL)
-    ? fullPathOrUrl.replace(`${R2_PUBLIC_URL}/`, '')
-    : fullPathOrUrl;
+  if (!WORKER_URL || !UPLOAD_SECRET) {
+    console.warn('R2 delete skipped: WORKER_URL or UPLOAD_SECRET not configured.');
+    return;
+  }
+
+  const path = extractR2Path(fullPathOrUrl);
+  if (!path) return;
 
   const response = await fetch(`${WORKER_URL}/delete`, {
     method: 'DELETE',
@@ -64,7 +91,8 @@ export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
   });
 
   if (!response.ok) {
-    console.warn('R2 delete warning:', await response.text().catch(() => 'unknown'));
+    const errorText = await response.text().catch(() => 'unknown error');
+    console.warn(`R2 delete warning for ${path}:`, errorText);
   }
 };
 
@@ -73,9 +101,10 @@ export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
  * @param paths - Array of relative paths or full URLs
  */
 export const bulkDeleteFromR2 = async (paths: string[]): Promise<void> => {
-  const relativePaths = paths.map((p) =>
-    p.startsWith(R2_PUBLIC_URL) ? p.replace(`${R2_PUBLIC_URL}/`, '') : p
-  );
+  if (!WORKER_URL || !UPLOAD_SECRET || !paths || paths.length === 0) return;
+
+  const relativePaths = paths.map((p) => extractR2Path(p)).filter(Boolean);
+  if (relativePaths.length === 0) return;
 
   const response = await fetch(`${WORKER_URL}/delete`, {
     method: 'DELETE',
@@ -87,7 +116,8 @@ export const bulkDeleteFromR2 = async (paths: string[]): Promise<void> => {
   });
 
   if (!response.ok) {
-    console.warn('R2 bulk delete warning:', await response.text().catch(() => 'unknown'));
+    const errorText = await response.text().catch(() => 'unknown error');
+    console.warn('R2 bulk delete warning:', errorText);
   }
 };
 

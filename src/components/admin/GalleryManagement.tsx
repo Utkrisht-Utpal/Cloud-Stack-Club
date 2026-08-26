@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera,
   Upload,
@@ -7,6 +8,7 @@ import {
   Edit2,
   Loader2,
   Check,
+  CheckCircle2,
   AlertCircle,
   RefreshCw,
   Eye,
@@ -158,14 +160,14 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       setUploadCaption('');
       setStatusMsg({
         type: 'success',
-        text: `Successfully uploaded ${created.length} photo(s) to Cloudflare R2!`,
+        text: `Successfully uploaded ${created.length} photo(s) to the gallery!`,
       });
-      setTimeout(() => setStatusMsg(null), 4000);
+      setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       console.error('Upload failed:', err);
       setStatusMsg({
         type: 'error',
-        text: err?.message || 'Failed to upload photos to Cloudflare R2.',
+        text: err?.message || 'Failed to upload photos. Please try again.',
       });
     } finally {
       setIsUploading(false);
@@ -210,7 +212,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       await deleteGalleryPhoto(photoToDelete.id, photoToDelete.image_url);
       setPhotosList((prev) => prev.filter((p) => p.id !== photoToDelete.id));
       setPhotoToDelete(null);
-      setStatusMsg({ type: 'success', text: 'Photo deleted from database and Cloudflare R2.' });
+      setStatusMsg({ type: 'success', text: 'Photo deleted successfully.' });
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err?.message || 'Failed to delete photo.' });
@@ -232,7 +234,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
               Event Gallery Management
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Select an event to upload, manage, and showcase high-resolution event moments stored directly in Cloudflare R2.
+              Select an event to upload, manage, and showcase high-resolution event moments.
             </p>
           </div>
         </div>
@@ -247,42 +249,14 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-blue-500' : ''}`} />
             <span>Sync</span>
           </button>
-
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<Upload className="w-3.5 h-3.5" />}
-            onClick={handleStartUpload}
-            className="shadow-md shadow-blue-500/20"
-          >
-            Upload Photos
-          </Button>
         </div>
       </div>
 
-      {/* Notification Banner */}
-      {statusMsg && (
-        <div
-          className={`p-4 rounded-2xl text-xs font-semibold flex items-center gap-2.5 transition-all shadow-sm ${
-            statusMsg.type === 'success'
-              ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300'
-              : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/80 text-red-800 dark:text-red-300'
-          }`}
-        >
-          {statusMsg.type === 'success' ? (
-            <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          ) : (
-            <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-          )}
-          <span>{statusMsg.text}</span>
-        </div>
-      )}
-
       {/* Event Selector & Overview Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch lg:h-[418px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Event Selection List */}
-        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col min-h-0 h-full">
-          <div className="flex items-center justify-between px-1 pb-3 shrink-0 border-b border-slate-100 dark:border-slate-800/80">
+        <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+          <div className="flex items-center justify-between px-1">
             <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-blue-500" />
               <span>Select Event</span>
@@ -292,7 +266,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
             </span>
           </div>
 
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden space-y-1.5 pt-3 pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
             {/* Option to show all photos */}
             <button
               type="button"
@@ -368,149 +342,143 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
         </div>
 
         {/* Right: Selected Event Info & Gallery Grid */}
-        <div className="lg:col-span-2 flex flex-col min-h-0 h-full space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {/* Selected Event Details Header */}
-          <div className="shrink-0">
-            {selectedEvent && selectedEventId !== 'all' ? (
-              <div className="p-5 rounded-3xl bg-blue-50/70 dark:bg-slate-900 border border-blue-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-700 dark:text-sky-400">
-                      {selectedEvent.category || 'Event'}
+          {selectedEvent && selectedEventId !== 'all' ? (
+            <div className="p-5 rounded-3xl bg-blue-50/70 dark:bg-slate-900 border border-blue-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-700 dark:text-sky-400">
+                    {selectedEvent.category || 'Event'}
+                  </span>
+                  {selectedEvent.date && (
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {new Date(selectedEvent.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                     </span>
-                    {selectedEvent.date && (
-                      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        {new Date(selectedEvent.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                    {selectedEvent.title}
-                  </h3>
-                  {selectedEvent.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 max-w-xl font-medium">
-                      {selectedEvent.description}
-                    </p>
                   )}
                 </div>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<Plus className="w-4 h-4" />}
-                  onClick={handleStartUpload}
-                  className="shrink-0"
-                >
-                  Add Photos
-                </Button>
-              </div>
-            ) : (
-              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-sm">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Displaying all {photosList.length} photos across all events
-                </span>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<Upload className="w-3.5 h-3.5" />}
-                  onClick={handleStartUpload}
-                >
-                  Upload New
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Photo Gallery Scrollable Container Card */}
-          <div className="flex-1 min-h-0 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
-            {loading ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-2 py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                <span className="text-xs font-semibold">Loading gallery photos...</span>
-              </div>
-            ) : visiblePhotos.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center py-8 px-6 text-center rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800 space-y-3">
-                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto">
-                  <FileImage className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    No photos uploaded for this event yet
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                    Click the button below to upload high-resolution images to Cloudflare R2 storage.
+                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  {selectedEvent.title}
+                </h3>
+                {selectedEvent.description && (
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 max-w-xl font-medium">
+                    {selectedEvent.description}
                   </p>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  icon={<Upload className="w-4 h-4" />}
-                  onClick={handleStartUpload}
+                )}
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Plus className="w-4 h-4" />}
+                onClick={handleStartUpload}
+                className="shrink-0"
+              >
+                Add Photos
+              </Button>
+            </div>
+          ) : (
+            <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                Displaying all {photosList.length} photos across all events
+              </span>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<Upload className="w-3.5 h-3.5" />}
+                onClick={handleStartUpload}
+              >
+                Upload New
+              </Button>
+            </div>
+          )}
+
+          {/* Photo Gallery Grid */}
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-2">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <span className="text-xs font-semibold">Loading gallery photos...</span>
+            </div>
+          ) : visiblePhotos.length === 0 ? (
+            <div className="py-16 px-6 text-center rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-dashed border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto">
+                <FileImage className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                  No photos uploaded for this event yet
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                  Click the button below to upload photos for this event.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                icon={<Upload className="w-4 h-4" />}
+                onClick={handleStartUpload}
+              >
+                Upload Event Photos
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+              {visiblePhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm aspect-square flex flex-col justify-end"
                 >
-                  Upload Event Photos
-                </Button>
-              </div>
-            ) : (
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5 pb-2">
-                  {visiblePhotos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm aspect-square flex flex-col justify-end"
+                  <img
+                    src={photo.image_url}
+                    alt={photo.caption || 'Event photo'}
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+
+                  {/* Gradient Overlay & Actions on Hover */}
+                  <div className="relative z-10 p-2.5 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewPhoto(photo)}
+                      className="p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-white transition-all cursor-pointer"
+                      title="Preview Full Image"
                     >
-                      <img
-                        src={photo.image_url}
-                        alt={photo.caption || 'Event photo'}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
 
-                      {/* Gradient Overlay & Actions on Hover */}
-                      <div className="relative z-10 p-2.5 bg-gradient-to-t from-slate-950/90 via-slate-950/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setPreviewPhoto(photo)}
-                          className="p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-white transition-all cursor-pointer"
-                          title="Preview Full Image"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEdit(photo)}
+                        className="p-1.5 rounded-lg bg-blue-600/80 hover:bg-blue-600 text-white transition-all cursor-pointer"
+                        title="Edit Caption / Order"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
 
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEdit(photo)}
-                            className="p-1.5 rounded-lg bg-blue-600/80 hover:bg-blue-600 text-white transition-all cursor-pointer"
-                            title="Edit Caption / Order"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setPhotoToDelete(photo)}
-                            className="p-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all cursor-pointer"
-                            title="Delete from R2 and Database"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Caption badge if present */}
-                      {photo.caption && (
-                        <div className="absolute top-2 left-2 right-2 z-10">
-                          <span className="px-2 py-0.5 rounded-md bg-slate-950/70 backdrop-blur-md text-[10px] font-medium text-white truncate block">
-                            {photo.caption}
-                          </span>
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setPhotoToDelete(photo)}
+                        className="p-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all cursor-pointer"
+                        title="Delete Photo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Caption badge if present */}
+                  {photo.caption && (
+                    <div className="absolute top-2 left-2 right-2 z-10">
+                      <span className="px-2 py-0.5 rounded-md bg-slate-950/70 backdrop-blur-md text-[10px] font-medium text-white truncate block">
+                        {photo.caption}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -518,7 +486,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       <Modal
         isOpen={isUploadModalOpen}
         onClose={() => !isUploading && setIsUploadModalOpen(false)}
-        title="Upload Event Photos to Cloudflare R2"
+        title="Upload Event Photos"
         maxWidth="max-w-xl"
       >
         <form onSubmit={executeUpload} className="space-y-4">
@@ -603,7 +571,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
           {isUploading && uploadProgress && (
             <div className="space-y-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
               <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                <span>Uploading to Cloudflare R2...</span>
+                <span>Uploading photos...</span>
                 <span>{uploadProgress.current} of {uploadProgress.total}</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -741,11 +709,43 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
         onClose={() => setPhotoToDelete(null)}
         onConfirm={executeDeletePhoto}
         title="Delete Photo from Gallery?"
-        message="Are you sure you want to delete this photo? It will be permanently removed from the Supabase database and deleted from your Cloudflare R2 bucket."
+        message="Are you sure you want to delete this photo? This action cannot be undone."
         confirmText="Delete Photo"
         variant="danger"
         isLoading={isDeleting}
       />
+
+      {/* Global Bottom Floating Toast Notification */}
+      <AnimatePresence>
+        {statusMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border shadow-2xl backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-md pointer-events-none ${
+              statusMsg.type === 'success'
+                ? 'border-emerald-500/40 shadow-emerald-500/10'
+                : 'border-rose-500/40 shadow-rose-500/10'
+            }`}
+          >
+            <div
+              className={`p-1 rounded-full shrink-0 ${
+                statusMsg.type === 'success'
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : 'bg-rose-500/20 text-rose-400'
+              }`}
+            >
+              {statusMsg.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <AlertCircle className="w-4 h-4" />
+              )}
+            </div>
+            <span className="text-xs sm:text-sm font-bold leading-snug">{statusMsg.text}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

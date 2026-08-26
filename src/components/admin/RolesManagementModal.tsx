@@ -204,7 +204,7 @@ export const RolesManagementModal: React.FC<RolesManagementModalProps> = ({
                   Club Roles & Hierarchy
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Directly manage role definitions, hierarchy order, and view assigned members in Supabase.
+                  Manage role definitions, hierarchy order, and view assigned members.
                 </p>
               </div>
             </div>

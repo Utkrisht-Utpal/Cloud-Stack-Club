@@ -275,7 +275,16 @@ export const updateGalleryPhoto = async (
  * Delete a photo from database and remove image file from Cloudflare R2
  */
 export const deleteGalleryPhoto = async (id: string, imageUrl: string): Promise<void> => {
-  // 1. Delete from database
+  // 1. Delete from Cloudflare R2 bucket
+  if (imageUrl) {
+    try {
+      await deleteFromR2(imageUrl);
+    } catch (e) {
+      console.warn('Warning: Could not remove photo from R2:', e);
+    }
+  }
+
+  // 2. Delete from database
   if (isSupabaseConfigured()) {
     const { error } = await supabase
       .from('event_gallery')
@@ -285,15 +294,6 @@ export const deleteGalleryPhoto = async (id: string, imageUrl: string): Promise<
     if (error) {
       console.error('Error deleting photo from Supabase:', error);
       throw error;
-    }
-  }
-
-  // 2. Delete from Cloudflare R2 bucket
-  if (imageUrl) {
-    try {
-      await deleteFromR2(imageUrl);
-    } catch (e) {
-      console.warn('Warning: Could not remove photo from R2:', e);
     }
   }
 
