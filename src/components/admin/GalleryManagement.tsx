@@ -25,6 +25,7 @@ import {
   uploadGalleryPhotos,
   updateGalleryPhoto,
   deleteGalleryPhoto,
+  MAX_GALLERY_PHOTO_SIZE,
 } from '../../services/gallery';
 import type { Event, GalleryPhoto } from '../../types/database';
 
@@ -79,6 +80,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
 
   // Preview State
   const [previewPhoto, setPreviewPhoto] = useState<GalleryPhoto | null>(null);
+  const [previewLocalPhoto, setPreviewLocalPhoto] = useState<{ url: string; name: string } | null>(null);
 
   // Delete State
   const [photoToDelete, setPhotoToDelete] = useState<GalleryPhoto | null>(null);
@@ -88,6 +90,14 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Local object URLs for selected files
+  const uploadFilePreviews = useMemo(() => {
+    return uploadFiles.map((file) => ({
+      file,
+      url: URL.createObjectURL(file),
+    }));
+  }, [uploadFiles]);
 
   const fetchPhotos = async () => {
     setRefreshing(true);
@@ -139,15 +149,26 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
 
   const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const validFiles = Array.from(e.target.files).filter((f) =>
+      const imageFiles = Array.from(e.target.files).filter((f) =>
         f.type.startsWith('image/')
       );
-      // Append newly picked files without duplicates
-      setUploadFiles((prev) => {
-        const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
-        const newUnique = validFiles.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
-        return [...prev, ...newUnique];
-      });
+      const accepted = imageFiles.filter((f) => f.size <= MAX_GALLERY_PHOTO_SIZE);
+      const oversized = imageFiles.filter((f) => f.size > MAX_GALLERY_PHOTO_SIZE);
+
+      if (oversized.length > 0) {
+        setStatusMsg({
+          type: 'error',
+          text: `${oversized.length} photo(s) exceeded the 1MB limit and were skipped. Only photos under 1MB are allowed.`,
+        });
+      }
+
+      if (accepted.length > 0) {
+        setUploadFiles((prev) => {
+          const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
+          const newUnique = accepted.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+          return [...prev, ...newUnique];
+        });
+      }
       // Clear input so selecting more files or re-selecting works immediately
       e.target.value = '';
     }
@@ -156,14 +177,26 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   const handleDropFiles = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const validFiles = Array.from(e.dataTransfer.files).filter((f) =>
+      const imageFiles = Array.from(e.dataTransfer.files).filter((f) =>
         f.type.startsWith('image/')
       );
-      setUploadFiles((prev) => {
-        const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
-        const newUnique = validFiles.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
-        return [...prev, ...newUnique];
-      });
+      const accepted = imageFiles.filter((f) => f.size <= MAX_GALLERY_PHOTO_SIZE);
+      const oversized = imageFiles.filter((f) => f.size > MAX_GALLERY_PHOTO_SIZE);
+
+      if (oversized.length > 0) {
+        setStatusMsg({
+          type: 'error',
+          text: `${oversized.length} photo(s) exceeded the 1MB limit and were skipped. Only photos under 1MB are allowed.`,
+        });
+      }
+
+      if (accepted.length > 0) {
+        setUploadFiles((prev) => {
+          const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
+          const newUnique = accepted.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+          return [...prev, ...newUnique];
+        });
+      }
     }
   };
 
@@ -593,7 +626,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                 Click to browse or drag and drop photos here
               </p>
               <p className="text-[11px] text-slate-400">
-                Supports PNG, JPG, JPEG, WEBP (Multiple selection enabled)
+                Supports PNG, JPG, JPEG, WEBP • Max 1MB per photo
               </p>
             </div>
           </div>
@@ -615,27 +648,52 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                 </button>
               </div>
 
-              {/* Scrollable chip list with individual remove buttons */}
-              <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-                {uploadFiles.map((file, idx) => (
+              {/* Scrollable chip list: fits 3 items, smooth invisible scroll on 4+ */}
+              <div className="max-h-[162px] overflow-y-auto space-y-1.5 pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {uploadFilePreviews.map((item, idx) => (
                   <div
-                    key={`${file.name}_${file.size}_${idx}`}
-                    className="p-2 px-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-2"
+                    key={`${item.file.name}_${item.file.size}_${idx}`}
+                    className="p-1.5 sm:p-2 px-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3 group/chip transition-all hover:border-slate-300 dark:hover:border-slate-600"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <FileImage className="w-4 h-4 text-blue-500 shrink-0" />
-                      <span className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
-                        {file.name}
-                      </span>
-                      <span className="text-[10px] text-slate-400 shrink-0 font-mono">
-                        ({(file.size / 1024).toFixed(0)} KB)
-                      </span>
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {/* Photo Thumbnail (Replaces Logo) */}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewLocalPhoto({ url: item.url, name: item.file.name })}
+                        className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-200 dark:bg-slate-700 cursor-pointer relative group/thumb shadow-sm"
+                        title="Click to preview full photo"
+                      >
+                        <img
+                          src={item.url}
+                          alt={item.file.name}
+                          className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center">
+                          <Eye className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      </button>
+
+                      {/* File Details */}
+                      <button
+                        type="button"
+                        onClick={() => setPreviewLocalPhoto({ url: item.url, name: item.file.name })}
+                        className="text-left min-w-0 flex-1 cursor-pointer group-hover/chip:text-blue-600 dark:group-hover/chip:text-sky-400 transition-colors"
+                        title="Click to preview full photo"
+                      >
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate block">
+                          {item.file.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {(item.file.size / 1024).toFixed(0)} KB • Click to preview
+                        </span>
+                      </button>
                     </div>
 
+                    {/* Remove photo button */}
                     <button
                       type="button"
                       onClick={() => removeUploadFile(idx)}
-                      className="p-1 rounded-lg hover:bg-red-500/10 text-slate-400 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                      className="p-1.5 rounded-xl hover:bg-red-500/15 text-slate-400 hover:text-red-500 transition-colors cursor-pointer shrink-0"
                       title="Remove photo"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -793,6 +851,29 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                 {previewPhoto.caption}
               </p>
             )}
+          </div>
+        )}
+      </Modal>
+
+      {/* Full Preview Modal for Selected Local Photo */}
+      <Modal
+        isOpen={!!previewLocalPhoto}
+        onClose={() => setPreviewLocalPhoto(null)}
+        title={previewLocalPhoto?.name || 'Photo Preview'}
+        maxWidth="max-w-3xl"
+      >
+        {previewLocalPhoto && (
+          <div className="space-y-3">
+            <div className="max-h-[70vh] flex items-center justify-center rounded-2xl overflow-hidden bg-slate-950">
+              <img
+                src={previewLocalPhoto.url}
+                alt={previewLocalPhoto.name}
+                className="max-h-[68vh] object-contain"
+              />
+            </div>
+            <p className="text-xs font-semibold text-center text-slate-700 dark:text-slate-300">
+              {previewLocalPhoto.name}
+            </p>
           </div>
         )}
       </Modal>

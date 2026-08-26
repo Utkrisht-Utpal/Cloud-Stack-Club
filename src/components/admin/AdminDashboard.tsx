@@ -1423,7 +1423,7 @@ export const AdminDashboard: React.FC = () => {
                             {evt.title}
                           </h3>
                           <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-medium">
-                            {evt.description || 'Cloud Stack Club Official Event. Registration is currently open.'}
+                            {evt.description || 'No description provided for this event.'}
                           </p>
                         </div>
 

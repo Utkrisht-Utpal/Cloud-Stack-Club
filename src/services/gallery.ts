@@ -141,6 +141,8 @@ export const getGalleryGroupedByEvent = async (): Promise<EventWithGallery[]> =>
   }
 };
 
+export const MAX_GALLERY_PHOTO_SIZE = 1024 * 1024; // 1MB
+
 /**
  * Upload multiple photos to Cloudflare R2 and save their metadata in Supabase
  */
@@ -152,6 +154,14 @@ export const uploadGalleryPhotos = async (
 ): Promise<GalleryPhoto[]> => {
   if (!eventId) throw new Error('Event ID is required for gallery upload.');
   if (!files || files.length === 0) return [];
+
+  // Enforce 1MB limit per photo
+  for (const file of files) {
+    if (file.size > MAX_GALLERY_PHOTO_SIZE) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      throw new Error(`Photo "${file.name}" exceeds the 1MB limit (${sizeMB}MB). Only photos under 1MB can be uploaded.`);
+    }
+  }
 
   const createdPhotos: GalleryPhoto[] = [];
   const total = files.length;
