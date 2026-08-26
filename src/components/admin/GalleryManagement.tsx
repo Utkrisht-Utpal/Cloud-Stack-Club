@@ -421,11 +421,9 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                 <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight truncate">
                   {selectedEvent.title}
                 </h3>
-                {selectedEvent.description && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-1 max-w-xl font-medium">
-                    {selectedEvent.description}
-                  </p>
-                )}
+                <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 max-w-xl font-medium leading-relaxed">
+                  {selectedEvent.description || 'No description provided for this event.'}
+                </p>
               </div>
 
               <Button
