@@ -92,7 +92,7 @@ export const GallerySection: React.FC = () => {
   };
 
   return (
-    <div className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <div className="pt-28 sm:pt-36 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
       {/* Hero Header */}
       <div className="text-center space-y-4 max-w-3xl mx-auto">
         <motion.div

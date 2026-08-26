@@ -247,16 +247,6 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-blue-500' : ''}`} />
             <span>Sync</span>
           </button>
-
-          <Button
-            variant="primary"
-            size="sm"
-            icon={<Upload className="w-3.5 h-3.5" />}
-            onClick={handleStartUpload}
-            className="shadow-md shadow-blue-500/20"
-          >
-            Upload Photos
-          </Button>
         </div>
       </div>
 
