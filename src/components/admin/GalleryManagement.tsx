@@ -160,14 +160,14 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       setUploadCaption('');
       setStatusMsg({
         type: 'success',
-        text: `Successfully uploaded ${created.length} photo(s) to Cloudflare R2!`,
+        text: `Successfully uploaded ${created.length} photo(s) to the gallery!`,
       });
-      setTimeout(() => setStatusMsg(null), 4000);
+      setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       console.error('Upload failed:', err);
       setStatusMsg({
         type: 'error',
-        text: err?.message || 'Failed to upload photos to Cloudflare R2.',
+        text: err?.message || 'Failed to upload photos. Please try again.',
       });
     } finally {
       setIsUploading(false);
@@ -212,7 +212,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       await deleteGalleryPhoto(photoToDelete.id, photoToDelete.image_url);
       setPhotosList((prev) => prev.filter((p) => p.id !== photoToDelete.id));
       setPhotoToDelete(null);
-      setStatusMsg({ type: 'success', text: 'Photo deleted from database and Cloudflare R2.' });
+      setStatusMsg({ type: 'success', text: 'Photo deleted successfully.' });
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err?.message || 'Failed to delete photo.' });
@@ -234,7 +234,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
               Event Gallery Management
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Select an event to upload, manage, and showcase high-resolution event moments stored directly in Cloudflare R2.
+              Select an event to upload, manage, and showcase high-resolution event moments.
             </p>
           </div>
         </div>
@@ -409,7 +409,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                   No photos uploaded for this event yet
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                  Click the button below to upload high-resolution images to Cloudflare R2 storage.
+                  Click the button below to upload photos for this event.
                 </p>
               </div>
               <Button
@@ -460,7 +460,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                         type="button"
                         onClick={() => setPhotoToDelete(photo)}
                         className="p-1.5 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-all cursor-pointer"
-                        title="Delete from R2 and Database"
+                        title="Delete Photo"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -486,7 +486,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       <Modal
         isOpen={isUploadModalOpen}
         onClose={() => !isUploading && setIsUploadModalOpen(false)}
-        title="Upload Event Photos to Cloudflare R2"
+        title="Upload Event Photos"
         maxWidth="max-w-xl"
       >
         <form onSubmit={executeUpload} className="space-y-4">
@@ -571,7 +571,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
           {isUploading && uploadProgress && (
             <div className="space-y-2 p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
               <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
-                <span>Uploading to Cloudflare R2...</span>
+                <span>Uploading photos...</span>
                 <span>{uploadProgress.current} of {uploadProgress.total}</span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
@@ -709,7 +709,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
         onClose={() => setPhotoToDelete(null)}
         onConfirm={executeDeletePhoto}
         title="Delete Photo from Gallery?"
-        message="Are you sure you want to delete this photo? It will be permanently removed from the Supabase database and deleted from your Cloudflare R2 bucket."
+        message="Are you sure you want to delete this photo? This action cannot be undone."
         confirmText="Delete Photo"
         variant="danger"
         isLoading={isDeleting}
