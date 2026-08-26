@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera,
@@ -18,6 +18,7 @@ import {
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { CustomSelect, type SelectOption } from '../ui/CustomSelect';
 import {
   getGalleryPhotos,
   uploadGalleryPhotos,
@@ -25,6 +26,32 @@ import {
   deleteGalleryPhoto,
 } from '../../services/gallery';
 import type { Event, GalleryPhoto } from '../../types/database';
+
+// Format YYYY-MM-DD or ISO string to DD-MM-YYYY
+const formatToDDMMYYYY = (dateStr?: string | null): string => {
+  if (!dateStr) return '';
+  const clean = dateStr.split('T')[0];
+  const parts = clean.split('-');
+  if (parts.length === 3) {
+    const [year, month, day] = parts;
+    return `${day}-${month}-${year}`;
+  }
+  return dateStr;
+};
+
+// Find the event that just passed (most recent past event)
+const getMostRecentPassedEventId = (evts: Event[]): string => {
+  if (!evts || evts.length === 0) return '';
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pastEvents = evts
+    .filter((e) => e.date && e.date <= todayStr)
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  if (pastEvents.length > 0) {
+    return pastEvents[0].id;
+  }
+  return evts[0].id;
+};
 
 interface GalleryManagementProps {
   events: Event[];
@@ -80,14 +107,24 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
     fetchPhotos();
   }, []);
 
-  // Default to the first event if none selected
+  // Default to the event that just passed (most recent past event)
   useEffect(() => {
     if (!selectedEventId && events.length > 0) {
-      setSelectedEventId(events[0].id);
+      const defaultId = getMostRecentPassedEventId(events);
+      setSelectedEventId(defaultId);
     }
   }, [events, selectedEventId]);
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
+
+  // Memoized options for CustomSelect dropdown
+  const eventSelectOptions: SelectOption[] = useMemo(() => {
+    return events.map((evt) => ({
+      value: evt.id,
+      label: evt.date ? `${evt.title} (${formatToDDMMYYYY(evt.date)})` : evt.title,
+      description: evt.category || undefined,
+    }));
+  }, [events]);
 
   // Filter photos for selected event (or all if selectedEventId === 'all')
   const visiblePhotos = selectedEventId === 'all'
@@ -312,7 +349,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                     <div className="flex items-center gap-2 mt-0.5">
                       {evt.date && (
                         <span className={`text-[10px] truncate ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                          {new Date(evt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {formatToDDMMYYYY(evt.date)}
                         </span>
                       )}
                       {evt.category && (
@@ -352,7 +389,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                   </span>
                   {selectedEvent.date && (
                     <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      {new Date(selectedEvent.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      {formatToDDMMYYYY(selectedEvent.date)}
                     </span>
                   )}
                 </div>
@@ -500,23 +537,14 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
       >
         <form onSubmit={executeUpload} className="space-y-4">
           {/* Target Event Selection */}
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-              Select Event <span className="text-red-500">*</span>
-            </label>
-            <select
-              required
-              value={selectedEventId === 'all' ? (events[0]?.id || '') : selectedEventId}
-              onChange={(e) => setSelectedEventId(e.target.value)}
-              disabled={isUploading}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-            >
-              {events.map((evt) => (
-                <option key={evt.id} value={evt.id}>
-                  {evt.title} ({evt.date || 'No Date'})
-                </option>
-              ))}
-            </select>
+          <div>
+            <CustomSelect
+              label="Select Event *"
+              value={selectedEventId === 'all' ? (getMostRecentPassedEventId(events) || events[0]?.id || '') : selectedEventId}
+              onChange={(val) => setSelectedEventId(val)}
+              options={eventSelectOptions}
+              placeholder="Select Event"
+            />
           </div>
 
           {/* Drag & Drop Upload Dropzone */}
