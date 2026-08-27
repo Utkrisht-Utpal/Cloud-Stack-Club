@@ -506,26 +506,50 @@ export const deleteEventAdmin = async (
   // 1. Remove from local storage
   removeLocalCustomEvent(eventId);
 
-  // 2. Delete all gallery photos for this event from R2 storage & database
-  await deleteGalleryPhotosByEventId(eventId).catch(() => {});
+  // 2. Fetch live event details from Supabase (to guarantee we have true image_url & pdf_url)
+  let pdfUrl = existingPdfUrl;
+  let imageUrl = existingImageUrl;
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data: currentEvent } = await supabase
+        .from('events')
+        .select('image_url, pdf_url')
+        .eq('id', eventId)
+        .maybeSingle();
+
+      if (currentEvent) {
+        if (!pdfUrl && currentEvent.pdf_url) pdfUrl = currentEvent.pdf_url;
+        if (!imageUrl && currentEvent.image_url) imageUrl = currentEvent.image_url;
+      }
+    } catch (e) {
+      console.warn('Could not fetch event files before deletion:', e);
+    }
+  }
+
+  // 3. Delete all gallery photos for this event from Cloudflare R2 & database
+  await deleteGalleryPhotosByEventId(eventId).catch((e) => {
+    console.warn('Gallery photos deletion notice:', e);
+  });
+
+  // 4. Delete event poster image & brochure PDF from Cloudflare R2
+  const filesToDelete: string[] = [];
+  if (pdfUrl && !pdfUrl.startsWith('data:')) filesToDelete.push(pdfUrl);
+  if (imageUrl && !imageUrl.startsWith('data:')) filesToDelete.push(imageUrl);
+
+  if (filesToDelete.length > 0) {
+    await Promise.allSettled(filesToDelete.map((f) => deleteFromR2(f)));
+  }
 
   if (!isSupabaseConfigured()) return;
 
-  // 3. Clean up poster & PDF files from R2 storage if stored as URL or path
-  if (existingPdfUrl && !existingPdfUrl.startsWith('data:')) {
-    await deleteFromR2(existingPdfUrl).catch(() => {});
-  }
-  if (existingImageUrl && !existingImageUrl.startsWith('data:')) {
-    await deleteFromR2(existingImageUrl).catch(() => {});
-  }
-
-  // 4. Attempt RPC delete_event_admin (sets status = 'cancelled', pdf_url = NULL, image_url = NULL)
+  // 5. Attempt RPC delete_event_admin (sets status = 'cancelled', pdf_url = NULL, image_url = NULL)
   const { error: rpcError } = await supabase.rpc('delete_event_admin', {
     p_id: eventId,
   });
 
   if (rpcError) {
-    // 5. Direct update fallback (clears pdf_url and image_url to free up DB space)
+    // 6. Direct update fallback (clears pdf_url and image_url to free up DB space)
     const { error: updateError } = await supabase
       .from('events')
       .update({
