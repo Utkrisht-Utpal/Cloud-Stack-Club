@@ -340,13 +340,9 @@ export const bulkDeleteGalleryPhotos = async (photos: { id: string; image_url: s
     }
   }
 
-  // 2. Bulk delete from Cloudflare R2
+  // 2. Delete from Cloudflare R2
   if (urls.length > 0) {
-    try {
-      await bulkDeleteFromR2(urls);
-    } catch (e) {
-      console.warn('Warning: Could not bulk remove photos from R2:', e);
-    }
+    await Promise.allSettled(urls.map((url) => deleteFromR2(url)));
   }
 
   // 3. Update local cache
@@ -400,18 +396,19 @@ export const deleteGalleryPhotosByEventId = async (eventId: string): Promise<voi
       }
     } catch {}
 
-    // 2. Delete rows from Supabase
+    // 2. Delete each photo file directly from Cloudflare R2 (same reliable method as manual deletion)
+    if (photosToDelete.length > 0) {
+      await Promise.allSettled(
+        photosToDelete
+          .filter((p) => !!p.image_url)
+          .map((p) => deleteFromR2(p.image_url))
+      );
+    }
+
+    // 3. Delete rows from Supabase database
     if (isSupabaseConfigured() && photosToDelete.length > 0) {
       const ids = photosToDelete.map((p) => p.id);
       await supabase.from('event_gallery').delete().in('id', ids);
-    }
-
-    // 3. Bulk delete image files from Cloudflare R2
-    const urls = photosToDelete.map((p) => p.image_url).filter(Boolean);
-    if (urls.length > 0) {
-      await bulkDeleteFromR2(urls).catch((e) => {
-        console.warn(`Warning: Could not bulk delete R2 gallery photos for event ${eventId}:`, e);
-      });
     }
   } catch (err) {
     console.error(`Error deleting gallery photos for event ${eventId}:`, err);
