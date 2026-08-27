@@ -360,3 +360,60 @@ export const bulkDeleteGalleryPhotos = async (photos: { id: string; image_url: s
     }
   } catch {}
 };
+
+/**
+ * Delete all gallery photos belonging to an event (from both Cloudflare R2 and database)
+ */
+export const deleteGalleryPhotosByEventId = async (eventId: string): Promise<void> => {
+  if (!eventId) return;
+
+  try {
+    // 1. Fetch all gallery photos for this event from database
+    let photosToDelete: { id: string; image_url: string }[] = [];
+
+    if (isSupabaseConfigured()) {
+      const { data, error } = await supabase
+        .from('event_gallery')
+        .select('id, image_url')
+        .eq('event_id', eventId);
+
+      if (!error && data) {
+        photosToDelete = data;
+      }
+    }
+
+    // Also check local cache
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_GALLERY_KEY);
+      if (cached) {
+        const list: GalleryPhoto[] = JSON.parse(cached);
+        const localMatches = list.filter((p) => p.event_id === eventId);
+        localMatches.forEach((lp) => {
+          if (!photosToDelete.some((p) => p.id === lp.id)) {
+            photosToDelete.push({ id: lp.id, image_url: lp.image_url });
+          }
+        });
+
+        // Remove from local cache
+        const remaining = list.filter((p) => p.event_id !== eventId);
+        localStorage.setItem(LOCAL_STORAGE_GALLERY_KEY, JSON.stringify(remaining));
+      }
+    } catch {}
+
+    // 2. Delete rows from Supabase
+    if (isSupabaseConfigured() && photosToDelete.length > 0) {
+      const ids = photosToDelete.map((p) => p.id);
+      await supabase.from('event_gallery').delete().in('id', ids);
+    }
+
+    // 3. Bulk delete image files from Cloudflare R2
+    const urls = photosToDelete.map((p) => p.image_url).filter(Boolean);
+    if (urls.length > 0) {
+      await bulkDeleteFromR2(urls).catch((e) => {
+        console.warn(`Warning: Could not bulk delete R2 gallery photos for event ${eventId}:`, e);
+      });
+    }
+  } catch (err) {
+    console.error(`Error deleting gallery photos for event ${eventId}:`, err);
+  }
+};

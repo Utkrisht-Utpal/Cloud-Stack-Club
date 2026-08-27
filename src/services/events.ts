@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { uploadToR2, deleteFromR2, resolveMediaUrl, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
+import { deleteGalleryPhotosByEventId } from './gallery';
 import type { Event } from '../types/database';
 
 const CUSTOM_EVENTS_KEY = 'csc_custom_events_list';
@@ -505,9 +506,12 @@ export const deleteEventAdmin = async (
   // 1. Remove from local storage
   removeLocalCustomEvent(eventId);
 
+  // 2. Delete all gallery photos for this event from R2 storage & database
+  await deleteGalleryPhotosByEventId(eventId).catch(() => {});
+
   if (!isSupabaseConfigured()) return;
 
-  // 2. Clean up files from R2 storage if stored as URL or path
+  // 3. Clean up poster & PDF files from R2 storage if stored as URL or path
   if (existingPdfUrl && !existingPdfUrl.startsWith('data:')) {
     await deleteFromR2(existingPdfUrl).catch(() => {});
   }
@@ -515,13 +519,13 @@ export const deleteEventAdmin = async (
     await deleteFromR2(existingImageUrl).catch(() => {});
   }
 
-  // 3. Attempt RPC delete_event_admin (sets status = 'cancelled', pdf_url = NULL, image_url = NULL)
+  // 4. Attempt RPC delete_event_admin (sets status = 'cancelled', pdf_url = NULL, image_url = NULL)
   const { error: rpcError } = await supabase.rpc('delete_event_admin', {
     p_id: eventId,
   });
 
   if (rpcError) {
-    // 4. Direct update fallback (clears pdf_url and image_url to free up DB space)
+    // 5. Direct update fallback (clears pdf_url and image_url to free up DB space)
     const { error: updateError } = await supabase
       .from('events')
       .update({
