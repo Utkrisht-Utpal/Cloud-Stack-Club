@@ -4,7 +4,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { uploadToR2, deleteFromR2, bulkDeleteFromR2, R2_FOLDERS, resolveMediaUrl } from '../lib/r2Storage';
+import { uploadToR2, deleteFromR2, R2_FOLDERS, resolveMediaUrl } from '../lib/r2Storage';
 import { getEvents } from './events';
 import type { GalleryPhoto, Event, EventWithGallery } from '../types/database';
 
