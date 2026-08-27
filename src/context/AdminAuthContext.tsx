@@ -4,135 +4,150 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 interface AdminAuthContextType {
   isAdminLoggedIn: boolean;
   adminEmail: string | null;
-  login: (email: string, pass: string) => Promise<boolean>;
-  logout: () => void;
+  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   openAdminModal: () => void;
   closeAdminModal: () => void;
   isAdminModalOpen: boolean;
   showDashboard: boolean;
   setShowDashboard: (show: boolean) => void;
+  isLoading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-const getInitialAdminLoggedIn = (): boolean => {
-  return (
-    localStorage.getItem('csc_admin_logged_in') === 'true' ||
-    sessionStorage.getItem('csc_admin_logged_in') === 'true'
-  );
-};
-
-const getInitialAdminEmail = (): string | null => {
-  return (
-    localStorage.getItem('csc_admin_email') ||
-    sessionStorage.getItem('csc_admin_email') ||
-    null
-  );
-};
-
-const getInitialShowDashboard = (): boolean => {
-  const saved = localStorage.getItem('csc_show_dashboard') || sessionStorage.getItem('csc_show_dashboard');
-  if (saved !== null) {
-    return saved === 'true';
-  }
-  return getInitialAdminLoggedIn();
-};
-
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(getInitialAdminLoggedIn);
-  const [adminEmail, setAdminEmail] = useState<string | null>(getInitialAdminEmail);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [showDashboard, setShowDashboard] = useState<boolean>(getInitialShowDashboard);
+  const [showDashboard, setShowDashboard] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Initialize and listen to Supabase Auth state
   useEffect(() => {
-    if (isAdminLoggedIn) {
-      localStorage.setItem('csc_admin_logged_in', 'true');
-      sessionStorage.setItem('csc_admin_logged_in', 'true');
-      if (adminEmail) {
-        localStorage.setItem('csc_admin_email', adminEmail);
-        sessionStorage.setItem('csc_admin_email', adminEmail);
-      }
-    } else {
-      localStorage.removeItem('csc_admin_logged_in');
-      sessionStorage.removeItem('csc_admin_logged_in');
-      localStorage.removeItem('csc_admin_email');
-      sessionStorage.removeItem('csc_admin_email');
-      localStorage.removeItem('csc_show_dashboard');
-      sessionStorage.removeItem('csc_show_dashboard');
-      setShowDashboard(false);
+    if (!isSupabaseConfigured()) {
+      setIsLoading(false);
+      return;
     }
-  }, [isAdminLoggedIn, adminEmail]);
 
+    // 1. Check existing session on startup
+    supabase.auth
+      .getSession()
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('Error fetching Supabase auth session:', error);
+        }
+        if (session?.user) {
+          setIsAdminLoggedIn(true);
+          setAdminEmail(session.user.email || null);
+          const savedDashboardPref = sessionStorage.getItem('csc_show_dashboard');
+          if (savedDashboardPref === 'true') {
+            setShowDashboard(true);
+          }
+        } else {
+          setIsAdminLoggedIn(false);
+          setAdminEmail(null);
+          setShowDashboard(false);
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+
+    // 2. Subscribe to live auth state changes (sign in, sign out, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setIsAdminLoggedIn(true);
+        setAdminEmail(session.user.email || null);
+        if (event === 'SIGNED_IN') {
+          setShowDashboard(true);
+          sessionStorage.setItem('csc_show_dashboard', 'true');
+        }
+      } else {
+        setIsAdminLoggedIn(false);
+        setAdminEmail(null);
+        setShowDashboard(false);
+        sessionStorage.removeItem('csc_show_dashboard');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Sync showDashboard to session storage
   useEffect(() => {
     if (isAdminLoggedIn) {
-      localStorage.setItem('csc_show_dashboard', showDashboard ? 'true' : 'false');
       sessionStorage.setItem('csc_show_dashboard', showDashboard ? 'true' : 'false');
+    } else {
+      sessionStorage.removeItem('csc_show_dashboard');
     }
   }, [showDashboard, isAdminLoggedIn]);
 
-  const login = async (emailInput: string, passwordInput: string): Promise<boolean> => {
+  // Secure Supabase Auth Login (No hardcoded credentials)
+  const login = async (
+    emailInput: string,
+    passwordInput: string
+  ): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPass = passwordInput.trim();
 
-    // 1. Try Supabase Auth if configured
-    if (isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password: cleanPass,
-        });
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        error: 'Supabase is not configured. Please check your environment variables.',
+      };
+    }
 
-        if (!error && data.user) {
-          setIsAdminLoggedIn(true);
-          setAdminEmail(data.user.email || cleanEmail);
-          setShowDashboard(true);
-          setIsAdminModalOpen(false);
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          return true;
-        }
-      } catch (err) {
-        console.warn('Supabase auth attempt failed, testing admin fallback rules:', err);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: cleanPass,
+      });
+
+      if (error) {
+        return {
+          success: false,
+          error: error.message || 'Invalid email or password. Access denied.',
+        };
       }
+
+      if (data.user) {
+        setIsAdminLoggedIn(true);
+        setAdminEmail(data.user.email || cleanEmail);
+        setShowDashboard(true);
+        setIsAdminModalOpen(false);
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        return { success: true };
+      }
+
+      return { success: false, error: 'Authentication failed. Please try again.' };
+    } catch (err: unknown) {
+      console.error('Supabase authentication error:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred during authentication.';
+      return { success: false, error: errorMessage };
     }
-
-    // 2. Official Central Admin Credentials & Rules:
-    const isValidAdminId = 
-      cleanEmail === 'cloudstack@cuchd.in' || 
-      cleanEmail === 'admin' || 
-      cleanEmail === 'utkrishtutpal1@gmail.com' ||
-      cleanEmail.endsWith('@cuchd.in');
-
-    const isValidPassword = 
-      cleanPass === 'admin' || 
-      cleanPass === 'cloudstack2026' || 
-      cleanPass === 'admin123' ||
-      cleanPass === 'cloudstack';
-
-    if (isValidAdminId && isValidPassword) {
-      const activeEmail = cleanEmail.includes('@') ? cleanEmail : 'cloudstack@cuchd.in';
-      setIsAdminLoggedIn(true);
-      setAdminEmail(activeEmail);
-      setShowDashboard(true);
-      setIsAdminModalOpen(false);
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      return true;
-    }
-
-    return false;
   };
 
-  const logout = () => {
+  const logout = async () => {
     setIsAdminLoggedIn(false);
     setAdminEmail(null);
     setShowDashboard(false);
-    localStorage.removeItem('csc_admin_logged_in');
-    sessionStorage.removeItem('csc_admin_logged_in');
-    localStorage.removeItem('csc_admin_email');
-    sessionStorage.removeItem('csc_admin_email');
-    localStorage.removeItem('csc_show_dashboard');
     sessionStorage.removeItem('csc_show_dashboard');
+    localStorage.removeItem('csc_admin_logged_in');
+    localStorage.removeItem('csc_admin_email');
+    localStorage.removeItem('csc_show_dashboard');
+
     if (isSupabaseConfigured()) {
-      supabase.auth.signOut().catch(() => {});
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.error('Error signing out of Supabase:', err);
+      }
     }
   };
 
@@ -159,6 +174,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         isAdminModalOpen,
         showDashboard,
         setShowDashboard,
+        isLoading,
       }}
     >
       {children}

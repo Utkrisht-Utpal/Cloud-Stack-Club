@@ -20,9 +20,9 @@ export const AdminLoginModal: React.FC = () => {
     setError(null);
 
     try {
-      const success = await login(emailInput, passwordInput);
-      if (!success) {
-        setError('Invalid Admin User ID / Email or Password. Access denied.');
+      const result = await login(emailInput, passwordInput);
+      if (!result.success) {
+        setError(result.error || 'Invalid Admin Email or Password. Access denied.');
       } else {
         setEmailInput('');
         setPasswordInput('');
@@ -46,21 +46,24 @@ export const AdminLoginModal: React.FC = () => {
       <div className="space-y-4">
         <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-sky-300 text-xs font-semibold">
           <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
-          <span>Central administration portal for Cloud Stack Club managers.</span>
+          <span>Secure authentication powered by Supabase Auth for verified administrators.</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-              Admin Email / User ID
+              Admin Email Address
             </label>
             <input
-              type="text"
+              type="email"
               required
               value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              placeholder="e.g. cloudstack@cuchd.in"
+              onChange={(e) => {
+                setEmailInput(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="e.g. admin@cuchd.in"
               className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
             />
           </div>
@@ -75,7 +78,10 @@ export const AdminLoginModal: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  if (error) setError(null);
+                }}
                 placeholder="••••••••••••"
                 className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
               />
@@ -106,7 +112,7 @@ export const AdminLoginModal: React.FC = () => {
               icon={<LogIn className="w-4 h-4" />}
               className="w-full"
             >
-              {isSubmitting ? 'Authenticating...' : 'Sign In as Admin'}
+              {isSubmitting ? 'Verifying...' : 'Sign In as Admin'}
             </Button>
           </div>
         </form>
