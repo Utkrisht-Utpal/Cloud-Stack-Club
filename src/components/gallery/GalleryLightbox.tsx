@@ -1,7 +1,7 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import type { GalleryPhoto } from '../../types/database';
 
 interface GalleryLightboxProps {
@@ -19,6 +19,7 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
   onClose,
   onNavigate,
 }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
   const currentPhoto = photos[currentIndex];
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < photos.length - 1;
@@ -71,25 +72,104 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
     }
   }, [isOpen]);
 
+  // Guaranteed Direct File Download with Event Name Filename
   const handleDownload = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!currentPhoto?.image_url) return;
-    try {
-      const response = await fetch(currentPhoto.image_url, { mode: 'cors' });
-      if (!response.ok) throw new Error('Fetch failed');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+    if (!currentPhoto?.image_url || isDownloading) return;
+
+    setIsDownloading(true);
+
+    // Format clean filename based on Event Title and photo index
+    const eventName =
+      currentPhoto.event?.title || currentPhoto.caption || 'Cloud-Stack-Club-Event';
+    const sanitizedName =
+      eventName
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'Cloud-Stack-Club-Photo';
+    const filename = `${sanitizedName}-Photo-${currentIndex + 1}.jpg`;
+
+    const triggerBlobDownload = (blob: Blob) => {
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      const filename = `csc-gallery-${currentPhoto.event?.slug || 'photo'}-${currentIndex + 1}.jpg`;
+      a.style.display = 'none';
+      a.href = blobUrl;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 2000);
+    };
+
+    // Helper: fetch an image URL to Blob
+    const fetchImageBlob = async (url: string): Promise<Blob | null> => {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          return await response.blob();
+        }
+      } catch {
+        // failed
+      }
+      return null;
+    };
+
+    try {
+      // Step 1: Direct fetch attempt
+      let blob = await fetchImageBlob(currentPhoto.image_url);
+
+      // Step 2: If direct fetch was blocked by CORS, fetch via fast CORS proxy gateway
+      if (!blob) {
+        const cleanUrl = currentPhoto.image_url.trim();
+        const proxiedUrl = `https://wsrv.nl/?url=${encodeURIComponent(cleanUrl)}&output=jpg`;
+        blob = await fetchImageBlob(proxiedUrl);
+      }
+
+      // Step 3: Secondary CORS proxy fallback
+      if (!blob) {
+        const cleanUrl = currentPhoto.image_url.trim();
+        const secondaryProxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(cleanUrl)}`;
+        blob = await fetchImageBlob(secondaryProxy);
+      }
+
+      if (blob) {
+        triggerBlobDownload(blob);
+      } else {
+        // Step 4: Canvas conversion fallback
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.src = currentPhoto.image_url;
+
+        await new Promise<void>((resolve, reject) => {
+          if (img.complete) {
+            resolve();
+          } else {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error('Image load failed'));
+          }
+        });
+
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob(
+            (canvasBlob) => {
+              if (canvasBlob) {
+                triggerBlobDownload(canvasBlob);
+              }
+            },
+            'image/jpeg',
+            0.95
+          );
+        }
+      }
     } catch (err) {
-      console.warn('Direct blob download failed, opening image in new tab:', err);
-      window.open(currentPhoto.image_url, '_blank', 'noopener,noreferrer');
+      console.error('Download error:', err);
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -130,10 +210,15 @@ export const GalleryLightbox: React.FC<GalleryLightboxProps> = ({
             <button
               type="button"
               onClick={handleDownload}
-              className="p-2.5 rounded-full bg-slate-900/90 border border-slate-700/80 text-slate-200 hover:text-white hover:bg-slate-800 transition-all cursor-pointer shadow-xl hover:scale-105 active:scale-95"
+              disabled={isDownloading}
+              className="p-2.5 rounded-full bg-slate-900/90 border border-slate-700/80 text-slate-200 hover:text-white hover:bg-slate-800 transition-all cursor-pointer shadow-xl hover:scale-105 active:scale-95 disabled:opacity-50"
               title="Download Photo"
             >
-              <Download className="w-4 h-4" />
+              {isDownloading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
             </button>
 
             <button
