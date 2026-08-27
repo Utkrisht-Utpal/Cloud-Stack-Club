@@ -2,7 +2,7 @@
 
 > **Learn • Build • Deploy • Scale**
 
-A modern, high-performance, responsive dark/light theme web application and complete administration management system for **Cloud Stack Club, Chandigarh University**. Built with React 19, TypeScript, Vite, Tailwind CSS v4, Framer Motion, Supabase PostgreSQL, Cloudflare Storage Gateway, and Lucide Icons. The application fuses design principles from Vercel, Linear, Framer, GitHub, and Apple with a sleek cloud-computing aesthetic.
+A modern, high-performance, responsive dark/light theme web application and complete administration management system for **Cloud Stack Club, Chandigarh University**. Built with React 19, TypeScript, Vite, Tailwind CSS, Framer Motion, Supabase PostgreSQL, Cloudflare Storage Gateway, and Lucide Icons. The application fuses design principles from Vercel, Linear, Framer, GitHub, and Apple with a sleek cloud-computing aesthetic.
 
 ---
 
@@ -25,6 +25,24 @@ A modern, high-performance, responsive dark/light theme web application and comp
 
 ---
 
+### 📸 Event Photo Gallery (Google Photos–Style Responsive Engine)
+- 🖼️ **Dynamic Justified Gallery Layout**:
+  - Automatically measures intrinsic image dimensions (`naturalWidth` / `naturalHeight`) on-the-fly.
+  - Dynamically calculates row heights and distributes widths to achieve a seamless, continuous justified layout resembling Google Photos & Apple Photos.
+  - Strictly preserves original aspect ratios (**16:9 landscape**, **9:16 portrait**, **1:1 square**, **4:3**, and **panoramas**) with zero distortion and zero unwanted cropping.
+- 📐 **Adaptive Portrait Boost**:
+  - Automatically elevates row heights when portrait photos are present, ensuring vertical photos remain tall, crisp, and prominent without squishing.
+- ⚡ **High-Performance 60–120 FPS Scrolling**:
+  - Leverages `content-visibility: auto`, `contain-intrinsic-size`, async image decoding, and batched aspect ratio resolution to eliminate layout thrashing.
+  - Native GPU hardware-accelerated transforms on photo hover.
+- 🎴 **Unified Event Cards**:
+  - Each event is encapsulated inside a cohesive parent card displaying category badges, event location, formatted dates (`DD-MM-YYYY`), live backend description, and all photos belonging to that event.
+- 🔍 **Interactive Fullscreen Lightbox**:
+  - Click any photo anywhere to launch the high-resolution lightbox viewer.
+  - Supports keyboard navigation (`Left` / `Right` arrows, `Esc`), full image download, and subtle caption overlays.
+
+---
+
 ### 📅 Events & Registration Engine
 - 🎪 **Dynamic Event Showcase**: Real-time event cards with live Supabase database synchronization, category badges (*Hackathons*, *Ideathons*, *Workshops*, *Bootcamps*, *Competitions*), poster & brochure viewers.
 - ⏰ **IST Deadline & Status Recalculation**: Universal event deadline enforcement according to Indian Standard Time (`Asia/Kolkata`, up to 23:59:59.999 IST).
@@ -36,10 +54,16 @@ A modern, high-performance, responsive dark/light theme web application and comp
 ---
 
 ### 🛡️ Full Admin Management Suite
+- 🖼️ **Event Photo Gallery Management**:
+  - Multi-photo upload with drag-and-drop support and incremental selection (add photos one by one or in batches).
+  - Client-side & service-layer validation enforcing `< 1MB` file limits (PNG, JPG, JPEG, WEBP).
+  - Real-time thumbnail preview chips with click-to-preview lightbox modal before upload.
+  - Photo management cards with top-right Edit (caption) and Delete action buttons, and click-anywhere full preview.
+  - Compact dual-container dashboard layout (`h-[385px]`) with smooth invisible scrollbars and default selection of the most recently passed event.
 - 📋 **Membership Applications Workflow**:
   - Review, approve, or reject applicant submissions with live status updates.
   - Preview CUIMS verification documents directly inside an integrated viewer modal.
-  - Smart re-application handling: previously inactive members automatically reactivate to `pending` status without throwing duplicate errors.
+  - Smart re-application handling: previously inactive members automatically reactivate to `pending` status without duplicate errors.
 - 👥 **Members & Hierarchy Directory**:
   - Search and filter active and pending members by Name, UID, Registration ID, or Department.
   - Assign club roles and core council status with real-time database updates.
@@ -63,12 +87,12 @@ A modern, high-performance, responsive dark/light theme web application and comp
 | Technology | Purpose |
 | :--- | :--- |
 | **React 19** | Modern declarative UI component framework |
-| **TypeScript** | Strict compile-time type safety across all services and models |
-| **Vite** | Next-generation frontend build tooling and fast HMR |
-| **Tailwind CSS v4** | Utility-first CSS framework with native CSS variables and glassmorphism |
+| **TypeScript** | Strict compile-time type safety across all services, components, and models |
+| **Vite** | Next-generation frontend build tooling and lightning-fast HMR |
+| **Tailwind CSS** | Utility-first CSS framework with native CSS variables and glassmorphism |
 | **Supabase** | PostgreSQL database, Row-Level Security (RLS), and real-time APIs |
-| **Cloudflare Workers & R2** | Scalable global object storage gateway for posters, PDFs, and documents |
-| **Framer Motion** | Physics-based UI animations and modal transitions |
+| **Cloudflare Workers & R2** | Scalable global object storage gateway for event photos, posters, PDFs, and documents |
+| **Framer Motion** | Physics-based UI animations, modal transitions, and interactive controls |
 | **React Router DOM v7** | Single Page Application (SPA) client-side routing |
 | **Lucide Icons** | Consistent, modern vector iconography |
 | **jsPDF & AutoTable** | Client-side dynamic PDF report and roster generation |
@@ -89,11 +113,11 @@ cloud-stack-club/
 │   ├── assets/
 │   │   └── images/              # University logos and graphics
 │   ├── components/
-│   │   ├── admin/               # AdminDashboard, FormBuilder, RolesManagementModal, ViewRegistrationsModal
-│   │   ├── coming-soon/         # Gallery & Team Coming Soon views
+│   │   ├── admin/               # AdminDashboard, GalleryManagement, FormBuilder, RolesManagementModal
 │   │   ├── common/              # Navbar, Footer, FloatingMobileCTA, JoinModal, EventAdModal
+│   │   ├── gallery/             # GallerySection, JustifiedGallery (Google Photos engine), GalleryLightbox
 │   │   ├── sections/            # Hero, About, WhatWeDo, WhyJoin, Events, Contact, Leadership
-│   │   └── ui/                  # Button, Card, Modal, ConfirmModal, Toast, ParticleCanvas
+│   │   └── ui/                  # Button, Card, Modal, CustomSelect, ConfirmModal, Toast, ParticleCanvas
 │   ├── constants/
 │   │   ├── data.ts              # Static data, pillar descriptions, domain specifications
 │   │   └── siteConfig.ts        # Club metadata, contact information, coordinator details
@@ -104,12 +128,13 @@ cloud-stack-club/
 │   ├── pages/
 │   │   ├── HomePage.tsx         # Main landing page
 │   │   ├── AdminPage.tsx        # Protected administration portal
-│   │   ├── GalleryPage.tsx      # Club photo gallery
+│   │   ├── GalleryPage.tsx      # Public event photo gallery
 │   │   ├── TeamPage.tsx         # Executive team & member showcase
 │   │   └── NotFoundPage.tsx     # Custom 404 page
 │   ├── services/
 │   │   ├── supabase.ts          # Supabase client & Cloudflare R2 gateway configuration
 │   │   ├── events.ts            # Events CRUD, status synchronizer, and capacity management
+│   │   ├── gallery.ts           # Event photo gallery service, R2 uploads, and photo CRUD
 │   │   ├── members.ts           # Member onboarding, application review, and duplicate checks
 │   │   ├── roles.ts             # Live database Role CRUD and hierarchy management
 │   │   ├── registrations.ts     # Solo and team event registration engine
