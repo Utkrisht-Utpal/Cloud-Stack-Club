@@ -28,7 +28,7 @@ import { validateFileSignature } from "../../lib/fileValidation";
 interface JoinModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccessToast: () => void;
+  onSuccessToast?: () => void;
 }
 
 const YEAR_OPTIONS = [
@@ -137,7 +137,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       );
 
       setRegisteredNumber(newMember.registration_id);
-      onSuccessToast();
+      if (onSuccessToast) onSuccessToast();
     } catch (err: any) {
       console.error("Membership application submission error:", err);
       setError(
