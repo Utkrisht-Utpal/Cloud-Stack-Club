@@ -283,7 +283,16 @@ export const AdminDashboard: React.FC = () => {
 
   const loadAllMembers = async () => {
     try {
-      const [list, roles] = await Promise.all([getMembers(), getRoles()]);
+      const [list, roles] = await Promise.all([
+        getMembers().catch((err) => {
+          console.warn('Could not load members:', err);
+          return [];
+        }),
+        getRoles().catch((err) => {
+          console.warn('Could not load roles:', err);
+          return [];
+        }),
+      ]);
       setMembersList(list);
       setRolesList(roles);
     } catch (err) {
@@ -296,8 +305,14 @@ export const AdminDashboard: React.FC = () => {
   const loadAllEvents = async () => {
     try {
       const [evs, counts] = await Promise.all([
-        getEvents(),
-        getEventRegistrationCountsMap(),
+        getEvents().catch((err) => {
+          console.warn('Could not load events:', err);
+          return [];
+        }),
+        getEventRegistrationCountsMap().catch((err) => {
+          console.warn('Could not load registration counts:', err);
+          return {};
+        }),
       ]);
       if (evs) setEventsList(evs);
       if (counts) setRegistrationCounts(counts);

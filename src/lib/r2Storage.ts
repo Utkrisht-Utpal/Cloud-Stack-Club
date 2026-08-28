@@ -3,25 +3,9 @@
  * Replaces Supabase Storage — all media operations go through the Cloudflare Worker proxy.
  */
 
-const WORKER_URL = (
-  import.meta.env.VITE_MEDIA_WORKER_URL ||
-  import.meta.env.VITE_STORAGE_GATEWAY_URL ||
-  import.meta.env.VITE_R2_WORKER_URL ||
-  ''
-).replace(/\/+$/, '');
-
-const UPLOAD_SECRET =
-  import.meta.env.VITE_MEDIA_UPLOAD_SECRET ||
-  import.meta.env.VITE_STORAGE_GATEWAY_SECRET ||
-  import.meta.env.VITE_R2_UPLOAD_SECRET ||
-  '';
-
-const R2_PUBLIC_URL = (
-  import.meta.env.VITE_R2_PUBLIC_URL ||
-  import.meta.env.VITE_STORAGE_PUBLIC_URL ||
-  import.meta.env.VITE_MEDIA_PUBLIC_URL ||
-  ''
-).replace(/\/+$/, '');
+const WORKER_URL = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+const UPLOAD_SECRET = import.meta.env.VITE_MEDIA_UPLOAD_SECRET || '';
+const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || '';
 
 /**
  * Check if R2 storage is configured
@@ -38,10 +22,6 @@ export const isR2Configured = (): boolean => {
  * @returns The full public URL of the uploaded file
  */
 export const uploadToR2 = async (folder: string, path: string, file: File): Promise<string> => {
-  if (!WORKER_URL || !UPLOAD_SECRET) {
-    throw new Error('R2 storage is not configured. Missing WORKER_URL or UPLOAD_SECRET.');
-  }
-
   const fullPath = `${folder}/${path}`;
 
   const formData = new FormData();
@@ -92,39 +72,27 @@ export const extractR2Path = (fullPathOrUrl: string): string => {
  * Delete a file from R2 via the Cloudflare Worker proxy.
  * @param fullPathOrUrl - Either a full R2 public URL or a relative path
  */
-export const deleteFromR2 = async (fullPathOrUrl: string): Promise<boolean> => {
+export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
   if (!WORKER_URL || !UPLOAD_SECRET) {
-    console.warn(
-      'R2 delete skipped: WORKER_URL or UPLOAD_SECRET not configured in .env (Check VITE_MEDIA_WORKER_URL or VITE_STORAGE_GATEWAY_URL).'
-    );
-    return false;
+    console.warn('R2 delete skipped: WORKER_URL or UPLOAD_SECRET not configured.');
+    return;
   }
 
   const path = extractR2Path(fullPathOrUrl);
-  if (!path) return false;
+  if (!path) return;
 
-  try {
-    console.log(`[R2 Storage] Sending delete request for: "${path}"`);
-    const response = await fetch(`${WORKER_URL}/delete`, {
-      method: 'DELETE',
-      headers: {
-        'X-Upload-Secret': UPLOAD_SECRET,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path }),
-    });
+  const response = await fetch(`${WORKER_URL}/delete`, {
+    method: 'DELETE',
+    headers: {
+      'X-Upload-Secret': UPLOAD_SECRET,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ path }),
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'unknown error');
-      console.warn(`[R2 Storage] Delete warning for ${path} (status ${response.status}):`, errorText);
-      return false;
-    }
-
-    console.log(`[R2 Storage] Successfully deleted: "${path}"`);
-    return true;
-  } catch (err) {
-    console.error(`[R2 Storage] Network error deleting ${path}:`, err);
-    return false;
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'unknown error');
+    console.warn(`R2 delete warning for ${path}:`, errorText);
   }
 };
 
@@ -133,39 +101,23 @@ export const deleteFromR2 = async (fullPathOrUrl: string): Promise<boolean> => {
  * @param paths - Array of relative paths or full URLs
  */
 export const bulkDeleteFromR2 = async (paths: string[]): Promise<void> => {
-  if (!WORKER_URL || !UPLOAD_SECRET || !paths || paths.length === 0) {
-    if (!WORKER_URL || !UPLOAD_SECRET) {
-      console.warn('R2 bulk delete skipped: WORKER_URL or UPLOAD_SECRET not configured in .env.');
-    }
-    return;
-  }
+  if (!WORKER_URL || !UPLOAD_SECRET || !paths || paths.length === 0) return;
 
   const relativePaths = paths.map((p) => extractR2Path(p)).filter(Boolean);
   if (relativePaths.length === 0) return;
 
-  try {
-    console.log(`[R2 Storage] Bulk deleting ${relativePaths.length} files:`, relativePaths);
-    const response = await fetch(`${WORKER_URL}/delete`, {
-      method: 'DELETE',
-      headers: {
-        'X-Upload-Secret': UPLOAD_SECRET,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ paths: relativePaths }),
-    });
+  const response = await fetch(`${WORKER_URL}/delete`, {
+    method: 'DELETE',
+    headers: {
+      'X-Upload-Secret': UPLOAD_SECRET,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ paths: relativePaths }),
+  });
 
-    if (!response.ok) {
-      // Fallback: Delete individually in parallel if batch payload structure differs
-      console.warn(
-        `[R2 Storage] Batch delete returned status ${response.status} — falling back to individual deletes...`
-      );
-      await Promise.allSettled(relativePaths.map((p) => deleteFromR2(p)));
-    } else {
-      console.log(`[R2 Storage] Bulk delete successfully finished for ${relativePaths.length} files.`);
-    }
-  } catch (err) {
-    console.warn('[R2 Storage] Network error during batch delete — falling back to individual deletes:', err);
-    await Promise.allSettled(relativePaths.map((p) => deleteFromR2(p)));
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'unknown error');
+    console.warn('R2 bulk delete warning:', errorText);
   }
 };
 

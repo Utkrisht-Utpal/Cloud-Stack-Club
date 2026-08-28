@@ -1,7 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { uploadToR2, deleteFromR2, resolveMediaUrl, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
-import { deleteGalleryPhotosByEventId } from './gallery';
 import type { Event } from '../types/database';
 
 const CUSTOM_EVENTS_KEY = 'csc_custom_events_list';
@@ -157,7 +156,7 @@ export const getEvents = async (): Promise<Event[]> => {
   }
 
   try {
-    // 15000ms Timeout Race for Supabase fetch (allows existing large base64 events to finish loading)
+    // 8000ms Timeout Race for Supabase fetch
     const fetchPromise = supabase
       .from('events')
       .select('id, title, category, description, date, start_time, location, image_url, pdf_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at')
@@ -165,7 +164,7 @@ export const getEvents = async (): Promise<Event[]> => {
       .order('date', { ascending: true });
 
     const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: 'Database fetch timeout' } }), 15000)
+      setTimeout(() => resolve({ data: null, error: { message: 'Database fetch timeout' } }), 8000)
     );
 
     const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
@@ -528,9 +527,13 @@ export const deleteEventAdmin = async (
   }
 
   // 3. Delete all gallery photos for this event from Cloudflare R2 & database
-  await deleteGalleryPhotosByEventId(eventId).catch((e) => {
+  //    (dynamic import to avoid circular dependency: gallery.ts imports events.ts)
+  try {
+    const { deleteGalleryPhotosByEventId } = await import('./gallery');
+    await deleteGalleryPhotosByEventId(eventId);
+  } catch (e) {
     console.warn('Gallery photos deletion notice:', e);
-  });
+  }
 
   // 4. Delete event poster image & brochure PDF from Cloudflare R2
   const filesToDelete: string[] = [];
