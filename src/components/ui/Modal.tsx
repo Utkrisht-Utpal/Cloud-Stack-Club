@@ -1,11 +1,7 @@
-import React, { useEffect, useState, useRef } from "react";
-import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
-import {
-  outsideBlockAccess,
-  restoreOutsideAccess,
-} from "../../utils/modalUtility";
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -15,41 +11,28 @@ interface ModalProps {
   maxWidth?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({
-  isOpen,
-  onClose,
-  title,
-  children,
-  maxWidth = "max-w-lg",
-}) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
   const [mounted, setMounted] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
     if (isOpen) {
-      const count = parseInt(document.body.dataset.modalCount || "0", 10) + 1;
+      const count = parseInt(document.body.dataset.modalCount || '0', 10) + 1;
       document.body.dataset.modalCount = count.toString();
       if (count === 1) {
-        document.body.style.setProperty("overflow", "hidden", "important");
-        document.documentElement.style.setProperty(
-          "overflow",
-          "hidden",
-          "important",
-        );
+        document.body.style.setProperty('overflow', 'hidden', 'important');
+        document.documentElement.style.setProperty('overflow', 'hidden', 'important');
       }
 
       return () => {
-        const newCount = Math.max(
-          0,
-          parseInt(document.body.dataset.modalCount || "1", 10) - 1,
-        );
+        const newCount = Math.max(0, parseInt(document.body.dataset.modalCount || '1', 10) - 1);
         document.body.dataset.modalCount = newCount.toString();
         if (newCount === 0) {
-          document.body.style.overflow = "";
-          document.documentElement.style.overflow = "";
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
         }
       };
     }
@@ -59,72 +42,16 @@ export const Modal: React.FC<ModalProps> = ({
     const handleCloseAll = () => {
       if (isOpen) onClose();
     };
-    window.addEventListener("close-all-modals", handleCloseAll);
-    return () => window.removeEventListener("close-all-modals", handleCloseAll);
+    window.addEventListener('close-all-modals', handleCloseAll);
+    return () => window.removeEventListener('close-all-modals', handleCloseAll);
   }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (!mounted || !modalRef.current) return;
-
-    const previouslyFocused = document.activeElement as HTMLElement;
-
-    const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
-
-    const firstElement = focusableElements[0];
-    const lastElement = focusableElements[focusableElements.length - 1];
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-
-      if (e.key !== "Tab") return;
-
-      if (focusableElements.length === 0) {
-        e.preventDefault();
-        return;
-      }
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault();
-          lastElement.focus();
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault();
-          firstElement.focus();
-        }
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-
-    outsideBlockAccess();
-
-    firstElement?.focus();
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-
-      restoreOutsideAccess();
-
-      previouslyFocused?.focus();
-    };
-  }, [onClose, mounted]);
 
   if (!mounted) return null;
 
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div
-          id="modal"
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-        >
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -136,9 +63,6 @@ export const Modal: React.FC<ModalProps> = ({
 
           {/* Modal Card */}
           <motion.div
-            ref={modalRef}
-            role="dialog"
-            aria-modal="true"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -146,9 +70,7 @@ export const Modal: React.FC<ModalProps> = ({
             className={`relative w-full ${maxWidth} rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white my-auto`}
           >
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                {title}
-              </h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{title}</h3>
               <button
                 onClick={onClose}
                 className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -162,6 +84,6 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
       )}
     </AnimatePresence>,
-    document.body,
+    document.body
   );
 };
