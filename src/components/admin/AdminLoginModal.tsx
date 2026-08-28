@@ -53,7 +53,7 @@ export const AdminLoginModal: React.FC = () => {
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-              Admin Email Address
+              <span>Admin Email Address <span className="text-red-500">*</span></span>
             </label>
             <input
               type="email"
@@ -71,7 +71,7 @@ export const AdminLoginModal: React.FC = () => {
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
               <KeyRound className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-              Password
+              <span>Password <span className="text-red-500">*</span></span>
             </label>
             <div className="relative">
               <input

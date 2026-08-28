@@ -185,7 +185,7 @@ export const ContactSection: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="name" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                          Your Name
+                          Your Name <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -200,7 +200,7 @@ export const ContactSection: React.FC = () => {
 
                       <div>
                         <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                          Email Address
+                          Email Address <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="email"
@@ -216,7 +216,7 @@ export const ContactSection: React.FC = () => {
 
                     <div>
                       <label htmlFor="message" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                        Message / Feedback
+                        Message / Feedback <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         id="message"

@@ -225,7 +225,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                   className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
                 >
                   <User className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                  Full Name *
+                  <span>Full Name <span className="text-red-500">*</span></span>
                 </label>
                 <input
                   type="text"
@@ -247,7 +247,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                     className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
                   >
                     <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                    Student Email *
+                    <span>Student Email <span className="text-red-500">*</span></span>
                   </label>
                   <input
                     type="email"
@@ -257,7 +257,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    placeholder="@example.com"
+                    placeholder="xyz@gmail.com"
                     className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                   />
                 </div>
@@ -269,7 +269,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                   >
                     <Phone className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                     <span>
-                      Phone Number <span className="text-rose-500">*</span>
+                      Phone Number <span className="text-red-500">*</span>
                     </span>
                   </label>
                   <input
@@ -297,7 +297,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                   className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                  University ID (UID) *
+                  <span>University ID (UID) <span className="text-red-500">*</span></span>
                 </label>
                 <input
                   type="text"
@@ -314,7 +314,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                         .toUpperCase(),
                     })
                   }
-                  placeholder="University ID (UID)"
+                  placeholder="24BXX1000X"
                   className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
                 />
               </div>
@@ -327,7 +327,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                     className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5"
                   >
                     <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                    Department / Branch *
+                    <span>Department / Branch <span className="text-red-500">*</span></span>
                   </label>
                   <input
                     type="text"
@@ -362,7 +362,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                     className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
-                    <span>CUIMS VERIFICATION SCREENSHOT *</span>
+                    <span>CUIMS VERIFICATION SCREENSHOT <span className="text-red-500">*</span></span>
                   </label>
 
                   {/* Wrapper: Handles mouse enter/leave for smooth open & auto-close */}

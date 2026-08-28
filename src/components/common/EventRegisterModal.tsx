@@ -433,7 +433,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Full Name *
+                  Full Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -450,7 +450,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Student Email *
+                  Student Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -469,7 +469,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  University ID (UID) *
+                  University ID (UID) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <GraduationCap className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -492,7 +492,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Phone Number <span className="text-rose-500">*</span>
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -561,7 +561,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                 <div className="space-y-3 pt-1">
                   <div>
                     <label className="block text-[11px] font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">
-                      Team Name *
+                      Team Name <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -577,7 +577,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     <div key={idx} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                          Team Member {idx + 2} *
+                          Team Member {idx + 2} <span className="text-red-500">*</span>
                         </span>
                         <button
                           type="button"

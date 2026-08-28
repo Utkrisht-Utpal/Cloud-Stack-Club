@@ -1860,7 +1860,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               <div className="sm:col-span-7">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Title *
+                  Event Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1874,7 +1874,7 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="sm:col-span-5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Category *
+                  Event Category <span className="text-red-500">*</span>
                 </label>
                 <CustomSelect
                   value={newEventData.category}
@@ -2171,7 +2171,7 @@ export const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
               <div className="sm:col-span-7">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Title *
+                  Event Title <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -2184,7 +2184,7 @@ export const AdminDashboard: React.FC = () => {
 
               <div className="sm:col-span-5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Event Category *
+                  Event Category <span className="text-red-500">*</span>
                 </label>
                 <CustomSelect
                   value={editEventData.category}

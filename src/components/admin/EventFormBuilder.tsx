@@ -467,7 +467,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
         <form onSubmit={handleSaveFieldFromModal} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              Question Label / Prompt *
+              Question Label / Prompt <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -482,7 +482,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Input Type *
+                Input Type <span className="text-red-500">*</span>
               </label>
               <CustomSelect
                 value={fieldModalData.field_type}
@@ -513,7 +513,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
           {fieldModalData.field_type === 'select' && (
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Options List (Comma-separated) *
+                Options List (Comma-separated) <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"

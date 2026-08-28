@@ -122,7 +122,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5"
         >
           {icon}
-          {label}
+          {label.includes('*') ? (
+            <>
+              {label.replace(/\s*\*/, '')} <span className="text-red-500 font-bold">*</span>
+            </>
+          ) : (
+            label
+          )}
         </label>
       )}
 

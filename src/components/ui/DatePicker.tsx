@@ -187,7 +187,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     <div className="relative space-y-1" ref={containerRef}>
       {label && (
         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-          {label}
+          {label.includes('*') ? (
+            <>
+              {label.replace(/\s*\*/, '')} <span className="text-red-500 font-bold">*</span>
+            </>
+          ) : (
+            label
+          )}
         </label>
       )}
 

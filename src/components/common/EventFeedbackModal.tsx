@@ -303,7 +303,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div className="space-y-1.5">
                     <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Your Name <span className="text-rose-500">*</span>
+                      Your Name <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative">
                       <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -320,7 +320,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
                   <div className="space-y-1.5">
                     <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Email Address <span className="text-rose-500">*</span>
+                      Email Address <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -340,7 +340,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div className="space-y-1.5">
                     <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      University ID (UID) <span className="text-rose-500">*</span>
+                      University ID (UID) <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative">
                       <GraduationCap className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -358,7 +358,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
                   <div className="space-y-1.5">
                     <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Registration ID <span className="text-rose-500">*</span>
+                      Registration ID <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative">
                       <Ticket className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -379,7 +379,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   {/* Phone Number (Required 10 Digits) */}
                   <div className="space-y-1.5">
                     <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Phone Number <span className="text-rose-500">*</span>
+                      Phone Number <span className="text-red-500 font-bold">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -400,7 +400,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-1 flex-nowrap">
                       <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                        Event Rating <span className="text-rose-500">*</span>
+                        Event Rating <span className="text-red-500 font-bold">*</span>
                       </label>
                       <span className="text-xs font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
                         {getRatingLabel(hoverEventRating || eventRating)}
@@ -437,7 +437,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                 <div className="p-3 sm:p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/60 space-y-2.5">
                   <div className="flex items-center justify-between gap-2 flex-nowrap">
                     <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
-                      Coordination & Event Management <span className="text-rose-500">*</span>
+                      Coordination & Event Management <span className="text-red-500 font-bold">*</span>
                     </label>
                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
                       {getCoordinationLabel(hoverCoordinationRating || coordinationRating)}
@@ -480,7 +480,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                 {/* 5. Detailed Feedback / Comments */}
                 <div className="space-y-1.5">
                   <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                    Your Feedback & Suggestions <span className="text-rose-500">*</span>
+                    Your Feedback & Suggestions <span className="text-red-500 font-bold">*</span>
                   </label>
                   <textarea
                     required
