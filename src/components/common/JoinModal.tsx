@@ -23,6 +23,7 @@ import {
   submitMemberApplication,
   checkMemberDuplicate,
 } from "../../services/supabase";
+import { validateFileSignature } from "../../lib/fileValidation";
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -57,13 +58,12 @@ export const JoinModal: React.FC<JoinModalProps> = ({
   const [showCuimsHelp, setShowCuimsHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      if (file.size > 1 * 1024 * 1024) {
-        setError(
-          "File size exceeds 1 MB limit. Please upload an image under 1 MB.",
-        );
+      const validation = await validateFileSignature(file);
+      if (!validation.isValid) {
+        setError(validation.error || "Invalid file. Please upload a valid JPG, PNG, or PDF under 3 MB.");
         e.target.value = "";
         setVerificationFile(null);
         return;

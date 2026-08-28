@@ -21,33 +21,9 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Synchronous initialization from localStorage with 5-minute inactivity check
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    try {
-      const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
-      const isExpired = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
-      if (isExpired) return false;
-      return localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  const [showDashboard, setShowDashboard] = useState<boolean>(() => {
-    try {
-      const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
-      const isExpired = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
-      if (isExpired) {
-        localStorage.removeItem(STORAGE_KEY_SHOW_DASHBOARD);
-        localStorage.removeItem(STORAGE_KEY_LAST_ACTIVITY);
-        return false;
-      }
-      return localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
-    } catch {
-      return false;
-    }
-  });
-
+  // Never trust localStorage alone for authentication — always require verified Supabase session
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  const [showDashboard, setShowDashboard] = useState<boolean>(false);
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
