@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Mail, KeyRound, LogIn, AlertCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Mail, KeyRound, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { Turnstile } from '../ui/Turnstile';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAAEfcbJ_vtTz3UYYd';
 
 export const AdminLoginModal: React.FC = () => {
   const { isAdminModalOpen, closeAdminModal, login } = useAdminAuth();
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -16,16 +20,22 @@ export const AdminLoginModal: React.FC = () => {
     e.preventDefault();
     if (!emailInput || !passwordInput) return;
 
+    if (!captchaToken) {
+      setError('Please complete the Cloudflare security verification.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      const result = await login(emailInput, passwordInput);
+      const result = await login(emailInput, passwordInput, captchaToken);
       if (!result.success) {
         setError(result.error || 'Invalid Admin Email or Password. Access denied.');
       } else {
         setEmailInput('');
         setPasswordInput('');
+        setCaptchaToken(null);
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -38,17 +48,13 @@ export const AdminLoginModal: React.FC = () => {
     setError(null);
     setEmailInput('');
     setPasswordInput('');
+    setCaptchaToken(null);
     closeAdminModal();
   };
 
   return (
     <Modal isOpen={isAdminModalOpen} onClose={handleClose} title="Club Admin Access">
       <div className="space-y-4">
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-sky-300 text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
-          <span>Secure authentication powered by Supabase Auth for verified administrators.</span>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
@@ -96,6 +102,19 @@ export const AdminLoginModal: React.FC = () => {
             </div>
           </div>
 
+          {/* Cloudflare Turnstile Verification Widget */}
+          <div className="p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 flex flex-col items-center justify-center min-h-[75px]">
+            <Turnstile
+              siteKey={TURNSTILE_SITE_KEY}
+              onVerify={(token) => {
+                setCaptchaToken(token);
+                if (error && error.includes('Cloudflare')) setError(null);
+              }}
+              onExpire={() => setCaptchaToken(null)}
+              onError={() => setError('Captcha verification failed. Please try again.')}
+            />
+          </div>
+
           {error && (
             <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-500 font-semibold">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -103,7 +122,7 @@ export const AdminLoginModal: React.FC = () => {
             </div>
           )}
 
-          <div className="pt-2">
+          <div className="pt-1">
             <Button
               type="submit"
               variant="primary"

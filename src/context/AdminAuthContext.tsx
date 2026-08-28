@@ -8,7 +8,7 @@ const STORAGE_KEY_LAST_ACTIVITY = 'csc_admin_last_activity';
 interface AdminAuthContextType {
   isAdminLoggedIn: boolean;
   adminEmail: string | null;
-  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, pass: string, captchaToken?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   openAdminModal: () => void;
   closeAdminModal: () => void;
@@ -207,7 +207,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Secure Supabase Auth Login
   const login = async (
     emailInput: string,
-    passwordInput: string
+    passwordInput: string,
+    captchaToken?: string
   ): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = emailInput.trim().toLowerCase();
     const cleanPass = passwordInput.trim();
@@ -223,6 +224,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password: cleanPass,
+        options: captchaToken ? { captchaToken } : undefined,
       });
 
       if (error) {
