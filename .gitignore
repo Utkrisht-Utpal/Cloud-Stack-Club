@@ -23,4 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables
+.env
+.env.production
+.env.development
+.env.local
+.env.*.local
+!.env.example
+
 /supabase
