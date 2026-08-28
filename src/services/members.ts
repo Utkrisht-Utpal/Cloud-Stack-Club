@@ -259,44 +259,24 @@ export const getPendingMemberApplications = async (): Promise<Member[]> => {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('members')
-    .select('*, role:roles(*)')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('members')
+      .select('*, role:roles(*)')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching pending member applications:', error.message);
+    if (error) {
+      console.warn('Notice fetching pending member applications:', error.message);
+      return [];
+    }
+
+    const inactiveIds = getInactiveMemberIds();
+    return ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
+  } catch (err) {
+    console.warn('Network error fetching pending apps:', err);
     return [];
   }
-
-  const inactiveIds = getInactiveMemberIds();
-  const membersList = ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
-  const now = Date.now();
-  const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-
-  // Auto-cleanup any verification files older than 24 hours
-  for (const m of membersList) {
-    if (m.verification_file_url && m.created_at) {
-      const createdAtMs = new Date(m.created_at).getTime();
-      if (now - createdAtMs > twentyFourHoursMs) {
-        const filePath = m.verification_file_url;
-        m.verification_file_url = null;
-
-        // Clean up from R2 storage & update DB asynchronously
-        deleteFromR2(`${R2_FOLDERS.REGISTRATION_FILES}/${filePath}`)
-          .then(() => {
-            supabase
-              .from('members')
-              .update({ verification_file_url: null })
-              .eq('id', m.id);
-          })
-          .catch(() => {});
-      }
-    }
-  }
-
-  return membersList;
 };
 
 export const approveMemberApplicationService = async (
@@ -383,8 +363,8 @@ export const getCoreMembers = async (): Promise<Member[]> => {
     .order('created_at', { ascending: true });
 
   if (error) {
-    console.error('Error fetching core members:', error.message);
-    throw error;
+    console.warn('Notice fetching core members:', error.message);
+    return [];
   }
 
   const inactiveIds = getInactiveMemberIds();
@@ -403,8 +383,8 @@ export const getMembers = async (): Promise<Member[]> => {
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching members:', error.message);
-    throw error;
+    console.warn('Notice fetching members:', error.message);
+    return [];
   }
 
   const inactiveIds = getInactiveMemberIds();

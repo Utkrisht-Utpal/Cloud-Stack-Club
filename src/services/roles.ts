@@ -13,8 +13,8 @@ export const getRoles = async (): Promise<Role[]> => {
     .order('name', { ascending: true });
 
   if (error) {
-    console.error('Error fetching roles:', error.message);
-    throw error;
+    console.warn('Notice fetching roles:', error.message);
+    return [];
   }
 
   return data || [];

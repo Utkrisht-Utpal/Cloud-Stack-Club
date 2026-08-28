@@ -66,19 +66,21 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const nowMs = Date.now();
 
+  const pendingDbUpdates: Promise<any>[] = [];
+
   for (const evt of eventsList) {
     if (evt.status === 'cancelled') continue;
 
     let needsUpdate = false;
     const updates: Partial<Event> = {};
 
-    // 1. If event date is TODAY -> update DB status to 'live' (Ongoing)
+    // 1. If event date is TODAY -> update status to 'live' (Ongoing)
     if (evt.date && evt.date.split('T')[0] === todayStr && evt.status !== 'live') {
       updates.status = 'live';
       evt.status = 'live';
       needsUpdate = true;
     }
-    // 2. If event date is in PAST -> update DB status to 'completed' & disable registration
+    // 2. If event date is in PAST -> update status to 'completed' & disable registration
     else if (evt.date && evt.date.split('T')[0] < todayStr && evt.status !== 'completed') {
       updates.status = 'completed';
       updates.registration_enabled = false;
@@ -87,7 +89,7 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
       needsUpdate = true;
     }
 
-    // 3. If registration_end deadline has passed -> update DB registration_enabled to false
+    // 3. If registration_end deadline has passed -> update registration_enabled to false
     if (evt.registration_end && evt.registration_enabled) {
       const endStr = typeof evt.registration_end === 'string' ? evt.registration_end.split('T')[0] : '';
       const [ey, em, ed] = endStr.split('-').map(Number);
@@ -104,15 +106,14 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
 
     if (needsUpdate) {
       updates.updated_at = new Date().toISOString();
-      try {
-        await supabase
-          .from('events')
-          .update(updates)
-          .eq('id', evt.id);
-      } catch (err: any) {
-        console.warn('Background auto event status sync notice:', err);
-      }
+      pendingDbUpdates.push(
+        Promise.resolve(supabase.from('events').update(updates).eq('id', evt.id))
+      );
     }
+  }
+
+  if (pendingDbUpdates.length > 0) {
+    Promise.allSettled(pendingDbUpdates).catch(() => {});
   }
 };
 
@@ -156,18 +157,11 @@ export const getEvents = async (): Promise<Event[]> => {
   }
 
   try {
-    // 8000ms Timeout Race for Supabase fetch
-    const fetchPromise = supabase
+    const { data, error } = await supabase
       .from('events')
       .select('id, title, category, description, date, start_time, location, image_url, pdf_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at')
       .neq('status', 'cancelled')
       .order('date', { ascending: true });
-
-    const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
-      setTimeout(() => resolve({ data: null, error: { message: 'Database fetch timeout' } }), 8000)
-    );
-
-    const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
 
     if (error || !data) {
       if (error) console.warn('Supabase DB fetch notice:', error.message);

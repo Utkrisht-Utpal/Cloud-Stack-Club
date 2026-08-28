@@ -50,6 +50,9 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           setShowDashboard(false);
         }
       })
+      .catch((err) => {
+        console.warn('Session retrieval error:', err);
+      })
       .finally(() => {
         setIsLoading(false);
       });
@@ -87,7 +90,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, [showDashboard, isAdminLoggedIn]);
 
-  // Secure Supabase Auth Login (No hardcoded credentials)
+  // Secure Supabase Auth Login
   const login = async (
     emailInput: string,
     passwordInput: string
@@ -103,23 +106,10 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     try {
-      const authPromise = supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password: cleanPass,
       });
-
-      const timeoutPromise = new Promise<{ data: any; error: any }>((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              data: { user: null, session: null },
-              error: { message: 'Authentication request timed out. Please verify your Supabase project status or internet connection.' },
-            }),
-          10000
-        )
-      );
-
-      const { data, error } = await Promise.race([authPromise, timeoutPromise]);
 
       if (error) {
         return {

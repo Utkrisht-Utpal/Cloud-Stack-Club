@@ -17,5 +17,8 @@ export const supabase = createClient<Database, 'public', any>(supabaseUrl, supab
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: false,
+    // Disable Web Lock contention which causes 30s delays/hangs on localhost & browser reloads
+    lock: async (_name, _acquireTimeout, fn) => await fn(),
   },
 });
