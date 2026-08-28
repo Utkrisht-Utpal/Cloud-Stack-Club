@@ -478,7 +478,10 @@ export const uploadRegistrationFile = async (
     throw new Error('R2 storage is not configured yet.');
   }
 
-  const filePath = `${eventId}/${registrationId}/${file.name}`;
+  const rawExt = (file.name.split('.').pop() || 'dat').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'doc', 'docx', 'zip'].includes(rawExt) ? rawExt : 'dat';
+  const cleanFileName = `reg_${Date.now()}.${cleanExt}`;
+  const filePath = `${eventId}/${registrationId}/${cleanFileName}`;
   await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, file);
 
   return filePath;

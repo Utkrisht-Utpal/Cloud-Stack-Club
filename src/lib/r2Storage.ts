@@ -145,8 +145,13 @@ export const resolveMediaUrl = (pathOrUrl: string | null): string => {
   ) {
     return pathOrUrl;
   }
-  // Treat as R2 relative path
-  return `${R2_PUBLIC_URL}/${pathOrUrl}`;
+  // Normalize leading slash and safely encode path segments
+  const normalized = pathOrUrl.replace(/^\/+/, '');
+  const encodedPath = normalized
+    .split('/')
+    .map((segment) => (segment.includes('%') ? segment : encodeURIComponent(segment)))
+    .join('/');
+  return `${R2_PUBLIC_URL}/${encodedPath}`;
 };
 
 /** R2 folder constants (matching old Supabase bucket names) */

@@ -29,13 +29,14 @@ export const VerificationDocModal: React.FC<VerificationDocModalProps> = ({
 
     setLoading(true);
 
-    const isPdfFile = filePath.toLowerCase().endsWith('.pdf');
+    const isPdfFile = filePath.toLowerCase().includes('.pdf');
     setIsPdf(isPdfFile);
 
     // Resolve R2 public URL for the verification document
-    const url = resolveMediaUrl(
-      filePath.startsWith('http') ? filePath : `${R2_FOLDERS.REGISTRATION_FILES}/${filePath}`
-    );
+    const cleanPath = filePath.startsWith('http')
+      ? filePath
+      : `${R2_FOLDERS.REGISTRATION_FILES}/${filePath.replace(/^\/+/, '')}`;
+    const url = resolveMediaUrl(cleanPath);
     setDocUrl(url);
     setLoading(false);
   }, [filePath, isOpen]);

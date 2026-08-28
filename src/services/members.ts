@@ -142,13 +142,20 @@ export const submitMemberApplication = async (
 
   // 1. If verification document is provided, upload it to R2 storage FIRST
   if (verificationFile) {
-    try {
-      filePath = `membership/${memberId}/${verificationFile.name}`;
-      if (isR2Configured()) {
+    const rawExt = (verificationFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'pdf'].includes(rawExt) ? rawExt : 'jpg';
+    const cleanFileName = `cuims_${Date.now()}.${cleanExt}`;
+    filePath = `membership/${memberId}/${cleanFileName}`;
+
+    if (isR2Configured()) {
+      try {
         await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, verificationFile);
+      } catch (uploadErr: any) {
+        console.error('R2 upload failed for member verification doc:', uploadErr);
+        throw new Error(
+          `Verification document upload failed: ${uploadErr.message || 'Network timeout'}. Please check your connection and try again.`
+        );
       }
-    } catch (uploadErr) {
-      console.warn('Storage upload error:', uploadErr);
     }
   }
 
