@@ -4,7 +4,6 @@
  */
 
 const WORKER_URL = import.meta.env.VITE_MEDIA_WORKER_URL || '';
-const UPLOAD_SECRET = import.meta.env.VITE_MEDIA_UPLOAD_SECRET || '';
 const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || '';
 
 /**
@@ -32,9 +31,6 @@ export const uploadToR2 = async (folder: string, path: string, file: File): Prom
 
   // Attach active Supabase Admin JWT if user is logged in
   const headers: Record<string, string> = {};
-  if (UPLOAD_SECRET) {
-    headers['X-Upload-Secret'] = UPLOAD_SECRET;
-  }
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -95,7 +91,6 @@ export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
   if (!path) return;
 
   const headers: Record<string, string> = {
-    'X-Upload-Secret': UPLOAD_SECRET,
     'Content-Type': 'application/json',
   };
 
@@ -129,7 +124,6 @@ export const bulkDeleteFromR2 = async (paths: string[]): Promise<void> => {
   if (relativePaths.length === 0) return;
 
   const headers: Record<string, string> = {
-    'X-Upload-Secret': UPLOAD_SECRET,
     'Content-Type': 'application/json',
   };
 
