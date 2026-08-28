@@ -21,9 +21,29 @@ interface AdminAuthContextType {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Never trust localStorage alone for authentication — always require verified Supabase session
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
-  const [showDashboard, setShowDashboard] = useState<boolean>(false);
+  // Synchronous initialization for smooth refresh persistence (with 5-minute inactivity check)
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    try {
+      const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
+      const isExpired = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
+      if (isExpired) return false;
+      return localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [showDashboard, setShowDashboard] = useState<boolean>(() => {
+    try {
+      const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
+      const isExpired = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
+      if (isExpired) return false;
+      return localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -59,8 +79,9 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   }, []);
 
-  // 1. Sync showDashboard changes to localStorage
+  // 1. Sync showDashboard changes to localStorage (Only AFTER initial auth check completes)
   useEffect(() => {
+    if (isLoading) return; // Do not overwrite storage during initial boot
     try {
       if (showDashboard && isAdminLoggedIn) {
         localStorage.setItem(STORAGE_KEY_SHOW_DASHBOARD, 'true');
@@ -69,7 +90,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         localStorage.removeItem(STORAGE_KEY_SHOW_DASHBOARD);
       }
     } catch {}
-  }, [showDashboard, isAdminLoggedIn, recordActivity]);
+  }, [showDashboard, isAdminLoggedIn, isLoading, recordActivity]);
 
   // 2. 5-Minute Inactivity Tracker (listens to mouse, keyboard, touch, scroll, click)
   useEffect(() => {
