@@ -10,7 +10,7 @@ const ALLOWED_MIME_TYPES = [
   'application/pdf',
 ];
 
-const MAX_FILE_SIZE_BYTES = 3 * 1024 * 1024; // 3 MB
+const MAX_FILE_SIZE_BYTES = 1 * 1024 * 1024; // 1 MB
 
 /**
  * Checks file header magic bytes against legitimate image/PDF signatures.
@@ -22,7 +22,7 @@ export const validateFileSignature = async (
   if (file.size > MAX_FILE_SIZE_BYTES) {
     return {
       isValid: false,
-      error: 'File size exceeds the 3 MB limit. Please upload a smaller file.',
+      error: 'File size exceeds the 1 MB limit. Please upload a file under 1 MB.',
     };
   }
 

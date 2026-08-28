@@ -11,7 +11,7 @@ const R2_PUBLIC_URL = import.meta.env.VITE_R2_PUBLIC_URL || '';
  * Check if R2 storage is configured
  */
 export const isR2Configured = (): boolean => {
-  return !!WORKER_URL && !!UPLOAD_SECRET && !!R2_PUBLIC_URL;
+  return !!WORKER_URL && !!R2_PUBLIC_URL;
 };
 
 /**
@@ -21,6 +21,8 @@ export const isR2Configured = (): boolean => {
  * @param file - The File object to upload
  * @returns The full public URL of the uploaded file
  */
+import { supabase } from './supabase';
+
 export const uploadToR2 = async (folder: string, path: string, file: File): Promise<string> => {
   const fullPath = `${folder}/${path}`;
 
@@ -28,11 +30,22 @@ export const uploadToR2 = async (folder: string, path: string, file: File): Prom
   formData.append('file', file);
   formData.append('path', fullPath);
 
+  // Attach active Supabase Admin JWT if user is logged in
+  const headers: Record<string, string> = {};
+  if (UPLOAD_SECRET) {
+    headers['X-Upload-Secret'] = UPLOAD_SECRET;
+  }
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+  } catch {}
+
   const response = await fetch(`${WORKER_URL}/upload`, {
     method: 'POST',
-    headers: {
-      'X-Upload-Secret': UPLOAD_SECRET,
-    },
+    headers,
     body: formData,
   });
 
@@ -73,20 +86,29 @@ export const extractR2Path = (fullPathOrUrl: string): string => {
  * @param fullPathOrUrl - Either a full R2 public URL or a relative path
  */
 export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
-  if (!WORKER_URL || !UPLOAD_SECRET) {
-    console.warn('R2 delete skipped: WORKER_URL or UPLOAD_SECRET not configured.');
+  if (!WORKER_URL) {
+    console.warn('R2 delete skipped: WORKER_URL not configured.');
     return;
   }
 
   const path = extractR2Path(fullPathOrUrl);
   if (!path) return;
 
+  const headers: Record<string, string> = {
+    'X-Upload-Secret': UPLOAD_SECRET,
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+  } catch {}
+
   const response = await fetch(`${WORKER_URL}/delete`, {
     method: 'DELETE',
-    headers: {
-      'X-Upload-Secret': UPLOAD_SECRET,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({ path }),
   });
 
@@ -101,17 +123,26 @@ export const deleteFromR2 = async (fullPathOrUrl: string): Promise<void> => {
  * @param paths - Array of relative paths or full URLs
  */
 export const bulkDeleteFromR2 = async (paths: string[]): Promise<void> => {
-  if (!WORKER_URL || !UPLOAD_SECRET || !paths || paths.length === 0) return;
+  if (!WORKER_URL || !paths || paths.length === 0) return;
 
   const relativePaths = paths.map((p) => extractR2Path(p)).filter(Boolean);
   if (relativePaths.length === 0) return;
 
+  const headers: Record<string, string> = {
+    'X-Upload-Secret': UPLOAD_SECRET,
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
+  } catch {}
+
   const response = await fetch(`${WORKER_URL}/delete`, {
     method: 'DELETE',
-    headers: {
-      'X-Upload-Secret': UPLOAD_SECRET,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({ paths: relativePaths }),
   });
 

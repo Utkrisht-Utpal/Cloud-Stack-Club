@@ -1930,10 +1930,10 @@ export const AdminDashboard: React.FC = () => {
                             showAlert('Invalid File Format', 'Only image files (PNG, JPG, WEBP) are accepted.', 'warning');
                             return;
                           }
-                          if (file.size > 2 * 1024 * 1024) {
+                          if (file.size > 1 * 1024 * 1024) {
                             showAlert(
                               'Image Size Limit Exceeded',
-                              `Image size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress or resize the image.`,
+                              `Image size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 1 MB. Please compress or resize the poster.`,
                               'warning'
                             );
                             return;
@@ -1946,7 +1946,7 @@ export const AdminDashboard: React.FC = () => {
                     <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
                       <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                         <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Upload Poster</span>
+                        <span>Upload Poster (Max 1MB)</span>
                       </div>
                     </div>
                   </div>
@@ -1957,7 +1957,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="min-w-0">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
                   <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="truncate">Event PDF</span>
+                  <span className="truncate">Event PDF (Max 2MB)</span>
                 </label>
 
                 {eventPdfFile ? (
@@ -1990,10 +1990,10 @@ export const AdminDashboard: React.FC = () => {
                             showAlert('Invalid File Format', 'Only PDF files (.pdf) are accepted.', 'warning');
                             return;
                           }
-                          if (file.size > 3 * 1024 * 1024) {
+                          if (file.size > 2 * 1024 * 1024) {
                             showAlert(
                               'PDF Size Limit Exceeded',
-                              `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 3 MB. Please compress the PDF.`,
+                              `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress the PDF.`,
                               'warning'
                             );
                             return;
@@ -2270,10 +2270,10 @@ export const AdminDashboard: React.FC = () => {
                           showAlert('Invalid File Format', 'Only image files (PNG, JPG, WEBP) are accepted.', 'warning');
                           return;
                         }
-                        if (file.size > 2 * 1024 * 1024) {
+                        if (file.size > 1 * 1024 * 1024) {
                           showAlert(
                             'Image Size Limit Exceeded',
-                            `Image size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress or resize the image.`,
+                            `Image size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 1 MB. Please compress or resize the poster.`,
                             'warning'
                           );
                           return;
@@ -2285,7 +2285,7 @@ export const AdminDashboard: React.FC = () => {
                     <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
                       <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                         <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Upload Poster</span>
+                        <span>Upload Poster (Max 1MB)</span>
                       </div>
                     </div>
                   </div>
@@ -2296,7 +2296,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="min-w-0">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
                   <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="truncate">Event PDF</span>
+                  <span className="truncate">Event PDF (Max 2MB)</span>
                 </label>
 
                 {editPdfFile ? (
@@ -2312,6 +2312,7 @@ export const AdminDashboard: React.FC = () => {
                       type="button"
                       onClick={() => setEditPdfFile(null)}
                       className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                      title="Remove PDF"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -2354,10 +2355,10 @@ export const AdminDashboard: React.FC = () => {
                           showAlert('Invalid File Format', 'Only PDF files (.pdf) are accepted.', 'warning');
                           return;
                         }
-                        if (file.size > 3 * 1024 * 1024) {
+                        if (file.size > 2 * 1024 * 1024) {
                           showAlert(
                             'PDF Size Limit Exceeded',
-                            `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 3 MB. Please compress the PDF.`,
+                            `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress the PDF.`,
                             'warning'
                           );
                           return;

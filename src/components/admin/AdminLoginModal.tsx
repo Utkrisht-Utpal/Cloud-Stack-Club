@@ -11,19 +11,41 @@ export const AdminLoginModal: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput || !passwordInput) return;
 
+    // Check if locked out
+    if (lockoutUntil && Date.now() < lockoutUntil) {
+      const remainingSec = Math.ceil((lockoutUntil - Date.now()) / 1000);
+      setError(`Too many failed login attempts. Please wait ${remainingSec} seconds before trying again.`);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
+
+    // Artificial anti-brute-force delay
+    await new Promise((r) => setTimeout(r, 600));
 
     try {
       const result = await login(emailInput, passwordInput);
       if (!result.success) {
-        setError(result.error || 'Invalid Admin Email or Password. Access denied.');
+        const nextFailed = failedAttempts + 1;
+        setFailedAttempts(nextFailed);
+        if (nextFailed >= 5) {
+          const lockTime = Date.now() + 60 * 1000; // 60s lockout
+          setLockoutUntil(lockTime);
+          setError('Too many failed attempts. Login locked for 60 seconds.');
+        } else {
+          setError(`${result.error || 'Invalid Admin Email or Password.'} (${5 - nextFailed} attempts remaining)`);
+        }
       } else {
+        setFailedAttempts(0);
+        setLockoutUntil(null);
         setEmailInput('');
         setPasswordInput('');
       }

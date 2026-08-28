@@ -412,106 +412,65 @@ export const verifyEventRegistration = async (
     } catch (e) {}
   }
 
-  // 2. Query Supabase database for exact binding
+  // 2. Query Supabase database securely via Server-Side RPC (Zero PII Leakage)
   if (isSupabaseConfigured()) {
     try {
-      // 2.1 Check primary registrations table (Individual Registrants & Team Leaders)
-      const { data: primaryRegs, error: pError } = await supabase
-        .from('event_registrations')
-        .select('id, event_id, uid, registration_number, registrant_name, registrant_email, registrant_phone, team_id')
-        .eq('event_id', targetEventId);
+      // 2.1 Attempt Server-Side RPC
+      const { data: rpcResult, error: rpcErr } = await supabase.rpc('verify_event_registration', {
+        p_event_id: targetEventId,
+        p_uid: normUid,
+        p_registration_number: normReg,
+      });
 
-      if (!pError && primaryRegs && primaryRegs.length > 0) {
-        // Test 1: Exact match for UID and Registration ID in primary registrations
-        const exactMatch = primaryRegs.find(
-          (r) =>
-            (r.registration_number || '').trim().toUpperCase() === normReg &&
-            (r.uid || '').trim().toUpperCase() === normUid
-        );
-
-        if (exactMatch) {
+      if (!rpcErr && rpcResult) {
+        const res = typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult;
+        if (res.is_valid) {
           return {
             isValid: true,
-            registrantName: exactMatch.registrant_name,
-            registrantEmail: exactMatch.registrant_email,
-            registrantPhone: exactMatch.registrant_phone || undefined,
-            isTeamMember: false,
+            registrantName: res.registrant_name,
+            registrantEmail: res.registrant_email,
+            registrantPhone: res.registrant_phone || undefined,
+            isTeamMember: res.is_team_member || false,
+            teamName: res.team_name,
           };
         }
       }
 
-      // 2.2 Check team members table (Teammates & Team Registration Numbers)
-      const { data: teamsForEvent } = await supabase
-        .from('event_teams')
-        .select('id, team_name, registration_number')
-        .eq('event_id', targetEventId);
+      // 2.2 Targeted Single-Row Fallback (Only queries exact matching UID & Reg Number)
+      const { data: primaryMatch } = await supabase
+        .from('event_registrations')
+        .select('registrant_name, registrant_email, registrant_phone')
+        .eq('event_id', targetEventId)
+        .ilike('uid', normUid)
+        .ilike('registration_number', normReg)
+        .maybeSingle();
 
-      if (teamsForEvent && teamsForEvent.length > 0) {
-        const teamIds = teamsForEvent.map((t) => t.id);
-        const { data: tmData, error: tmError } = await supabase
-          .from('event_team_members')
-          .select('id, team_id, name, email, phone, uid, registration_number')
-          .in('team_id', teamIds);
+      if (primaryMatch) {
+        return {
+          isValid: true,
+          registrantName: primaryMatch.registrant_name,
+          registrantEmail: primaryMatch.registrant_email,
+          registrantPhone: primaryMatch.registrant_phone || undefined,
+          isTeamMember: false,
+        };
+      }
 
-        const teamMembers = (!tmError && tmData) ? tmData : [];
+      // 2.3 Check team members targeted
+      const { data: teamMemberMatch } = await supabase
+        .from('event_team_members')
+        .select('name, email, phone')
+        .ilike('uid', normUid)
+        .ilike('registration_number', normReg)
+        .maybeSingle();
 
-        if (teamMembers.length > 0) {
-          // Exact match with individual team member registration number
-          const exactMember = teamMembers.find(
-            (m) =>
-              (m.registration_number || '').trim().toUpperCase() === normReg &&
-              (m.uid || '').trim().toUpperCase() === normUid
-          );
-
-          if (exactMember) {
-            const teamObj = teamsForEvent.find((t) => t.id === exactMember.team_id);
-            return {
-              isValid: true,
-              registrantName: exactMember.name,
-              registrantEmail: exactMember.email,
-              registrantPhone: exactMember.phone || undefined,
-              isTeamMember: true,
-              teamName: teamObj?.team_name,
-            };
-          }
-
-          // Check if normReg is the Team Registration ID (e.g. REG-20260819-AXT1IM)
-          const teamByReg = teamsForEvent.find(
-            (t: any) => (t.registration_number || '').trim().toUpperCase() === normReg
-          );
-
-          if (teamByReg) {
-            // Check if UID is the leader of this team
-            const leaderMatch = primaryRegs?.find(
-              (r) => r.team_id === teamByReg.id && (r.uid || '').trim().toUpperCase() === normUid
-            );
-            if (leaderMatch) {
-              return {
-                isValid: true,
-                registrantName: leaderMatch.registrant_name,
-                registrantEmail: leaderMatch.registrant_email,
-                registrantPhone: leaderMatch.registrant_phone || undefined,
-                isTeamMember: false,
-                teamName: teamByReg.team_name,
-              };
-            }
-
-            // Check if UID is a teammate in this team
-            const memberMatch = teamMembers.find(
-              (m) => m.team_id === teamByReg.id && (m.uid || '').trim().toUpperCase() === normUid
-            );
-            if (memberMatch) {
-              return {
-                isValid: true,
-                registrantName: memberMatch.name,
-                registrantEmail: memberMatch.email,
-                registrantPhone: memberMatch.phone || undefined,
-                isTeamMember: true,
-                teamName: teamByReg.team_name,
-              };
-            }
-          }
-        }
+      if (teamMemberMatch) {
+        return {
+          isValid: true,
+          registrantName: teamMemberMatch.name,
+          registrantEmail: teamMemberMatch.email,
+          registrantPhone: teamMemberMatch.phone || undefined,
+          isTeamMember: true,
+        };
       }
 
       // If no valid match was found, return a generic error without exposing any IDs
