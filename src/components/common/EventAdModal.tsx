@@ -12,6 +12,28 @@ interface EventAdModalProps {
   onFeedbackClick?: (event: Event) => void;
 }
 
+/**
+ * Calculates day difference between event date and today (midnight-aligned)
+ *  0 = Today (Event Day T)
+ * -1 = Yesterday (Day T+1 relative to event)
+ * < -1 = Older past event (Day T+2 onwards)
+ * > 0 = Future / Upcoming event
+ */
+const getDiffDays = (dateStr?: string | null): number | null => {
+  if (!dateStr) return null;
+  const parts = dateStr.split('T')[0].split('-');
+  if (parts.length < 3) return null;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const eventMidnight = new Date(y, m - 1, d).getTime();
+  return Math.round((eventMidnight - todayMidnight) / (24 * 60 * 60 * 1000));
+};
+
 export const EventAdModal: React.FC<EventAdModalProps> = ({
   events,
   onRegisterClick,
@@ -19,6 +41,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   onFeedbackClick,
 }) => {
   const [activeAdEvent, setActiveAdEvent] = useState<Event | null>(null);
+  const [isFeedbackWindow, setIsFeedbackWindow] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { isAdminLoggedIn } = useAdminAuth();
   const userDismissedRef = useRef(false);
@@ -27,29 +50,57 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     if (!events || events.length === 0) return;
     if (userDismissedRef.current) return;
 
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // 1. Priority 1: Check for event in the T + 1 Feedback Window (Day T: 0, Day T+1: -1)
+    const feedbackCandidates = events
+      .filter((evt) => {
+        if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any)) return false;
+        const diff = getDiffDays(evt.date);
+        return diff === 0 || diff === -1;
+      })
+      .sort((a, b) => {
+        const diffA = getDiffDays(a.date) ?? -999;
+        const diffB = getDiffDays(b.date) ?? -999;
+        // Prioritize ongoing event today (0) over yesterday (-1)
+        return diffB - diffA;
+      });
 
-    // Find the nearest active upcoming or live event whose event date is not over
-    const validUpcomingEvent = events.find((evt) => {
-      // Exclude deleted, cancelled, or completed events
-      if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any) || evt.status === ('completed' as any)) return false;
-
-      // Event is valid if its event date is today or in the future
-      if (evt.date) {
-        const eventDateStr = evt.date.split('T')[0];
-        if (eventDateStr < todayStr) return false;
-      }
-
-      return true;
-    });
-
-    if (validUpcomingEvent) {
-      setActiveAdEvent(validUpcomingEvent);
+    if (feedbackCandidates.length > 0) {
+      setActiveAdEvent(feedbackCandidates[0]);
+      setIsFeedbackWindow(true);
       setIsOpen(true);
-    } else {
-      setIsOpen(false);
+      return;
     }
+
+    // 2. Priority 2: Nearest Upcoming Event (Day T+2 onwards or future)
+    const upcomingCandidates = events
+      .filter((evt) => {
+        if (
+          evt.status === ('cancelled' as any) ||
+          evt.status === ('inactive' as any) ||
+          evt.status === ('completed' as any)
+        ) {
+          return false;
+        }
+        const diff = getDiffDays(evt.date);
+        return diff !== null && diff > 0;
+      })
+      .sort((a, b) => {
+        const diffA = getDiffDays(a.date) ?? 999;
+        const diffB = getDiffDays(b.date) ?? 999;
+        return diffA - diffB;
+      });
+
+    if (upcomingCandidates.length > 0) {
+      setActiveAdEvent(upcomingCandidates[0]);
+      setIsFeedbackWindow(false);
+      setIsOpen(true);
+      return;
+    }
+
+    // 3. Fallback: No matching event
+    setActiveAdEvent(null);
+    setIsFeedbackWindow(false);
+    setIsOpen(false);
   }, [events]);
 
   useEffect(() => {
@@ -87,6 +138,9 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   if (!activeAdEvent || !isOpen) return null;
 
+  const diffDays = getDiffDays(activeAdEvent.date);
+  const isFeedbackActive = isFeedbackWindow || diffDays === 0 || diffDays === -1 || activeAdEvent.status === 'live';
+
   const eventDateFormatted = activeAdEvent.date
     ? new Date(activeAdEvent.date).toLocaleDateString('en-US', {
       weekday: 'short',
@@ -114,7 +168,6 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   const statusInfo = getEventStatusInfo(activeAdEvent.date);
   const regOpen = isRegistrationActive(activeAdEvent);
-  const isOngoing = statusInfo.type === 'ongoing' || activeAdEvent.status === 'live';
 
   return (
     <AnimatePresence>
@@ -140,7 +193,6 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 h-full overflow-hidden scrollbar-none">
             {/* Column 1: Full-Size Instagram Poster (5 cols on Desktop) */}
             <div className="md:col-span-5 bg-slate-950 p-3 sm:p-4 flex flex-col items-center justify-center relative overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-slate-800">
-
               {activeAdEvent.image_url ? (
                 <div className="w-full h-48 sm:h-64 md:h-[420px] max-h-[50vh] md:max-h-[70vh] rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center">
                   <img
@@ -161,17 +213,23 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
               <div className="space-y-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <div
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusInfo.type === 'ongoing'
-                        ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse'
-                        : statusInfo.type === 'completed'
-                          ? 'bg-slate-500/20 text-slate-700 dark:text-slate-300 border-slate-500/40'
-                          : 'bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/20'
+                    {isFeedbackActive ? (
+                      <div
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                          diffDays === 0
+                            ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse'
+                            : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-sm'
                         }`}
-                    >
-                      <Sparkles className="w-3 h-3 text-current" />
-                      <span>{statusInfo.type === 'ongoing' ? 'ONGOING EVENT' : statusInfo.label}</span>
-                    </div>
+                      >
+                        <Sparkles className="w-3 h-3 text-current" />
+                        <span>{diffDays === 0 ? 'ONGOING EVENT' : 'RECENT EVENT • FEEDBACK OPEN'}</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border bg-blue-500/15 text-blue-600 dark:text-sky-400 border-blue-500/20">
+                        <Sparkles className="w-3 h-3 text-current" />
+                        <span>{statusInfo.label}</span>
+                      </div>
+                    )}
 
                     {activeAdEvent.category && activeAdEvent.category.trim() && (
                       <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
@@ -264,8 +322,8 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
-                {/* Give Event Feedback Button (Shown when event is ongoing or live) */}
-                {isOngoing && onFeedbackClick && (
+                {/* Give Event Feedback Button (Shown during Feedback Window: Day T / Day T+1) */}
+                {isFeedbackActive && onFeedbackClick && (
                   <button
                     type="button"
                     onClick={() => {
@@ -278,16 +336,19 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                         : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/30'
                     }`}
                   >
-                    <MessageSquare className={`w-4 h-4 ${
-                      activeAdEvent.registration_enabled && regOpen
-                        ? 'text-blue-600 dark:text-sky-400'
-                        : 'text-white'
-                    }`} />
+                    <MessageSquare
+                      className={`w-4 h-4 ${
+                        activeAdEvent.registration_enabled && regOpen
+                          ? 'text-blue-600 dark:text-sky-400'
+                          : 'text-white'
+                      }`}
+                    />
                     <span>Give Event Feedback</span>
                   </button>
                 )}
 
-                {activeAdEvent.registration_enabled && (
+                {/* Registration Button (For upcoming events or ongoing events where registration is still open) */}
+                {activeAdEvent.registration_enabled && (!isFeedbackActive || regOpen) && (
                   regOpen && onRegisterClick ? (
                     <button
                       type="button"
@@ -301,13 +362,15 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-not-allowed border border-slate-300 dark:border-slate-700"
-                    >
-                      <span>Registration Closed</span>
-                    </button>
+                    !isFeedbackActive && (
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 cursor-not-allowed border border-slate-300 dark:border-slate-700"
+                      >
+                        <span>Registration Closed</span>
+                      </button>
+                    )
                   )
                 )}
 
