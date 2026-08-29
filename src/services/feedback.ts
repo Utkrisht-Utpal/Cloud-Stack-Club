@@ -511,16 +511,20 @@ export interface VerifyEventRegistrationResult {
 }
 
 /**
- * Validates that the entered Registration ID and University ID (UID) are strictly bound
- * and belong to the same attendee for the specified event.
+ * Validates that the entered Registration ID, University ID (UID), Email, and Phone Number
+ * are strictly bound and belong to the same attendee for the specified event (individual or team member).
  */
 export const verifyEventRegistration = async (
   eventId: string,
   universityId: string,
-  registrationId: string
+  registrationId: string,
+  email?: string,
+  phone?: string
 ): Promise<VerifyEventRegistrationResult> => {
   const normUid = (universityId || '').trim().toUpperCase();
   const normReg = (registrationId || '').trim().toUpperCase();
+  const normEmail = (email || '').trim().toLowerCase();
+  const normPhone = (phone || '').trim().replace(/\D/g, '');
 
   if (!normUid || !normReg) {
     return {
@@ -557,7 +561,7 @@ export const verifyEventRegistration = async (
     } catch (e) {}
   }
 
-  // 2. Query Supabase database securely via Server-Side RPC (Zero PII Leakage)
+  // 2. Query Supabase database securely
   if (isSupabaseConfigured()) {
     try {
       // 2.1 Attempt Server-Side RPC
@@ -565,6 +569,8 @@ export const verifyEventRegistration = async (
         p_event_id: targetEventId,
         p_uid: normUid,
         p_registration_number: normReg,
+        p_email: normEmail || null,
+        p_phone: normPhone || null,
       });
 
       if (!rpcErr && rpcResult) {
@@ -581,14 +587,22 @@ export const verifyEventRegistration = async (
         }
       }
 
-      // 2.2 Targeted Single-Row Fallback (Only queries exact matching UID & Reg Number)
-      const { data: primaryMatch } = await supabase
+      // 2.2 Targeted Single-Row Fallback (Primary registrant / Team leader)
+      let primaryQuery = supabase
         .from('event_registrations')
         .select('registrant_name, registrant_email, registrant_phone')
         .eq('event_id', targetEventId)
         .ilike('uid', normUid)
-        .ilike('registration_number', normReg)
-        .maybeSingle();
+        .ilike('registration_number', normReg);
+
+      if (normEmail) {
+        primaryQuery = primaryQuery.ilike('registrant_email', normEmail);
+      }
+      if (normPhone) {
+        primaryQuery = primaryQuery.ilike('registrant_phone', `%${normPhone}%`);
+      }
+
+      const { data: primaryMatch } = await primaryQuery.maybeSingle();
 
       if (primaryMatch) {
         return {
@@ -601,12 +615,20 @@ export const verifyEventRegistration = async (
       }
 
       // 2.3 Check team members targeted
-      const { data: teamMemberMatch } = await supabase
+      let teamQuery = supabase
         .from('event_team_members')
-        .select('name, email, phone')
+        .select('name, email, phone, team_id, registration_number')
         .ilike('uid', normUid)
-        .ilike('registration_number', normReg)
-        .maybeSingle();
+        .ilike('registration_number', normReg);
+
+      if (normEmail) {
+        teamQuery = teamQuery.ilike('email', normEmail);
+      }
+      if (normPhone) {
+        teamQuery = teamQuery.ilike('phone', `%${normPhone}%`);
+      }
+
+      const { data: teamMemberMatch } = await teamQuery.maybeSingle();
 
       if (teamMemberMatch) {
         return {
@@ -618,10 +640,10 @@ export const verifyEventRegistration = async (
         };
       }
 
-      // If no valid match was found, return a generic error without exposing any IDs
+      // If no valid match was found, return strict rejection message
       return {
         isValid: false,
-        error: `The entered UID or Registration ID is not associated with this event. Please verify your details.`,
+        error: `Registration ID, UID, Email, and Phone do not match our event registration records. Please verify your details.`,
       };
     } catch (err) {
       console.warn('Error during event registration verification against Supabase:', err);
@@ -640,7 +662,8 @@ export const verifyEventRegistration = async (
             (r) =>
               (r.event_id || '').toLowerCase() === targetEventId.toLowerCase() &&
               (r.registration_number || '').trim().toUpperCase() === normReg &&
-              (r.uid || '').trim().toUpperCase() === normUid
+              (r.uid || '').trim().toUpperCase() === normUid &&
+              (!normEmail || (r.registrant_email || '').trim().toLowerCase() === normEmail)
           );
           if (match) {
             return {
@@ -659,30 +682,36 @@ export const verifyEventRegistration = async (
 };
 
 /**
- * Checks whether feedback has already been submitted for this event by the given UID or Registration ID.
+ * Checks whether feedback has already been submitted for this event by UID, Registration ID, Email, or Phone.
  */
 export const checkExistingFeedbackForEvent = async (
   eventId: string,
   universityId: string,
-  registrationId: string
+  registrationId?: string,
+  email?: string,
+  phone?: string
 ): Promise<{ alreadySubmitted: boolean }> => {
   const normUid = (universityId || '').trim().toUpperCase();
   const normReg = (registrationId || '').trim().toUpperCase();
+  const normEmail = (email || '').trim().toLowerCase();
+  const normPhone = (phone || '').trim().replace(/\D/g, '');
 
-  if (!normUid && !normReg) return { alreadySubmitted: false };
+  if (!normUid && !normReg && !normEmail && !normPhone) return { alreadySubmitted: false };
 
   if (isSupabaseConfigured()) {
     try {
       const { data: existingFeedbacks, error } = await supabase
         .from('event_feedbacks')
-        .select('id, university_id, registration_id')
+        .select('id, university_id, registration_id, email, phone')
         .eq('event_id', eventId);
 
       if (!error && existingFeedbacks && existingFeedbacks.length > 0) {
         const duplicate = existingFeedbacks.some(
           (f) =>
-            (f.university_id && f.university_id.trim().toUpperCase() === normUid) ||
-            (f.registration_id && f.registration_id.trim().toUpperCase() === normReg)
+            (normUid && f.university_id && f.university_id.trim().toUpperCase() === normUid) ||
+            (normReg && f.registration_id && f.registration_id.trim().toUpperCase() === normReg) ||
+            (normEmail && f.email && f.email.trim().toLowerCase() === normEmail) ||
+            (normPhone && f.phone && f.phone.replace(/\D/g, '') === normPhone)
         );
 
         if (duplicate) {
@@ -700,8 +729,10 @@ export const checkExistingFeedbackForEvent = async (
       const duplicate = list.some(
         (f) =>
           f.event_id === eventId &&
-          ((f.university_id && f.university_id.trim().toUpperCase() === normUid) ||
-            (f.registration_id && f.registration_id.trim().toUpperCase() === normReg))
+          ((normUid && f.university_id && f.university_id.trim().toUpperCase() === normUid) ||
+            (normReg && f.registration_id && f.registration_id.trim().toUpperCase() === normReg) ||
+            (normEmail && f.email && f.email.trim().toLowerCase() === normEmail) ||
+            (normPhone && f.phone && f.phone.replace(/\D/g, '') === normPhone))
       );
       if (duplicate) {
         return { alreadySubmitted: true };
