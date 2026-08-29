@@ -91,7 +91,7 @@ async function verifySupabaseAuth(request, env) {
       return { isAuthenticated: false, isAdmin: false };
     }
 
-    const adminEmail = (env.ADMIN_EMAIL || 'utkrishtutpal1@gmail.com').toLowerCase();
+    const adminEmail = (env.ADMIN_EMAIL).toLowerCase();
     const isEmailAdmin = userData.email && userData.email.toLowerCase() === adminEmail;
     const isRoleAdmin =
       userData.app_metadata?.role === 'admin' ||
