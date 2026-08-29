@@ -481,17 +481,31 @@ export const getEventRegistrationCountsMap = async (): Promise<Record<string, nu
 
   if (isSupabaseConfigured()) {
     try {
-      const { data } = await supabase
-        .from('event_registrations')
-        .select('event_id');
+      // 1. Query aggregate counts via secure RPC (Zero student PII exposure)
+      const { data: rpcCounts, error: rpcError } = await supabase.rpc('get_event_registration_counts');
+      if (!rpcError && rpcCounts) {
+        const countsObj = typeof rpcCounts === 'string' ? JSON.parse(rpcCounts) : rpcCounts;
+        if (countsObj && typeof countsObj === 'object') {
+          Object.keys(countsObj).forEach((eventId) => {
+            if (eventId) {
+              countsMap[eventId.toLowerCase()] = Number(countsObj[eventId]) || 0;
+            }
+          });
+        }
+      } else {
+        // Fallback query if RPC not yet created
+        const { data } = await supabase
+          .from('event_registrations')
+          .select('event_id');
 
-      if (data) {
-        data.forEach((r) => {
-          if (r.event_id) {
-            const key = r.event_id.toLowerCase();
-            countsMap[key] = (countsMap[key] || 0) + 1;
-          }
-        });
+        if (data) {
+          data.forEach((r) => {
+            if (r.event_id) {
+              const key = r.event_id.toLowerCase();
+              countsMap[key] = (countsMap[key] || 0) + 1;
+            }
+          });
+        }
       }
     } catch (e) {
       console.warn('Error fetching registration counts map:', e);

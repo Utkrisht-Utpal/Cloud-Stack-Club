@@ -241,9 +241,131 @@ export const registerForEvent = async (
     ? `REG-${todayStr}-${teamPrefix}${generateRandomCode(4)}`
     : `REG-${todayStr}-${generateRandomCode(6)}`;
 
+  let createdRegistration: EventRegistration;
   let validMembers: any[] = [];
 
-  let createdRegistration: EventRegistration;
+  // 1. Attempt Server-Side Gateway Call (Turnstile + Rate Limiting)
+  const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+  let rpcRes: any = null;
+  let rpcErr: any = null;
+
+  const formattedTeamMembers = (team_members || []).map((m) => ({
+    name: m.name.trim(),
+    email: m.email.trim(),
+    phone: m.phone?.trim() || null,
+    uid: m.uid ? m.uid.trim().toUpperCase() : null,
+  }));
+
+  const formattedAnswers = (answers || []).map((ans) => ({
+    field_id: ans.field_id,
+    answer_text: ans.answer_text || null,
+    answer_json: ans.answer_json || null,
+    file_url: ans.file_url || null,
+  }));
+
+  if (workerUrl && isUuid) {
+    try {
+      const response = await fetch(`${workerUrl}/api/register-event`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: targetEventId,
+          registrant_name: registrant_name.trim(),
+          registrant_email: registrant_email.trim(),
+          registrant_phone: registrant_phone?.trim() || null,
+          uid: uid ? uid.trim().toUpperCase() : null,
+          team_name: team_name?.trim() || null,
+          team_members: formattedTeamMembers,
+          answers: formattedAnswers,
+        }),
+      });
+
+      if (response.ok) {
+        rpcRes = await response.json();
+      } else {
+        const errJson = await response.json().catch(() => ({ error: 'Registration failed' }));
+        rpcErr = new Error(errJson.error || `Registration failed with status ${response.status}`);
+      }
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch')) {
+        rpcErr = err;
+      }
+    }
+  }
+
+  // 2. Direct RPC fallback
+  if (!rpcRes && !rpcErr && isSupabaseConfigured() && isUuid) {
+    const { data, error } = await supabase.rpc('register_for_event', {
+      p_event_id: targetEventId,
+      p_registrant_name: registrant_name.trim(),
+      p_registrant_email: registrant_email.trim(),
+      p_registrant_phone: registrant_phone?.trim() || null,
+      p_uid: uid ? uid.trim().toUpperCase() : null,
+      p_team_name: team_name?.trim() || null,
+      p_team_members: formattedTeamMembers,
+      p_answers: formattedAnswers,
+    });
+    rpcRes = data;
+    rpcErr = error;
+  }
+
+  if (rpcRes) {
+    const parsed = typeof rpcRes === 'string' ? JSON.parse(rpcRes) : rpcRes;
+    createdRegistration = {
+      id: parsed.id,
+      registration_number: parsed.registration_number,
+      event_id: targetEventId,
+      member_id: member_id || null,
+      registrant_name: registrant_name.trim(),
+      registrant_email: registrant_email.trim(),
+      registrant_phone: registrant_phone?.trim() || null,
+      uid: uid ? uid.trim().toUpperCase() : null,
+      is_member: is_member || false,
+      team_id: parsed.team_id || null,
+      status: 'registered',
+      submitted_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (parsed.team_id && isTeamRegistration) {
+      createdRegistration.team = {
+        id: parsed.team_id,
+        event_id: targetEventId,
+        team_name: team_name!.trim(),
+        registration_number: parsed.team_registration_number,
+        created_by_registration_id: parsed.id,
+        created_at: new Date().toISOString(),
+        members: (team_members || []).map((m, idx) => ({
+          id: `tm-${idx}`,
+          team_id: parsed.team_id,
+          name: m.name.trim(),
+          email: m.email.trim(),
+          phone: m.phone ? m.phone.trim() : null,
+          uid: m.uid ? m.uid.trim().toUpperCase() : null,
+          registration_number: `REG-${todayStr}-${teamPrefix}${generateRandomCode(4)}`,
+          member_id: null,
+          created_at: new Date().toISOString(),
+        })),
+      };
+    }
+
+    // Save to local cache
+    try {
+      const key = `csc_event_regs_${targetEventId}`;
+      const existing = localStorage.getItem(key);
+      const list: EventRegistration[] = existing ? JSON.parse(existing) : [];
+      list.unshift(createdRegistration);
+      localStorage.setItem(key, JSON.stringify(list));
+
+      const allKey = 'csc_all_event_regs';
+      const allExisting = localStorage.getItem(allKey);
+      const allList: EventRegistration[] = allExisting ? JSON.parse(allExisting) : [];
+      allList.unshift(createdRegistration);
+      localStorage.setItem(allKey, JSON.stringify(allList));
+    } catch {}
+
+    return createdRegistration;
+  }
 
   try {
     // 2. If team registration, create event team and team members

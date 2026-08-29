@@ -37,55 +37,25 @@ export const checkMemberDuplicate = async (
   const cleanEmail = email.trim();
   const cleanPhone = phone?.trim() || '';
 
-  // 1. Check UID duplicate in members table (only active or pending members are blocked)
-  if (cleanUid) {
-    const { data: existingUid } = await supabase
-      .from('members')
-      .select('id, uid, status')
-      .ilike('uid', cleanUid)
-      .maybeSingle();
+  try {
+    const { data, error } = await supabase.rpc('check_member_duplicate', {
+      p_uid: cleanUid,
+      p_email: cleanEmail,
+      p_phone: cleanPhone,
+    });
 
-    if (existingUid && existingUid.status !== 'inactive') {
-      return {
-        isDuplicate: true,
-        field: 'UID',
-        message: `A member with UID "${cleanUid}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`,
-      };
+    if (!error && data) {
+      const res = typeof data === 'string' ? JSON.parse(data) : data;
+      if (res.is_duplicate) {
+        return {
+          isDuplicate: true,
+          field: res.field,
+          message: res.message,
+        };
+      }
     }
-  }
-
-  // 2. Check Email duplicate in members table (only active or pending members are blocked)
-  if (cleanEmail) {
-    const { data: existingEmail } = await supabase
-      .from('members')
-      .select('id, email, status')
-      .ilike('email', cleanEmail)
-      .maybeSingle();
-
-    if (existingEmail && existingEmail.status !== 'inactive') {
-      return {
-        isDuplicate: true,
-        field: 'Email',
-        message: `A member with Email "${cleanEmail}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`,
-      };
-    }
-  }
-
-  // 3. Check Mobile Number duplicate in members table (only active or pending members are blocked)
-  if (cleanPhone) {
-    const { data: existingPhone } = await supabase
-      .from('members')
-      .select('id, phone, status')
-      .eq('phone', cleanPhone)
-      .maybeSingle();
-
-    if (existingPhone && existingPhone.status !== 'inactive') {
-      return {
-        isDuplicate: true,
-        field: 'Mobile Number',
-        message: `A member with Mobile Number "${cleanPhone}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`,
-      };
-    }
+  } catch (err) {
+    console.warn('Notice checking duplicate via RPC:', err);
   }
 
   return { isDuplicate: false };
@@ -93,63 +63,26 @@ export const checkMemberDuplicate = async (
 
 export const submitMemberApplication = async (
   payload: MemberApplicationPayload,
-  verificationFile?: File | null
+  verificationFile?: File | null,
+  turnstileToken?: string
 ): Promise<Member> => {
-  if (!isSupabaseConfigured()) {
-    throw new Error('Supabase is not configured yet. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-  }
-
   const { name, email, phone, uid, department, year } = payload;
   const cleanUid = uid.trim();
   const cleanEmail = email.trim();
-  const cleanPhone = phone?.trim() || null;
-
-  // Check for existing duplicate UID, Email, or Mobile Number (active or pending) BEFORE processing!
-  const dupCheck = await checkMemberDuplicate(cleanUid, cleanEmail, cleanPhone || undefined);
-  if (dupCheck.isDuplicate) {
-    throw new Error(dupCheck.message || `A registration with this ${dupCheck.field} already exists.`);
-  }
-
-  // Check if an inactive member record exists matching UID or Email
-  let existingInactiveMember: any = null;
-  if (isSupabaseConfigured()) {
-    if (cleanUid) {
-      const { data: memByUid } = await supabase
-        .from('members')
-        .select('*')
-        .ilike('uid', cleanUid)
-        .maybeSingle();
-      if (memByUid && memByUid.status === 'inactive') {
-        existingInactiveMember = memByUid;
-      }
-    }
-    if (!existingInactiveMember && cleanEmail) {
-      const { data: memByEmail } = await supabase
-        .from('members')
-        .select('*')
-        .ilike('email', cleanEmail)
-        .maybeSingle();
-      if (memByEmail && memByEmail.status === 'inactive') {
-        existingInactiveMember = memByEmail;
-      }
-    }
-  }
-
-  const memberId = existingInactiveMember ? existingInactiveMember.id : generateUUID();
-  const regId = existingInactiveMember?.registration_id || `CSC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  const cleanPhone = phone?.trim() || '';
 
   let filePath: string | null = null;
 
-  // 1. If verification document is provided, upload it to R2 storage FIRST
+  // 1. Upload verification document to R2 storage FIRST
   if (verificationFile) {
     const rawExt = (verificationFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
     const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'pdf'].includes(rawExt) ? rawExt : 'jpg';
     const cleanFileName = `cuims_${Date.now()}.${cleanExt}`;
-    filePath = `membership/${memberId}/${cleanFileName}`;
+    filePath = `membership/${cleanUid}_${Date.now()}/${cleanFileName}`;
 
     if (isR2Configured()) {
       try {
-        await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, verificationFile);
+        await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, verificationFile, turnstileToken);
       } catch (uploadErr: any) {
         console.error('R2 upload failed for member verification doc:', uploadErr);
         throw new Error(
@@ -159,106 +92,82 @@ export const submitMemberApplication = async (
     }
   }
 
-  // 2. If existing inactive member found -> UPDATE status back to 'pending' so it appears in pending applications
-  if (existingInactiveMember) {
-    const updatePayload: any = {
-      name: name.trim(),
-      email: cleanEmail,
-      phone: cleanPhone,
-      uid: cleanUid,
-      department: department?.trim() || null,
-      year: year || null,
-      status: 'pending' as const,
-      is_core_member: false,
-      verification_file_url: filePath,
-      created_at: new Date().toISOString(), // Reset created_at so it shows at the top of pending applications
-      updated_at: new Date().toISOString(),
-    };
+  // 2. Submit application via Cloudflare Worker Zero-Trust Gateway
+  const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+  let result: any = null;
 
-    const { data: updatedData, error: updateError } = await supabase
-      .from('members')
-      .update(updatePayload)
-      .eq('id', existingInactiveMember.id)
-      .select('*')
-      .maybeSingle();
-
-    if (updateError) {
-      console.error('Error reactivating inactive member application:', updateError.message);
-      throw new Error(`Membership re-application failed: ${updateError.message}`);
-    }
-
-    // Remove from local inactive cache if present
+  if (workerUrl) {
     try {
-      const stored = localStorage.getItem(INACTIVE_MEMBERS_KEY);
-      if (stored) {
-        const list = JSON.parse(stored).filter((id: string) => id !== existingInactiveMember.id);
-        localStorage.setItem(INACTIVE_MEMBERS_KEY, JSON.stringify(list));
-      }
-    } catch {}
+      const response = await fetch(`${workerUrl}/api/submit-member`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(turnstileToken ? { 'cf-turnstile-response': turnstileToken } : {}),
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: cleanEmail,
+          phone: cleanPhone,
+          uid: cleanUid,
+          department: department?.trim() || '',
+          year: year || '',
+          verification_file_url: filePath || '',
+          turnstile_token: turnstileToken,
+        }),
+      });
 
-    return (updatedData as Member) || {
-      ...existingInactiveMember,
-      ...updatePayload,
-    };
+      if (!response.ok) {
+        const errorJson = await response.json().catch(() => ({ error: 'Submission failed' }));
+        throw new Error((errorJson as any).error || `Submission failed with status ${response.status}`);
+      }
+
+      result = await response.json();
+    } catch (err: any) {
+      if (err.message && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+    }
   }
 
-  // 3. Otherwise, INSERT brand new member record
-  const insertPayload = {
-    id: memberId,
-    registration_id: regId,
+  // 3. Fallback direct RPC if worker not reachable or in development
+  if (!result && isSupabaseConfigured()) {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('submit_member_application', {
+      p_name: name.trim(),
+      p_email: cleanEmail,
+      p_phone: cleanPhone,
+      p_uid: cleanUid,
+      p_department: department?.trim() || '',
+      p_year: year || '',
+      p_verification_file_url: filePath || '',
+    });
+
+    if (rpcError) {
+      console.error('Error submitting member application via RPC:', rpcError.message);
+      throw new Error(rpcError.message || 'Membership application submission failed.');
+    }
+
+    result = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+  }
+
+  const newMember: Member = {
+    id: result?.id || generateUUID(),
+    registration_id: result?.registration_id || `CSC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     uid: cleanUid,
     name: name.trim(),
     email: cleanEmail,
-    phone: cleanPhone,
+    phone: cleanPhone || null,
     department: department?.trim() || null,
     year: year || null,
-    status: 'pending' as const,
+    status: 'pending',
     is_core_member: false,
+    role_id: null,
     verification_file_url: filePath,
+    joined_at: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
-  const { data: memberData, error: memberError } = await supabase
-    .from('members')
-    .insert(insertPayload)
-    .select('*')
-    .maybeSingle();
-
-  if (memberError || !memberData) {
-    if (memberError?.message?.includes('members_uid_key') || memberError?.message?.includes('uid')) {
-      throw new Error(`A member with UID "${cleanUid}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
-    }
-    if (memberError?.message?.includes('members_email_key') || memberError?.message?.includes('email')) {
-      throw new Error(`A member with Email "${cleanEmail}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
-    }
-    if (memberError?.message?.includes('phone')) {
-      throw new Error(`A member with Mobile Number "${cleanPhone}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
-    }
-
-    const { error: fallbackError } = await supabase.from('members').insert(insertPayload);
-    if (fallbackError) {
-      if (fallbackError.message?.includes('uid')) {
-        throw new Error(`A member with UID "${cleanUid}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
-      }
-      if (fallbackError.message?.includes('email')) {
-        throw new Error(`A member with Email "${cleanEmail}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
-      }
-      if (fallbackError.message?.includes('phone')) {
-        throw new Error(`A member with Mobile Number "${cleanPhone}" already exists. If you need assistance or wish to update your details, please reach out via the Contact Form (at the bottom of the website).`);
-      }
-      console.error('Error inserting member application:', fallbackError.message);
-      throw new Error(`Membership application failed: ${fallbackError.message}`);
-    }
-  }
-
-  return (
-    (memberData as Member) || {
-      ...insertPayload,
-      role_id: null,
-      joined_at: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-  );
+  return newMember;
 };
 
 export const getPendingMemberApplications = async (): Promise<Member[]> => {
@@ -364,7 +273,7 @@ export const getCoreMembers = async (): Promise<Member[]> => {
 
   const { data, error } = await supabase
     .from('members')
-    .select('*, role:roles(*)')
+    .select('id, registration_id, name, department, year, role_id, is_core_member, status, created_at, role:roles(*)')
     .eq('status', 'active')
     .eq('is_core_member', true)
     .order('created_at', { ascending: true });
@@ -375,7 +284,7 @@ export const getCoreMembers = async (): Promise<Member[]> => {
   }
 
   const inactiveIds = getInactiveMemberIds();
-  return ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
+  return (((data as unknown) as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
 };
 
 export const getMembers = async (): Promise<Member[]> => {
@@ -385,7 +294,7 @@ export const getMembers = async (): Promise<Member[]> => {
 
   const { data, error } = await supabase
     .from('members')
-    .select('*, role:roles(*)')
+    .select('id, registration_id, name, department, year, role_id, is_core_member, status, created_at, role:roles(*)')
     .eq('status', 'active')
     .order('name', { ascending: true });
 
@@ -395,7 +304,7 @@ export const getMembers = async (): Promise<Member[]> => {
   }
 
   const inactiveIds = getInactiveMemberIds();
-  return ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
+  return (((data as unknown) as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
 };
 
 export const deleteMemberAdmin = async (memberId: string): Promise<void> => {

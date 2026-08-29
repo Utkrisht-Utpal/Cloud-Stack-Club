@@ -22,15 +22,27 @@ export const isR2Configured = (): boolean => {
  */
 import { supabase } from './supabase';
 
-export const uploadToR2 = async (folder: string, path: string, file: File): Promise<string> => {
+export const uploadToR2 = async (
+  folder: string,
+  path: string,
+  file: File,
+  turnstileToken?: string
+): Promise<string> => {
   const fullPath = `${folder}/${path}`;
 
   const formData = new FormData();
   formData.append('file', file);
   formData.append('path', fullPath);
+  formData.append('folder', folder);
+  if (turnstileToken) {
+    formData.append('turnstile_token', turnstileToken);
+  }
 
   // Attach active Supabase Admin JWT if user is logged in
   const headers: Record<string, string> = {};
+  if (turnstileToken) {
+    headers['cf-turnstile-response'] = turnstileToken;
+  }
 
   try {
     const { data: { session } } = await supabase.auth.getSession();
@@ -50,7 +62,9 @@ export const uploadToR2 = async (folder: string, path: string, file: File): Prom
     throw new Error((errorBody as any).error || `R2 upload failed with status ${response.status}`);
   }
 
-  return `${R2_PUBLIC_URL}/${fullPath}`;
+  const result = await response.json().catch(() => ({}));
+  const finalPath = result.path || fullPath;
+  return `${R2_PUBLIC_URL}/${finalPath}`;
 };
 
 /**

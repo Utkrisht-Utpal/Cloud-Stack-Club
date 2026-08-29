@@ -37,6 +37,63 @@ export const submitFeedback = async (
   }
 
   try {
+    const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+    if (workerUrl) {
+      try {
+        const response = await fetch(`${workerUrl}/api/submit-contact`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: payload.name.trim(),
+            email: payload.email.trim(),
+            message: payload.message.trim(),
+          }),
+        });
+
+        if (response.ok) {
+          const parsed = await response.json();
+          const dbFeedback: ContactFeedback = {
+            ...newFeedback,
+            id: parsed.id || tempId,
+          };
+          try {
+            const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
+            let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
+            list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
+            list.unshift(dbFeedback);
+            localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
+          } catch (e) {}
+          return dbFeedback;
+        }
+      } catch (workerErr) {
+        console.warn('Worker gateway submit-contact notice:', workerErr);
+      }
+    }
+
+    const { data: rpcData, error: rpcError } = await supabase.rpc('submit_contact_feedback', {
+      p_name: payload.name.trim(),
+      p_email: payload.email.trim(),
+      p_message: payload.message.trim(),
+    });
+
+    if (!rpcError && rpcData) {
+      const parsed = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+      const dbFeedback: ContactFeedback = {
+        ...newFeedback,
+        id: parsed.id || tempId,
+      };
+
+      try {
+        const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
+        let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
+        list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
+        list.unshift(dbFeedback);
+        localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
+      } catch (e) {}
+      return dbFeedback;
+    }
+
+    // Direct insert fallback if RPC not installed yet
     const insertObj = {
       name: payload.name.trim(),
       email: payload.email.trim(),
@@ -206,13 +263,101 @@ export const submitEventFeedback = async (
   }
 
   try {
+    // 1. Resolve UUID event_id if title or slug passed
+    let targetEventId = payload.event_id.trim();
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
+
+    if (!isUuid) {
+      const { data: dbEvt } = await supabase
+        .from('events')
+        .select('id')
+        .or(`slug.eq.${targetEventId},id.eq.${targetEventId}`)
+        .maybeSingle();
+
+      if (dbEvt?.id) targetEventId = dbEvt.id;
+    }
+
+    // 2. Attempt Gateway Call or Server-Side RPC
+    const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+    if (workerUrl) {
+      try {
+        const response = await fetch(`${workerUrl}/api/submit-feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: targetEventId,
+            event_title: payload.event_title.trim(),
+            name: payload.name.trim(),
+            email: payload.email.trim(),
+            phone: payload.phone?.trim() || null,
+            university_id: payload.university_id.trim(),
+            registration_id: payload.registration_id.trim(),
+            event_rating: payload.event_rating,
+            engagement_rating: payload.engagement_rating ?? 5,
+            coordination_rating: payload.coordination_rating.trim(),
+            message: payload.message.trim(),
+          }),
+        });
+
+        if (response.ok) {
+          const parsed = await response.json();
+          const savedFeedback: EventFeedback = {
+            ...newEventFeedback,
+            id: parsed.id || tempId,
+          };
+          try {
+            const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+            const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+            list.unshift(savedFeedback);
+            localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+          } catch (e) {}
+          return savedFeedback;
+        }
+      } catch (workerErr) {
+        console.warn('Worker gateway submit-feedback notice:', workerErr);
+      }
+    }
+
+    if (isUuid || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId)) {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('submit_event_feedback', {
+        p_event_id: targetEventId,
+        p_event_title: payload.event_title.trim(),
+        p_name: payload.name.trim(),
+        p_email: payload.email.trim(),
+        p_phone: payload.phone?.trim() || null,
+        p_university_id: payload.university_id.trim(),
+        p_registration_id: payload.registration_id.trim(),
+        p_event_rating: payload.event_rating,
+        p_engagement_rating: payload.engagement_rating ?? 5,
+        p_coordination_rating: payload.coordination_rating.trim(),
+        p_message: payload.message.trim(),
+      });
+
+      if (!rpcError && rpcData) {
+        const parsed = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+        const savedFeedback: EventFeedback = {
+          ...newEventFeedback,
+          id: parsed.id || tempId,
+        };
+
+        try {
+          const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
+          const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
+          list.unshift(savedFeedback);
+          localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
+        } catch (e) {}
+
+        return savedFeedback;
+      }
+    }
+
     const insertObj: any = {
       name: payload.name.trim(),
       email: payload.email.trim(),
       phone: payload.phone?.trim() || null,
       university_id: payload.university_id.trim(),
       registration_id: payload.registration_id.trim(),
-      event_id: payload.event_id.trim(),
+      event_id: targetEventId,
       event_title: payload.event_title.trim(),
       event_rating: payload.event_rating,
       coordination_rating: payload.coordination_rating.trim(),
