@@ -18,6 +18,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ErrorPopupModal } from './ErrorPopupModal';
+import { TurnstileWidget } from './TurnstileWidget';
 import { getFormForEvent } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
 import { formatEventTime } from '../../utils/formatters';
@@ -43,6 +44,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   event,
   onSuccessToast,
 }) => {
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -186,16 +188,19 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
         };
       });
 
-      const result = await registerForEvent({
-        event_id: event.id,
-        registrant_name: formData.name.trim(),
-        registrant_email: formData.email.trim(),
-        registrant_phone: formData.phone.trim() || undefined,
-        uid: formData.uid.trim(),
-        team_name: isTeamRegistration ? teamName.trim() : undefined,
-        team_members: isTeamRegistration ? teamMembers.filter((m) => m.name.trim()) : undefined,
-        answers: formattedAnswers,
-      });
+      const result = await registerForEvent(
+        {
+          event_id: event.id,
+          registrant_name: formData.name.trim(),
+          registrant_email: formData.email.trim(),
+          registrant_phone: formData.phone.trim() || undefined,
+          uid: formData.uid.trim(),
+          team_name: isTeamRegistration ? teamName.trim() : undefined,
+          team_members: isTeamRegistration ? teamMembers.filter((m) => m.name.trim()) : undefined,
+          answers: formattedAnswers,
+        },
+        turnstileToken || undefined
+      );
 
       setRegistrationResult(result);
       if (onSuccessToast) onSuccessToast();
@@ -710,6 +715,9 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
               ))}
             </div>
           )}
+
+          {/* Cloudflare Turnstile */}
+          <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
           {/* Submit Action */}
           <div className="pt-2">

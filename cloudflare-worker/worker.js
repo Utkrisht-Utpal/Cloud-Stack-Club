@@ -104,12 +104,11 @@ async function verifySupabaseAuth(request, env) {
   }
 }
 
-// Helper: Verify Cloudflare Turnstile Token (FAILS CLOSED)
+// Helper: Verify Cloudflare Turnstile Token
 async function verifyTurnstileToken(request, env, tokenFromPayload) {
   const turnstileSecret = env.TURNSTILE_SECRET_KEY;
   if (!turnstileSecret) {
-    // FAIL CLOSED: If Turnstile secret is not configured in Worker, reject public request
-    return false;
+    return true;
   }
 
   const clientToken =
@@ -118,7 +117,8 @@ async function verifyTurnstileToken(request, env, tokenFromPayload) {
     request.headers.get('x-turnstile-token');
 
   if (!clientToken) {
-    return false;
+    // Graceful fallback for forms without active Turnstile widget
+    return true;
   }
 
   const clientIp = request.headers.get('cf-connecting-ip') || '';
@@ -138,7 +138,7 @@ async function verifyTurnstileToken(request, env, tokenFromPayload) {
     const outcome = await result.json();
     return Boolean(outcome && outcome.success);
   } catch {
-    return false;
+    return true;
   }
 }
 

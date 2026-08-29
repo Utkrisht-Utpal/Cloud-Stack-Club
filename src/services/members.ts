@@ -27,37 +27,11 @@ const markMemberInactiveLocally = (memberId: string): void => {
 };
 
 export const checkMemberDuplicate = async (
-  uid: string,
-  email: string,
-  phone?: string
+  _uid: string,
+  _email: string,
+  _phone?: string
 ): Promise<{ isDuplicate: boolean; field?: 'UID' | 'Email' | 'Mobile Number'; message?: string }> => {
-  if (!isSupabaseConfigured()) return { isDuplicate: false };
-
-  const cleanUid = uid.trim();
-  const cleanEmail = email.trim();
-  const cleanPhone = phone?.trim() || '';
-
-  try {
-    const { data, error } = await supabase.rpc('check_member_duplicate', {
-      p_uid: cleanUid,
-      p_email: cleanEmail,
-      p_phone: cleanPhone,
-    });
-
-    if (!error && data) {
-      const res = typeof data === 'string' ? JSON.parse(data) : data;
-      if (res.is_duplicate) {
-        return {
-          isDuplicate: true,
-          field: res.field,
-          message: res.message,
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('Notice checking duplicate via RPC:', err);
-  }
-
+  // Server-side RPC submit_member_application atomically validates duplicates
   return { isDuplicate: false };
 };
 

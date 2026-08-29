@@ -4,7 +4,8 @@ import { generateUUID } from '../utils/uuid';
 import type { EventRegistrationPayload, EventRegistration } from '../types/database';
 
 export const registerForEvent = async (
-  payload: EventRegistrationPayload
+  payload: EventRegistrationPayload,
+  turnstileToken?: string
 ): Promise<EventRegistration> => {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase is not configured yet. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
@@ -267,7 +268,10 @@ export const registerForEvent = async (
     try {
       const response = await fetch(`${workerUrl}/api/register-event`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(turnstileToken ? { 'cf-turnstile-response': turnstileToken } : {}),
+        },
         body: JSON.stringify({
           event_id: targetEventId,
           registrant_name: registrant_name.trim(),
@@ -277,6 +281,7 @@ export const registerForEvent = async (
           team_name: team_name?.trim() || null,
           team_members: formattedTeamMembers,
           answers: formattedAnswers,
+          turnstile_token: turnstileToken,
         }),
       });
 

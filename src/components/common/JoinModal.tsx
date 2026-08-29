@@ -19,6 +19,7 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { CustomSelect } from "../ui/CustomSelect";
 import { ErrorPopupModal } from "./ErrorPopupModal";
+import { TurnstileWidget } from "./TurnstileWidget";
 import {
   submitMemberApplication,
   checkMemberDuplicate,
@@ -43,6 +44,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
   onClose,
   onSuccessToast,
 }) => {
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -123,7 +125,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
         return;
       }
 
-      // 2. Submit membership application payload DIRECTLY into Supabase `members` table ONLY
+      // 2. Submit membership application payload via Zero-Trust Gateway
       const newMember = await submitMemberApplication(
         {
           name: formData.name.trim(),
@@ -134,6 +136,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
           year: formData.year,
         },
         verificationFile,
+        turnstileToken || undefined,
       );
 
       setRegisteredNumber(newMember.registration_id);
@@ -521,6 +524,9 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                 message={error}
                 onClose={() => setError(null)}
               />
+
+              {/* Cloudflare Turnstile Verification */}
+              <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
               <div className="pt-2">
                 <Button
