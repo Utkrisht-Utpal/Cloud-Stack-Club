@@ -154,10 +154,6 @@ export const MainLayout: React.FC = () => {
           <JoinModal
             isOpen={joinModalOpen}
             onClose={handleCloseJoinModal}
-            onSuccessToast={() => {
-              setToastMessage('Welcome to Cloud Stack Club! Your application has been submitted successfully.');
-              setShowSuccessToast(true);
-            }}
           />
         )}
 
