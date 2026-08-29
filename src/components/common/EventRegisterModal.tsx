@@ -57,7 +57,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   // Team Registration State
   const [isTeamRegistration, setIsTeamRegistration] = useState(false);
   const [teamName, setTeamName] = useState('');
-  const [teamMembers, setTeamMembers] = useState<Array<{ name: string; email: string; uid: string }>>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ name: string; email: string; uid: string; phone: string }>>([]);
 
   // Dynamic Custom Questions State
   const [customFields, setCustomFields] = useState<EventFormField[]>([]);
@@ -102,14 +102,14 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const handleAddTeamMember = () => {
     const maxMembers = (event.max_team_size || 4) - 1;
     if (teamMembers.length >= maxMembers) return;
-    setTeamMembers((prev) => [...prev, { name: '', email: '', uid: '' }]);
+    setTeamMembers((prev) => [...prev, { name: '', email: '', uid: '', phone: '' }]);
   };
 
   const handleRemoveTeamMember = (index: number) => {
     setTeamMembers((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleUpdateTeamMember = (index: number, key: 'name' | 'email' | 'uid', value: string) => {
+  const handleUpdateTeamMember = (index: number, key: 'name' | 'email' | 'uid' | 'phone', value: string) => {
     setTeamMembers((prev) =>
       prev.map((m, idx) => (idx === index ? { ...m, [key]: value } : m))
     );
@@ -147,12 +147,16 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       }
       for (let i = 0; i < teamMembers.length; i++) {
         const m = teamMembers[i];
-        if (!m.name.trim() || !m.email.trim() || !m.uid.trim()) {
-          setError(`Please fill in Name, Email (@example.com), and University ID (UID) for Teammate #${i + 2}.`);
+        if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim()) {
+          setError(`Please fill in Name, Email, UID, and Phone Number for Teammate #${i + 2}.`);
           return;
         }
         if (m.uid.trim().length !== 10) {
           setError(`University ID (UID) for Teammate #${i + 2} must be exactly 10 alphanumeric characters.`);
+          return;
+        }
+        if (!/^\d{10}$/.test(m.phone.trim())) {
+          setError(`Phone number for Teammate #${i + 2} must be exactly 10 digits.`);
           return;
         }
       }
@@ -579,45 +583,61 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                   </div>
 
                   {teamMembers.map((m, idx) => (
-                    <div key={idx} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2">
+                    <div key={idx} className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2.5 shadow-sm">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
                           Team Member {idx + 2} <span className="text-red-500">*</span>
                         </span>
                         <button
                           type="button"
                           onClick={() => handleRemoveTeamMember(idx)}
-                          className="text-red-500 hover:text-red-700 p-1"
+                          className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                          title="Remove teammate"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {/* Row 1: Name and Email */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
                           type="text"
                           required
                           placeholder="Member Name *"
                           value={m.name}
                           onChange={(e) => handleUpdateTeamMember(idx, 'name', e.target.value)}
-                          className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
+                          className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
                         />
                         <input
                           type="email"
                           required
-                          placeholder="@example.com *"
+                          placeholder="Email Address (@example.com) *"
                           value={m.email}
                           onChange={(e) => handleUpdateTeamMember(idx, 'email', e.target.value)}
-                          className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700"
+                          className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
                         />
+                      </div>
+
+                      {/* Row 2: UID and Phone Number */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <input
                           type="text"
                           required
                           maxLength={10}
-                          placeholder="UID *"
+                          placeholder="University UID *"
                           value={m.uid}
                           onChange={(e) => handleUpdateTeamMember(idx, 'uid', e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase())}
-                          className="w-full h-9 px-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 text-xs font-mono font-bold uppercase border border-slate-200 dark:border-slate-700"
+                          className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs font-mono font-bold uppercase border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
+                        />
+                        <input
+                          type="tel"
+                          required
+                          pattern="[0-9]{10}"
+                          maxLength={10}
+                          placeholder="10-digit Phone Number *"
+                          value={m.phone}
+                          onChange={(e) => handleUpdateTeamMember(idx, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
                         />
                       </div>
                     </div>

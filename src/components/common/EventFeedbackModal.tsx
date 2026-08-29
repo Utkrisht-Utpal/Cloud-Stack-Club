@@ -114,27 +114,31 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      // 1. Check if feedback has already been submitted for this UID or Registration ID
+      // 1. Check if feedback has already been submitted for this UID, Registration ID, Email, or Phone
       const duplicateCheck = await checkExistingFeedbackForEvent(
         event.id,
         universityId.trim(),
-        registrationId.trim()
+        registrationId.trim(),
+        email.trim(),
+        phone.trim()
       );
       if (duplicateCheck.alreadySubmitted) {
-        setError('Feedback has already been submitted for this event with your UID or Registration ID. Thank you!');
+        setError('Feedback has already been submitted for this event with your details. Thank you!');
         setIsSubmitting(false);
         return;
       }
 
-      // 2. Strict Verification: Validate that UID and Registration ID are bound to each other for this event
+      // 2. Strict 4-Way Verification: Validate that Registration ID, UID, Email, and Phone all match
       const verification = await verifyEventRegistration(
         event.id,
         universityId.trim(),
-        registrationId.trim()
+        registrationId.trim(),
+        email.trim(),
+        phone.trim()
       );
 
       if (!verification.isValid) {
-        setError(verification.error || 'Invalid Registration ID or UID for this event.');
+        setError(verification.error || 'Registration ID, UID, Email, and Phone do not match our event records.');
         setIsSubmitting(false);
         return;
       }
