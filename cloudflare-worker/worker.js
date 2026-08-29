@@ -90,12 +90,12 @@ async function verifySupabaseAuth(request, env) {
     if (!userData || !userData.id) {
       return { isAuthenticated: false, isAdmin: false };
     }
-
-    const adminEmail = (env.ADMIN_EMAIL || 'utkrishtutpal1@gmail.com').toLowerCase();
-    const isEmailAdmin = userData.email && userData.email.toLowerCase() === adminEmail;
-    const isRoleAdmin =
-      userData.app_metadata?.role === 'admin' ||
-      userData.user_metadata?.role === 'admin';
+    const adminEmail = (env.ADMIN_EMAIL || '').toLowerCase();
+    const isEmailAdmin = adminEmail && userData.email && userData.email.toLowerCase() === adminEmail;
+    
+    // STRICT ADMIN VERIFICATION: Only trust server-controlled app_metadata
+    // user_metadata is user-editable via auth.update() and must NEVER grant admin access
+    const isRoleAdmin = userData.app_metadata?.role === 'admin';
 
     const isAdmin = Boolean(isEmailAdmin || isRoleAdmin);
     return { isAuthenticated: true, isAdmin, user: userData };
@@ -108,7 +108,7 @@ async function verifySupabaseAuth(request, env) {
 async function verifyTurnstileToken(request, env, tokenFromPayload) {
   const turnstileSecret = env.TURNSTILE_SECRET_KEY;
   if (!turnstileSecret) {
-    return true;
+    return false; // Fail closed if secret missing
   }
 
   const clientToken =
@@ -117,8 +117,7 @@ async function verifyTurnstileToken(request, env, tokenFromPayload) {
     request.headers.get('x-turnstile-token');
 
   if (!clientToken) {
-    // Graceful fallback for forms without active Turnstile widget
-    return true;
+    return false; // Fail closed if token missing
   }
 
   const clientIp = request.headers.get('cf-connecting-ip') || '';
@@ -138,7 +137,7 @@ async function verifyTurnstileToken(request, env, tokenFromPayload) {
     const outcome = await result.json();
     return Boolean(outcome && outcome.success);
   } catch {
-    return true;
+    return false; // Fail closed on exception
   }
 }
 
@@ -569,14 +568,23 @@ export default {
           }
         }
 
-        // Public Upload Protection (Rate Limiting + Magic Bytes + 1MB Limit)
-        // Single-use Turnstile token is validated on final /api/submit-member submission
+        // Public Upload Protection (Turnstile + Rate Limiting + Magic Bytes + 1MB Limit)
         if (isPublicRegistration) {
           const rateCheck = checkRateLimit(`upload_${clientIp}`, 3, 60 * 1000); // 3 uploads / min
           if (!rateCheck.allowed) {
             return new Response(
               JSON.stringify({ error: `Upload rate limit exceeded. Wait ${rateCheck.retryAfter}s.` }),
               { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(rateCheck.retryAfter) } }
+            );
+          }
+
+          // Strict Turnstile validation for public endpoints
+          const turnstileToken = (formData.get('turnstile_token') || '').toString();
+          const turnstileValid = await verifyTurnstileToken(request, env, turnstileToken);
+          if (!turnstileValid) {
+            return new Response(
+              JSON.stringify({ error: 'Turnstile anti-bot verification failed or missing for upload.' }),
+              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
         }
