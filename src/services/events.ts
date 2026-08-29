@@ -311,31 +311,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     return createdEvent;
   }
 
-  // 1. Attempt RPC call create_event_admin
-  const { data: rpcData, error: rpcError } = await supabase.rpc('create_event_admin', {
-    p_id: createdEvent.id,
-    p_title: createdEvent.title,
-    p_category: createdEvent.category || null,
-    p_slug: createdEvent.slug,
-    p_description: createdEvent.description,
-    p_date: createdEvent.date,
-    p_start_time: createdEvent.start_time,
-    p_location: createdEvent.location,
-    p_pdf_url: createdEvent.pdf_url,
-    p_image_url: createdEvent.image_url,
-    p_registration_enabled: createdEvent.registration_enabled,
-    p_registration_start: createdEvent.registration_start,
-    p_registration_end: createdEvent.registration_end,
-    p_supports_teams: createdEvent.supports_teams,
-    p_max_team_size: createdEvent.max_team_size,
-    p_max_registrations: createdEvent.max_registrations,
-  });
-
-  if (!rpcError && rpcData) {
-    return rpcData as Event;
-  }
-
-  // 2. Direct insert fallback
+  // Direct insert for authenticated admin
   let { data, error } = await supabase
     .from('events')
     .insert([createdEvent])
@@ -390,31 +366,7 @@ export const updateEventAdmin = async (
     return (list[index] || eventPayload) as Event;
   }
 
-  // 1. Attempt RPC update_event_admin
-  const { data: rpcData, error: rpcError } = await supabase.rpc('update_event_admin', {
-    p_id: eventId,
-    p_title: eventPayload.title,
-    p_category: eventPayload.category !== undefined ? eventPayload.category : null,
-    p_description: eventPayload.description || null,
-    p_date: eventPayload.date || null,
-    p_start_time: eventPayload.start_time || null,
-    p_location: eventPayload.location || null,
-    p_pdf_url: eventPayload.pdf_url || null,
-    p_image_url: eventPayload.image_url || null,
-    p_status: eventPayload.status || null,
-    p_registration_enabled: eventPayload.registration_enabled ?? true,
-    p_registration_start: eventPayload.registration_start || null,
-    p_registration_end: eventPayload.registration_end || null,
-    p_supports_teams: eventPayload.supports_teams ?? false,
-    p_max_team_size: eventPayload.max_team_size ?? 1,
-    p_max_registrations: eventPayload.max_registrations ?? null,
-  });
-
-  if (!rpcError && rpcData) {
-    return rpcData as Event;
-  }
-
-  // 2. Direct update fallback
+  // Direct update for authenticated admin
   const updateFields: any = {
     title: eventPayload.title,
     category: eventPayload.category !== undefined ? eventPayload.category : null,

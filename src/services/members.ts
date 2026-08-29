@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { deleteFromR2, R2_FOLDERS } from '../lib/r2Storage';
+import { deleteFromR2 } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
@@ -162,9 +162,9 @@ export const approveMemberApplicationService = async (
     throw new Error('Supabase is not configured.');
   }
 
-  // 1. Delete physical document from R2 storage
+  // 1. Immediately delete physical verification document from R2 storage upon approval
   if (verificationFilePath) {
-    await deleteFromR2(`${R2_FOLDERS.REGISTRATION_FILES}/${verificationFilePath}`)
+    await deleteFromR2(verificationFilePath)
       .catch((err) => console.warn('Storage cleanup warning:', err));
   }
 
@@ -191,7 +191,7 @@ export const approveMemberApplicationService = async (
 
 export const rejectMemberApplicationService = async (
   memberId: string,
-  verificationFilePath?: string | null
+  _verificationFilePath?: string | null
 ): Promise<void> => {
   markMemberInactiveLocally(memberId);
 
@@ -199,13 +199,8 @@ export const rejectMemberApplicationService = async (
     return;
   }
 
-  // 1. Delete physical document from R2 storage
-  if (verificationFilePath) {
-    await deleteFromR2(`${R2_FOLDERS.REGISTRATION_FILES}/${verificationFilePath}`)
-      .catch(() => {});
-  }
-
-  // 2. Call DB function or direct update to set status = 'inactive'
+  // On rejection, we do NOT delete immediately so the admin has a 24-hour review/audit window.
+  // The file is automatically purged after 24 hours via R2 Lifecycle rules.
   const { error: rpcError } = await supabase.rpc('reject_member_application', {
     p_member_id: memberId,
   });
@@ -216,7 +211,6 @@ export const rejectMemberApplicationService = async (
         .from('members')
         .update({
           status: 'inactive',
-          verification_file_url: null,
         })
         .eq('id', memberId);
     } catch (err) {
