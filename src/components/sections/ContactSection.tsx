@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { SectionTitle } from '../ui/SectionTitle';
 import { ErrorPopupModal } from '../common/ErrorPopupModal';
 import { submitFeedback } from '../../services/supabase';
+import { TurnstileWidget } from '../common/TurnstileWidget';
 
 // Clean SVG icons for LinkedIn and Instagram
 const LinkedinIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -29,10 +30,16 @@ export const ContactSection: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
+
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -46,6 +53,7 @@ export const ContactSection: React.FC = () => {
 
       setIsSubmitted(true);
       setFormData({ name: '', email: '', message: '' });
+      setTurnstileToken(''); // Reset token
 
       // Automatically reset back to normal form after 3 seconds
       setTimeout(() => {
@@ -54,6 +62,7 @@ export const ContactSection: React.FC = () => {
     } catch (err: any) {
       console.error('Feedback submission error:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');
+      setTurnstileToken(''); // Reset token on error so they have to redo if needed (though it handles itself usually)
     } finally {
       setIsSubmitting(false);
     }
@@ -235,6 +244,9 @@ export const ContactSection: React.FC = () => {
                       message={error}
                       onClose={() => setError(null)}
                     />
+
+                    {/* Cloudflare Turnstile */}
+                    <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
                     <Button
                       type="submit"
