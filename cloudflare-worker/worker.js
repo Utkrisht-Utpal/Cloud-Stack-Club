@@ -235,7 +235,7 @@ export default {
     // 2. PUBLIC API GATEWAYS: FORM SUBMISSION BOUNDARIES (TURNSTILE + RATE LIMIT)
     // -------------------------------------------------------------------------
 
-    // A. MEMBERSHIP FORM SUBMISSION
+    // A. MEMBERSHIP FORM SUBMISSION (Atomic file upload + database insert — Zero orphaned R2 files)
     if (request.method === 'POST' && url.pathname === '/api/submit-member') {
       const rateLimit = checkRateLimit(`member_submit_${clientIp}`, 5, 10 * 60 * 1000); // 5 per 10 mins
       if (!rateLimit.allowed) {
@@ -246,8 +246,38 @@ export default {
       }
 
       try {
-        const body = await request.json();
-        const turnstileValid = await verifyTurnstileToken(request, env, body.turnstile_token);
+        let name = '', email = '', phone = '', uid = '', department = '', year = '', turnstile_token = '', verification_file_url = '';
+        let fileToUpload = null;
+
+        const contentType = request.headers.get('content-type') || '';
+        if (contentType.includes('multipart/form-data')) {
+          const formData = await request.formData();
+          name = (formData.get('name') || '').toString();
+          email = (formData.get('email') || '').toString();
+          phone = (formData.get('phone') || '').toString();
+          uid = (formData.get('uid') || '').toString();
+          department = (formData.get('department') || '').toString();
+          year = (formData.get('year') || '').toString();
+          turnstile_token = (formData.get('turnstile_token') || '').toString();
+          verification_file_url = (formData.get('verification_file_url') || '').toString();
+
+          const rawFile = formData.get('file');
+          if (rawFile && rawFile instanceof File && rawFile.size > 0) {
+            fileToUpload = rawFile;
+          }
+        } else {
+          const body = await request.json();
+          name = body.name || '';
+          email = body.email || '';
+          phone = body.phone || '';
+          uid = body.uid || '';
+          department = body.department || '';
+          year = body.year || '';
+          turnstile_token = body.turnstile_token || '';
+          verification_file_url = body.verification_file_url || '';
+        }
+
+        const turnstileValid = await verifyTurnstileToken(request, env, turnstile_token);
         if (!turnstileValid) {
           return new Response(
             JSON.stringify({ error: 'Turnstile anti-bot verification failed or missing.' }),
@@ -255,15 +285,55 @@ export default {
           );
         }
 
+        let fileBuffer = null;
+        let detectedType = null;
+        let safeStoragePath = verification_file_url;
+
+        // If a verification file is attached, validate in memory BEFORE database insert
+        if (fileToUpload) {
+          if (fileToUpload.size > 1 * 1024 * 1024) {
+            return new Response(
+              JSON.stringify({ error: 'Verification file size exceeds the allowed limit of 1 MB.' }),
+              { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+
+          fileBuffer = await fileToUpload.arrayBuffer();
+          detectedType = validateMagicBytes(fileBuffer);
+          if (!detectedType) {
+            return new Response(
+              JSON.stringify({ error: 'Invalid file signature. Only authentic JPG, PNG, WebP, and PDF files accepted.' }),
+              { status: 415, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+
+          const uniqueId = crypto.randomUUID();
+          const timestamp = Date.now();
+          safeStoragePath = `registration-files/membership/${uniqueId}/cuims_${timestamp}.${detectedType}`;
+        }
+
+        // Call Supabase RPC FIRST
         const rpcResult = await callSupabaseRpc(env, 'submit_member_application', {
-          p_name: body.name,
-          p_email: body.email,
-          p_phone: body.phone,
-          p_uid: body.uid,
-          p_department: body.department || '',
-          p_year: body.year || '',
-          p_verification_file_url: body.verification_file_url || '',
+          p_name: name.trim(),
+          p_email: email.trim(),
+          p_phone: phone.trim() || null,
+          p_uid: uid.trim(),
+          p_department: department.trim() || '',
+          p_year: year.trim() || '',
+          p_verification_file_url: safeStoragePath || '',
         });
+
+        // ONLY write to R2 storage if Supabase insert succeeded
+        if (fileToUpload && fileBuffer && safeStoragePath) {
+          const bucket = getR2Bucket(env);
+          if (bucket) {
+            await bucket.put(safeStoragePath, fileBuffer, {
+              httpMetadata: {
+                contentType: fileToUpload.type || (detectedType === 'pdf' ? 'application/pdf' : `image/${detectedType}`),
+              },
+            });
+          }
+        }
 
         return new Response(JSON.stringify(rpcResult), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

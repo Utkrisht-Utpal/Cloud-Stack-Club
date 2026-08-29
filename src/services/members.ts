@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { uploadToR2, deleteFromR2, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
+import { deleteFromR2, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
@@ -47,47 +47,32 @@ export const submitMemberApplication = async (
 
   let filePath: string | null = null;
 
-  // 1. Upload verification document to R2 storage FIRST
-  if (verificationFile) {
-    const rawExt = (verificationFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'pdf'].includes(rawExt) ? rawExt : 'jpg';
-    const cleanFileName = `cuims_${Date.now()}.${cleanExt}`;
-    filePath = `membership/${cleanUid}_${Date.now()}/${cleanFileName}`;
-
-    if (isR2Configured()) {
-      try {
-        await uploadToR2(R2_FOLDERS.REGISTRATION_FILES, filePath, verificationFile, turnstileToken);
-      } catch (uploadErr: any) {
-        console.error('R2 upload failed for member verification doc:', uploadErr);
-        throw new Error(
-          `Verification document upload failed: ${uploadErr.message || 'Network timeout'}. Please check your connection and try again.`
-        );
-      }
-    }
-  }
-
-  // 2. Submit application via Cloudflare Worker Zero-Trust Gateway
+  // 1. Submit application atomically via Cloudflare Worker Zero-Trust Gateway
   const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
   let result: any = null;
 
   if (workerUrl) {
     try {
+      const formData = new FormData();
+      formData.append('name', name.trim());
+      formData.append('email', cleanEmail);
+      formData.append('phone', cleanPhone);
+      formData.append('uid', cleanUid);
+      formData.append('department', department?.trim() || '');
+      formData.append('year', year || '');
+      if (turnstileToken) {
+        formData.append('turnstile_token', turnstileToken);
+      }
+      if (verificationFile) {
+        formData.append('file', verificationFile);
+      }
+
       const response = await fetch(`${workerUrl}/api/submit-member`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           ...(turnstileToken ? { 'cf-turnstile-response': turnstileToken } : {}),
         },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: cleanEmail,
-          phone: cleanPhone,
-          uid: cleanUid,
-          department: department?.trim() || '',
-          year: year || '',
-          verification_file_url: filePath || '',
-          turnstile_token: turnstileToken,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {

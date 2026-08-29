@@ -33,7 +33,7 @@ export const VerificationDocModal: React.FC<VerificationDocModalProps> = ({
     setIsPdf(isPdfFile);
 
     // Resolve R2 public URL for the verification document
-    const cleanPath = filePath.startsWith('http')
+    const cleanPath = (filePath.startsWith('http') || filePath.startsWith(R2_FOLDERS.REGISTRATION_FILES))
       ? filePath
       : `${R2_FOLDERS.REGISTRATION_FILES}/${filePath.replace(/^\/+/, '')}`;
     const url = resolveMediaUrl(cleanPath);

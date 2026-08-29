@@ -176,21 +176,38 @@ export const getR2PublicUrl = (folder: string, path: string): string => {
  */
 export const resolveMediaUrl = (pathOrUrl: string | null): string => {
   if (!pathOrUrl) return '';
+
   if (
-    pathOrUrl.startsWith('http://') ||
-    pathOrUrl.startsWith('https://') ||
     pathOrUrl.startsWith('data:') ||
     pathOrUrl.startsWith('blob:')
   ) {
     return pathOrUrl;
   }
-  // Normalize leading slash and safely encode path segments
-  const normalized = pathOrUrl.replace(/^\/+/, '');
+
+  // If already an R2 URL (or old R2 URL), extract the object key and route through active R2_PUBLIC_URL
+  if (pathOrUrl.includes('.r2.dev/')) {
+    const key = pathOrUrl.split('.r2.dev/')[1];
+    if (key) {
+      return R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${key.replace(/^\/+/, '')}` : pathOrUrl;
+    }
+  }
+
+  if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+    return pathOrUrl;
+  }
+
+  // Normalize leading slash and deduplicate registration-files/ if already present
+  let normalized = pathOrUrl.replace(/^\/+/, '');
+  if (normalized.startsWith('registration-files/registration-files/')) {
+    normalized = normalized.replace(/^registration-files\//, '');
+  }
+
   const encodedPath = normalized
     .split('/')
     .map((segment) => (segment.includes('%') ? segment : encodeURIComponent(segment)))
     .join('/');
-  return `${R2_PUBLIC_URL}/${encodedPath}`;
+
+  return R2_PUBLIC_URL ? `${R2_PUBLIC_URL}/${encodedPath}` : `/${encodedPath}`;
 };
 
 /** R2 folder constants (matching old Supabase bucket names) */
