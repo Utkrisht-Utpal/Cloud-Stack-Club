@@ -90,12 +90,21 @@ async function verifySupabaseAuth(request, env) {
     if (!userData || !userData.id) {
       return { isAuthenticated: false, isAdmin: false };
     }
+<<<<<<< HEAD
     const adminEmail = (env.ADMIN_EMAIL || '').toLowerCase();
     const isEmailAdmin = adminEmail && userData.email && userData.email.toLowerCase() === adminEmail;
     
     // STRICT ADMIN VERIFICATION: Only trust server-controlled app_metadata
     // user_metadata is user-editable via auth.update() and must NEVER grant admin access
     const isRoleAdmin = userData.app_metadata?.role === 'admin';
+=======
+
+    const adminEmail = (env.ADMIN_EMAIL).toLowerCase();
+    const isEmailAdmin = userData.email && userData.email.toLowerCase() === adminEmail;
+    const isRoleAdmin =
+      userData.app_metadata?.role === 'admin' ||
+      userData.user_metadata?.role === 'admin';
+>>>>>>> 2a2d9ea4b96c55169708506f3c92c84422f04250
 
     const isAdmin = Boolean(isEmailAdmin || isRoleAdmin);
     return { isAuthenticated: true, isAdmin, user: userData };
