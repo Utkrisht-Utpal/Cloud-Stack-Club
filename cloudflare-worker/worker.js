@@ -499,21 +499,14 @@ export default {
           }
         }
 
-        // Public Upload Anti-Bot & Rate Limiting (FAILS CLOSED)
+        // Public Upload Protection (Rate Limiting + Magic Bytes + 1MB Limit)
+        // Single-use Turnstile token is validated on final /api/submit-member submission
         if (isPublicRegistration) {
           const rateCheck = checkRateLimit(`upload_${clientIp}`, 3, 60 * 1000); // 3 uploads / min
           if (!rateCheck.allowed) {
             return new Response(
               JSON.stringify({ error: `Upload rate limit exceeded. Wait ${rateCheck.retryAfter}s.` }),
               { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': String(rateCheck.retryAfter) } }
-            );
-          }
-
-          const isTurnstileValid = await verifyTurnstileToken(request, env, formData.get('turnstile_token'));
-          if (!isTurnstileValid) {
-            return new Response(
-              JSON.stringify({ error: 'Turnstile anti-bot verification failed or missing.' }),
-              { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
         }

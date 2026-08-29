@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, KeyRound, LogIn, AlertCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
+import { Mail, KeyRound, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -66,11 +66,6 @@ export const AdminLoginModal: React.FC = () => {
   return (
     <Modal isOpen={isAdminModalOpen} onClose={handleClose} title="Club Admin Access">
       <div className="space-y-4">
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-sky-300 text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
-          <span>Secure authentication powered by Supabase Auth for verified administrators.</span>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4 pt-1">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">

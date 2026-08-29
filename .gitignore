@@ -32,3 +32,4 @@ dist-ssr
 !.env.example
 
 /supabase
+/cloudflare-worker
