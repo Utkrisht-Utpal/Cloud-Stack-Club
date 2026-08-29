@@ -9,6 +9,7 @@ export interface SubmitFeedbackPayload {
   name: string;
   email: string;
   message: string;
+  turnstileToken?: string;
 }
 
 const LOCAL_CONTACT_FEEDBACKS_KEY = 'csc_contact_feedbacks';
@@ -42,11 +43,15 @@ export const submitFeedback = async (
       try {
         const response = await fetch(`${workerUrl}/api/submit-contact`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(payload.turnstileToken ? { 'cf-turnstile-response': payload.turnstileToken } : {}),
+          },
           body: JSON.stringify({
             name: payload.name.trim(),
             email: payload.email.trim(),
             message: payload.message.trim(),
+            turnstile_token: payload.turnstileToken,
           }),
         });
 
@@ -227,6 +232,7 @@ export interface SubmitEventFeedbackPayload {
   engagement_rating?: number;
   coordination_rating: string;
   message: string;
+  turnstileToken?: string;
 }
 
 const LOCAL_EVENT_FEEDBACKS_KEY = 'csc_event_feedbacks';
@@ -283,7 +289,10 @@ export const submitEventFeedback = async (
       try {
         const response = await fetch(`${workerUrl}/api/submit-feedback`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(payload.turnstileToken ? { 'cf-turnstile-response': payload.turnstileToken } : {}),
+          },
           body: JSON.stringify({
             event_id: targetEventId,
             event_title: payload.event_title.trim(),
@@ -296,6 +305,7 @@ export const submitEventFeedback = async (
             engagement_rating: payload.engagement_rating ?? 5,
             coordination_rating: payload.coordination_rating.trim(),
             message: payload.message.trim(),
+            turnstile_token: payload.turnstileToken,
           }),
         });
 

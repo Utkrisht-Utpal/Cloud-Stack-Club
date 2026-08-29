@@ -19,6 +19,7 @@ import {
 } from '../../services/feedback';
 import type { Event } from '../../types/database';
 import { ErrorPopupModal } from './ErrorPopupModal';
+import { TurnstileWidget } from './TurnstileWidget';
 
 interface EventFeedbackModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
 
   React.useEffect(() => {
     if (isOpen) {
@@ -111,6 +113,11 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       return;
     }
 
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError('Please complete the security check.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -155,6 +162,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
         event_rating: eventRating,
         coordination_rating: `${coordinationRating} / 10 - ${getCoordinationLabel(coordinationRating).replace(/^\d+\s*\/\s*\d+\s*-\s*/, '')}`,
         message: feedbackText.trim(),
+        turnstileToken,
       });
 
       setIsSubmitted(true);
@@ -164,6 +172,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     } catch (err: any) {
       console.error('Error submitting event feedback:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');
+      setTurnstileToken(''); // Reset token so they can try again
     } finally {
       setIsSubmitting(false);
     }
@@ -181,6 +190,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     setCoordinationRating(10);
     setHoverCoordinationRating(null);
     setFeedbackText('');
+    setTurnstileToken('');
     onClose();
   };
 
@@ -495,6 +505,9 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                     className="w-full p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 resize-none leading-relaxed min-h-[72px]"
                   />
                 </div>
+
+                {/* Cloudflare Turnstile */}
+                <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-end gap-3 pt-1.5">
