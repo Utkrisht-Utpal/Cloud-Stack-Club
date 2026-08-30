@@ -381,6 +381,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                     <th className="py-3.5 px-4 font-black">Contact Details</th>
                     <th className="py-3.5 px-4 font-black">Type / Team Details</th>
                     <th className="py-3.5 px-4 font-black">Date & Time</th>
+                    {formFields.length > 0 && <th className="py-3.5 px-4 font-black">Custom Form</th>}
                     <th className="py-3.5 px-4 font-black text-right">Actions</th>
                   </tr>
                 </thead>
@@ -432,6 +433,18 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                               </div>
                             )}
                           </td>
+                          {formFields.length > 0 && (
+                            <td className="py-3.5 px-4">
+                              <button 
+                                type="button" 
+                                onClick={() => setSelectedAnswersRegId(r.id)}
+                                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-bold transition-colors inline-flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                Answers
+                              </button>
+                            </td>
+                          )}
                           <td className="py-3.5 px-4 text-right">
                             <button
                               type="button"
@@ -447,7 +460,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                         {/* Expanded Details Drawer Row */}
                         {isExpanded && (
                           <tr className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800">
-                            <td colSpan={7} className="p-4 sm:p-5">
+                            <td colSpan={formFields.length > 0 ? 8 : 7} className="p-4 sm:p-5">
                               <div className="space-y-4 text-xs">
                                 {/* Section 1: Team & Teammates Details (If Team Registration) */}
                                 {teamInfo ? (
@@ -504,20 +517,6 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                 ) : (
                                   <div className="p-3 rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-500 text-xs">
                                     Individual registration (No team attached).
-                                  </div>
-                                )}
-                                
-                                {/* Section 2: Custom Form Answers Button */}
-                                {formFields.length > 0 && (
-                                  <div className="pt-1">
-                                    <button 
-                                      type="button" 
-                                      onClick={() => setSelectedAnswersRegId(r.id)}
-                                      className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold transition-colors inline-flex items-center gap-2 text-xs"
-                                    >
-                                      <FileText className="w-3.5 h-3.5" />
-                                      View Custom Form Answers
-                                    </button>
                                   </div>
                                 )}
                               </div>

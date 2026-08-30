@@ -150,6 +150,7 @@ export const AdminDashboard: React.FC = () => {
   const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
   // Create Event Form State (starts with registration disabled by default)
+  const [teamSizeWarning, setTeamSizeWarning] = useState<string | null>(null);
   const [newEventData, setNewEventData] = useState({
     title: '',
     category: '',
@@ -2097,11 +2098,23 @@ export const AdminDashboard: React.FC = () => {
                     <input
                       type="number"
                       min={2}
-                      max={10}
+                      max={5}
                       value={newEventData.max_team_size}
-                      onChange={(e) => setNewEventData({ ...newEventData, max_team_size: parseInt(e.target.value) || 2 })}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value) || 2;
+                        if (val > 5) {
+                          setTeamSizeWarning("Maximum team size cannot exceed 5.");
+                          val = 5;
+                        } else {
+                          setTeamSizeWarning(null);
+                        }
+                        setNewEventData({ ...newEventData, max_team_size: val });
+                      }}
                       className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
+                    {teamSizeWarning && (
+                      <p className="mt-1 text-[10px] font-bold text-amber-500">{teamSizeWarning}</p>
+                    )}
                   </div>
                 )}
 
@@ -2459,11 +2472,23 @@ export const AdminDashboard: React.FC = () => {
                     <input
                       type="number"
                       min={2}
-                      max={10}
+                      max={5}
                       value={editEventData.max_team_size}
-                      onChange={(e) => setEditEventData({ ...editEventData, max_team_size: parseInt(e.target.value) || 2 })}
+                      onChange={(e) => {
+                        let val = parseInt(e.target.value) || 2;
+                        if (val > 5) {
+                          setTeamSizeWarning("Maximum team size cannot exceed 5.");
+                          val = 5;
+                        } else {
+                          setTeamSizeWarning(null);
+                        }
+                        setEditEventData({ ...editEventData, max_team_size: val });
+                      }}
                       className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
+                    {teamSizeWarning && (
+                      <p className="mt-1 text-[10px] font-bold text-amber-500">{teamSizeWarning}</p>
+                    )}
                   </div>
                 )}
 
