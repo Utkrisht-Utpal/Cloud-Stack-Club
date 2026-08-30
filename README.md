@@ -15,7 +15,7 @@ A modern, high-performance, responsive dark/light theme web application and comp
 ## ✨ Key Features
 
 ### 🎨 User Interface & Experience
-- 🌓 **Dual Theme Support**: Seamless Light & Dark mode (using rich dark navy `#070a12`) with automatic system preference detection and persistence.
+- 🌓 **Dual Theme Support**: Seamless Light & Dark mode (using rich dark navy) with automatic system preference detection and persistence.
 - ☁️ **Cloud Computing Aesthetic**: Dynamic HTML5 canvas particle background, ambient radial gradient glow effects, floating cloud vectors, and glassmorphism.
 - 📱 **Fully Responsive**: Optimized for Mobile, Tablet, Laptop, and Ultra-wide desktop screens with no horizontal overflow.
 - 🚀 **Interactive Hero Section**: Animated text gradients, floating technology badges (AWS, Kubernetes, Docker, DevOps, Azure, React, Node.js), and real-time terminal visual status.
