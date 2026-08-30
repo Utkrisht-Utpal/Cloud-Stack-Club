@@ -598,12 +598,29 @@ export const checkExistingFeedbackForEvent = async (
 
   if (!normUid && !normReg && !normEmail && !normPhone) return { alreadySubmitted: false };
 
+  let targetEventId = eventId.trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
+
+  if (!isUuid && isSupabaseConfigured()) {
+    try {
+      const { data: eventBySlug } = await supabase
+        .from('events')
+        .select('id')
+        .eq('slug', targetEventId)
+        .maybeSingle();
+
+      if (eventBySlug && (eventBySlug as any).id) {
+        targetEventId = (eventBySlug as any).id;
+      }
+    } catch (e) {}
+  }
+
   if (isSupabaseConfigured()) {
     try {
       const { data: existingFeedbacks, error } = await supabase
         .from('event_feedbacks')
         .select('id, university_id, registration_id, email, phone')
-        .eq('event_id', eventId);
+        .eq('event_id', targetEventId);
 
       if (!error && existingFeedbacks && existingFeedbacks.length > 0) {
         const duplicate = existingFeedbacks.some(
