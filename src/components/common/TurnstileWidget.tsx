@@ -57,7 +57,9 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
     const widgetIdRef = useRef<string | null>(null);
     const [hasToken, setHasToken] = useState(false);
     const [needsInteraction, setNeedsInteraction] = useState(false);
-    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
+
+    // Fallback to Cloudflare's official non-interactive Always-Pass testing site key if env var not set
+    const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
     const handleReset = () => {
       setHasToken(false);
@@ -151,10 +153,10 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
           if (window.turnstile) {
             clearInterval(checkInterval);
             renderWidget();
-          } else if (attempts > 20) {
+          } else if (attempts > 25) {
             clearInterval(checkInterval);
           }
-        }, 200);
+        }, 150);
       }
 
       return () => {
@@ -168,19 +170,15 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
       };
     }, [siteKey]);
 
-    if (!siteKey) return null;
-
     return (
       <div
         className={`${className} ${
-          hasToken
-            ? 'h-0 opacity-0 overflow-hidden pointer-events-none m-0 p-0'
-            : needsInteraction
-            ? 'my-3 opacity-100 min-h-[65px]'
-            : 'h-0 opacity-0 overflow-hidden'
+          needsInteraction && !hasToken
+            ? 'my-3 opacity-100 min-h-[65px] relative z-20'
+            : 'w-[300px] h-[65px] fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none'
         }`}
       >
-        <div ref={containerRef} />
+        <div ref={containerRef} className="min-w-[300px] min-h-[65px]" />
       </div>
     );
   }
