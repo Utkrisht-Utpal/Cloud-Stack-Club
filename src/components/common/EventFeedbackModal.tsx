@@ -47,6 +47,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileTokenRef = React.useRef<string>('');
 
   React.useEffect(() => {
     if (isOpen) {
@@ -111,9 +112,21 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       return;
     }
 
-    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) {
-      setError('Please complete the security check.');
-      return;
+    let tokenToUse = turnstileToken || turnstileTokenRef.current;
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !tokenToUse) {
+      setIsSubmitting(true);
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        if (turnstileTokenRef.current) {
+          tokenToUse = turnstileTokenRef.current;
+          break;
+        }
+      }
+      if (!tokenToUse) {
+        setIsSubmitting(false);
+        setError('Security verification required. Please complete the check below.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -131,7 +144,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
         event_rating: eventRating,
         coordination_rating: `${coordinationRating} / 10 - ${getCoordinationLabel(coordinationRating).replace(/^\d+\s*\/\s*\d+\s*-\s*/, '')}`,
         message: feedbackText.trim(),
-        turnstileToken,
+        turnstileToken: tokenToUse,
       });
 
       setIsSubmitted(true);
@@ -141,6 +154,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     } catch (err: any) {
       console.error('Error submitting event feedback:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');
+      turnstileTokenRef.current = '';
       setTurnstileToken('');
       resetTurnstile();
     } finally {
@@ -477,7 +491,16 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                 </div>
 
                 {/* Cloudflare Turnstile */}
-                <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
+                <TurnstileWidget
+                  onVerify={(token) => {
+                    turnstileTokenRef.current = token;
+                    setTurnstileToken(token);
+                  }}
+                  onExpire={() => {
+                    turnstileTokenRef.current = '';
+                    setTurnstileToken('');
+                  }}
+                />
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-end gap-3 pt-1.5">

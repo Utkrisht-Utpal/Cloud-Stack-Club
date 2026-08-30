@@ -1,4 +1,4 @@
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useState } from 'react';
 
 export interface TurnstileWidgetRef {
   reset: () => void;
@@ -21,6 +21,8 @@ declare global {
           callback?: (token: string) => void;
           'error-callback'?: () => void;
           'expired-callback'?: () => void;
+          'before-interactive-callback'?: () => void;
+          'after-interactive-callback'?: () => void;
           theme?: 'light' | 'dark' | 'auto';
           size?: 'normal' | 'compact' | 'flexible';
           appearance?: 'always' | 'execute' | 'interaction-only';
@@ -50,12 +52,16 @@ export const resetTurnstile = (widgetId?: string) => {
 };
 
 export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetProps>(
-  ({ onVerify, onExpire, className = 'my-3 flex justify-center', resetTrigger }, ref) => {
+  ({ onVerify, onExpire, className = 'flex justify-center transition-all duration-300', resetTrigger }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const widgetIdRef = useRef<string | null>(null);
+    const [hasToken, setHasToken] = useState(false);
+    const [needsInteraction, setNeedsInteraction] = useState(false);
     const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 
     const handleReset = () => {
+      setHasToken(false);
+      setNeedsInteraction(false);
       if (widgetIdRef.current && window.turnstile) {
         try {
           window.turnstile.reset(widgetIdRef.current);
@@ -102,13 +108,32 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
             theme: 'auto',
             appearance: 'interaction-only',
             callback: (token: string) => {
-              if (isMounted) onVerify(token);
+              if (isMounted) {
+                setHasToken(true);
+                setNeedsInteraction(false);
+                onVerify(token);
+              }
             },
             'expired-callback': () => {
-              if (isMounted && onExpire) onExpire();
+              if (isMounted) {
+                setHasToken(false);
+                if (onExpire) onExpire();
+              }
+            },
+            'before-interactive-callback': () => {
+              if (isMounted) {
+                setNeedsInteraction(true);
+              }
+            },
+            'after-interactive-callback': () => {
+              if (isMounted) {
+                setNeedsInteraction(false);
+              }
             },
             'error-callback': () => {
-              console.warn('Cloudflare Turnstile challenge notice.');
+              if (isMounted) {
+                setNeedsInteraction(true);
+              }
             },
           });
         } catch (err) {
@@ -129,7 +154,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
           } else if (attempts > 20) {
             clearInterval(checkInterval);
           }
-        }, 250);
+        }, 200);
       }
 
       return () => {
@@ -146,7 +171,15 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
     if (!siteKey) return null;
 
     return (
-      <div className={className}>
+      <div
+        className={`${className} ${
+          hasToken
+            ? 'h-0 opacity-0 overflow-hidden pointer-events-none m-0 p-0'
+            : needsInteraction
+            ? 'my-3 opacity-100 min-h-[65px]'
+            : 'h-0 opacity-0 overflow-hidden'
+        }`}
+      >
         <div ref={containerRef} />
       </div>
     );
@@ -154,3 +187,4 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
 );
 
 TurnstileWidget.displayName = 'TurnstileWidget';
+

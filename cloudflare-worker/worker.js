@@ -232,7 +232,7 @@ export default {
 
     // A. MEMBERSHIP FORM SUBMISSION (Atomic file upload + database insert — Zero orphaned R2 files)
     if (request.method === 'POST' && url.pathname === '/api/submit-member') {
-      const rateLimit = checkRateLimit(`member_submit_${clientIp}`, 5, 10 * 60 * 1000); // 5 per 10 mins
+      const rateLimit = checkRateLimit(`member_submit_${clientIp}`, 3, 60 * 1000); // 3 per 1 min
       if (!rateLimit.allowed) {
         return new Response(
           JSON.stringify({ error: `Too many submissions. Please wait ${rateLimit.retryAfter} seconds.` }),
@@ -343,7 +343,7 @@ export default {
 
     // B. EVENT REGISTRATION SUBMISSION
     if (request.method === 'POST' && url.pathname === '/api/register-event') {
-      const rateLimit = checkRateLimit(`event_reg_${clientIp}`, 10, 10 * 60 * 1000); // 10 per 10 mins
+      const rateLimit = checkRateLimit(`event_reg_${clientIp}`, 3, 60 * 1000); // 3 per 1 min
       if (!rateLimit.allowed) {
         return new Response(
           JSON.stringify({ error: `Too many registrations. Please wait ${rateLimit.retryAfter} seconds.` }),
@@ -385,7 +385,7 @@ export default {
 
     // C. CONTACT FORM SUBMISSION
     if (request.method === 'POST' && url.pathname === '/api/submit-contact') {
-      const rateLimit = checkRateLimit(`contact_${clientIp}`, 5, 10 * 60 * 1000); // 5 per 10 mins
+      const rateLimit = checkRateLimit(`contact_${clientIp}`, 2, 60 * 1000); // 2 per 1 min
       if (!rateLimit.allowed) {
         return new Response(
           JSON.stringify({ error: `Too many messages. Please wait ${rateLimit.retryAfter} seconds.` }),
@@ -422,7 +422,7 @@ export default {
 
     // D. EVENT FEEDBACK SUBMISSION
     if (request.method === 'POST' && url.pathname === '/api/submit-feedback') {
-      const rateLimit = checkRateLimit(`feedback_${clientIp}`, 5, 10 * 60 * 1000); // 5 per 10 mins
+      const rateLimit = checkRateLimit(`feedback_${clientIp}`, 2, 60 * 1000); // 2 per 1 min
       if (!rateLimit.allowed) {
         return new Response(
           JSON.stringify({ error: `Too many submissions. Please wait ${rateLimit.retryAfter} seconds.` }),

@@ -31,14 +31,27 @@ export const ContactSection: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const turnstileTokenRef = React.useRef<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
 
-    if (!turnstileToken) {
-      setError('Please complete the Turnstile anti-bot security check.');
-      return;
+    let tokenToUse = turnstileToken || turnstileTokenRef.current;
+    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !tokenToUse) {
+      setIsSubmitting(true);
+      for (let i = 0; i < 15; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+        if (turnstileTokenRef.current) {
+          tokenToUse = turnstileTokenRef.current;
+          break;
+        }
+      }
+      if (!tokenToUse) {
+        setIsSubmitting(false);
+        setError('Please complete the security verification below.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -49,11 +62,12 @@ export const ContactSection: React.FC = () => {
         name: formData.name.trim(),
         email: formData.email.trim(),
         message: formData.message.trim(),
-        turnstileToken: turnstileToken.trim(),
+        turnstileToken: tokenToUse.trim(),
       });
 
       setIsSubmitted(true);
       setFormData({ name: '', email: '', message: '' });
+      turnstileTokenRef.current = '';
       setTurnstileToken(''); // Reset token
 
       // Automatically reset back to normal form after 3 seconds
@@ -63,6 +77,7 @@ export const ContactSection: React.FC = () => {
     } catch (err: any) {
       console.error('Feedback submission error:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');
+      turnstileTokenRef.current = '';
       setTurnstileToken('');
       resetTurnstile();
     } finally {
@@ -248,7 +263,16 @@ export const ContactSection: React.FC = () => {
                     />
 
                     {/* Cloudflare Turnstile */}
-                    <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
+                    <TurnstileWidget
+                      onVerify={(token) => {
+                        turnstileTokenRef.current = token;
+                        setTurnstileToken(token);
+                      }}
+                      onExpire={() => {
+                        turnstileTokenRef.current = '';
+                        setTurnstileToken('');
+                      }}
+                    />
 
                     <Button
                       type="submit"
