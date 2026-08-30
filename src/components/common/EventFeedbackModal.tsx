@@ -17,7 +17,7 @@ import {
 } from '../../services/feedback';
 import type { Event } from '../../types/database';
 import { ErrorPopupModal } from './ErrorPopupModal';
-import { TurnstileWidget } from './TurnstileWidget';
+import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 
 interface EventFeedbackModalProps {
   isOpen: boolean;
@@ -141,7 +141,8 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     } catch (err: any) {
       console.error('Error submitting event feedback:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');
-      setTurnstileToken(''); // Reset token so they can try again
+      setTurnstileToken('');
+      resetTurnstile();
     } finally {
       setIsSubmitting(false);
     }

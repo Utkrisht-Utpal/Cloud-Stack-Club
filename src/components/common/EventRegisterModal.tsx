@@ -18,7 +18,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ErrorPopupModal } from './ErrorPopupModal';
-import { TurnstileWidget } from './TurnstileWidget';
+import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { getFormForEvent } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
 import { formatEventTime } from '../../utils/formatters';
@@ -216,6 +216,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     } catch (err: any) {
       console.error('Event registration error:', err);
       setError(err?.message || 'Failed to submit registration. Please try again.');
+      setTurnstileToken('');
+      resetTurnstile();
     } finally {
       setIsSubmitting(false);
     }

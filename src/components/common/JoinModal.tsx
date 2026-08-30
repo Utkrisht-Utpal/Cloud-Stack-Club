@@ -19,7 +19,7 @@ import { Modal } from "../ui/Modal";
 import { Button } from "../ui/Button";
 import { CustomSelect } from "../ui/CustomSelect";
 import { ErrorPopupModal } from "./ErrorPopupModal";
-import { TurnstileWidget } from "./TurnstileWidget";
+import { TurnstileWidget, resetTurnstile } from "./TurnstileWidget";
 import {
   submitMemberApplication,
 } from "../../services/supabase";
@@ -136,6 +136,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({
         err?.message ||
           "Failed to submit membership application. Please try again.",
       );
+      setTurnstileToken("");
+      resetTurnstile();
     } finally {
       setIsSubmitting(false);
     }

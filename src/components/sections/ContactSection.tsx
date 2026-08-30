@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { SectionTitle } from '../ui/SectionTitle';
 import { ErrorPopupModal } from '../common/ErrorPopupModal';
 import { submitFeedback } from '../../services/supabase';
-import { TurnstileWidget } from '../common/TurnstileWidget';
+import { TurnstileWidget, resetTurnstile } from '../common/TurnstileWidget';
 
 // Clean SVG icons for LinkedIn and Instagram
 const LinkedinIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -63,7 +63,8 @@ export const ContactSection: React.FC = () => {
     } catch (err: any) {
       console.error('Feedback submission error:', err);
       setError(err?.message || 'Failed to submit feedback. Please try again.');
-      setTurnstileToken(''); // Reset token on error so they have to redo if needed (though it handles itself usually)
+      setTurnstileToken('');
+      resetTurnstile();
     } finally {
       setIsSubmitting(false);
     }
