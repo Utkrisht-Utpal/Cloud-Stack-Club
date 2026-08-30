@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { uploadToR2, deleteFromR2, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
+import { formatPersonName } from '../utils/formatters';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
 const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
@@ -100,6 +101,7 @@ export const submitMemberApplication = async (
   }
 
   const { name, email, phone, uid, department, year } = payload;
+  const formattedName = formatPersonName(name);
   const cleanUid = uid.trim();
   const cleanEmail = email.trim();
   const cleanPhone = phone?.trim() || null;
@@ -162,7 +164,7 @@ export const submitMemberApplication = async (
   // 2. If existing inactive member found -> UPDATE status back to 'pending' so it appears in pending applications
   if (existingInactiveMember) {
     const updatePayload: any = {
-      name: name.trim(),
+      name: formattedName,
       email: cleanEmail,
       phone: cleanPhone,
       uid: cleanUid,
@@ -207,7 +209,7 @@ export const submitMemberApplication = async (
     id: memberId,
     registration_id: regId,
     uid: cleanUid,
-    name: name.trim(),
+    name: formattedName,
     email: cleanEmail,
     phone: cleanPhone,
     department: department?.trim() || null,

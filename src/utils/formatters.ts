@@ -88,3 +88,27 @@ export const isRegistrationActive = (evt?: any): boolean => {
 
   return true;
 };
+
+/**
+ * Formats a person's name into proper Title Case (e.g. "sushant kumar" or "SUSHANT KUMAR" -> "Sushant Kumar")
+ * Handles multiple spaces, hyphens, and irregular casing.
+ */
+export const formatPersonName = (rawName?: string | null): string => {
+  if (!rawName) return '';
+  return rawName
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .map((word) => {
+      if (!word) return '';
+      return word
+        .split('-')
+        .map((part) => {
+          if (!part) return '';
+          return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+        })
+        .join('-');
+    })
+    .join(' ');
+};
+

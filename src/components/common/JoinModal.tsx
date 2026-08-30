@@ -23,6 +23,7 @@ import {
   submitMemberApplication,
   checkMemberDuplicate,
 } from "../../services/supabase";
+import { formatPersonName } from "../../utils/formatters";
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -126,7 +127,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       // 2. Submit membership application payload DIRECTLY into Supabase `members` table ONLY
       const newMember = await submitMemberApplication(
         {
-          name: formData.name.trim(),
+          name: formatPersonName(formData.name),
           email: formData.email.trim(),
           phone: formData.phone.trim() || undefined,
           uid: formData.uid.trim(),
