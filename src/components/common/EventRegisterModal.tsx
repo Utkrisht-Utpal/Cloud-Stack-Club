@@ -45,7 +45,6 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   onSuccessToast,
 }) => {
   const [turnstileToken, setTurnstileToken] = useState<string>('');
-  const turnstileTokenRef = React.useRef<string>('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -180,21 +179,9 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       }
     }
 
-    let tokenToUse = turnstileToken || turnstileTokenRef.current;
-    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !tokenToUse) {
-      setIsSubmitting(true);
-      for (let i = 0; i < 15; i++) {
-        await new Promise((r) => setTimeout(r, 100));
-        if (turnstileTokenRef.current) {
-          tokenToUse = turnstileTokenRef.current;
-          break;
-        }
-      }
-      if (!tokenToUse) {
-        setIsSubmitting(false);
-        setError('Please complete the security verification below.');
-        return;
-      }
+    if (!turnstileToken) {
+      setError('Please complete the Turnstile anti-bot security check.');
+      return;
     }
 
     setIsSubmitting(true);
@@ -221,7 +208,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           team_members: isTeamRegistration ? teamMembers.filter((m) => m.name.trim()) : undefined,
           answers: formattedAnswers,
         },
-        tokenToUse.trim()
+        turnstileToken.trim()
       );
 
       setRegistrationResult(result);
@@ -229,7 +216,6 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     } catch (err: any) {
       console.error('Event registration error:', err);
       setError(err?.message || 'Failed to submit registration. Please try again.');
-      turnstileTokenRef.current = '';
       setTurnstileToken('');
       resetTurnstile();
     } finally {
@@ -758,16 +744,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           )}
 
           {/* Cloudflare Turnstile */}
-          <TurnstileWidget
-            onVerify={(token) => {
-              turnstileTokenRef.current = token;
-              setTurnstileToken(token);
-            }}
-            onExpire={() => {
-              turnstileTokenRef.current = '';
-              setTurnstileToken('');
-            }}
-          />
+          <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
           {/* Submit Action */}
           <div className="pt-2">

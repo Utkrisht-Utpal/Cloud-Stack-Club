@@ -44,7 +44,6 @@ export const JoinModal: React.FC<JoinModalProps> = ({
   onSuccessToast,
 }) => {
   const [turnstileToken, setTurnstileToken] = useState<string>("");
-  const turnstileTokenRef = useRef<string>("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -106,21 +105,9 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       return;
     }
 
-    let tokenToUse = turnstileToken || turnstileTokenRef.current;
-    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !tokenToUse) {
-      setIsSubmitting(true);
-      for (let i = 0; i < 15; i++) {
-        await new Promise((r) => setTimeout(r, 100));
-        if (turnstileTokenRef.current) {
-          tokenToUse = turnstileTokenRef.current;
-          break;
-        }
-      }
-      if (!tokenToUse) {
-        setIsSubmitting(false);
-        setError("Please complete the security verification below.");
-        return;
-      }
+    if (!turnstileToken) {
+      setError("Please complete the Turnstile anti-bot security check.");
+      return;
     }
 
     setIsSubmitting(true);
@@ -138,7 +125,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
           year: formData.year,
         },
         verificationFile,
-        tokenToUse.trim(),
+        turnstileToken.trim(),
       );
 
       setRegisteredNumber(newMember.registration_id);
@@ -149,7 +136,6 @@ export const JoinModal: React.FC<JoinModalProps> = ({
         err?.message ||
           "Failed to submit membership application. Please try again.",
       );
-      turnstileTokenRef.current = "";
       setTurnstileToken("");
       resetTurnstile();
     } finally {
@@ -531,16 +517,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
               />
 
               {/* Cloudflare Turnstile Verification */}
-              <TurnstileWidget
-                onVerify={(token) => {
-                  turnstileTokenRef.current = token;
-                  setTurnstileToken(token);
-                }}
-                onExpire={() => {
-                  turnstileTokenRef.current = "";
-                  setTurnstileToken("");
-                }}
-              />
+              <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
 
               <div className="pt-2">
                 <Button
