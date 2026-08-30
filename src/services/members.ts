@@ -235,7 +235,7 @@ export const getMembers = async (): Promise<Member[]> => {
         *,
         role:roles(*)
       `)
-      .neq('status', 'inactive')
+      .eq('status', 'active')
       .order('name', { ascending: true });
 
     if (error || !membersData) {
