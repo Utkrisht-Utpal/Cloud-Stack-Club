@@ -106,9 +106,14 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
 
     if (needsUpdate) {
       updates.updated_at = new Date().toISOString();
-      pendingDbUpdates.push(
-        Promise.resolve(supabase.from('events').update(updates).eq('id', evt.id))
-      );
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          pendingDbUpdates.push(
+            Promise.resolve(supabase.from('events').update(updates).eq('id', evt.id))
+          );
+        }
+      } catch {}
     }
   }
 

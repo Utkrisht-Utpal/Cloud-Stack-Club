@@ -49,64 +49,38 @@ export const submitMemberApplication = async (
 
   // 1. Submit application atomically via Cloudflare Worker Zero-Trust Gateway
   const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
-  let result: any = null;
-
-  if (workerUrl) {
-    try {
-      const formData = new FormData();
-      formData.append('name', name.trim());
-      formData.append('email', cleanEmail);
-      formData.append('phone', cleanPhone);
-      formData.append('uid', cleanUid);
-      formData.append('department', department?.trim() || '');
-      formData.append('year', year || '');
-      if (turnstileToken) {
-        formData.append('turnstile_token', turnstileToken);
-      }
-      if (verificationFile) {
-        formData.append('file', verificationFile);
-      }
-
-      const response = await fetch(`${workerUrl}/api/submit-member`, {
-        method: 'POST',
-        headers: {
-          ...(turnstileToken ? { 'cf-turnstile-response': turnstileToken } : {}),
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorJson = await response.json().catch(() => ({ error: 'Submission failed' }));
-        throw new Error((errorJson as any).error || `Submission failed with status ${response.status}`);
-      }
-
-      result = await response.json();
-    } catch (err: any) {
-      if (err.message && !err.message.includes('Failed to fetch')) {
-        throw err;
-      }
-    }
+  if (!workerUrl) {
+    throw new Error('Public API Gateway is not configured. Please check VITE_MEDIA_WORKER_URL.');
   }
 
-  // 3. Fallback direct RPC if worker not reachable or in development
-  if (!result && isSupabaseConfigured()) {
-    const { data: rpcData, error: rpcError } = await supabase.rpc('submit_member_application', {
-      p_name: name.trim(),
-      p_email: cleanEmail,
-      p_phone: cleanPhone,
-      p_uid: cleanUid,
-      p_department: department?.trim() || '',
-      p_year: year || '',
-      p_verification_file_url: filePath || '',
-    });
-
-    if (rpcError) {
-      console.error('Error submitting member application via RPC:', rpcError.message);
-      throw new Error(rpcError.message || 'Membership application submission failed.');
-    }
-
-    result = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+  const formData = new FormData();
+  formData.append('name', name.trim());
+  formData.append('email', cleanEmail);
+  formData.append('phone', cleanPhone);
+  formData.append('uid', cleanUid);
+  formData.append('department', department?.trim() || '');
+  formData.append('year', year || '');
+  if (turnstileToken) {
+    formData.append('turnstile_token', turnstileToken);
   }
+  if (verificationFile) {
+    formData.append('file', verificationFile);
+  }
+
+  const response = await fetch(`${workerUrl}/api/submit-member`, {
+    method: 'POST',
+    headers: {
+      ...(turnstileToken ? { 'cf-turnstile-response': turnstileToken } : {}),
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorJson = await response.json().catch(() => ({ error: 'Membership application failed' }));
+    throw new Error((errorJson as any).error || `Membership application failed with status ${response.status}`);
+  }
+
+  const result = await response.json();
 
   const newMember: Member = {
     id: result?.id || generateUUID(),
@@ -224,20 +198,45 @@ export const getCoreMembers = async (): Promise<Member[]> => {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('members')
-    .select('id, registration_id, name, department, year, role_id, is_core_member, status, created_at, role:roles(*)')
-    .eq('status', 'active')
-    .eq('is_core_member', true)
-    .order('created_at', { ascending: true });
+  try {
+    const { data: membersData, error } = await supabase.rpc('get_public_members');
 
-  if (error) {
-    console.warn('Notice fetching core members:', error.message);
+    if (error || !membersData) {
+      console.warn('Notice fetching core members via RPC:', error?.message);
+      return [];
+    }
+
+    // Fetch public roles to attach role objects
+    const { data: rolesData } = await supabase
+      .from('roles')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    const rolesMap = new Map<string, any>((rolesData || []).map((r) => [r.id, r]));
+
+    const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
+    const inactiveIds = getInactiveMemberIds();
+
+    const members: Member[] = (parsed || [])
+      .filter((m: any) => m.is_core_member && !inactiveIds.includes(m.id))
+      .map((m: any) => ({
+        id: m.id,
+        registration_id: m.registration_id,
+        name: m.name,
+        department: m.department || null,
+        year: m.year || null,
+        role_id: m.role_id || null,
+        is_core_member: Boolean(m.is_core_member),
+        status: 'active',
+        created_at: m.created_at,
+        role: m.role_id ? rolesMap.get(m.role_id) || null : null,
+      }));
+
+    return members.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+  } catch (err) {
+    console.warn('Exception fetching core members:', err);
     return [];
   }
-
-  const inactiveIds = getInactiveMemberIds();
-  return (((data as unknown) as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
 };
 
 export const getMembers = async (): Promise<Member[]> => {
@@ -245,19 +244,45 @@ export const getMembers = async (): Promise<Member[]> => {
     return [];
   }
 
-  const { data, error } = await supabase
-    .from('members')
-    .select('id, registration_id, name, department, year, role_id, is_core_member, status, created_at, role:roles(*)')
-    .eq('status', 'active')
-    .order('name', { ascending: true });
+  try {
+    const { data: membersData, error } = await supabase.rpc('get_public_members');
 
-  if (error) {
-    console.warn('Notice fetching members:', error.message);
+    if (error || !membersData) {
+      console.warn('Notice fetching members via RPC:', error?.message);
+      return [];
+    }
+
+    // Fetch public roles to attach role objects
+    const { data: rolesData } = await supabase
+      .from('roles')
+      .select('*')
+      .order('display_order', { ascending: true });
+
+    const rolesMap = new Map<string, any>((rolesData || []).map((r) => [r.id, r]));
+
+    const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
+    const inactiveIds = getInactiveMemberIds();
+
+    const members: Member[] = (parsed || [])
+      .filter((m: any) => !inactiveIds.includes(m.id))
+      .map((m: any) => ({
+        id: m.id,
+        registration_id: m.registration_id,
+        name: m.name,
+        department: m.department || null,
+        year: m.year || null,
+        role_id: m.role_id || null,
+        is_core_member: Boolean(m.is_core_member),
+        status: 'active',
+        created_at: m.created_at,
+        role: m.role_id ? rolesMap.get(m.role_id) || null : null,
+      }));
+
+    return members.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } catch (err) {
+    console.warn('Exception fetching members:', err);
     return [];
   }
-
-  const inactiveIds = getInactiveMemberIds();
-  return (((data as unknown) as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
 };
 
 export const deleteMemberAdmin = async (memberId: string): Promise<void> => {

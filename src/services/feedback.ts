@@ -37,95 +37,45 @@ export const submitFeedback = async (
     return newFeedback;
   }
 
-  try {
-    const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
-    if (workerUrl) {
-      try {
-        const response = await fetch(`${workerUrl}/api/submit-contact`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(payload.turnstileToken ? { 'cf-turnstile-response': payload.turnstileToken } : {}),
-          },
-          body: JSON.stringify({
-            name: payload.name.trim(),
-            email: payload.email.trim(),
-            message: payload.message.trim(),
-            turnstile_token: payload.turnstileToken,
-          }),
-        });
+  const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+  if (!workerUrl) {
+    throw new Error('Public API Gateway is not configured. Please check VITE_MEDIA_WORKER_URL.');
+  }
 
-        if (response.ok) {
-          const parsed = await response.json();
-          const dbFeedback: ContactFeedback = {
-            ...newFeedback,
-            id: parsed.id || tempId,
-          };
-          try {
-            const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
-            let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
-            list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
-            list.unshift(dbFeedback);
-            localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
-          } catch (e) {}
-          return dbFeedback;
-        }
-      } catch (workerErr) {
-        console.warn('Worker gateway submit-contact notice:', workerErr);
-      }
-    }
-
-    const { data: rpcData, error: rpcError } = await supabase.rpc('submit_contact_feedback', {
-      p_name: payload.name.trim(),
-      p_email: payload.email.trim(),
-      p_message: payload.message.trim(),
-    });
-
-    if (!rpcError && rpcData) {
-      const parsed = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
-      const dbFeedback: ContactFeedback = {
-        ...newFeedback,
-        id: parsed.id || tempId,
-      };
-
-      try {
-        const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
-        let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
-        list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
-        list.unshift(dbFeedback);
-        localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
-      } catch (e) {}
-      return dbFeedback;
-    }
-
-    // Direct insert fallback if RPC not installed yet
-    const insertObj = {
+  const response = await fetch(`${workerUrl}/api/submit-contact`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(payload.turnstileToken ? { 'cf-turnstile-response': payload.turnstileToken } : {}),
+    },
+    body: JSON.stringify({
       name: payload.name.trim(),
       email: payload.email.trim(),
       message: payload.message.trim(),
-      status: 'pending' as FeedbackStatus,
-    };
+      turnstile_token: payload.turnstileToken,
+    }),
+  });
 
-    const { data, error } = await supabase
-      .from('contact_feedbacks')
-      .insert(insertObj)
-      .select('*')
-      .maybeSingle();
+  if (!response.ok) {
+    const errorJson = await response.json().catch(() => ({ error: 'Feedback submission failed' }));
+    throw new Error((errorJson as any).error || `Feedback submission failed with status ${response.status}`);
+  }
 
-    if (!error && data) {
-      const dbFeedback = data as ContactFeedback;
-      try {
-        const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
-        let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
-        list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
-        list.unshift(dbFeedback);
-        localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
-      } catch (e) {}
-      return dbFeedback;
-    }
+  const parsed = await response.json();
+  const dbFeedback: ContactFeedback = {
+    ...newFeedback,
+    id: parsed.id || tempId,
+  };
+
+  try {
+    const existing = localStorage.getItem(LOCAL_CONTACT_FEEDBACKS_KEY);
+    let list: ContactFeedback[] = existing ? JSON.parse(existing) : [];
+    list = list.filter((f) => f.id !== tempId && f.id !== dbFeedback.id);
+    list.unshift(dbFeedback);
+    localStorage.setItem(LOCAL_CONTACT_FEEDBACKS_KEY, JSON.stringify(list));
   } catch (e) {}
 
-  return newFeedback;
+  return dbFeedback;
 };
 
 export const fetchFreshContactFeedbacksFromDb = async (): Promise<ContactFeedback[]> => {
@@ -283,130 +233,56 @@ export const submitEventFeedback = async (
       if (dbEvt?.id) targetEventId = dbEvt.id;
     }
 
-    // 2. Attempt Gateway Call or Server-Side RPC
+    // 2. Submit via Worker Zero-Trust Gateway
     const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
-    if (workerUrl) {
-      try {
-        const response = await fetch(`${workerUrl}/api/submit-feedback`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(payload.turnstileToken ? { 'cf-turnstile-response': payload.turnstileToken } : {}),
-          },
-          body: JSON.stringify({
-            event_id: targetEventId,
-            event_title: payload.event_title.trim(),
-            name: payload.name.trim(),
-            email: payload.email.trim(),
-            phone: payload.phone?.trim() || null,
-            university_id: payload.university_id.trim(),
-            registration_id: payload.registration_id.trim(),
-            event_rating: payload.event_rating,
-            engagement_rating: payload.engagement_rating ?? 5,
-            coordination_rating: payload.coordination_rating.trim(),
-            message: payload.message.trim(),
-            turnstile_token: payload.turnstileToken,
-          }),
-        });
-
-        if (response.ok) {
-          const parsed = await response.json();
-          const savedFeedback: EventFeedback = {
-            ...newEventFeedback,
-            id: parsed.id || tempId,
-          };
-          try {
-            const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
-            const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
-            list.unshift(savedFeedback);
-            localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
-          } catch (e) {}
-          return savedFeedback;
-        }
-      } catch (workerErr) {
-        console.warn('Worker gateway submit-feedback notice:', workerErr);
-      }
+    if (!workerUrl) {
+      throw new Error('Public API Gateway is not configured. Please check VITE_MEDIA_WORKER_URL.');
     }
 
-    if (isUuid || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId)) {
-      const { data: rpcData, error: rpcError } = await supabase.rpc('submit_event_feedback', {
-        p_event_id: targetEventId,
-        p_event_title: payload.event_title.trim(),
-        p_name: payload.name.trim(),
-        p_email: payload.email.trim(),
-        p_phone: payload.phone?.trim() || null,
-        p_university_id: payload.university_id.trim(),
-        p_registration_id: payload.registration_id.trim(),
-        p_event_rating: payload.event_rating,
-        p_engagement_rating: payload.engagement_rating ?? 5,
-        p_coordination_rating: payload.coordination_rating.trim(),
-        p_message: payload.message.trim(),
-      });
+    const response = await fetch(`${workerUrl}/api/submit-feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(payload.turnstileToken ? { 'cf-turnstile-response': payload.turnstileToken } : {}),
+      },
+      body: JSON.stringify({
+        event_id: targetEventId,
+        event_title: payload.event_title.trim(),
+        name: payload.name.trim(),
+        email: payload.email.trim(),
+        phone: payload.phone?.trim() || null,
+        university_id: payload.university_id.trim(),
+        registration_id: payload.registration_id.trim(),
+        event_rating: payload.event_rating,
+        engagement_rating: payload.engagement_rating ?? 5,
+        coordination_rating: payload.coordination_rating.trim(),
+        message: payload.message.trim(),
+        turnstile_token: payload.turnstileToken,
+      }),
+    });
 
-      if (!rpcError && rpcData) {
-        const parsed = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
-        const savedFeedback: EventFeedback = {
-          ...newEventFeedback,
-          id: parsed.id || tempId,
-        };
-
-        try {
-          const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
-          const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
-          list.unshift(savedFeedback);
-          localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
-        } catch (e) {}
-
-        return savedFeedback;
-      }
+    if (!response.ok) {
+      const errorJson = await response.json().catch(() => ({ error: 'Event feedback submission failed' }));
+      throw new Error((errorJson as any).error || `Feedback submission failed with status ${response.status}`);
     }
 
-    const insertObj: any = {
-      name: payload.name.trim(),
-      email: payload.email.trim(),
-      phone: payload.phone?.trim() || null,
-      university_id: payload.university_id.trim(),
-      registration_id: payload.registration_id.trim(),
-      event_id: targetEventId,
-      event_title: payload.event_title.trim(),
-      event_rating: payload.event_rating,
-      coordination_rating: payload.coordination_rating.trim(),
-      message: payload.message.trim(),
-      status: 'pending' as FeedbackStatus,
+    const parsed = await response.json();
+    const savedFeedback: EventFeedback = {
+      ...newEventFeedback,
+      id: parsed.id || tempId,
     };
 
-    if (payload.engagement_rating !== undefined) {
-      insertObj.engagement_rating = payload.engagement_rating;
-    }
-
-    const { data, error } = await supabase
-      .from('event_feedbacks')
-      .insert(insertObj)
-      .select('*')
-      .maybeSingle();
-
-    if (error) {
-      console.warn('Supabase event feedback insert error:', error);
-      // Fallback local save if database schema lacks newly added columns
-      const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
-      const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
-      list.unshift(newEventFeedback);
-      localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
-      return newEventFeedback;
-    }
-
-    // Cache locally
     try {
       const existing = localStorage.getItem(LOCAL_EVENT_FEEDBACKS_KEY);
       const list: EventFeedback[] = existing ? JSON.parse(existing) : [];
-      list.unshift(data || newEventFeedback);
+      list.unshift(savedFeedback);
       localStorage.setItem(LOCAL_EVENT_FEEDBACKS_KEY, JSON.stringify(list));
     } catch (e) {}
 
-    return data || newEventFeedback;
+    return savedFeedback;
   } catch (err: any) {
     console.error('Error in submitEventFeedback:', err);
-    return newEventFeedback;
+    throw err;
   }
 };
 

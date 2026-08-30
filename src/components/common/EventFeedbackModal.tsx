@@ -14,8 +14,6 @@ import {
 } from 'lucide-react';
 import {
   submitEventFeedback,
-  verifyEventRegistration,
-  checkExistingFeedbackForEvent,
 } from '../../services/feedback';
 import type { Event } from '../../types/database';
 import { ErrorPopupModal } from './ErrorPopupModal';
@@ -121,36 +119,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      // 1. Check if feedback has already been submitted for this UID, Registration ID, Email, or Phone
-      const duplicateCheck = await checkExistingFeedbackForEvent(
-        event.id,
-        universityId.trim(),
-        registrationId.trim(),
-        email.trim(),
-        phone.trim()
-      );
-      if (duplicateCheck.alreadySubmitted) {
-        setError('Feedback has already been submitted for this event with your details. Thank you!');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. Strict 4-Way Verification: Validate that Registration ID, UID, Email, and Phone all match
-      const verification = await verifyEventRegistration(
-        event.id,
-        universityId.trim(),
-        registrationId.trim(),
-        email.trim(),
-        phone.trim()
-      );
-
-      if (!verification.isValid) {
-        setError(verification.error || 'Registration ID, UID, Email, and Phone do not match our event records.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 3. Submit feedback
+      // Direct submission via Worker Zero-Trust Gateway (atomic 4-way validation & duplicate check)
       await submitEventFeedback({
         name: name.trim(),
         email: email.trim(),
