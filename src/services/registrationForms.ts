@@ -32,13 +32,14 @@ export const getFormForEvent = async (eventId: string): Promise<EventRegistratio
     return cachedForm;
   }
 
-  const validUuid = toValidUuid(eventId);
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+  const validUuid = isUuid ? eventId : toValidUuid(eventId);
 
   try {
     const { data: formData, error: formError } = await supabase
       .from('event_registration_forms')
       .select('*')
-      .or(`event_id.eq.${eventId},event_id.eq.${validUuid}`)
+      .eq('event_id', validUuid)
       .eq('is_active', true)
       .maybeSingle();
 

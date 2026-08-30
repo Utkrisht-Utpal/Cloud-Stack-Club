@@ -223,14 +223,28 @@ export const submitEventFeedback = async (
     let targetEventId = payload.event_id.trim();
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetEventId);
 
-    if (!isUuid) {
-      const { data: dbEvt } = await supabase
-        .from('events')
-        .select('id')
-        .or(`slug.eq.${targetEventId},id.eq.${targetEventId}`)
-        .maybeSingle();
+    if (!isUuid && isSupabaseConfigured()) {
+      try {
+        const { data: eventBySlug } = await supabase
+          .from('events')
+          .select('id')
+          .eq('slug', targetEventId)
+          .maybeSingle();
 
-      if (dbEvt?.id) targetEventId = dbEvt.id;
+        if (eventBySlug && (eventBySlug as any).id) {
+          targetEventId = (eventBySlug as any).id;
+        } else {
+          const { data: eventByTitle } = await supabase
+            .from('events')
+            .select('id')
+            .ilike('title', `%${targetEventId}%`)
+            .maybeSingle();
+
+          if (eventByTitle && (eventByTitle as any).id) {
+            targetEventId = (eventByTitle as any).id;
+          }
+        }
+      } catch (e) {}
     }
 
     // 2. Submit via Worker Zero-Trust Gateway
