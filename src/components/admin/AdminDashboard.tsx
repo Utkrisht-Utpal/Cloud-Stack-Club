@@ -1458,13 +1458,13 @@ export const AdminDashboard: React.FC = () => {
                           {evt.registration_enabled && evt.registration_start && (
                             <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5" />
-                              <span>Registration Starts: {new Date(evt.registration_start).toLocaleDateString()}</span>
+                              <span>Registration Starts: {new Date(evt.registration_start).toLocaleDateString('en-GB')}</span>
                             </span>
                           )}
                           {evt.registration_enabled && evt.registration_end && (
                             <span className="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5" />
-                              <span>Registration Ends: {new Date(evt.registration_end).toLocaleDateString()}</span>
+                              <span>Registration Ends: {new Date(evt.registration_end).toLocaleDateString('en-GB')}</span>
                             </span>
                           )}
                         </div>
@@ -1473,7 +1473,7 @@ export const AdminDashboard: React.FC = () => {
                         <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-2">
                           <div className="space-y-0.5 min-w-0">
                             <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-bold truncate">
-                              <span>📅 {evt.date ? new Date(evt.date).toLocaleDateString() : 'TBD'}</span>
+                              <span>📅 {evt.date ? new Date(evt.date).toLocaleDateString('en-GB') : 'TBD'}</span>
                               {evt.start_time && (
                                 <span className="flex items-center gap-0.5 text-blue-600 dark:text-sky-400">
                                   <Clock className="w-3 h-3" />

@@ -353,3 +353,8 @@ html.horizontal-scroll-active body {
 .animate-float-slow {
   animation: float 9s ease-in-out infinite;
 }
+@layer base {
+  input:not([type='checkbox']):not([type='radio']), textarea, select {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 !important;
+  }
+}

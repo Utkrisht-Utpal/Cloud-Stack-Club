@@ -145,7 +145,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           'Phone': r.registrant_phone || '',
           'University UID': r.uid || '',
           ...customAnswersDict,
-          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '',
+          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
         });
 
         // 2. Teammates Rows
@@ -166,7 +166,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
             'Phone': m.phone || '',
             'University UID': m.uid || '',
             ...blankCustomDict,
-            'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '',
+            'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
           });
         });
       } else {
@@ -182,7 +182,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           'Phone': r.registrant_phone || '',
           'University UID': r.uid || '',
           ...customAnswersDict,
-          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString() : '',
+          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
         });
       }
 
@@ -226,7 +226,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Total Registrations: ${filtered.length}  •  Export Date: ${new Date().toLocaleDateString()}`, 14, 22);
+    doc.text(`Total Registrations: ${filtered.length}  •  Export Date: ${new Date().toLocaleDateString('en-GB')}`, 14, 22);
 
     const pdfHeaders = ['#', 'Reg Number', 'Team Name', 'Role', 'Member Name', 'Email', 'Phone', 'UID'];
     formFields.forEach((field) => {
@@ -257,7 +257,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           r.registrant_phone || '',
           r.uid || '',
           ...customAnswersList,
-          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '',
+          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
 
         // Teammate rows
@@ -288,7 +288,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           r.registrant_phone || '',
           r.uid || '',
           ...customAnswersList,
-          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString() : '',
+          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
       }
 
