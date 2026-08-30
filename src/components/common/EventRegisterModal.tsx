@@ -179,6 +179,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       }
     }
 
+    if (!turnstileToken) {
+      setError('Please complete the Turnstile anti-bot security check.');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -203,7 +208,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           team_members: isTeamRegistration ? teamMembers.filter((m) => m.name.trim()) : undefined,
           answers: formattedAnswers,
         },
-        turnstileToken || undefined
+        turnstileToken.trim()
       );
 
       setRegistrationResult(result);

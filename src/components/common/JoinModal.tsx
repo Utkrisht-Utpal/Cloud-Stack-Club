@@ -22,7 +22,6 @@ import { ErrorPopupModal } from "./ErrorPopupModal";
 import { TurnstileWidget } from "./TurnstileWidget";
 import {
   submitMemberApplication,
-  checkMemberDuplicate,
 } from "../../services/supabase";
 import { validateFileSignature } from "../../lib/fileValidation";
 
@@ -106,26 +105,16 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       return;
     }
 
+    if (!turnstileToken) {
+      setError("Please complete the Turnstile anti-bot security check.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // 1. Check for duplicates in UID, Email, or Mobile Number before attempting registration
-      const dupCheck = await checkMemberDuplicate(
-        formData.uid,
-        formData.email,
-        formData.phone,
-      );
-      if (dupCheck.isDuplicate) {
-        setError(
-          dupCheck.message ||
-            `A member with this ${dupCheck.field} already exists.`,
-        );
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. Submit membership application payload via Zero-Trust Gateway
+      // 1. Submit membership application payload via Zero-Trust Gateway
       const newMember = await submitMemberApplication(
         {
           name: formData.name.trim(),
@@ -136,7 +125,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
           year: formData.year,
         },
         verificationFile,
-        turnstileToken || undefined,
+        turnstileToken.trim(),
       );
 
       setRegisteredNumber(newMember.registration_id);

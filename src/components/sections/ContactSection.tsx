@@ -36,8 +36,8 @@ export const ContactSection: React.FC = () => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.message) return;
 
-    if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) {
-      setError('Please complete the security check.');
+    if (!turnstileToken) {
+      setError('Please complete the Turnstile anti-bot security check.');
       return;
     }
 
@@ -49,6 +49,7 @@ export const ContactSection: React.FC = () => {
         name: formData.name.trim(),
         email: formData.email.trim(),
         message: formData.message.trim(),
+        turnstileToken: turnstileToken.trim(),
       });
 
       setIsSubmitted(true);
