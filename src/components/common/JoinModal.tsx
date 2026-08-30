@@ -20,6 +20,7 @@ import { Button } from "../ui/Button";
 import { CustomSelect } from "../ui/CustomSelect";
 import { ErrorPopupModal } from "./ErrorPopupModal";
 import { TurnstileWidget, resetTurnstile } from "./TurnstileWidget";
+import { useSubmitCooldown } from "../../hooks/useSubmitCooldown";
 import {
   submitMemberApplication,
 } from "../../services/supabase";
@@ -44,6 +45,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
   onSuccessToast,
 }) => {
   const [turnstileToken, setTurnstileToken] = useState<string>("");
+  const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -74,44 +76,54 @@ export const JoinModal: React.FC<JoinModalProps> = ({
     }
   };
 
+  const triggerErrorWithCooldown = (msg: string) => {
+    setError(msg);
+    setTurnstileToken("");
+    resetTurnstile();
+    startCooldown(9);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCoolingDown || isSubmitting) return;
+    setError(null);
+
+    // Basic Input Validations
     if (
       !formData.name.trim() ||
       !formData.email.trim() ||
       !formData.uid.trim()
     ) {
-      setError("Please fill in your Name, Email, and University ID (UID).");
+      triggerErrorWithCooldown("Please fill in your Name, Email, and University ID (UID).");
       return;
     }
 
     if (formData.uid.trim().length !== 10) {
-      setError(
+      triggerErrorWithCooldown(
         "University ID (UID) must be exactly 10 alphanumeric characters.",
       );
       return;
     }
 
     if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone.trim())) {
-      setError("Phone number is required and must be exactly 10 digits.");
+      triggerErrorWithCooldown("Phone number is required and must be exactly 10 digits.");
       return;
     }
 
     // Enforce required CUIMS verification document upload
     if (!verificationFile) {
-      setError(
+      triggerErrorWithCooldown(
         "CUIMS verification screenshot or document is required to apply for membership.",
       );
       return;
     }
 
     if (!turnstileToken) {
-      setError("Please complete the Turnstile anti-bot security check.");
+      triggerErrorWithCooldown("Please complete the Turnstile anti-bot security check.");
       return;
     }
 
     setIsSubmitting(true);
-    setError(null);
 
     try {
       // 1. Submit membership application payload via Zero-Trust Gateway
@@ -129,15 +141,14 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       );
 
       setRegisteredNumber(newMember.registration_id);
+      resetCooldown();
       if (onSuccessToast) onSuccessToast();
     } catch (err: any) {
       console.error("Membership application submission error:", err);
-      setError(
+      triggerErrorWithCooldown(
         err?.message ||
           "Failed to submit membership application. Please try again.",
       );
-      setTurnstileToken("");
-      resetTurnstile();
     } finally {
       setIsSubmitting(false);
     }
@@ -146,6 +157,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
   const handleModalClose = () => {
     setRegisteredNumber(null);
     setShowCuimsHelp(false);
+    resetCooldown();
     setFormData({
       name: "",
       email: "",
@@ -524,12 +536,14 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                   type="submit"
                   variant="primary"
                   size="md"
-                  disabled={isSubmitting}
-                  icon={<Send className="w-4 h-4" />}
+                  disabled={isSubmitting || isCoolingDown}
+                  icon={!isCoolingDown ? <Send className="w-4 h-4" /> : undefined}
                   className="w-full"
                 >
                   {isSubmitting
                     ? "Submitting Application..."
+                    : isCoolingDown
+                    ? `Submit in ${cooldown}s`
                     : "Submit Application"}
                 </Button>
               </div>

@@ -100,7 +100,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
           widgetIdRef.current = window.turnstile.render(containerRef.current, {
             sitekey: siteKey,
             theme: 'auto',
-            appearance: 'always',
+            appearance: 'interaction-only',
             callback: (token: string) => {
               if (isMounted) onVerify(token);
             },
@@ -147,7 +147,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
 
     return (
       <div className={className}>
-        <div ref={containerRef} className="min-h-[65px] flex items-center justify-center" />
+        <div ref={containerRef} />
       </div>
     );
   }

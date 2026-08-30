@@ -7,6 +7,7 @@ import { SectionTitle } from '../ui/SectionTitle';
 import { ErrorPopupModal } from '../common/ErrorPopupModal';
 import { submitFeedback } from '../../services/supabase';
 import { TurnstileWidget, resetTurnstile } from '../common/TurnstileWidget';
+import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 
 // Clean SVG icons for LinkedIn and Instagram
 const LinkedinIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -31,13 +32,26 @@ export const ContactSection: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
+
+  const triggerErrorWithCooldown = (msg: string) => {
+    setError(msg);
+    setTurnstileToken('');
+    resetTurnstile();
+    startCooldown(9);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) return;
+    if (isCoolingDown || isSubmitting) return;
+
+    if (!formData.name || !formData.email || !formData.message) {
+      triggerErrorWithCooldown('Please fill in your name, email, and message.');
+      return;
+    }
 
     if (!turnstileToken) {
-      setError('Please complete the Turnstile anti-bot security check.');
+      triggerErrorWithCooldown('Please complete the Turnstile anti-bot security check.');
       return;
     }
 
@@ -53,6 +67,7 @@ export const ContactSection: React.FC = () => {
       });
 
       setIsSubmitted(true);
+      resetCooldown();
       setFormData({ name: '', email: '', message: '' });
       setTurnstileToken(''); // Reset token
 
@@ -62,9 +77,7 @@ export const ContactSection: React.FC = () => {
       }, 3000);
     } catch (err: any) {
       console.error('Feedback submission error:', err);
-      setError(err?.message || 'Failed to submit feedback. Please try again.');
-      setTurnstileToken('');
-      resetTurnstile();
+      triggerErrorWithCooldown(err?.message || 'Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -254,11 +267,15 @@ export const ContactSection: React.FC = () => {
                       type="submit"
                       variant="primary"
                       size="lg"
-                      disabled={isSubmitting}
-                      icon={<Send className="w-4 h-4" />}
+                      disabled={isSubmitting || isCoolingDown}
+                      icon={!isCoolingDown ? <Send className="w-4 h-4" /> : undefined}
                       className="w-full"
                     >
-                      {isSubmitting ? 'Submitting Feedback...' : 'Send Feedback'}
+                      {isSubmitting
+                        ? 'Submitting Feedback...'
+                        : isCoolingDown
+                        ? `Submit in ${cooldown}s`
+                        : 'Send Feedback'}
                     </Button>
                   </form>
                 )}

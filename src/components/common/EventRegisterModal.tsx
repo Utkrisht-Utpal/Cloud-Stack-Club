@@ -19,6 +19,7 @@ import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ErrorPopupModal } from './ErrorPopupModal';
 import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
+import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 import { getFormForEvent } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
 import { formatEventTime } from '../../utils/formatters';
@@ -44,7 +45,6 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   event,
   onSuccessToast,
 }) => {
-  const [turnstileToken, setTurnstileToken] = useState<string>('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -58,8 +58,10 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const [isTeamRegistration, setIsTeamRegistration] = useState(false);
   const [teamName, setTeamName] = useState('');
   const [teamMembers, setTeamMembers] = useState<Array<{ name: string; email: string; uid: string; phone: string }>>([]);
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
 
-  // Dynamic Custom Questions State
+  // Dynamic custom form fields
   const [customFields, setCustomFields] = useState<EventFormField[]>([]);
   const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
 
@@ -70,7 +72,9 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
   useEffect(() => {
     if (isOpen && event) {
-      // Reset form state on mount
+      setRegistrationResult(null);
+      setError(null);
+      resetCooldown();
       setFormData({
         name: '',
         email: '',
@@ -79,25 +83,38 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
         department: '',
         year: '1st Year',
       });
-      setIsTeamRegistration(false);
       setTeamName('');
-      setTeamMembers([]);
+      setTeamMembers([{ name: '', email: '', uid: '', phone: '' }]);
       setCustomAnswers({});
-      setError(null);
-      setRegistrationResult(null);
+      setTurnstileToken('');
 
-      // Load custom form questions for this event
-      getFormForEvent(event.id).then((form) => {
-        if (form && form.fields && form.fields.length > 0) {
-          setCustomFields(form.fields);
-        } else {
+      // Fetch dynamic custom form fields if configured for this event
+      const loadEventForm = async () => {
+        try {
+          const formConfig = await getFormForEvent(event.id);
+          if (formConfig && formConfig.fields) {
+            setCustomFields(formConfig.fields);
+          } else {
+            setCustomFields([]);
+          }
+        } catch (err) {
+          console.warn('Failed to load custom event form fields:', err);
           setCustomFields([]);
         }
-      });
+      };
+
+      loadEventForm();
     }
   }, [isOpen, event]);
 
   if (!isOpen || !event) return null;
+
+  const triggerErrorWithCooldown = (msg: string) => {
+    setError(msg);
+    setTurnstileToken('');
+    resetTurnstile();
+    startCooldown(9);
+  };
 
   const handleAddTeamMember = () => {
     const maxMembers = (event.max_team_size || 4) - 1;
@@ -117,8 +134,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCoolingDown || isSubmitting) return;
+    setError(null);
+
     if (!formData.name.trim() || !formData.email.trim() || !formData.uid.trim()) {
-      setError(
+      triggerErrorWithCooldown(
         isTeamRegistration
           ? 'Please fill in Name, Email (@example.com), and University ID (UID) for the team leader.'
           : 'Please fill in Name, Email (@example.com), and University ID (UID).'
@@ -127,7 +147,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     }
 
     if (formData.uid.trim().length !== 10) {
-      setError(
+      triggerErrorWithCooldown(
         isTeamRegistration
           ? 'University ID (UID) for the team leader must be exactly 10 alphanumeric characters.'
           : 'University ID (UID) must be exactly 10 alphanumeric characters.'
@@ -136,27 +156,27 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     }
 
     if (!formData.phone.trim() || !/^\d{10}$/.test(formData.phone.trim())) {
-      setError('Phone number is required and must be exactly 10 digits.');
+      triggerErrorWithCooldown('Phone number is required and must be exactly 10 digits.');
       return;
     }
 
     if (isTeamRegistration) {
       if (!teamName.trim()) {
-        setError('Please enter a Team Name.');
+        triggerErrorWithCooldown('Please enter a Team Name.');
         return;
       }
       for (let i = 0; i < teamMembers.length; i++) {
         const m = teamMembers[i];
         if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim()) {
-          setError(`Please fill in Name, Email, UID, and Phone Number for Teammate #${i + 2}.`);
+          triggerErrorWithCooldown(`Please fill in Name, Email, UID, and Phone Number for Teammate #${i + 2}.`);
           return;
         }
         if (m.uid.trim().length !== 10) {
-          setError(`University ID (UID) for Teammate #${i + 2} must be exactly 10 alphanumeric characters.`);
+          triggerErrorWithCooldown(`University ID (UID) for Teammate #${i + 2} must be exactly 10 alphanumeric characters.`);
           return;
         }
         if (!/^\d{10}$/.test(m.phone.trim())) {
-          setError(`Phone number for Teammate #${i + 2} must be exactly 10 digits.`);
+          triggerErrorWithCooldown(`Phone number for Teammate #${i + 2} must be exactly 10 digits.`);
           return;
         }
       }
@@ -167,25 +187,24 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       const ans = customAnswers[field.field_key];
       if (field.required) {
         if (!ans || (typeof ans === 'string' && !ans.trim())) {
-          setError(`Please answer the required question: "${field.label}"`);
+          triggerErrorWithCooldown(`Please answer the required question: "${field.label}"`);
           return;
         }
       }
       if (field.field_type === 'phone' && (field.required || ans)) {
         if (!ans || !/^\d{10}$/.test(String(ans).trim())) {
-          setError(`Phone number for "${field.label}" must be exactly 10 digits.`);
+          triggerErrorWithCooldown(`Phone number for "${field.label}" must be exactly 10 digits.`);
           return;
         }
       }
     }
 
     if (!turnstileToken) {
-      setError('Please complete the Turnstile anti-bot security check.');
+      triggerErrorWithCooldown('Please complete the Turnstile anti-bot security check.');
       return;
     }
 
     setIsSubmitting(true);
-    setError(null);
 
     try {
       // Build custom answers payload
@@ -212,12 +231,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       );
 
       setRegistrationResult(result);
+      resetCooldown();
       if (onSuccessToast) onSuccessToast();
     } catch (err: any) {
       console.error('Event registration error:', err);
-      setError(err?.message || 'Failed to submit registration. Please try again.');
-      setTurnstileToken('');
-      resetTurnstile();
+      triggerErrorWithCooldown(err?.message || 'Failed to submit registration. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -750,11 +768,19 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={isSubmitting || isCoolingDown}
+              className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-extrabold transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
-                <span>Submitting Registration...</span>
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting Registration...</span>
+                </>
+              ) : isCoolingDown ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+                  <span>Submit in {cooldown}s</span>
+                </>
               ) : (
                 <>
                   <span>Complete Registration</span>

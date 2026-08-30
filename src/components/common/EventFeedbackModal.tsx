@@ -18,6 +18,7 @@ import {
 import type { Event } from '../../types/database';
 import { ErrorPopupModal } from './ErrorPopupModal';
 import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
+import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 
 interface EventFeedbackModalProps {
   isOpen: boolean;
@@ -47,6 +48,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
+  const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -78,41 +80,49 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
   if (!isOpen) return null;
 
+  const triggerErrorWithCooldown = (msg: string) => {
+    setError(msg);
+    setTurnstileToken('');
+    resetTurnstile();
+    startCooldown(9);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCoolingDown || isSubmitting) return;
     setError(null);
 
     if (!name.trim()) {
-      setError('Please provide your full name.');
+      triggerErrorWithCooldown('Please provide your full name.');
       return;
     }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Please enter a valid email address.');
+      triggerErrorWithCooldown('Please enter a valid email address.');
       return;
     }
     if (!universityId.trim()) {
-      setError('Please enter your University ID (UID).');
+      triggerErrorWithCooldown('Please enter your University ID (UID).');
       return;
     }
     if (universityId.trim().length !== 10) {
-      setError('University ID (UID) must be exactly 10 alphanumeric characters.');
+      triggerErrorWithCooldown('University ID (UID) must be exactly 10 alphanumeric characters.');
       return;
     }
     if (!registrationId.trim()) {
-      setError('Please enter your Registration ID.');
+      triggerErrorWithCooldown('Please enter your Registration ID.');
       return;
     }
     if (!phone.trim() || !/^\d{10}$/.test(phone.trim())) {
-      setError('Phone number is required and must be exactly 10 digits.');
+      triggerErrorWithCooldown('Phone number is required and must be exactly 10 digits.');
       return;
     }
     if (!feedbackText.trim() || feedbackText.trim().length < 5) {
-      setError('Please provide your feedback or comments (minimum 5 characters).');
+      triggerErrorWithCooldown('Please provide your feedback or comments (minimum 5 characters).');
       return;
     }
 
     if (import.meta.env.VITE_TURNSTILE_SITE_KEY && !turnstileToken) {
-      setError('Please complete the security check.');
+      triggerErrorWithCooldown('Please complete the security check.');
       return;
     }
 
@@ -135,14 +145,13 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
       });
 
       setIsSubmitted(true);
+      resetCooldown();
       if (onSuccessToast) {
         onSuccessToast();
       }
     } catch (err: any) {
       console.error('Error submitting event feedback:', err);
-      setError(err?.message || 'Failed to submit feedback. Please try again.');
-      setTurnstileToken('');
-      resetTurnstile();
+      triggerErrorWithCooldown(err?.message || 'Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -151,6 +160,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
   const resetAndClose = () => {
     setIsSubmitted(false);
     setError(null);
+    resetCooldown();
     setName('');
     setEmail('');
     setPhone('');
@@ -491,13 +501,18 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="px-6 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    disabled={isSubmitting || isCoolingDown}
+                    className="px-6 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-black shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <>
                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                         <span>Submitting...</span>
+                      </>
+                    ) : isCoolingDown ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin" />
+                        <span>Submit in {cooldown}s</span>
                       </>
                     ) : (
                       <>
