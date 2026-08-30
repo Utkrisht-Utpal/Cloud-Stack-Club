@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileSpreadsheet, 
   Plus, 
@@ -9,7 +8,6 @@ import {
   ArrowDown, 
   Save, 
   Eye, 
-  CheckCircle2, 
   Sparkles,
   Type,
   Hash,
@@ -49,7 +47,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   );
   const [fields, setFields] = useState<Partial<EventFormField>[]>([]);
   const [loading, setLoading] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [, setSaveSuccess] = useState<string | null>(null);
 
   // Field Edit/Add Modal State
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
@@ -227,24 +225,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Bottom Floating Toast Notification (Disappears after 2 seconds) */}
-      <AnimatePresence>
-        {saveSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border border-emerald-500/40 shadow-2xl shadow-emerald-500/10 backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-md pointer-events-none"
-          >
-            <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-            <span className="text-xs sm:text-sm font-bold leading-snug">{saveSuccess}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Header Controls: Event Selector Dropdown & Actions */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

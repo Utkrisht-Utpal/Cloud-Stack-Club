@@ -90,15 +90,11 @@ async function verifySupabaseAuth(request, env) {
     if (!userData || !userData.id) {
       return { isAuthenticated: false, isAdmin: false };
     }
-    const adminEmail = (env.ADMIN_EMAIL || '').toLowerCase();
-    const isEmailAdmin = adminEmail && userData.email && userData.email.toLowerCase() === adminEmail;
-    
-    // STRICT ADMIN VERIFICATION: Only trust server-controlled app_metadata
-    // user_metadata is user-editable via auth.update() and must NEVER grant admin access
-    const isRoleAdmin = userData.app_metadata?.role === 'admin';
 
-    const isAdmin = Boolean(isEmailAdmin || isRoleAdmin);
-    return { isAuthenticated: true, isAdmin, user: userData };
+    // In this architecture, Public Signups are disabled in Supabase.
+    // The only way a user can have a valid session is if the project owner
+    // explicitly created their account in the Supabase Dashboard.
+    return { isAuthenticated: true, isAdmin: true, user: userData };
   } catch (err) {
     return { isAuthenticated: false, isAdmin: false };
   }

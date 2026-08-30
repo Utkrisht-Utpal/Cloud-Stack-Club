@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Camera,
   Upload,
@@ -7,8 +6,6 @@ import {
   Edit2,
   Loader2,
   Check,
-  CheckCircle2,
-  AlertCircle,
   RefreshCw,
   Eye,
   FileImage,
@@ -85,7 +82,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Status Alerts
-  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -870,38 +867,6 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
         variant="danger"
         isLoading={isDeleting}
       />
-
-      {/* Global Bottom Floating Toast Notification */}
-      <AnimatePresence>
-        {statusMsg && (
-          <motion.div
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border shadow-2xl backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-md pointer-events-none ${
-              statusMsg.type === 'success'
-                ? 'border-emerald-500/40 shadow-emerald-500/10'
-                : 'border-rose-500/40 shadow-rose-500/10'
-            }`}
-          >
-            <div
-              className={`p-1 rounded-full shrink-0 ${
-                statusMsg.type === 'success'
-                  ? 'bg-emerald-500/20 text-emerald-400'
-                  : 'bg-rose-500/20 text-rose-400'
-              }`}
-            >
-              {statusMsg.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : (
-                <AlertCircle className="w-4 h-4" />
-              )}
-            </div>
-            <span className="text-xs sm:text-sm font-bold leading-snug">{statusMsg.text}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

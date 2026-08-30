@@ -5,7 +5,6 @@ import { Footer } from '../components/common/Footer';
 import { FloatingMobileCTA } from '../components/common/FloatingMobileCTA';
 import { CloudBackground } from '../components/ui/CloudBackground';
 import { ScrollProgress } from '../components/ui/ScrollProgress';
-import { Toast } from '../components/ui/Toast';
 import { ScrollToTop } from '../components/common/ScrollToTop';
 import { EventAdModal } from '../components/common/EventAdModal';
 import { useAdminAuth } from '../context/AdminAuthContext';
@@ -27,8 +26,6 @@ export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('Welcome to Cloud Stack Club! Your application has been submitted successfully.');
   const [eventsList, setEventsList] = useState<Event[]>(() => {
     try {
       const cached = localStorage.getItem('csc_custom_events_list');
@@ -119,10 +116,6 @@ export const MainLayout: React.FC = () => {
             isOpen={!!selectedRegisterEvent}
             onClose={() => setSelectedRegisterEvent(null)}
             event={selectedRegisterEvent}
-            onSuccessToast={() => {
-              setToastMessage('Registration completed successfully! See you at the event.');
-              setShowSuccessToast(true);
-            }}
           />
         )}
 
@@ -132,10 +125,6 @@ export const MainLayout: React.FC = () => {
             isOpen={!!selectedFeedbackEvent}
             onClose={() => setSelectedFeedbackEvent(null)}
             event={selectedFeedbackEvent}
-            onSuccessToast={() => {
-              setToastMessage('Thank you! Your event feedback has been submitted successfully.');
-              setShowSuccessToast(true);
-            }}
           />
         )}
 
@@ -160,13 +149,6 @@ export const MainLayout: React.FC = () => {
         {/* Admin Login Modal */}
         <AdminLoginModal />
       </Suspense>
-
-      {/* Toast Notification */}
-      <Toast
-        isVisible={showSuccessToast}
-        message={toastMessage}
-        onClose={() => setShowSuccessToast(false)}
-      />
     </div>
   );
 };

@@ -284,16 +284,16 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             </div>
 
             {/* Date and Venue below Team Registration ID in Bigger and Bold Font */}
-            <div className="grid grid-cols-2 gap-3 py-2 border-y border-slate-200/80 dark:border-slate-700/80">
+            <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-200/80 dark:border-slate-700/80">
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Date</div>
-                <div className="text-sm font-black text-slate-900 dark:text-white truncate">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Date</div>
+                <div className="text-sm font-bold tracking-wide text-slate-900 dark:text-white truncate">
                   {formattedDate}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase text-slate-400">Venue</div>
-                <div className="text-sm font-black text-slate-900 dark:text-white truncate">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Venue</div>
+                <div className="text-sm font-bold tracking-wide text-slate-900 dark:text-white truncate">
                   {event.location || 'CU Campus'}
                 </div>
               </div>
@@ -301,14 +301,14 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
             {/* Individual Registrant Details (If Individual Registration) */}
             {!registrationResult.team && (
-              <div className="grid grid-cols-2 gap-2 text-xs pt-1">
+              <div className="grid grid-cols-2 gap-4 text-xs pt-2">
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">Registrant Name</div>
-                  <div className="font-bold text-slate-900 dark:text-white truncate">{formData.name}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Registrant Name</div>
+                  <div className="font-semibold tracking-wide text-slate-900 dark:text-white truncate">{formData.name}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase text-slate-400">University ID (UID)</div>
-                  <div className="font-bold text-slate-900 dark:text-white font-mono">{formData.uid}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">University ID (UID)</div>
+                  <div className="font-medium tracking-widest text-slate-900 dark:text-white font-mono">{formData.uid}</div>
                 </div>
               </div>
             )}
@@ -334,18 +334,18 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     return (
                       <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 truncate">
+                          <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
                             Team Leader: {formData.name}
                           </div>
                           {formData.uid && (
-                            <div className="text-[10px] font-mono text-slate-600 dark:text-slate-300 truncate">
-                              UID: <span className="font-bold">{formData.uid}</span>
+                            <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
+                              UID: <span className="font-semibold">{formData.uid}</span>
                             </div>
                           )}
                         </div>
-                        <div className="text-right shrink-0">
-                          <div className="text-[9px] font-bold uppercase text-slate-400">Pass ID</div>
-                          <div className="text-xs font-mono font-black text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-slate-700">
+                        <div className="text-right shrink-0 pl-2">
+                          <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
+                          <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
                             {maskedLeaderPassId}
                           </div>
                         </div>
@@ -369,18 +369,18 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                           className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2"
                         >
                           <div className="min-w-0 flex-1">
-                            <div className="text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 truncate">
+                            <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
                               Teammate #{mIdx + 2}: {m.name}
                             </div>
                             {m.uid && (
-                              <div className="text-[10px] font-mono text-slate-600 dark:text-slate-300 truncate">
-                                UID: <span className="font-bold">{m.uid}</span>
+                              <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
+                                UID: <span className="font-semibold">{m.uid}</span>
                               </div>
                             )}
                           </div>
-                          <div className="text-right shrink-0">
-                            <div className="text-[9px] font-bold uppercase text-slate-400">Pass ID</div>
-                            <div className="text-xs font-mono font-black text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-slate-700">
+                          <div className="text-right shrink-0 pl-2">
+                            <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
+                            <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
                               {maskedPassId}
                             </div>
                           </div>

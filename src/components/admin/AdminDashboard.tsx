@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   UserCheck,
@@ -113,8 +112,8 @@ export const AdminDashboard: React.FC = () => {
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(true);
   const [selectedDocFile, setSelectedDocFile] = useState<{ path: string; name: string } | null>(null);
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [, setActionSuccess] = useState<string | null>(null);
+  const [, setActionError] = useState<string | null>(null);
 
   // Helper to get the calendar date immediately before a given YYYY-MM-DD
   const getDayBefore = (dateStr: string): string => {
@@ -2595,39 +2594,6 @@ export const AdminDashboard: React.FC = () => {
           message={alertModalConfig.message}
           variant={alertModalConfig.variant}
         />
-
-        {/* Global Bottom Floating Toast Notification (Disappears in 2 seconds) */}
-        <AnimatePresence>
-          {actionSuccess && (
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border border-emerald-500/40 shadow-2xl shadow-emerald-500/10 backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-md pointer-events-none"
-            >
-              <div className="p-1 rounded-full bg-emerald-500/20 text-emerald-400 shrink-0">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-              <span className="text-xs sm:text-sm font-bold leading-snug">{actionSuccess}</span>
-            </motion.div>
-          )}
-
-          {actionError && (
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
-              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3.5 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 text-white border border-rose-500/40 shadow-2xl shadow-rose-500/10 backdrop-blur-md flex items-center gap-3 min-w-[280px] max-w-lg pointer-events-none"
-            >
-              <div className="p-1.5 rounded-full bg-rose-500/20 text-rose-400 shrink-0">
-                <AlertCircle className="w-4 h-4" />
-              </div>
-              <span className="text-xs sm:text-sm font-bold leading-snug">{actionError}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );

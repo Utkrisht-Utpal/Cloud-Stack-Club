@@ -182,10 +182,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono text-center">
-              <span className="text-xs text-slate-500 block uppercase">
+              <span className="text-[11px] font-bold tracking-wider text-slate-500 block uppercase">
                 Member Registration ID
               </span>
-              <span className="text-base font-extrabold text-blue-600 dark:text-sky-400 mt-0.5 block">
+              <span className="text-base font-extrabold tracking-wide text-blue-600 dark:text-sky-400 mt-0.5 block">
                 {registeredNumber}
               </span>
             </div>

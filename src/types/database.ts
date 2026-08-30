@@ -14,7 +14,8 @@ export type FieldType =
   | 'radio' 
   | 'checkbox' 
   | 'file' 
-  | 'date';
+  | 'date'
+  | 'url';
 export type RegistrationStatus = 'registered' | 'confirmed' | 'cancelled' | 'attended';
 export type FeedbackStatus = 'pending' | 'in_progress' | 'resolved' | 'unread' | 'read' | 'archived' | 'responded';
 
