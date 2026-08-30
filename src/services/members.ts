@@ -193,7 +193,7 @@ export const rejectMemberApplicationService = async (
   }
 };
 
-export const getCoreMembers = async (): Promise<Member[]> => {
+export const getCoreMembers = async (): Promise<any[]> => {
   if (!isSupabaseConfigured()) {
     return [];
   }
@@ -206,33 +206,17 @@ export const getCoreMembers = async (): Promise<Member[]> => {
       return [];
     }
 
-    // Fetch public roles to attach role objects
-    const { data: rolesData } = await supabase
-      .from('roles')
-      .select('*')
-      .order('display_order', { ascending: true });
-
-    const rolesMap = new Map<string, any>((rolesData || []).map((r) => [r.id, r]));
-
     const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
-    const inactiveIds = getInactiveMemberIds();
 
-    const members: Member[] = (parsed || [])
-      .filter((m: any) => m.is_core_member && !inactiveIds.includes(m.id))
+    const members = (parsed || [])
       .map((m: any) => ({
-        id: m.id,
-        registration_id: m.registration_id,
         name: m.name,
         department: m.department || null,
         year: m.year || null,
-        role_id: m.role_id || null,
-        is_core_member: Boolean(m.is_core_member),
-        status: 'active',
-        created_at: m.created_at,
-        role: m.role_id ? rolesMap.get(m.role_id) || null : null,
+        role: { name: m.role || null },
       }));
 
-    return members.sort((a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime());
+    return members;
   } catch (err) {
     console.warn('Exception fetching core members:', err);
     return [];
@@ -245,40 +229,21 @@ export const getMembers = async (): Promise<Member[]> => {
   }
 
   try {
-    const { data: membersData, error } = await supabase.rpc('get_public_members');
+    const { data: membersData, error } = await supabase
+      .from('members')
+      .select(`
+        *,
+        role:roles(*)
+      `)
+      .neq('status', 'inactive')
+      .order('name', { ascending: true });
 
     if (error || !membersData) {
-      console.warn('Notice fetching members via RPC:', error?.message);
+      console.warn('Notice fetching members via direct query:', error?.message);
       return [];
     }
-
-    // Fetch public roles to attach role objects
-    const { data: rolesData } = await supabase
-      .from('roles')
-      .select('*')
-      .order('display_order', { ascending: true });
-
-    const rolesMap = new Map<string, any>((rolesData || []).map((r) => [r.id, r]));
-
-    const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
-    const inactiveIds = getInactiveMemberIds();
-
-    const members: Member[] = (parsed || [])
-      .filter((m: any) => !inactiveIds.includes(m.id))
-      .map((m: any) => ({
-        id: m.id,
-        registration_id: m.registration_id,
-        name: m.name,
-        department: m.department || null,
-        year: m.year || null,
-        role_id: m.role_id || null,
-        is_core_member: Boolean(m.is_core_member),
-        status: 'active',
-        created_at: m.created_at,
-        role: m.role_id ? rolesMap.get(m.role_id) || null : null,
-      }));
-
-    return members.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    
+    return membersData as Member[];
   } catch (err) {
     console.warn('Exception fetching members:', err);
     return [];
