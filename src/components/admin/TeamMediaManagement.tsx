@@ -15,8 +15,12 @@ import {
   AlertCircle,
   CheckCircle2,
   X,
+  Upload,
+  Maximize2,
+  ImageIcon,
 } from 'lucide-react';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Modal } from '../ui/Modal';
 import { ImageCropModal } from './ImageCropModal';
 import { EditMemberDescriptionModal } from './EditMemberDescriptionModal';
 import {
@@ -24,28 +28,38 @@ import {
   updateCoreTeamMemberDescription,
   uploadCoreTeamPhoto,
   deleteCoreTeamPhoto,
+  getTeamPageBanner,
+  uploadTeamPageBanner,
+  deleteTeamPageBanner,
+  type TeamPageBannerData,
 } from '../../services/members';
 import type { CoreTeamMember } from '../../types/database';
 
 export const TeamMediaManagement: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<CoreTeamMember[]>([]);
+  const [bannerData, setBannerData] = useState<TeamPageBannerData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>('__banner__');
 
   // Crop & Upload state
   const [rawUploadFile, setRawUploadFile] = useState<File | null>(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState<boolean>(false);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Edit Description state
-  const [isEditDescOpen, setIsEditDescOpen] = useState<boolean>(false);
+  // Photo / Banner Lightbox state
+  const [lightboxImageUrl, setLightboxImageUrl] = useState<string | null>(null);
+  const [lightboxTitle, setLightboxTitle] = useState<string>('');
 
-  // Delete Photo state
+  // Bio Modal state
+  const [isBioModalOpen, setIsBioModalOpen] = useState<boolean>(false);
+  const [bioModalMode, setBioModalMode] = useState<'view' | 'edit'>('view');
+
+  // Delete Confirm state
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
-  const [isDeletingPhoto, setIsDeletingPhoto] = useState<boolean>(false);
+  const [isDeletingMedia, setIsDeletingMedia] = useState<boolean>(false);
 
   // Notification Toast
   const [statusNotice, setStatusNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -55,16 +69,22 @@ export const TeamMediaManagement: React.FC = () => {
     setTimeout(() => setStatusNotice(null), 3500);
   };
 
-  const loadTeamMembers = async () => {
+  const loadData = async () => {
     try {
-      const list = await getCoreTeamMembersAdmin();
-      setTeamMembers(list);
-      if (list.length > 0 && !selectedMemberId) {
-        setSelectedMemberId(list[0].id);
+      const [membersList, banner] = await Promise.all([
+        getCoreTeamMembersAdmin(),
+        getTeamPageBanner(),
+      ]);
+
+      setTeamMembers(membersList);
+      setBannerData(banner);
+
+      if (!selectedMemberId) {
+        setSelectedMemberId('__banner__');
       }
     } catch (err) {
-      console.error('Error loading core team members:', err);
-      showToast('Could not load core team members.', 'error');
+      console.error('Error loading team management data:', err);
+      showToast('Could not load team media data.', 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -72,12 +92,12 @@ export const TeamMediaManagement: React.FC = () => {
   };
 
   useEffect(() => {
-    loadTeamMembers();
+    loadData();
   }, []);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    loadTeamMembers();
+    loadData();
   };
 
   // Filtered members list by search query
@@ -93,13 +113,15 @@ export const TeamMediaManagement: React.FC = () => {
     });
   }, [teamMembers, searchQuery]);
 
-  // Selected member object
+  // Selected member object (null if '__banner__' is selected)
+  const isBannerSelected = selectedMemberId === '__banner__';
   const selectedMember = useMemo(() => {
-    return teamMembers.find((m) => m.id === selectedMemberId) || filteredMembers[0] || null;
-  }, [teamMembers, selectedMemberId, filteredMembers]);
+    if (isBannerSelected) return null;
+    return teamMembers.find((m) => m.id === selectedMemberId) || null;
+  }, [teamMembers, selectedMemberId, isBannerSelected]);
 
   // Trigger file upload from local machine
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setRawUploadFile(file);
@@ -110,23 +132,30 @@ export const TeamMediaManagement: React.FC = () => {
 
   // Handle cropped image upload to Cloudflare R2
   const handleCropComplete = async (croppedFile: File) => {
-    if (!selectedMember) return;
-    setIsUploadingPhoto(true);
+    setIsUploadingMedia(true);
 
     try {
-      const newPhotoUrl = await uploadCoreTeamPhoto(selectedMember.id, croppedFile);
-
-      // Update local state instantly
-      setTeamMembers((prev) =>
-        prev.map((m) => (m.id === selectedMember.id ? { ...m, photo_url: newPhotoUrl } : m))
-      );
-
-      showToast(`Profile photo updated for ${selectedMember.name}!`);
+      if (isBannerSelected) {
+        // Upload Team Page Banner
+        const newBannerUrl = await uploadTeamPageBanner(croppedFile);
+        setBannerData((prev) => ({
+          ...prev,
+          banner_url: newBannerUrl,
+        }));
+        showToast('Meet Our Team banner updated successfully!');
+      } else if (selectedMember) {
+        // Upload Member Photo
+        const newPhotoUrl = await uploadCoreTeamPhoto(selectedMember.id, croppedFile);
+        setTeamMembers((prev) =>
+          prev.map((m) => (m.id === selectedMember.id ? { ...m, photo_url: newPhotoUrl } : m))
+        );
+        showToast(`Profile photo updated for ${selectedMember.name}!`);
+      }
     } catch (err: any) {
-      console.error('Photo upload error:', err);
-      showToast(err?.message || 'Failed to upload photo.', 'error');
+      console.error('Media upload error:', err);
+      showToast(err?.message || 'Failed to upload image.', 'error');
     } finally {
-      setIsUploadingPhoto(false);
+      setIsUploadingMedia(false);
       setRawUploadFile(null);
     }
   };
@@ -145,26 +174,32 @@ export const TeamMediaManagement: React.FC = () => {
     showToast(`Description updated for ${selectedMember.name}!`);
   };
 
-  // Handle photo deletion
-  const handleDeletePhotoConfirm = async () => {
-    if (!selectedMember || !selectedMember.photo_url) return;
-    setIsDeletingPhoto(true);
+  // Handle media deletion
+  const handleDeleteMediaConfirm = async () => {
+    setIsDeletingMedia(true);
 
     try {
-      await deleteCoreTeamPhoto(selectedMember.id, selectedMember.photo_url);
-
-      // Update local state
-      setTeamMembers((prev) =>
-        prev.map((m) => (m.id === selectedMember.id ? { ...m, photo_url: null } : m))
-      );
-
-      setIsDeleteConfirmOpen(false);
-      showToast(`Photo removed for ${selectedMember.name}`);
+      if (isBannerSelected && bannerData?.banner_url) {
+        await deleteTeamPageBanner(bannerData.banner_url);
+        setBannerData((prev) => ({
+          ...prev,
+          banner_url: null,
+        }));
+        setIsDeleteConfirmOpen(false);
+        showToast('Team banner removed successfully.');
+      } else if (selectedMember && selectedMember.photo_url) {
+        await deleteCoreTeamPhoto(selectedMember.id, selectedMember.photo_url);
+        setTeamMembers((prev) =>
+          prev.map((m) => (m.id === selectedMember.id ? { ...m, photo_url: null } : m))
+        );
+        setIsDeleteConfirmOpen(false);
+        showToast(`Photo removed for ${selectedMember.name}`);
+      }
     } catch (err: any) {
-      console.error('Delete photo error:', err);
-      showToast(err?.message || 'Failed to delete photo.', 'error');
+      console.error('Delete media error:', err);
+      showToast(err?.message || 'Failed to delete image.', 'error');
     } finally {
-      setIsDeletingPhoto(false);
+      setIsDeletingMedia(false);
     }
   };
 
@@ -201,29 +236,29 @@ export const TeamMediaManagement: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Split-Pane Card matching Image 3 */}
+      {/* Main Split-Pane Card */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">
         {/* Header Title + Refresh */}
-        <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-slate-800/60">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center font-bold shrink-0">
               <Users className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                Meet Our Team Media &amp; Profile Management
+                Our Team Profiles &amp; Media Management
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage 4:5 executive portraits and bio descriptions for active Core Council members.
+                Manage wide team section banners, executive portraits, roles, and bio descriptions.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span>{refreshing ? 'Syncing...' : 'Sync Records'}</span>
@@ -234,27 +269,15 @@ export const TeamMediaManagement: React.FC = () => {
         {loading ? (
           <div className="py-20 text-center space-y-3">
             <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-bold text-slate-500">Loading core team members...</p>
-          </div>
-        ) : teamMembers.length === 0 ? (
-          <div className="py-16 text-center space-y-3 max-w-md mx-auto">
-            <div className="w-12 h-12 rounded-full bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center mx-auto">
-              <Users className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              No Core Members Found
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              To add members to this section, navigate to <strong>Members Management</strong> and toggle <strong>Core Member</strong> on any active member record. They will automatically appear here!
-            </p>
+            <p className="text-xs font-bold text-slate-500">Loading team media data...</p>
           </div>
         ) : (
           /* Split-Pane: Left List + Right Preview */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* ── LEFT PANE: Search Bar & Member List (Image 3 Left) ── */}
+            {/* ── LEFT PANE: Search Bar & Selection List ── */}
             <div className="lg:col-span-5 flex flex-col space-y-3 bg-slate-50/70 dark:bg-slate-950/50 rounded-2xl p-3.5 border border-slate-200/60 dark:border-slate-800/60">
               {/* Search Bar */}
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
@@ -265,14 +288,68 @@ export const TeamMediaManagement: React.FC = () => {
                 />
               </div>
 
-              {/* Members List Header & Count */}
-              <div className="flex items-center justify-between px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                <span>Core Members</span>
-                <span>{filteredMembers.length} Total</span>
+              {/* Section Header & Count */}
+              <div className="flex items-center justify-between px-1 text-[11px] font-bold text-slate-500 uppercase tracking-wider shrink-0">
+                <span>Sections &amp; Members</span>
+                <span>{filteredMembers.length} Members</span>
               </div>
 
-              {/* Scrollable Member List (Hidden Scrollbar Style) */}
-              <div className="space-y-1.5 max-h-[500px] overflow-y-auto scrollbar-none pr-0.5">
+              {/* Scrollable Selection List */}
+              <div className="space-y-1.5 max-h-[632px] overflow-y-auto scrollbar-none pr-0.5">
+                {/* Pinned Top Item: Team Section Banner */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedMemberId('__banner__')}
+                  className={`w-full p-3 rounded-xl transition-all flex items-center justify-between gap-3 text-left cursor-pointer group ${
+                    isBannerSelected
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-500/50 font-bold'
+                      : 'bg-white dark:bg-slate-900 border border-blue-200/80 dark:border-blue-500/30 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-900 dark:text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className={`w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center ${
+                      isBannerSelected ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                    }`}>
+                      {bannerData?.banner_url ? (
+                        <img
+                          src={bannerData.banner_url}
+                          alt="Banner Preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="w-4 h-4" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs sm:text-sm font-extrabold truncate flex items-center gap-1.5">
+                        <span>🌟 Team Section Banner</span>
+                      </div>
+                      <div className={`text-[11px] truncate ${
+                        isBannerSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
+                      }`}>
+                        {bannerData?.banner_url ? '1 Banner Active' : 'No Banner Uploaded'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
+                      isBannerSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20'
+                    }`}>
+                      Cover Banner
+                    </span>
+                  </div>
+                </button>
+
+                {/* Divider */}
+                <div className="relative py-1">
+                  <div className="border-t border-slate-200/80 dark:border-slate-800/80" />
+                </div>
+
+                {/* Core Member Items */}
                 {filteredMembers.length === 0 ? (
                   <div className="py-8 text-center text-xs text-slate-400">
                     No members match "{searchQuery}"
@@ -337,91 +414,208 @@ export const TeamMediaManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* ── RIGHT PANE: Preview of Member Details & Action Controls (Image 3 Right) ── */}
+            {/* ── RIGHT PANE: Preview of Details & Action Controls ── */}
             <div className="lg:col-span-7 bg-slate-50/70 dark:bg-slate-950/50 rounded-2xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800/60 space-y-4">
-              <div className="flex items-center justify-between pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              {/* Header: Centered */}
+              <div className="flex items-center justify-center pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 text-center shrink-0">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                  <span>Preview of Member Details</span>
-                </span>
-
-                {selectedMember && (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 dark:text-sky-400">
-                    {selectedMember.role || 'Executive Member'}
+                  <span>
+                    {isBannerSelected
+                      ? 'PREVIEW OF MEET OUR TEAM BANNER'
+                      : 'PREVIEW OF MEMBER DETAILS'}
                   </span>
-                )}
+                </span>
               </div>
 
-              {selectedMember ? (
-                <div className="space-y-4">
-                  {/* Photo Preview Card Optimized for 4:5 Ratio */}
-                  <div className="relative w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl bg-slate-900 border border-slate-700/60 shadow-2xl group">
-                    <div style={{ aspectRatio: '4/5' }} className="relative w-full overflow-hidden flex items-center justify-center bg-slate-950">
+              {/* VIEW 1: BANNER MANAGEMENT VIEW */}
+              {isBannerSelected ? (
+                <div className="w-full space-y-4">
+                  {/* Landscape Banner Frame (16:9 Ratio) */}
+                  <div className="relative w-full overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-md group">
+                      <div style={{ aspectRatio: '16/9' }} className="relative w-full overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-950">
+                        {bannerData?.banner_url ? (
+                          <div
+                            onClick={() => {
+                              setLightboxImageUrl(bannerData.banner_url);
+                              setLightboxTitle('Meet Our Team Section Banner');
+                            }}
+                            className="w-full h-full relative cursor-pointer group/banner"
+                            title="Click to view full banner"
+                          >
+                            <img
+                              src={bannerData.banner_url}
+                              alt="Team Banner"
+                              className="w-full h-full object-cover group-hover/banner:scale-102 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/banner:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 border border-white/20">
+                                <Maximize2 className="w-3.5 h-3.5" />
+                                <span>View Full Banner</span>
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          /* No Banner Uploaded Placeholder */
+                          <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
+                            <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-400 shadow-sm">
+                              <ImageIcon className="w-8 h-8" />
+                            </div>
+
+                            <div className="space-y-1">
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                No Team Banner Uploaded
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[280px] mx-auto">
+                                Upload a wide landscape banner to feature at the top of the Meet Our Team page.
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={isUploadingMedia}
+                              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                            >
+                              <Upload className="w-4 h-4" />
+                              <span>Upload Banner</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Top Action Overlay Buttons for Banner */}
+                        {bannerData?.banner_url && (
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                fileInputRef.current?.click();
+                              }}
+                              disabled={isUploadingMedia}
+                              className="p-2 rounded-xl bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 shadow-lg hover:scale-105 transition-all cursor-pointer"
+                              title="Crop / Upload New Banner"
+                            >
+                              <Crop className="w-4 h-4 text-sky-400" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDeleteConfirmOpen(true);
+                              }}
+                              disabled={isDeletingMedia}
+                              className="p-2 rounded-xl bg-black/60 hover:bg-rose-900/80 backdrop-blur-md text-rose-400 hover:text-rose-300 border border-rose-500/30 shadow-lg hover:scale-105 transition-all cursor-pointer"
+                              title="Delete Banner"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Banner Info Box */}
+                    <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider">
+                        <ImageIcon className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                        <span>Team Page Header Banner Placement</span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                        This banner is displayed covering the whole width at the top of the public <strong>Meet Our Team</strong> section right above the 4-column council cards.
+                      </p>
+                    </div>
+                  </div>
+                ) : selectedMember ? (
+                /* VIEW 2: INDIVIDUAL MEMBER MANAGEMENT VIEW */
+                <div className="w-full space-y-4">
+                  {/* Photo Preview Card (Centered 4:5 Portrait) */}
+                  <div className="relative w-full max-w-[340px] mx-auto overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-md group">
+                    <div style={{ aspectRatio: '4/5' }} className="relative w-full overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-950">
                       {selectedMember.photo_url ? (
-                        <img
-                          src={selectedMember.photo_url}
-                          alt={selectedMember.name}
-                          className="w-full h-full object-cover"
-                        />
+                        /* When photo exists: clicking opens Lightbox Popup */
+                        <div
+                          onClick={() => {
+                            setLightboxImageUrl(selectedMember.photo_url);
+                            setLightboxTitle(`Profile Photo — ${selectedMember.name}`);
+                          }}
+                          className="w-full h-full relative cursor-pointer group/photo"
+                          title="Click to view full photo"
+                        >
+                          <img
+                            src={selectedMember.photo_url}
+                            alt={selectedMember.name}
+                            className="w-full h-full object-cover group-hover/photo:scale-103 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-black/30 opacity-0 group-hover/photo:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 border border-white/20">
+                              <Maximize2 className="w-3.5 h-3.5" />
+                              <span>View Full Photo</span>
+                            </span>
+                          </div>
+                        </div>
                       ) : (
-                        <div className="flex flex-col items-center justify-center text-slate-500 gap-3 p-6 text-center">
-                          <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-slate-400">
+                        /* When NO photo: interactive upload button */
+                        <div className="flex flex-col items-center justify-center gap-3.5 p-6 text-center">
+                          <div className="w-16 h-16 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-400 shadow-sm">
                             <User className="w-8 h-8" />
                           </div>
-                          <div>
-                            <p className="text-xs font-bold text-slate-300">No Photo Uploaded</p>
-                            <p className="text-[11px] text-slate-500 mt-0.5">
-                              Upload a 4:5 portrait photo for the Meet Our Team section.
+
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">No Photo Uploaded</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 max-w-[220px] mx-auto">
+                              Upload a portrait photo for the Meet Our Team section.
                             </p>
                           </div>
+
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploadingMedia}
+                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer hover:scale-105 active:scale-95"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span>Upload Image</span>
+                          </button>
                         </div>
                       )}
 
-                      {/* Top Action Overlay Buttons: Crop/Upload & Delete (Image 3 Upper Right) */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                        {/* Crop / Upload Button */}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={isUploadingPhoto}
-                          className="p-2 rounded-xl bg-black/60 hover:bg-black/80 backdrop-blur-md text-white border border-white/20 shadow-lg hover:scale-105 transition-all cursor-pointer"
-                          title="Upload & Crop Photo"
-                        >
-                          <Crop className="w-4 h-4 text-sky-400" />
-                        </button>
-
-                        {/* Delete Photo Button */}
-                        {selectedMember.photo_url && (
+                      {/* Top Action Overlay Buttons */}
+                      {selectedMember.photo_url && (
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
                           <button
                             type="button"
-                            onClick={() => setIsDeleteConfirmOpen(true)}
-                            disabled={isDeletingPhoto}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRef.current?.click();
+                            }}
+                            disabled={isUploadingMedia}
+                            className="p-2 rounded-xl bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 shadow-lg hover:scale-105 transition-all cursor-pointer"
+                            title="Crop / Upload New Photo"
+                          >
+                            <Crop className="w-4 h-4 text-sky-400" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsDeleteConfirmOpen(true);
+                            }}
+                            disabled={isDeletingMedia}
                             className="p-2 rounded-xl bg-black/60 hover:bg-rose-900/80 backdrop-blur-md text-rose-400 hover:text-rose-300 border border-rose-500/30 shadow-lg hover:scale-105 transition-all cursor-pointer"
                             title="Delete Photo"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                      </div>
-
-                      {/* Ratio tag indicator */}
-                      <div className="absolute bottom-3 left-3 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-mono text-slate-300 border border-white/10">
-                        4:5 Ratio
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Hidden Native File Input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/jpg"
-                    onChange={handlePhotoSelect}
-                    className="hidden"
-                  />
-
-                  {/* Member Meta: Name, Year, Role, Department (Image 3 Middle) */}
-                  <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2">
+                  {/* Member Meta: Name, Year, Role, Department (Image 1 Style) */}
+                  <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
                       <div>
                         <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
@@ -442,24 +636,28 @@ export const TeamMediaManagement: React.FC = () => {
 
                       <div className="text-right">
                         <span className="px-3 py-1 rounded-xl text-xs font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-400 border border-blue-200 dark:border-blue-500/30">
-                          {selectedMember.role || 'Core Council'}
+                          {selectedMember.role || 'Core Member'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Description Box with Edit Button (Image 3 Lower Right) */}
-                  <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2">
+                  {/* Description Box with Click-to-View Modal & Edit Button */}
+                  <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                         <span>Member Bio / Description</span>
                       </span>
 
-                      {/* Edit Description Icon Button */}
+                      {/* Edit Description Button */}
                       <button
                         type="button"
-                        onClick={() => setIsEditDescOpen(true)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBioModalMode('edit');
+                          setIsBioModalOpen(true);
+                        }}
                         className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-750 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                         title="Edit Description"
                       >
@@ -468,11 +666,21 @@ export const TeamMediaManagement: React.FC = () => {
                       </button>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/60 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed min-h-[64px] flex items-center">
+                    {/* Clickable Bio Box -> Opens Squarish View/Edit Modal (Truncated to 1 line) */}
+                    <div
+                      onClick={() => {
+                        setBioModalMode('view');
+                        setIsBioModalOpen(true);
+                      }}
+                      className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/60 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-normal flex items-center cursor-pointer hover:border-blue-500/40 dark:hover:border-sky-500/40 transition-colors group/bio overflow-hidden"
+                      title="Click to view full bio in popup"
+                    >
                       {selectedMember.description ? (
-                        <p className="whitespace-pre-line">{selectedMember.description}</p>
+                        <p className="truncate w-full block overflow-hidden text-ellipsis whitespace-nowrap group-hover/bio:text-blue-600 dark:group-hover/bio:text-sky-400 transition-colors">
+                          {selectedMember.description}
+                        </p>
                       ) : (
-                        <p className="text-slate-400 italic text-xs">
+                        <p className="text-slate-400 italic text-xs truncate w-full block overflow-hidden text-ellipsis whitespace-nowrap">
                           No bio description added yet. Click "Edit Bio" above to describe this core team member's role and contributions.
                         </p>
                       )}
@@ -481,7 +689,7 @@ export const TeamMediaManagement: React.FC = () => {
                 </div>
               ) : (
                 <div className="py-12 text-center text-xs text-slate-400">
-                  Select a member from the left list to view and manage details.
+                  Select a section or member from the left list to view and manage media.
                 </div>
               )}
             </div>
@@ -489,8 +697,37 @@ export const TeamMediaManagement: React.FC = () => {
         )}
       </div>
 
+      {/* Hidden Native File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/jpg"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
+      {/* Media Lightbox Popup Modal */}
+      {lightboxImageUrl && (
+        <Modal
+          isOpen={!!lightboxImageUrl}
+          onClose={() => setLightboxImageUrl(null)}
+          title={lightboxTitle}
+          maxWidth="max-w-3xl"
+        >
+          <div className="space-y-2">
+            <div className="overflow-hidden rounded-2xl bg-slate-950 border border-slate-800 shadow-2xl flex items-center justify-center">
+              <img
+                src={lightboxImageUrl}
+                alt={lightboxTitle}
+                className="w-full max-h-[75vh] object-contain"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Interactive Crop Modal */}
-      {selectedMember && isCropModalOpen && rawUploadFile && (
+      {isCropModalOpen && rawUploadFile && (
         <ImageCropModal
           isOpen={isCropModalOpen}
           onClose={() => {
@@ -499,30 +736,36 @@ export const TeamMediaManagement: React.FC = () => {
           }}
           imageFile={rawUploadFile}
           onCropComplete={handleCropComplete}
-          memberName={selectedMember.name}
+          memberName={isBannerSelected ? 'Team Page Banner' : selectedMember?.name}
+          initialAspectRatio={isBannerSelected ? '16:9' : '4:5'}
         />
       )}
 
-      {/* Edit Bio Description Modal */}
-      {selectedMember && isEditDescOpen && (
+      {/* Squarish Bio View / Edit Modal */}
+      {selectedMember && isBioModalOpen && (
         <EditMemberDescriptionModal
-          isOpen={isEditDescOpen}
-          onClose={() => setIsEditDescOpen(false)}
+          isOpen={isBioModalOpen}
+          onClose={() => setIsBioModalOpen(false)}
           memberName={selectedMember.name}
           memberRole={selectedMember.role}
           initialDescription={selectedMember.description}
+          initialMode={bioModalMode}
           onSave={handleSaveDescription}
         />
       )}
 
-      {/* Delete Photo Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={isDeleteConfirmOpen}
         onClose={() => setIsDeleteConfirmOpen(false)}
-        onConfirm={handleDeletePhotoConfirm}
-        title="Delete Profile Photo"
-        message={`Are you sure you want to remove the profile photo for ${selectedMember?.name}? This will remove it from the Cloudflare R2 storage and reset the member's photo.`}
-        confirmText={isDeletingPhoto ? 'Deleting...' : 'Delete Photo'}
+        onConfirm={handleDeleteMediaConfirm}
+        title={isBannerSelected ? 'Delete Team Page Banner' : 'Delete Profile Photo'}
+        message={
+          isBannerSelected
+            ? 'Are you sure you want to remove the Meet Our Team banner image? This will remove it from Cloudflare R2 storage and reset the header.'
+            : `Are you sure you want to remove the profile photo for ${selectedMember?.name}? This will remove it from the Cloudflare R2 storage and reset the member's photo.`
+        }
+        confirmText={isDeletingMedia ? 'Deleting...' : 'Delete Image'}
         variant="danger"
       />
     </div>
