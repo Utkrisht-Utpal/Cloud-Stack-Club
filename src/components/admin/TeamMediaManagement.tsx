@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   Search,
-  Camera,
   Crop,
   Trash2,
   Edit3,
@@ -15,11 +14,8 @@ import {
   FileText,
   AlertCircle,
   CheckCircle2,
-  Upload,
-  Eye,
   X,
 } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { ImageCropModal } from './ImageCropModal';
 import { EditMemberDescriptionModal } from './EditMemberDescriptionModal';
