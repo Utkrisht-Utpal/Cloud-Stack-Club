@@ -112,9 +112,8 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = false, setMobileNavOpen }) => {
-  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'team'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
-  const [mediaViewTab, setMediaViewTab] = useState<'gallery' | 'team'>('gallery');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
 
@@ -957,13 +956,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   )}
                 </button>
 
-                {/* Media Management */}
+                {/* Event Gallery */}
                 <button
                   onClick={() => { setActiveTab('gallery'); setMobileNavOpen && setMobileNavOpen(false); }}
                   className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
                     activeTab === 'gallery'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
-                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -971,21 +970,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   }`}>
                     <Camera className="w-5 h-5" />
                   </div>
-                  <span className="truncate flex-1 font-extrabold text-sm">Media Management</span>
+                  <span className="truncate flex-1 font-extrabold text-sm">Event Gallery</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
+                    {eventsList.length}
+                  </span>
+                </button>
+
+                {/* Our Team */}
+                <button
+                  onClick={() => { setActiveTab('team'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'team'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'team' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                  }`}>
+                    <Sparkles className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">Our Team</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
+                    {membersList.filter((m) => m.is_core_member).length}
+                  </span>
                 </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* DESKTOP (sm+): Original horizontal scrollable tab bar */}
+        {/* DESKTOP (sm+): Horizontal scrollable tab bar */}
         <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none min-w-0">
           <button
             onClick={() => setActiveTab('members')}
             className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'members'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <Users className="w-4 h-4" />
@@ -1005,7 +1027,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'events'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <Calendar className="w-4 h-4" />
@@ -1020,7 +1042,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'forms'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <FileSpreadsheet className="w-4 h-4" />
@@ -1032,7 +1054,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'feedbacks'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <MessageSquare className="w-4 h-4" />
@@ -1051,11 +1073,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'gallery'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
             <Camera className="w-4 h-4" />
-            <span>Media Management</span>
+            <span>Event Gallery</span>
+            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              {eventsList.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('team')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'team'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Our Team</span>
+            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
+              {membersList.filter((m) => m.is_core_member).length}
+            </span>
           </button>
         </div>
 
@@ -2023,94 +2063,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           </div>
         )}
 
-        {/* Tab Content 6: Media Management (Event Gallery + Our Team) */}
+        {/* Tab Content 5: Event Gallery Management */}
         {activeTab === 'gallery' && (
-          <div className="space-y-4 sm:space-y-6">
-            {/* 2 Interactive Overview & View Switcher Cards (Matching Image 1) */}
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                      Media Management
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Manage visual media across the club, including Event Gallery albums and executive Core Team profiles.
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <GalleryManagement events={eventsList} />
+        )}
 
-              {/* 2 Switcher Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {/* Card 1: EVENT GALLERY */}
-                <button
-                  type="button"
-                  onClick={() => setMediaViewTab('gallery')}
-                  className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[110px] ${
-                    mediaViewTab === 'gallery'
-                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
-                      : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-                      EVENT GALLERY
-                    </span>
-                    <div className="w-8 h-8 rounded-full bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
-                      <Camera className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                      {eventsList.length}
-                    </span>
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      Event Albums
-                    </span>
-                  </div>
-                </button>
-
-                {/* Card 2: OUR TEAM */}
-                <button
-                  type="button"
-                  onClick={() => setMediaViewTab('team')}
-                  className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[110px] ${
-                    mediaViewTab === 'team'
-                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
-                      : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-                      OUR TEAM
-                    </span>
-                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center">
-                      <Users className="w-4 h-4" />
-                    </div>
-                  </div>
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                      {membersList.filter((m) => m.is_core_member).length}
-                    </span>
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      Core Members
-                    </span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Sub-view rendering */}
-            {mediaViewTab === 'gallery' ? (
-              <GalleryManagement events={eventsList} />
-            ) : (
-              <TeamMediaManagement />
-            )}
-          </div>
+        {/* Tab Content 6: Our Team Management */}
+        {activeTab === 'team' && (
+          <TeamMediaManagement />
         )}
 
         {/* Create Event Modal */}
