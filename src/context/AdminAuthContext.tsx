@@ -8,6 +8,7 @@ const STORAGE_KEY_LAST_ACTIVITY = 'csc_admin_last_activity';
 interface AdminAuthContextType {
   isAdminLoggedIn: boolean;
   adminEmail: string | null;
+  adminName: string | null;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   openAdminModal: () => void;
@@ -19,6 +20,37 @@ interface AdminAuthContextType {
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+
+const extractAdminName = (user: any): string | null => {
+  if (!user) return null;
+  const meta = user.user_metadata || {};
+  const rawMeta = user.raw_user_meta_data || {};
+  const appMeta = user.app_metadata || {};
+  const name =
+    meta.full_name ||
+    meta.name ||
+    meta.display_name ||
+    meta.first_name ||
+    rawMeta.full_name ||
+    rawMeta.name ||
+    rawMeta.display_name ||
+    rawMeta.first_name ||
+    appMeta.full_name ||
+    appMeta.name;
+
+  if (name && typeof name === 'string' && name.trim()) {
+    return name.trim();
+  }
+
+  if (user.email) {
+    const prefix = user.email.split('@')[0];
+    return prefix
+      .replace(/[._-]/g, ' ')
+      .replace(/\b\w/g, (c: string) => c.toUpperCase());
+  }
+
+  return null;
+};
 
 export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Synchronous initialization for smooth refresh persistence (with 5-minute inactivity check)
@@ -45,6 +77,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   });
 
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
+  const [adminName, setAdminName] = useState<string | null>(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const lastActivityRef = useRef<number>(Date.now());
@@ -61,6 +94,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const logout = useCallback(async () => {
     setIsAdminLoggedIn(false);
     setAdminEmail(null);
+    setAdminName(null);
     setShowDashboard(false);
     setIsAdminModalOpen(false);
 
@@ -146,6 +180,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (session?.user && !isInactive) {
           setIsAdminLoggedIn(true);
           setAdminEmail(session.user.email || null);
+          setAdminName(extractAdminName(session.user));
           const wasActive = localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
           if (wasActive) {
             setShowDashboard(true);
@@ -157,6 +192,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } else {
           setIsAdminLoggedIn(false);
           setAdminEmail(null);
+          setAdminName(null);
           setShowDashboard(false);
           try {
             localStorage.removeItem(STORAGE_KEY_SHOW_DASHBOARD);
@@ -178,6 +214,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (session?.user) {
         setIsAdminLoggedIn(true);
         setAdminEmail(session.user.email || null);
+        setAdminName(extractAdminName(session.user));
         if (event === 'SIGNED_IN') {
           setShowDashboard(true);
           try {
@@ -188,6 +225,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       } else {
         setIsAdminLoggedIn(false);
         setAdminEmail(null);
+        setAdminName(null);
         setShowDashboard(false);
         try {
           localStorage.removeItem(STORAGE_KEY_SHOW_DASHBOARD);
@@ -233,6 +271,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         recordActivity();
         setIsAdminLoggedIn(true);
         setAdminEmail(data.user.email || cleanEmail);
+        setAdminName(extractAdminName(data.user));
         setShowDashboard(true);
         setIsAdminModalOpen(false);
         try {
@@ -278,6 +317,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       value={{
         isAdminLoggedIn,
         adminEmail,
+        adminName,
         login,
         logout,
         openAdminModal,

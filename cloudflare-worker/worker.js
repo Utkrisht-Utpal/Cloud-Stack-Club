@@ -207,6 +207,9 @@ function validateMagicBytes(buffer) {
     return 'webp';
   }
 
+  return null;
+}
+
 // Helper: Sanitize & Format person name to Title Case (e.g. "utkrisht utpal" -> "Utkrisht Utpal")
 function formatPersonName(str) {
   if (!str) return '';
@@ -302,9 +305,9 @@ export default {
 
           fileBuffer = await fileToUpload.arrayBuffer();
           detectedType = validateMagicBytes(fileBuffer);
-          if (!detectedType) {
+          if (!detectedType || detectedType === 'pdf') {
             return new Response(
-              JSON.stringify({ error: 'Invalid file signature. Only authentic JPG, PNG, WebP, and PDF files accepted.' }),
+              JSON.stringify({ error: 'Invalid file format. Only authentic image files (JPG, PNG, WebP) are allowed for CUIMS verification screenshots. PDF files are not accepted.' }),
               { status: 415, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }

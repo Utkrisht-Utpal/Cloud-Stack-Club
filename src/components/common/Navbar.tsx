@@ -15,9 +15,17 @@ interface NavbarProps {
   onAdminLogout?: () => void;
 }
 
+const getGreeting = (): string => {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 22) return 'Good evening';
+  return 'Welcome';
+};
+
 export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboard, onAdminLogout }) => {
   const { theme, toggleTheme } = useTheme();
-  const { openAdminModal, isAdminLoggedIn, setShowDashboard } = useAdminAuth();
+  const { openAdminModal, isAdminLoggedIn, setShowDashboard, adminName } = useAdminAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
@@ -121,10 +129,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
 
           {/* Center: Desktop Navigation Links OR Admin Dashboard Title */}
           {isAdminDashboard ? (
-            <div className="flex items-center justify-center shrink-0">
-              <h1 className="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap">
+            <div className="flex flex-col items-center justify-center shrink-0 text-center py-0.5">
+              <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap leading-tight">
                 Admin Management Dashboard
               </h1>
+              {adminName && (
+                <p className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-sky-400 leading-tight mt-0.5">
+                  {getGreeting()}, <span className="font-bold text-slate-800 dark:text-slate-200">{adminName}</span> 👋
+                </p>
+              )}
             </div>
           ) : (
             <nav className="hidden lg:flex items-center gap-1 bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 px-3.5 py-1.5 rounded-full">

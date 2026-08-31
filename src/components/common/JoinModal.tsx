@@ -67,7 +67,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       const file = e.target.files[0];
       const validation = await validateFileSignature(file);
       if (!validation.isValid) {
-        setError(validation.error || "Invalid file. Please upload a valid JPG, PNG, or PDF under 3 MB.");
+        setError(validation.error || "Invalid file. Please upload a valid image (JPG, PNG, or WebP) under 1 MB.");
         e.target.value = "";
         setVerificationFile(null);
         return;
@@ -111,10 +111,10 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       return;
     }
 
-    // Enforce required CUIMS verification document upload
+    // Enforce required CUIMS verification screenshot upload
     if (!verificationFile) {
       triggerErrorWithCooldown(
-        "CUIMS verification screenshot or document is required to apply for membership.",
+        "CUIMS verification screenshot (image) is required to apply for membership.",
       );
       return;
     }
