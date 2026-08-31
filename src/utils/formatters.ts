@@ -1,4 +1,17 @@
 /**
+ * Formats a person's name into clean Title Case (e.g. "utkrisht utpal" -> "Utkrisht Utpal")
+ * Collapses multiple spaces and capitalizes the first letter of each word.
+ */
+export const formatPersonName = (name?: string | null): string => {
+  if (!name) return '';
+  const trimmed = name.trim().replace(/\s+/g, ' ');
+  if (!trimmed) return '';
+  return trimmed
+    .toLowerCase()
+    .replace(/(?:^|[\s\-\'])([a-z\u00C0-\u024F])/g, (match) => match.toUpperCase());
+};
+
+/**
  * Formats a time string (e.g. "10:00:00" or "14:30") into a clean 12-hour format: "HH:MM AM/PM"
  */
 export const formatEventTime = (timeStr?: string | null): string => {

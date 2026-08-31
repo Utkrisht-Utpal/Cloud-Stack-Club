@@ -54,6 +54,7 @@ import {
 } from '../../services/members';
 import {
   getEvents,
+  getAdminEvents,
   createEvent,
   updateEventAdmin,
   deleteEventAdmin,
@@ -305,9 +306,9 @@ export const AdminDashboard: React.FC = () => {
   const loadAllEvents = async () => {
     try {
       const [evs, counts] = await Promise.all([
-        getEvents().catch((err) => {
-          console.warn('Could not load events:', err);
-          return [];
+        getAdminEvents().catch((err) => {
+          console.warn('Could not load admin events, falling back to public events:', err);
+          return getEvents().catch(() => []);
         }),
         getEventRegistrationCountsMap().catch((err) => {
           console.warn('Could not load registration counts:', err);

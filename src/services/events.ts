@@ -154,6 +154,8 @@ export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
     });
 };
 
+export const SAFE_PUBLIC_EVENT_COLUMNS = 'id, title, slug, category, description, date, start_time, end_time, location, image_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at';
+
 export const getEvents = async (): Promise<Event[]> => {
   if (!isSupabaseConfigured()) {
     const localEvents = getLocalCustomEvents();
@@ -162,14 +164,81 @@ export const getEvents = async (): Promise<Event[]> => {
   }
 
   try {
+    // 1. Primary: Execute secure RPC get_public_events() (excludes pdf_url)
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_public_events');
+
+    let eventsData: any[] | null = null;
+
+    if (!rpcError && rpcData) {
+      eventsData = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+    } else {
+      // 2. Fallback A: Query public_events view
+      const { data: viewData, error: viewError } = await supabase
+        .from('public_events')
+        .select('*')
+        .order('date', { ascending: true });
+
+      if (!viewError && viewData) {
+        eventsData = viewData;
+      } else {
+        // 3. Fallback B: Query events table with explicit safe public columns
+        const { data: tableData, error: tableError } = await supabase
+          .from('events')
+          .select(SAFE_PUBLIC_EVENT_COLUMNS)
+          .neq('status', 'cancelled')
+          .order('date', { ascending: true });
+
+        if (!tableError && tableData) {
+          eventsData = tableData;
+        } else if (tableError) {
+          console.warn('Public events fetch notice:', tableError.message);
+        }
+      }
+    }
+
+    if (!eventsData || eventsData.length === 0) {
+      const localEvents = getLocalCustomEvents();
+      return sortEventsByRelevance(localEvents);
+    }
+
+    const dbEvents = (eventsData as Event[]) || [];
+    const catMap = getStoredCategoriesMap();
+    const eventsWithCat = dbEvents.map((e) => ({
+      ...e,
+      pdf_url: null, // Guarantee pdf_url is stripped from public memory
+      category: e.category || catMap[e.id] || null,
+    }));
+
+    // Background non-blocking status sync (0ms load time optimization)
+    autoSyncEventStatuses(eventsWithCat).catch(() => {});
+
+    // Save to local storage for instant cached hydration on next visit (sanitized without pdf_url)
+    try {
+      localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(eventsWithCat));
+    } catch {}
+
+    return sortEventsByRelevance(eventsWithCat);
+  } catch {
+    const localEvents = getLocalCustomEvents();
+    return sortEventsByRelevance(localEvents);
+  }
+};
+
+export const getAdminEvents = async (): Promise<Event[]> => {
+  if (!isSupabaseConfigured()) {
+    const localEvents = getLocalCustomEvents();
+    return sortEventsByRelevance(localEvents);
+  }
+
+  try {
     const { data, error } = await supabase
       .from('events')
-      .select('id, title, category, description, date, start_time, location, image_url, pdf_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at')
+      .select('*')
       .neq('status', 'cancelled')
       .order('date', { ascending: true });
 
     if (error || !data) {
-      if (error) console.warn('Supabase DB fetch notice:', error.message);
+      if (error) console.warn('Admin events fetch notice:', error.message);
       const localEvents = getLocalCustomEvents();
       return sortEventsByRelevance(localEvents);
     }
@@ -181,16 +250,9 @@ export const getEvents = async (): Promise<Event[]> => {
       category: e.category || catMap[e.id] || null,
     }));
 
-    // Background non-blocking status sync (0ms load time optimization)
-    autoSyncEventStatuses(eventsWithCat).catch(() => {});
-
-    // Save to local storage for instant cached hydration on next visit
-    try {
-      localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(eventsWithCat));
-    } catch {}
-
     return sortEventsByRelevance(eventsWithCat);
-  } catch {
+  } catch (err) {
+    console.warn('Exception in getAdminEvents:', err);
     const localEvents = getLocalCustomEvents();
     return sortEventsByRelevance(localEvents);
   }
@@ -525,21 +587,62 @@ export const getEventBySlug = async (slug: string): Promise<Event | null> => {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from('events')
+  // 1. Try public_events view or fallback to explicit safe public columns
+  let { data, error } = await supabase
+    .from('public_events')
     .select('*')
     .eq('slug', slug)
-    .single();
+    .maybeSingle();
+
+  if (error || !data) {
+    const fallback = await supabase
+      .from('events')
+      .select(SAFE_PUBLIC_EVENT_COLUMNS)
+      .eq('slug', slug)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
 
   if (error) {
     console.error(`Error fetching event ${slug}:`, error.message);
     return null;
   }
 
-  return data;
+  return data as Event | null;
 };
 
 export const getEventById = async (id: string): Promise<Event | null> => {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  // 1. Try public_events view or fallback to explicit safe public columns
+  let { data, error } = await supabase
+    .from('public_events')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !data) {
+    const fallback = await supabase
+      .from('events')
+      .select(SAFE_PUBLIC_EVENT_COLUMNS)
+      .eq('id', id)
+      .maybeSingle();
+    data = fallback.data;
+    error = fallback.error;
+  }
+
+  if (error) {
+    console.error(`Error fetching event ${id}:`, error.message);
+    return null;
+  }
+
+  return data as Event | null;
+};
+
+export const getAdminEventById = async (id: string): Promise<Event | null> => {
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -548,12 +651,12 @@ export const getEventById = async (id: string): Promise<Event | null> => {
     .from('events')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    console.error(`Error fetching event ${id}:`, error.message);
+    console.error(`Error fetching admin event ${id}:`, error.message);
     return null;
   }
 
-  return data;
+  return data as Event | null;
 };
