@@ -1,18 +1,22 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { deleteFromR2 } from '../lib/r2Storage';
+import { uploadToR2, deleteFromR2, R2_FOLDERS, resolveMediaUrl } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import { formatPersonName } from '../utils/formatters';
-import type { Member, MemberApplicationPayload } from '../types/database';
+import type { Member, MemberApplicationPayload, CoreTeamMember } from '../types/database';
 
 /**
- * Safe public shape for a core member — only the 4 fields needed for
- * the "Meet The Team" section. No emails, UIDs, phone numbers, or IDs.
+ * Safe public shape for a core member — used for
+ * the "Meet The Team" section.
  */
 export interface CoreMember {
+  id?: string;
+  member_id?: string;
   name: string;
   department: string | null;
   year: string | null;
   role: { name: string | null };
+  description?: string | null;
+  photo_url?: string | null;
 }
 
 const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
@@ -214,22 +218,41 @@ export const getCoreMembers = async (): Promise<CoreMember[]> => {
   try {
     const { data: membersData, error } = await supabase.rpc('get_public_members');
 
-    if (error || !membersData) {
-      console.warn('Notice fetching core members via RPC:', error?.message);
-      return [];
-    }
-
-    const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
-
-    const members = (parsed || [])
-      .map((m: any) => ({
+    if (!error && membersData) {
+      const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
+      return (parsed || []).map((m: any) => ({
+        id: m.id,
+        member_id: m.member_id,
         name: m.name,
         department: m.department || null,
         year: m.year || null,
         role: { name: m.role || null },
+        description: m.description || null,
+        photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
       }));
+    }
 
-    return members;
+    // Direct fallback from core_team_members table
+    const { data: directData } = await supabase
+      .from('core_team_members')
+      .select('id, member_id, name, role, department, year, description, photo_url')
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (directData && directData.length > 0) {
+      return directData.map((m: any) => ({
+        id: m.id,
+        member_id: m.member_id,
+        name: m.name,
+        department: m.department || null,
+        year: m.year || null,
+        role: { name: m.role || null },
+        description: m.description || null,
+        photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
+      }));
+    }
+
+    return [];
   } catch (err) {
     console.warn('Exception fetching core members:', err);
     return [];
@@ -360,3 +383,123 @@ export const getMemberByRegistrationId = async (registrationId: string): Promise
 
   return data as Member | null;
 };
+
+/**
+ * Fetch all core team members from the dedicated core_team_members table for the Admin Panel.
+ */
+export const getCoreTeamMembersAdmin = async (): Promise<CoreTeamMember[]> => {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('core_team_members')
+      .select('*')
+      .order('display_order', { ascending: true })
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.warn('Notice fetching core team members admin:', error.message);
+      return [];
+    }
+
+    return (data || []).map((m) => ({
+      ...m,
+      photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
+    }));
+  } catch (err) {
+    console.error('Exception fetching core team members admin:', err);
+    return [];
+  }
+};
+
+/**
+ * Update a core team member's bio description.
+ */
+export const updateCoreTeamMemberDescription = async (
+  coreTeamMemberId: string,
+  description: string
+): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return false;
+
+  const { error } = await supabase
+    .from('core_team_members')
+    .update({
+      description: description.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', coreTeamMemberId);
+
+  if (error) {
+    console.error('Error updating core team member description:', error);
+    throw new Error(error.message || 'Failed to update description');
+  }
+
+  return true;
+};
+
+/**
+ * Upload a cropped profile photo for a core team member to R2 and update DB.
+ */
+export const uploadCoreTeamPhoto = async (
+  coreTeamMemberId: string,
+  file: File
+): Promise<string> => {
+  const rawExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const cleanExt = ['jpg', 'jpeg', 'png', 'webp'].includes(rawExt) ? rawExt : 'jpg';
+  const fileName = `team_${coreTeamMemberId}_${Date.now()}.${cleanExt}`;
+
+  // 1. Upload to Cloudflare R2 under team-photos/ namespace
+  const photoUrl = await uploadToR2(R2_FOLDERS.TEAM_PHOTOS, fileName, file);
+
+  // 2. Update core_team_members record in Supabase
+  const { error } = await supabase
+    .from('core_team_members')
+    .update({
+      photo_url: photoUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', coreTeamMemberId);
+
+  if (error) {
+    console.error('Error saving core team photo URL:', error);
+    throw new Error(error.message || 'Failed to save photo URL to database');
+  }
+
+  return resolveMediaUrl(photoUrl);
+};
+
+/**
+ * Delete a core team member's photo from R2 and clear the URL in DB.
+ */
+export const deleteCoreTeamPhoto = async (
+  coreTeamMemberId: string,
+  existingPhotoUrl: string | null
+): Promise<boolean> => {
+  // 1. Delete physical file from R2
+  if (existingPhotoUrl) {
+    await deleteFromR2(existingPhotoUrl).catch((err) => {
+      console.warn('Notice deleting photo from R2:', err);
+    });
+  }
+
+  // 2. Clear photo_url in database
+  if (isSupabaseConfigured()) {
+    const { error } = await supabase
+      .from('core_team_members')
+      .update({
+        photo_url: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', coreTeamMemberId);
+
+    if (error) {
+      console.error('Error clearing photo URL in database:', error);
+      throw new Error(error.message || 'Failed to clear photo URL');
+    }
+  }
+
+  return true;
+};
+

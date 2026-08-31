@@ -514,7 +514,7 @@ export default {
           pathsToDelete.push(...body.paths.filter((p) => typeof p === 'string'));
         }
 
-        const allowedPrefixes = ['event-images/', 'event-pdfs/', 'event-gallery/', 'registration-files/'];
+        const allowedPrefixes = ['event-images/', 'event-pdfs/', 'event-gallery/', 'registration-files/', 'team-photos/'];
         for (const p of pathsToDelete) {
           if (p.includes('..') || !allowedPrefixes.some((prefix) => p.startsWith(prefix))) {
             return new Response(JSON.stringify({ error: 'Invalid or unauthorized deletion path' }), {
@@ -556,9 +556,11 @@ export default {
           folder === 'event-images' ||
           folder === 'event-pdfs' ||
           folder === 'event-gallery' ||
+          folder === 'team-photos' ||
           rawPath.startsWith('event-images/') ||
           rawPath.startsWith('event-pdfs/') ||
-          rawPath.startsWith('event-gallery/');
+          rawPath.startsWith('event-gallery/') ||
+          rawPath.startsWith('team-photos/');
 
         const isPublicRegistration =
           folder === 'registration-files' || rawPath.startsWith('registration-files/');
@@ -570,12 +572,12 @@ export default {
           });
         }
 
-        // Admin Auth Check for Event Media
+        // Admin Auth Check for Event Media & Team Photos
         if (isEventMedia) {
           const auth = await verifySupabaseAuth(request, env);
           if (!auth.isAuthenticated || !auth.isAdmin) {
             return new Response(
-              JSON.stringify({ error: 'Forbidden: Administrator login required to upload event media' }),
+              JSON.stringify({ error: 'Forbidden: Administrator login required to upload media' }),
               { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
@@ -634,6 +636,8 @@ export default {
           safeStoragePath = `event-images/posters/${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
         } else if (folder === 'event-pdfs' || rawPath.startsWith('event-pdfs/')) {
           safeStoragePath = `event-pdfs/schedules/${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
+        } else if (folder === 'team-photos' || rawPath.startsWith('team-photos/')) {
+          safeStoragePath = `team-photos/${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
         } else if (folder === 'event-gallery' || rawPath.startsWith('event-gallery/')) {
           let subfolder = 'general';
           if (rawPath.startsWith('event-gallery/')) {
