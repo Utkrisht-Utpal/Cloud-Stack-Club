@@ -1,14 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import {
   Crop,
   ZoomIn,
   ZoomOut,
   RotateCw,
   Check,
-  X,
-  Sparkles,
-  Maximize2,
   FileImage,
   AlertCircle,
 } from 'lucide-react';
@@ -45,7 +41,6 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const initialOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
 

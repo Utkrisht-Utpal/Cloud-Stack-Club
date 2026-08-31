@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Users,
-  GraduationCap,
   Building2,
   Sparkles,
   User,
-  Quote,
 } from 'lucide-react';
 import { getCoreMembers, type CoreMember } from '../../services/members';
 
