@@ -3,26 +3,35 @@ import { motion } from 'framer-motion';
 import {
   Users,
   Building2,
-  Sparkles,
   User,
+  GraduationCap,
+  FileText,
 } from 'lucide-react';
-import { getCoreMembers, type CoreMember } from '../../services/members';
+import { Modal } from '../ui/Modal';
+import { getCoreMembers, getTeamPageBanner, type CoreMember, type TeamPageBannerData } from '../../services/members';
 
 export const TeamSection: React.FC = () => {
   const [members, setMembers] = useState<CoreMember[]>([]);
+  const [bannerData, setBannerData] = useState<TeamPageBannerData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedMemberModal, setSelectedMemberModal] = useState<CoreMember | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    getCoreMembers()
-      .then((data) => {
+
+    Promise.all([
+      getCoreMembers(),
+      getTeamPageBanner(),
+    ])
+      .then(([membersData, banner]) => {
         if (isMounted) {
-          setMembers(data);
+          setMembers(membersData);
+          setBannerData(banner);
           setLoading(false);
         }
       })
       .catch((err) => {
-        console.warn('Error loading team members:', err);
+        console.warn('Error loading team data:', err);
         if (isMounted) setLoading(false);
       });
 
@@ -32,18 +41,9 @@ export const TeamSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12">
+    <section className="pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
-      <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Executive Leadership &amp; Core Council</span>
-        </motion.div>
-
+      <div className="text-center space-y-2 max-w-3xl mx-auto">
         <motion.h1
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -57,13 +57,32 @@ export const TeamSection: React.FC = () => {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed"
+          className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-medium"
         >
           The dedicated student developers, mentors, and community leads driving innovation and cloud learning at Chandigarh University.
         </motion.p>
       </div>
 
-      {/* Grid of 4:5 Core Member Cards */}
+      {/* Top Banner (Full Width above the cards grid) */}
+      {bannerData?.banner_url && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="w-full overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl bg-slate-950 group"
+        >
+          <div className="relative w-full overflow-hidden">
+            <img
+              src={bannerData.banner_url}
+              alt="Meet Our Team Banner"
+              className="w-full max-h-[420px] sm:max-h-[500px] object-cover object-center group-hover:scale-101 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+          </div>
+        </motion.div>
+      )}
+
+      {/* Grid of Core Member Cards */}
       {loading ? (
         <div className="py-24 text-center space-y-3">
           <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
@@ -89,7 +108,8 @@ export const TeamSection: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 shadow-md hover:shadow-2xl hover:border-blue-500/40 dark:hover:border-sky-400/40 transition-all duration-300 flex flex-col justify-between"
+              onClick={() => setSelectedMemberModal(member)}
+              className="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 shadow-md hover:shadow-2xl hover:border-blue-500/40 dark:hover:border-sky-400/40 transition-all duration-300 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
             >
               {/* 4:5 Ratio Portrait Photo Container */}
               <div className="relative w-full overflow-hidden bg-slate-950" style={{ aspectRatio: '4/5' }}>
@@ -161,6 +181,87 @@ export const TeamSection: React.FC = () => {
             </motion.div>
           ))}
         </div>
+      )}
+
+      {/* Member Details Popup Modal */}
+      {selectedMemberModal && (
+        <Modal
+          isOpen={!!selectedMemberModal}
+          onClose={() => setSelectedMemberModal(null)}
+          title="Core Council Member Details"
+          maxWidth="max-w-3xl"
+        >
+          <div className="space-y-6 pt-1">
+            <div className="flex flex-col sm:flex-row gap-6 sm:gap-7 items-start">
+              {/* Member Photo (4:5 Portrait) */}
+              <div className="w-full sm:w-[290px] shrink-0 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl">
+                <div style={{ aspectRatio: '4/5' }} className="relative w-full overflow-hidden">
+                  {selectedMemberModal.photo_url ? (
+                    <img
+                      src={selectedMemberModal.photo_url}
+                      alt={selectedMemberModal.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center">
+                      <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-slate-400 mb-3">
+                        <User className="w-10 h-10" />
+                      </div>
+                      <span className="text-xs font-bold">Cloud Stack Club</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Member Info */}
+              <div className="flex-1 space-y-4 sm:space-y-5 min-w-0 w-full">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                      {selectedMemberModal.role?.name || 'Core Member'}
+                    </span>
+
+                    {selectedMemberModal.year && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
+                        <GraduationCap className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                        <span>{selectedMemberModal.year}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                    {selectedMemberModal.name}
+                  </h3>
+
+                  {selectedMemberModal.department && (
+                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                      <Building2 className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      <span>{selectedMemberModal.department}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Full Bio / Description */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2.5">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <FileText className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                    <span>About &amp; Contributions</span>
+                  </div>
+
+                  {selectedMemberModal.description ? (
+                    <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line max-h-[260px] overflow-y-auto pr-1">
+                      {selectedMemberModal.description}
+                    </p>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-slate-400 italic">
+                      Core Council Member • Cloud Stack Club, Chandigarh University.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
       )}
     </section>
   );

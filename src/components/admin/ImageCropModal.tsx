@@ -11,7 +11,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 
-type AspectRatioPreset = '4:5' | '1:1' | '9:16' | 'free';
+type AspectRatioPreset = '16:9' | '4:5' | '1:1' | '9:16' | 'free';
 
 interface ImageCropModalProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ interface ImageCropModalProps {
   imageFile: File | null;
   onCropComplete: (croppedFile: File) => void;
   memberName?: string;
+  initialAspectRatio?: AspectRatioPreset;
 }
 
 export const ImageCropModal: React.FC<ImageCropModalProps> = ({
@@ -27,9 +28,10 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   imageFile,
   onCropComplete,
   memberName,
+  initialAspectRatio = '4:5',
 }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [aspectPreset, setAspectPreset] = useState<AspectRatioPreset>('4:5');
+  const [aspectPreset, setAspectPreset] = useState<AspectRatioPreset>(initialAspectRatio);
   const [zoom, setZoom] = useState<number>(1);
   const [rotation, setRotation] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,6 +55,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
     const url = URL.createObjectURL(imageFile);
     setImageSrc(url);
+    setAspectPreset(initialAspectRatio);
     setZoom(1);
     setRotation(0);
     setOffset({ x: 0, y: 0 });
@@ -67,11 +70,13 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     return () => {
       URL.revokeObjectURL(url);
     };
-  }, [imageFile]);
+  }, [imageFile, initialAspectRatio]);
 
   // Compute aspect ratio multiplier
   const getAspectRatioValue = useCallback((preset: AspectRatioPreset): number | null => {
     switch (preset) {
+      case '16:9':
+        return 16 / 9; // ~1.777
       case '4:5':
         return 4 / 5; // 0.8
       case '1:1':
@@ -85,6 +90,44 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     }
   }, []);
 
+  // Clamps offset so the photo can NEVER reveal void/black space outside the crop zone
+  const clampOffsets = useCallback(
+    (rawX: number, rawY: number, currentZoom: number): { x: number; y: number } => {
+      if (!containerRef.current || !imageRef.current) return { x: 0, y: 0 };
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const cWidth = containerRect.width || 340;
+      const cHeight = containerRect.height || 425;
+
+      const img = imageRef.current;
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      const containerAspect = cWidth / cHeight;
+
+      // Base dimensions when image covers container (object-fit: cover)
+      let baseWidth = cWidth;
+      let baseHeight = cHeight;
+
+      if (imgAspect > containerAspect) {
+        baseHeight = cHeight;
+        baseWidth = cHeight * imgAspect;
+      } else {
+        baseWidth = cWidth;
+        baseHeight = cWidth / imgAspect;
+      }
+
+      const scaledWidth = baseWidth * currentZoom;
+      const scaledHeight = baseHeight * currentZoom;
+
+      const maxX = Math.max(0, (scaledWidth - cWidth) / 2);
+      const maxY = Math.max(0, (scaledHeight - cHeight) / 2);
+
+      return {
+        x: Math.min(maxX, Math.max(-maxX, rawX)),
+        y: Math.min(maxY, Math.max(-maxY, rawY)),
+      };
+    },
+    []
+  );
+
   // Mouse / Touch drag handlers for panning
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -97,10 +140,9 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     if (!isDragging) return;
     const dx = e.clientX - dragStartRef.current.x;
     const dy = e.clientY - dragStartRef.current.y;
-    setOffset({
-      x: initialOffsetRef.current.x + dx,
-      y: initialOffsetRef.current.y + dy,
-    });
+    const rawX = initialOffsetRef.current.x + dx;
+    const rawY = initialOffsetRef.current.y + dy;
+    setOffset(clampOffsets(rawX, rawY, zoom));
   };
 
   const handleMouseUp = () => {
@@ -120,19 +162,26 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
     if (!isDragging || e.touches.length !== 1) return;
     const dx = e.touches[0].clientX - dragStartRef.current.x;
     const dy = e.touches[0].clientY - dragStartRef.current.y;
-    setOffset({
-      x: initialOffsetRef.current.x + dx,
-      y: initialOffsetRef.current.y + dy,
-    });
+    const rawX = initialOffsetRef.current.x + dx;
+    const rawY = initialOffsetRef.current.y + dy;
+    setOffset(clampOffsets(rawX, rawY, zoom));
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
   };
 
+  // Zoom change handler with automatic offset clamping
+  const handleZoomChange = (newZoom: number) => {
+    const safeZoom = Math.max(1, Math.min(3, newZoom));
+    setZoom(safeZoom);
+    setOffset((prev) => clampOffsets(prev.x, prev.y, safeZoom));
+  };
+
   // Rotate 90 degrees clockwise
   const handleRotate = () => {
     setRotation((prev) => (prev + 90) % 360);
+    setOffset({ x: 0, y: 0 });
   };
 
   // Execute crop on HTML Canvas and generate clean File (< 1 MB)
@@ -145,7 +194,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       const img = imageRef.current;
       const targetRatio = getAspectRatioValue(aspectPreset) || (img.naturalWidth / img.naturalHeight);
 
-      // Output resolution (high resolution suitable for display)
+      // High output resolution suitable for production display
       const targetWidth = Math.min(img.naturalWidth, 1200);
       const targetHeight = Math.round(targetWidth / targetRatio);
 
@@ -162,22 +211,32 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
       ctx.fillRect(0, 0, targetWidth, targetHeight);
 
       ctx.save();
-      // Center canvas coordinates
       ctx.translate(targetWidth / 2, targetHeight / 2);
       ctx.rotate((rotation * Math.PI) / 180);
-      ctx.scale(zoom, zoom);
+
+      // Base draw dimensions matching object-fit: cover
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      let baseDrawWidth = targetWidth;
+      let baseDrawHeight = targetHeight;
+
+      if (imgAspect > targetRatio) {
+        baseDrawHeight = targetHeight;
+        baseDrawWidth = targetHeight * imgAspect;
+      } else {
+        baseDrawWidth = targetWidth;
+        baseDrawHeight = targetWidth / imgAspect;
+      }
+
+      const scaledDrawWidth = baseDrawWidth * zoom;
+      const scaledDrawHeight = baseDrawHeight * zoom;
 
       // Scale pan offsets proportional to target resolution
       const containerRect = containerRef.current.getBoundingClientRect();
-      const scaleFactorX = targetWidth / (containerRect.width || 400);
-      const scaleFactorY = targetHeight / (containerRect.height || 500);
+      const scaleFactorX = targetWidth / (containerRect.width || 340);
+      const scaleFactorY = targetHeight / (containerRect.height || 425);
 
       ctx.translate(offset.x * scaleFactorX, offset.y * scaleFactorY);
-
-      // Draw image centered
-      const drawWidth = targetWidth;
-      const drawHeight = (img.naturalHeight / img.naturalWidth) * targetWidth;
-      ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      ctx.drawImage(img, -scaledDrawWidth / 2, -scaledDrawHeight / 2, scaledDrawWidth, scaledDrawHeight);
 
       ctx.restore();
 
@@ -242,7 +301,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </span>
 
           <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
-            {(['4:5', '1:1', '9:16', 'free'] as AspectRatioPreset[]).map((preset) => (
+            {(['16:9', '4:5', '1:1', '9:16', 'free'] as AspectRatioPreset[]).map((preset) => (
               <button
                 key={preset}
                 type="button"
@@ -256,14 +315,14 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                {preset === '4:5' ? '4:5 (Standard)' : preset === '1:1' ? '1:1 (Square)' : preset === '9:16' ? '9:16 (Portrait)' : 'Free'}
+                {preset === '16:9' ? '16:9 (Banner)' : preset === '4:5' ? '4:5 (Portrait)' : preset === '1:1' ? '1:1 (Square)' : preset === '9:16' ? '9:16 (Story)' : 'Free'}
               </button>
             ))}
           </div>
         </div>
 
         {/* Interactive Crop Viewport Frame */}
-        <div className="relative w-full flex items-center justify-center bg-slate-950/90 rounded-2xl overflow-hidden border border-slate-800 p-3 select-none">
+        <div className="relative w-full flex items-center justify-center bg-slate-950/90 rounded-2xl overflow-hidden border border-slate-800 p-4 select-none min-h-[320px]">
           <div
             ref={containerRef}
             onMouseDown={handleMouseDown}
@@ -274,10 +333,27 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             style={{
-              aspectRatio: aspectPreset === '4:5' ? '4/5' : aspectPreset === '1:1' ? '1/1' : aspectPreset === '9:16' ? '9/16' : '4/5',
-              maxHeight: '420px',
+              aspectRatio:
+                aspectPreset === '16:9'
+                  ? '16 / 9'
+                  : aspectPreset === '4:5'
+                  ? '4 / 5'
+                  : aspectPreset === '1:1'
+                  ? '1 / 1'
+                  : aspectPreset === '9:16'
+                  ? '9 / 16'
+                  : '4 / 5',
+              maxHeight: aspectPreset === '16:9' ? '300px' : '420px',
             }}
-            className="relative w-full max-w-[340px] overflow-hidden rounded-xl bg-slate-900 border-2 border-dashed border-sky-400/80 shadow-2xl cursor-grab active:cursor-grabbing flex items-center justify-center"
+            className={`relative w-full ${
+              aspectPreset === '16:9'
+                ? 'max-w-[540px]'
+                : aspectPreset === '9:16'
+                ? 'max-w-[240px]'
+                : aspectPreset === '1:1'
+                ? 'max-w-[340px]'
+                : 'max-w-[340px]'
+            } overflow-hidden rounded-xl bg-slate-900 border-2 border-dashed border-sky-400/80 shadow-2xl cursor-grab active:cursor-grabbing flex items-center justify-center transition-all duration-200`}
           >
             {imageSrc ? (
               <img
@@ -285,11 +361,14 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
                 alt="Crop preview"
                 draggable={false}
                 style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
                   transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom}) rotate(${rotation}deg)`,
                   transformOrigin: 'center center',
                   transition: isDragging ? 'none' : 'transform 0.1s ease-out',
                 }}
-                className="max-w-none max-h-none w-full object-cover pointer-events-none"
+                className="w-full h-full object-cover pointer-events-none select-none"
               />
             ) : (
               <div className="flex flex-col items-center justify-center text-slate-500 gap-2 p-6">
@@ -306,25 +385,25 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
               <div className="border-r border-b border-white/30" />
               <div className="border-r border-b border-white/30" />
               <div className="border-b border-white/30" />
-              <div className="border-r border-white/30" />
-              <div className="border-r border-white/30" />
+              <div className="border-r border-b border-white/30" />
+              <div className="border-r border-b border-white/30" />
               <div />
             </div>
 
             {/* Drag hint overlay */}
             <div className="absolute bottom-2 left-2 right-2 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-md text-[10px] text-slate-300 text-center pointer-events-none font-medium">
-              Drag to pan • Use controls below to zoom
+              Drag to pan • Use slider below to zoom
             </div>
           </div>
         </div>
 
         {/* Crop Controls Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center bg-slate-100/70 dark:bg-slate-900/70 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
-          {/* Zoom Slider */}
+          {/* Zoom Slider (Strictly clamped >= 1x to prevent black space) */}
           <div className="flex items-center gap-2.5">
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(2))))}
+              onClick={() => handleZoomChange(Number((zoom - 0.1).toFixed(2)))}
               className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
               title="Zoom out"
             >
@@ -333,17 +412,17 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
             <input
               type="range"
-              min="0.5"
+              min="1"
               max="3"
               step="0.05"
               value={zoom}
-              onChange={(e) => setZoom(parseFloat(e.target.value))}
+              onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
               className="flex-1 accent-blue-600 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg cursor-pointer"
             />
 
             <button
               type="button"
-              onClick={() => setZoom((z) => Math.min(3, Number((z + 0.1).toFixed(2))))}
+              onClick={() => handleZoomChange(Number((zoom + 0.1).toFixed(2)))}
               className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
               title="Zoom in"
             >

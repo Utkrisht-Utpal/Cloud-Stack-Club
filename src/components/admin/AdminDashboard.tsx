@@ -971,9 +971,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     <Camera className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Event Gallery</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
-                    {eventsList.length}
-                  </span>
                 </button>
 
                 {/* Our Team */}
@@ -991,9 +988,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Our Team</span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
-                    {membersList.filter((m) => m.is_core_member).length}
-                  </span>
                 </button>
               </div>
             </motion.div>
@@ -1078,9 +1072,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           >
             <Camera className="w-4 h-4" />
             <span>Event Gallery</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-              {eventsList.length}
-            </span>
           </button>
 
           <button
@@ -1093,9 +1084,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           >
             <Sparkles className="w-4 h-4" />
             <span>Our Team</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
-              {membersList.filter((m) => m.is_core_member).length}
-            </span>
           </button>
         </div>
 

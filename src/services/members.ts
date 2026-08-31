@@ -503,3 +503,134 @@ export const deleteCoreTeamPhoto = async (
   return true;
 };
 
+export interface TeamPageBannerData {
+  banner_url: string | null;
+  title?: string | null;
+  subtitle?: string | null;
+}
+
+const BANNER_STORAGE_KEY = 'csc_team_page_banner_cache';
+
+/**
+ * Fetch the public Meet Our Team section banner image and settings.
+ */
+export const getTeamPageBanner = async (): Promise<TeamPageBannerData> => {
+  const cachedUrl = typeof window !== 'undefined' ? localStorage.getItem(BANNER_STORAGE_KEY) : null;
+
+  if (!isSupabaseConfigured()) {
+    return { banner_url: cachedUrl ? resolveMediaUrl(cachedUrl) : null };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('team_page_banner')
+      .select('banner_url, title, subtitle')
+      .eq('id', 'main_banner')
+      .maybeSingle();
+
+    if (error) {
+      console.warn('Notice loading team page banner from DB, using cache fallback:', error.message);
+      return { banner_url: cachedUrl ? resolveMediaUrl(cachedUrl) : null };
+    }
+
+    if (data?.banner_url) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(BANNER_STORAGE_KEY, data.banner_url);
+      }
+      return {
+        banner_url: resolveMediaUrl(data.banner_url),
+        title: data?.title || 'Meet Our Team',
+        subtitle: data?.subtitle || null,
+      };
+    }
+
+    // If DB explicitly returned null banner_url and table exists, clear cache
+    if (data && data.banner_url === null) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(BANNER_STORAGE_KEY);
+      }
+      return { banner_url: null };
+    }
+
+    return {
+      banner_url: cachedUrl ? resolveMediaUrl(cachedUrl) : null,
+    };
+  } catch (err) {
+    console.warn('Error fetching team banner:', err);
+    return { banner_url: cachedUrl ? resolveMediaUrl(cachedUrl) : null };
+  }
+};
+
+/**
+ * Upload team section wide landscape banner to R2 and save in team_page_banner table.
+ */
+export const uploadTeamPageBanner = async (file: File): Promise<string> => {
+  const rawExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const cleanExt = ['jpg', 'jpeg', 'png', 'webp'].includes(rawExt) ? rawExt : 'jpg';
+  const fileName = `banner_team_${Date.now()}.${cleanExt}`;
+
+  // 1. Upload to R2 under team-photos/
+  const bannerUrl = await uploadToR2(R2_FOLDERS.TEAM_PHOTOS, fileName, file);
+
+  // 2. Cache in localStorage immediately
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(BANNER_STORAGE_KEY, bannerUrl);
+  }
+
+  // 3. Upsert in team_page_banner table
+  if (isSupabaseConfigured()) {
+    try {
+      const { error } = await supabase
+        .from('team_page_banner')
+        .upsert({
+          id: 'main_banner',
+          banner_url: bannerUrl,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.warn('Notice saving team banner URL to DB:', error.message);
+      }
+    } catch (dbErr) {
+      console.warn('DB upsert error for team banner:', dbErr);
+    }
+  }
+
+  return resolveMediaUrl(bannerUrl);
+};
+
+/**
+ * Delete team section banner from R2 and clear URL in DB.
+ */
+export const deleteTeamPageBanner = async (existingBannerUrl: string | null): Promise<boolean> => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(BANNER_STORAGE_KEY);
+  }
+
+  if (existingBannerUrl) {
+    await deleteFromR2(existingBannerUrl).catch((err) => {
+      console.warn('Notice deleting banner from R2:', err);
+    });
+  }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { error } = await supabase
+        .from('team_page_banner')
+        .upsert({
+          id: 'main_banner',
+          banner_url: null,
+          updated_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.warn('Notice clearing team banner URL in DB:', error.message);
+      }
+    } catch (dbErr) {
+      console.warn('DB clear error for team banner:', dbErr);
+    }
+  }
+
+  return true;
+};
+
