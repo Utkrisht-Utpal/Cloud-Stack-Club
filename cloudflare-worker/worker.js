@@ -207,7 +207,14 @@ function validateMagicBytes(buffer) {
     return 'webp';
   }
 
-  return null;
+// Helper: Sanitize & Format person name to Title Case (e.g. "utkrisht utpal" -> "Utkrisht Utpal")
+function formatPersonName(str) {
+  if (!str) return '';
+  const trimmed = String(str).trim().replace(/\s+/g, ' ');
+  if (!trimmed) return '';
+  return trimmed
+    .toLowerCase()
+    .replace(/(?:^|[\s\-\'])([a-z\u00C0-\u024F])/g, (match) => match.toUpperCase());
 }
 
 export default {
@@ -309,7 +316,7 @@ export default {
 
         // Call Supabase RPC FIRST
         const rpcResult = await callSupabaseRpc(env, 'submit_member_application', {
-          p_name: name.trim(),
+          p_name: formatPersonName(name),
           p_email: email.trim(),
           p_phone: phone.trim() || null,
           p_uid: uid.trim(),
@@ -361,14 +368,21 @@ export default {
           );
         }
 
+        const formattedTeamMembers = Array.isArray(body.team_members)
+          ? body.team_members.map((m) => ({
+              ...m,
+              name: formatPersonName(m.name),
+            }))
+          : [];
+
         const rpcResult = await callSupabaseRpc(env, 'register_for_event', {
           p_event_id: body.event_id,
-          p_registrant_name: body.registrant_name,
+          p_registrant_name: formatPersonName(body.registrant_name),
           p_registrant_email: body.registrant_email,
           p_registrant_phone: body.registrant_phone || null,
           p_uid: body.uid || null,
           p_team_name: body.team_name || null,
-          p_team_members: body.team_members || [],
+          p_team_members: formattedTeamMembers,
           p_answers: body.answers || [],
         });
 
@@ -404,7 +418,7 @@ export default {
         }
 
         const rpcResult = await callSupabaseRpc(env, 'submit_contact_feedback', {
-          p_name: body.name,
+          p_name: formatPersonName(body.name),
           p_email: body.email,
           p_message: body.message,
         });
@@ -443,7 +457,7 @@ export default {
         const rpcResult = await callSupabaseRpc(env, 'submit_event_feedback', {
           p_event_id: body.event_id,
           p_event_title: body.event_title,
-          p_name: body.name,
+          p_name: formatPersonName(body.name),
           p_email: body.email,
           p_phone: body.phone || null,
           p_university_id: body.university_id,

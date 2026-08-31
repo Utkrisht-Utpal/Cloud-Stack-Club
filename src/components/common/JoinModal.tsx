@@ -25,6 +25,7 @@ import {
   submitMemberApplication,
 } from "../../services/supabase";
 import { validateFileSignature } from "../../lib/fileValidation";
+import { formatPersonName } from "../../utils/formatters";
 
 interface JoinModalProps {
   isOpen: boolean;
@@ -129,7 +130,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       // 1. Submit membership application payload via Zero-Trust Gateway
       const newMember = await submitMemberApplication(
         {
-          name: formData.name.trim(),
+          name: formatPersonName(formData.name),
           email: formData.email.trim(),
           phone: formData.phone.trim() || undefined,
           uid: formData.uid.trim(),

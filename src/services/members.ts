@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { deleteFromR2 } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
+import { formatPersonName } from '../utils/formatters';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
 const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
@@ -41,6 +42,7 @@ export const submitMemberApplication = async (
   turnstileToken?: string
 ): Promise<Member> => {
   const { name, email, phone, uid, department, year } = payload;
+  const formattedName = formatPersonName(name);
   const cleanUid = uid.trim();
   const cleanEmail = email.trim();
   const cleanPhone = phone?.trim() || '';
@@ -54,7 +56,7 @@ export const submitMemberApplication = async (
   }
 
   const formData = new FormData();
-  formData.append('name', name.trim());
+  formData.append('name', formattedName);
   formData.append('email', cleanEmail);
   formData.append('phone', cleanPhone);
   formData.append('uid', cleanUid);
@@ -86,7 +88,7 @@ export const submitMemberApplication = async (
     id: result?.id || generateUUID(),
     registration_id: result?.registration_id || `CSC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
     uid: cleanUid,
-    name: name.trim(),
+    name: formattedName,
     email: cleanEmail,
     phone: cleanPhone || null,
     department: department?.trim() || null,
