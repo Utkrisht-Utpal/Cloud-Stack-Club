@@ -847,7 +847,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                       Cloud Stack <span className="text-blue-600 dark:text-sky-400">Club</span>
                     </h3>
                     <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
-                      Admin Dashboard
+                      Admin Management Dashboard
                     </p>
                   </div>
                 </div>

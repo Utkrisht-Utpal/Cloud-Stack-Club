@@ -153,13 +153,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
 
           {/* Center: Desktop Navigation Links OR Admin Dashboard Title */}
           {isAdminDashboard ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-0.5 min-w-0 px-2">
-              <h1 className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white truncate leading-tight">
-                <span className="sm:hidden">Admin Dashboard</span>
-                <span className="hidden sm:inline">Admin Management Dashboard</span>
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-0.5 min-w-0 px-1">
+              <h1 className="text-[11px] min-[360px]:text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap leading-tight">
+                Admin Management Dashboard
               </h1>
               {adminName && (
-                <p className="text-[10px] sm:text-xs font-semibold text-blue-600 dark:text-sky-400 leading-tight mt-0.5 truncate max-w-full">
+                <p className="text-[10px] sm:text-xs font-semibold text-blue-600 dark:text-sky-400 leading-tight mt-0.5 whitespace-nowrap">
                   {getGreeting()}, <span className="font-bold text-slate-800 dark:text-slate-200">{adminName}</span> 👋
                 </p>
               )}
