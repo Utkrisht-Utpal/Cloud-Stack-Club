@@ -1,4 +1,4 @@
-import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
 
 export interface TurnstileWidgetRef {
   reset: () => void;
@@ -29,11 +29,60 @@ declare global {
       reset: (widgetId?: string) => void;
       remove: (widgetId?: string) => void;
     };
+    __turnstileScriptLoading?: boolean;
   }
 }
 
+const TURNSTILE_SCRIPT_ID = 'cf-turnstile-script';
+const TURNSTILE_SCRIPT_SRC =
+  'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+
 /**
- * Global helper to reset any active Turnstile challenge immediately on error
+ * Lazily injects the Cloudflare Turnstile <script> into <head> on first call.
+ * Safe to call multiple times — only one script tag will ever be added.
+ * Returns a Promise that resolves when window.turnstile is ready.
+ */
+export const loadTurnstileScript = (): Promise<void> => {
+  return new Promise((resolve) => {
+    // Already fully loaded
+    if (window.turnstile) {
+      resolve();
+      return;
+    }
+
+    // Script tag already in DOM — just wait for it
+    if (document.getElementById(TURNSTILE_SCRIPT_ID)) {
+      const poll = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(poll);
+          resolve();
+        }
+      }, 100);
+      return;
+    }
+
+    // First time: create the script tag
+    const script = document.createElement('script');
+    script.id = TURNSTILE_SCRIPT_ID;
+    script.src = TURNSTILE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      // Poll briefly until window.turnstile is populated
+      const poll = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(poll);
+          resolve();
+        }
+      }, 50);
+    };
+    script.onerror = () => resolve(); // Resolve anyway; widget will handle the missing API
+    document.head.appendChild(script);
+  });
+};
+
+/**
+ * Global helper to reset any active Turnstile challenge immediately on error.
  */
 export const resetTurnstile = (widgetId?: string) => {
   if (typeof window !== 'undefined' && window.turnstile) {
@@ -55,7 +104,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
     const widgetIdRef = useRef<string | null>(null);
     const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 
-    const handleReset = () => {
+    const handleReset = useCallback(() => {
       if (widgetIdRef.current && window.turnstile) {
         try {
           window.turnstile.reset(widgetIdRef.current);
@@ -67,7 +116,7 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
           window.turnstile.reset();
         } catch {}
       }
-    };
+    }, []);
 
     useImperativeHandle(ref, () => ({
       reset: handleReset,
@@ -78,22 +127,22 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
       if (resetTrigger !== undefined && resetTrigger > 0) {
         handleReset();
       }
-    }, [resetTrigger]);
+    }, [resetTrigger, handleReset]);
 
     useEffect(() => {
       if (!siteKey || !containerRef.current) return;
 
       let isMounted = true;
-      let checkInterval: ReturnType<typeof setInterval>;
 
       const renderWidget = () => {
         if (!isMounted || !containerRef.current || !window.turnstile) return;
 
-        // Clear any previous render
+        // Clear any previous render in this container
         if (widgetIdRef.current) {
           try {
             window.turnstile.remove(widgetIdRef.current);
           } catch {}
+          widgetIdRef.current = null;
         }
 
         try {
@@ -116,31 +165,21 @@ export const TurnstileWidget = forwardRef<TurnstileWidgetRef, TurnstileWidgetPro
         }
       };
 
-      if (window.turnstile) {
-        renderWidget();
-      } else {
-        // Poll until Turnstile script loads
-        let attempts = 0;
-        checkInterval = setInterval(() => {
-          attempts++;
-          if (window.turnstile) {
-            clearInterval(checkInterval);
-            renderWidget();
-          } else if (attempts > 20) {
-            clearInterval(checkInterval);
-          }
-        }, 250);
-      }
+      // Load the script lazily (no-op if already loaded), then render
+      loadTurnstileScript().then(() => {
+        if (isMounted) renderWidget();
+      });
 
       return () => {
         isMounted = false;
-        if (checkInterval) clearInterval(checkInterval);
         if (widgetIdRef.current && window.turnstile) {
           try {
             window.turnstile.remove(widgetIdRef.current);
           } catch {}
+          widgetIdRef.current = null;
         }
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [siteKey]);
 
     if (!siteKey) return null;

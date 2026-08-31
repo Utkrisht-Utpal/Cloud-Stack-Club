@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, MapPin, Send, CheckCircle2, Sparkles } from 'lucide-react';
 import { siteConfig } from '../../constants/siteConfig';
@@ -32,7 +32,14 @@ export const ContactSection: React.FC = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
+  // Turnstile is loaded lazily — only after the user interacts with the form
+  const [formTouched, setFormTouched] = useState(false);
   const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
+
+  /** Called on the first focus of any form field to trigger lazy Turnstile load */
+  const onFormTouch = useCallback(() => {
+    if (!formTouched) setFormTouched(true);
+  }, [formTouched]);
 
   const triggerErrorWithCooldown = (msg: string) => {
     setError(msg);
@@ -217,6 +224,7 @@ export const ContactSection: React.FC = () => {
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          onFocus={onFormTouch}
                           placeholder="e.g. Rahul Sharma"
                           className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
                         />
@@ -232,6 +240,7 @@ export const ContactSection: React.FC = () => {
                           required
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          onFocus={onFormTouch}
                           placeholder="e.g. rahul@example.com"
                           className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
                         />
@@ -248,6 +257,7 @@ export const ContactSection: React.FC = () => {
                         required
                         value={formData.message}
                         onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        onFocus={onFormTouch}
                         placeholder="Share your thoughts, suggestions, or feedback with us..."
                         className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all resize-none text-sm"
                       />
@@ -260,8 +270,10 @@ export const ContactSection: React.FC = () => {
                       onClose={() => setError(null)}
                     />
 
-                    {/* Cloudflare Turnstile */}
-                    <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
+                    {/* Cloudflare Turnstile — lazy: only mounts once user touches a field */}
+                    {formTouched && (
+                      <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
+                    )}
 
                     <Button
                       type="submit"
