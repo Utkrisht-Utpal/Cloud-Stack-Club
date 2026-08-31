@@ -38,6 +38,7 @@ import { EventPosterModal } from './EventPosterModal';
 import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { GalleryManagement } from './GalleryManagement';
+import { TeamMediaManagement } from './TeamMediaManagement';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { CustomSelect } from '../ui/CustomSelect';
 import { DatePicker } from '../ui/DatePicker';
@@ -113,6 +114,7 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = false, setMobileNavOpen }) => {
   const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
+  const [mediaViewTab, setMediaViewTab] = useState<'gallery' | 'team'>('gallery');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
 
@@ -955,7 +957,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   )}
                 </button>
 
-                {/* Event Gallery */}
+                {/* Media Management */}
                 <button
                   onClick={() => { setActiveTab('gallery'); setMobileNavOpen && setMobileNavOpen(false); }}
                   className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
@@ -969,7 +971,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   }`}>
                     <Camera className="w-5 h-5" />
                   </div>
-                  <span className="truncate flex-1 font-extrabold text-sm">Event Gallery</span>
+                  <span className="truncate flex-1 font-extrabold text-sm">Media Management</span>
                 </button>
               </div>
             </motion.div>
@@ -1053,7 +1055,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             }`}
           >
             <Camera className="w-4 h-4" />
-            <span>Event Gallery</span>
+            <span>Media Management</span>
           </button>
         </div>
 
@@ -2021,9 +2023,94 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           </div>
         )}
 
-        {/* Tab Content 6: Event Gallery Management */}
+        {/* Tab Content 6: Media Management (Event Gallery + Our Team) */}
         {activeTab === 'gallery' && (
-          <GalleryManagement events={eventsList} />
+          <div className="space-y-4 sm:space-y-6">
+            {/* 2 Interactive Overview & View Switcher Cards (Matching Image 1) */}
+            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                      Media Management
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Manage visual media across the club, including Event Gallery albums and executive Core Team profiles.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2 Switcher Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {/* Card 1: EVENT GALLERY */}
+                <button
+                  type="button"
+                  onClick={() => setMediaViewTab('gallery')}
+                  className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[110px] ${
+                    mediaViewTab === 'gallery'
+                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                      : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                      EVENT GALLERY
+                    </span>
+                    <div className="w-8 h-8 rounded-full bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+                      <Camera className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                      {eventsList.length}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      Event Albums
+                    </span>
+                  </div>
+                </button>
+
+                {/* Card 2: OUR TEAM */}
+                <button
+                  type="button"
+                  onClick={() => setMediaViewTab('team')}
+                  className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[110px] ${
+                    mediaViewTab === 'team'
+                      ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
+                      : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                      OUR TEAM
+                    </span>
+                    <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center">
+                      <Users className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                      {membersList.filter((m) => m.is_core_member).length}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                      Core Members
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Sub-view rendering */}
+            {mediaViewTab === 'gallery' ? (
+              <GalleryManagement events={eventsList} />
+            ) : (
+              <TeamMediaManagement />
+            )}
+          </div>
         )}
 
         {/* Create Event Modal */}

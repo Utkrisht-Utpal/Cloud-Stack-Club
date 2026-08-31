@@ -1,6 +1,6 @@
 import React from 'react';
-import { TeamComingSoon } from '../components/coming-soon/TeamComingSoon';
+import { TeamSection } from '../components/team/TeamSection';
 
 export const TeamPage: React.FC = () => {
-  return <TeamComingSoon />;
+  return <TeamSection />;
 };
