@@ -26,6 +26,8 @@ import {
   RefreshCw,
   Camera,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import clubLogoImg from '../../assets/images/club-logo-transparent.png';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { VerificationDocModal } from './VerificationDocModal';
@@ -103,7 +105,12 @@ const getInitialEventFeedbacksCache = (): EventFeedback[] => {
   }
 };
 
-export const AdminDashboard: React.FC = () => {
+interface AdminDashboardProps {
+  mobileNavOpen?: boolean;
+  setMobileNavOpen?: (value: boolean | ((prev: boolean) => boolean)) => void;
+}
+
+export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = false, setMobileNavOpen }) => {
   const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
@@ -436,6 +443,18 @@ export const AdminDashboard: React.FC = () => {
       loadAllFeedbacks(),
     ]);
   }, []);
+
+  // Stabilize background behind the overlay by locking body scrolling
+  useEffect(() => {
+    if (mobileNavOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileNavOpen]);
 
   const [confirmModalConfig, setConfirmModalConfig] = useState<{
     isOpen: boolean;
@@ -800,97 +819,249 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-24 sm:pt-28 pb-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white pt-20 sm:pt-28 pb-16 px-3 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
 
-        {/* Management Navigation & Controls */}
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none min-w-0">
-            <button
-              onClick={() => setActiveTab('members')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTab === 'members'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
+        {/* ── Management Navigation ── */}
+
+        {/* MOBILE: Fullscreen Navigation Overlay — triggered by hamburger in Navbar */}
+        <AnimatePresence>
+          {mobileNavOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="sm:hidden fixed inset-0 z-50 w-full h-full bg-slate-50/65 dark:bg-slate-950/65 backdrop-blur-2xl text-slate-900 dark:text-white flex flex-col justify-between overflow-hidden"
             >
-              <Users className="w-4 h-4" />
-              <span>Members Management</span>
-              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
-                {membersList.length}
+              {/* Top Header */}
+              <div className="p-4 border-b border-slate-200/40 dark:border-slate-800/40 flex items-center justify-between bg-white/65 dark:bg-slate-900/65 backdrop-blur-xl shadow-sm shrink-0">
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={clubLogoImg}
+                    alt="Cloud Stack Club"
+                    className="w-9 h-9 object-contain shrink-0 drop-shadow-md"
+                  />
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                      Cloud Stack <span className="text-blue-600 dark:text-sky-400">Club</span>
+                    </h3>
+                    <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+                      Admin Dashboard
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setMobileNavOpen && setMobileNavOpen(false)}
+                  className="p-2.5 rounded-2xl bg-slate-100/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 hover:text-slate-900 dark:hover:text-white transition-all cursor-pointer shrink-0"
+                  aria-label="Close navigation menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Scrollable Navigation List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5 scrollbar-none">
+                {/* Members */}
+                <button
+                  onClick={() => { setActiveTab('members'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'members'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                  }`}>
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">Members Management</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
+                      activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                    }`}>
+                      {membersList.length}
+                    </span>
+                    {pendingApplications.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs bg-amber-400 text-slate-950 font-black">
+                        {pendingApplications.length}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Events */}
+                <button
+                  onClick={() => { setActiveTab('events'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'events'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                  }`}>
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">Events Management</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-black shrink-0 ${
+                    activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                  }`}>
+                    {eventsList.length}
+                  </span>
+                </button>
+
+                {/* Registration Form Builder */}
+                <button
+                  onClick={() => { setActiveTab('forms'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'forms'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'forms' ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  }`}>
+                    <FileSpreadsheet className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">Form Builder</span>
+                </button>
+
+                {/* Contact & Feedbacks */}
+                <button
+                  onClick={() => { setActiveTab('feedbacks'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'feedbacks'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                  }`}>
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">Contact &amp; Feedbacks</span>
+                  {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                    eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
+                    <span className="px-2.5 py-0.5 rounded-full text-xs bg-amber-400 text-slate-950 font-black shrink-0">
+                      {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                        eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Event Gallery */}
+                <button
+                  onClick={() => { setActiveTab('gallery'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'gallery'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'gallery' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                  }`}>
+                    <Camera className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">Event Gallery</span>
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* DESKTOP (sm+): Original horizontal scrollable tab bar */}
+        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none min-w-0">
+          <button
+            onClick={() => setActiveTab('members')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'members'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Members Management</span>
+            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
+              {membersList.length}
+            </span>
+            {pendingApplications.length > 0 && (
+              <span className="ml-0.5 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black" title={`${pendingApplications.length} pending application(s)`}>
+                {pendingApplications.length}
               </span>
-              {pendingApplications.length > 0 && (
-                <span className="ml-0.5 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black" title={`${pendingApplications.length} pending application(s)`}>
-                  {pendingApplications.length}
-                </span>
-              )}
-            </button>
+            )}
+          </button>
 
-            <button
-              onClick={() => setActiveTab('events')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTab === 'events'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Calendar className="w-4 h-4" />
-              <span>Events Management</span>
-              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                {eventsList.length}
+          <button
+            onClick={() => setActiveTab('events')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'events'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Events Management</span>
+            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              {eventsList.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('forms')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'forms'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Registration Form Builder</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('feedbacks')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'feedbacks'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <MessageSquare className="w-4 h-4" />
+            <span>Contact &amp; Feedbacks</span>
+            {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+              eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
+              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+                {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                  eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
               </span>
-            </button>
+            )}
+          </button>
 
-            <button
-              onClick={() => setActiveTab('forms')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTab === 'forms'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>Registration Form Builder</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('feedbacks')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTab === 'feedbacks'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span>Contact & Feedbacks</span>
-              {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
-                eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
-                <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
-                  {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
-                    eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('gallery')}
-              className={`px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
-                activeTab === 'gallery'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <Camera className="w-4 h-4" />
-              <span>Event Gallery</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setActiveTab('gallery')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'gallery'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Camera className="w-4 h-4" />
+            <span>Event Gallery</span>
+          </button>
         </div>
 
         {/* Tab Content: Unified Members Management */}
         {activeTab === 'members' && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
+          <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4 sm:space-y-6">
             {/* Header with Title & Sync Button */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5" />
@@ -905,11 +1076,11 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+              <div className="flex items-center gap-2 self-stretch sm:self-auto shrink-0 w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => setIsRolesCrudModalOpen(true)}
-                  className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="flex-1 sm:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                 >
                   <Shield className="w-3.5 h-3.5 text-blue-500" />
                   <span>Roles</span>
@@ -919,7 +1090,7 @@ export const AdminDashboard: React.FC = () => {
                   type="button"
                   onClick={handleSyncRecords}
                   disabled={isSyncingMembers}
-                  className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="flex-1 sm:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncingMembers ? 'animate-spin text-blue-500' : ''}`} />
                   <span>{isSyncingMembers ? 'Syncing...' : 'Sync Records'}</span>
@@ -928,12 +1099,12 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* 2 Interactive Overview & View Switcher Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Card 1: APPLICATIONS */}
               <button
                 type="button"
                 onClick={() => setMemberViewTab('applications')}
-                className={`p-5 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
                   memberViewTab === 'applications'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -967,7 +1138,7 @@ export const AdminDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setMemberViewTab('directory')}
-                className={`p-5 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
                   memberViewTab === 'directory'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -995,7 +1166,7 @@ export const AdminDashboard: React.FC = () => {
             {/* Unified Single Row Controls for Search, Filters, and Export Actions */}
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
               {/* Search Box (flex-1 - largest available space) */}
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
@@ -1006,11 +1177,11 @@ export const AdminDashboard: React.FC = () => {
                 />
               </div>
 
-              {/* Controls Group: Filters + Export Buttons in single row alignment */}
-              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-between lg:justify-end shrink-0">
+              {/* Controls Group: Filters + Export Buttons in single row alignment on desktop, responsive wrap on mobile */}
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap justify-between lg:justify-end w-full lg:w-auto shrink-0">
                 {/* Filter Pill Buttons (All, Member, Core Member) */}
                 {memberViewTab === 'directory' && (
-                  <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 overflow-x-auto scrollbar-none max-w-full shrink-0">
                     {(
                       [
                         { id: 'all', label: 'All', count: membersList.length },
@@ -1024,7 +1195,7 @@ export const AdminDashboard: React.FC = () => {
                           key={f.id}
                           type="button"
                           onClick={() => setMemberFilter(f.id)}
-                          className={`h-9 px-3 sm:px-3.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                          className={`h-9 px-2.5 sm:px-3.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
                             isActive
                               ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/50'
@@ -1047,11 +1218,11 @@ export const AdminDashboard: React.FC = () => {
                 )}
 
                 {/* Action Buttons: Excel & PDF */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                   <button
                     type="button"
                     onClick={handleExportMembersExcel}
-                    className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+                    className="flex-1 sm:flex-none h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
                     title="Download as Excel"
                   >
                     <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -1061,7 +1232,7 @@ export const AdminDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleExportMembersPdf}
-                    className="h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+                    className="flex-1 sm:flex-none h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
                     title="Download as PDF"
                   >
                     <FileText className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
@@ -1248,8 +1419,8 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Tab Content 3: Events Management */}
         {activeTab === 'events' && (
-          <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
               <div>
                 <h2 className="text-base font-bold">Club Events Management</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1257,9 +1428,9 @@ export const AdminDashboard: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap w-full sm:w-auto shrink-0 justify-between sm:justify-end">
                 {/* Event Filters Pill Group: All, Upcoming, Completed */}
-                <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 flex items-center gap-1">
+                <div className="p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 flex items-center gap-1 overflow-x-auto scrollbar-none max-w-full">
                   {(['all', 'upcoming', 'completed'] as const).map((filter) => {
                     const isActive = eventFilter === filter;
                     const labels: Record<string, string> = {
@@ -1272,7 +1443,7 @@ export const AdminDashboard: React.FC = () => {
                         key={filter}
                         type="button"
                         onClick={() => setEventFilter(filter)}
-                        className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${isActive
+                        className={`px-3 sm:px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer whitespace-nowrap ${isActive
                           ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
                           : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
                           }`}
@@ -1288,6 +1459,7 @@ export const AdminDashboard: React.FC = () => {
                   size="sm"
                   icon={<Plus className="w-4 h-4" />}
                   onClick={() => setIsCreateEventOpen(true)}
+                  className="w-full sm:w-auto justify-center"
                 >
                   Create New Event
                 </Button>
@@ -1295,7 +1467,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {loadingEvents ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
@@ -1338,11 +1510,11 @@ export const AdminDashboard: React.FC = () => {
               }
 
               return (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {filtered.map((evt) => (
                     <div
                       key={evt.id}
-                      className="p-5 rounded-3xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group"
+                      className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group"
                     >
                       {/* Vertical Instagram Poster Frame with Ambient Blur Fill */}
                       <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-700/60 shadow-md flex items-center justify-center">
@@ -1373,14 +1545,14 @@ export const AdminDashboard: React.FC = () => {
                         )}
 
                         {/* Registration Status & Category/Ongoing Badge Overlay */}
-                        <div className="absolute top-3 left-3 z-30 flex flex-col gap-1 items-start">
+                        <div className="absolute top-3 left-3 z-30 flex flex-col gap-1 items-start max-w-[calc(100%-80px)]">
                           {(() => {
                             const regActive = isRegistrationActive(evt);
                             const statusInfo = getEventStatusInfo(evt.date);
                             return (
                               <>
                                 <span
-                                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md ${regActive
+                                  className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg backdrop-blur-md truncate max-w-full ${regActive
                                     ? 'bg-emerald-500 text-white'
                                     : 'bg-slate-900/90 text-rose-300 border border-rose-500/30'
                                     }`}
@@ -1435,7 +1607,7 @@ export const AdminDashboard: React.FC = () => {
                       {/* Event Content Details */}
                       <div className="space-y-3 flex-1 flex flex-col justify-between">
                         <div className="space-y-2">
-                          <h3 className="font-black text-lg text-slate-900 dark:text-white tracking-tight leading-snug">
+                          <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-snug">
                             {evt.title}
                           </h3>
                           <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-medium">
@@ -1472,7 +1644,7 @@ export const AdminDashboard: React.FC = () => {
                         </div>
 
                         {/* Date, Time, Venue & PDF View */}
-                        <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex items-center justify-between gap-2">
+                        <div className="pt-3 border-t border-slate-200/80 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                           <div className="space-y-0.5 min-w-0">
                             <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300 font-bold truncate">
                               <span>📅 {evt.date ? new Date(evt.date).toLocaleDateString('en-GB') : 'TBD'}</span>
@@ -1488,12 +1660,12 @@ export const AdminDashboard: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0 self-stretch sm:self-auto justify-end">
                             {(evt.registration_enabled || hasEventRegistrations(evt)) && (
                               <button
                                 type="button"
                                 onClick={() => setViewRegsEvent(evt)}
-                                className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                className="flex-1 sm:flex-none justify-center px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                                 title="View registered students for this event"
                               >
                                 <Users className="w-3.5 h-3.5 text-blue-500" />
@@ -1529,7 +1701,7 @@ export const AdminDashboard: React.FC = () => {
 
         {/* Tab Content 5: Contact & Feedbacks Management */}
         {activeTab === 'feedbacks' && (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Header / Subtitle + Sync Button */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
@@ -1546,7 +1718,7 @@ export const AdminDashboard: React.FC = () => {
                 type="button"
                 onClick={handleSyncFeedbacks}
                 disabled={isSyncingFeedbacks}
-                className="h-10 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
+                className="w-full sm:w-auto h-10 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
               >
                 <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-sky-400 ${isSyncingFeedbacks ? 'animate-spin' : ''}`} />
                 <span>{isSyncingFeedbacks ? 'Syncing...' : 'Sync Feedbacks'}</span>
@@ -1554,12 +1726,12 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* 2 Interactive Overview & View Switcher Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Card 1: CONTACT FORM */}
               <button
                 type="button"
                 onClick={() => setFeedbackViewTab('contact')}
-                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
                   feedbackViewTab === 'contact'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -1593,7 +1765,7 @@ export const AdminDashboard: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFeedbackViewTab('event')}
-                className={`p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between h-28 sm:h-32 ${
+                className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
                   feedbackViewTab === 'event'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -1625,15 +1797,15 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Filter & Search Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
               {/* Status Filter Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+              <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-1 lg:pb-0 scrollbar-none -mx-1 px-1 max-w-full shrink-0">
                 {(['all', 'pending', 'in_progress', 'resolved', 'archived'] as const).map((st) => (
                   <button
                     key={st}
                     type="button"
                     onClick={() => setFeedbackFilter(st)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer shrink-0 ${
                       feedbackFilter === st
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                         : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60'
@@ -1644,10 +1816,10 @@ export const AdminDashboard: React.FC = () => {
                 ))}
               </div>
 
-              <div className="flex items-center gap-2.5 self-stretch sm:self-auto justify-end flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-2.5 flex-col sm:flex-row w-full lg:w-auto justify-end">
                 {/* Event Dropdown filter when in Event Feedback view */}
                 {feedbackViewTab === 'event' && (
-                  <div className="w-48 sm:w-56 shrink-0">
+                  <div className="w-full sm:w-56 shrink-0">
                     <CustomSelect
                       value={selectedFeedbackEvent}
                       onChange={(val) => setSelectedFeedbackEvent(val)}
@@ -1664,7 +1836,7 @@ export const AdminDashboard: React.FC = () => {
                 )}
 
                 {/* Search Box */}
-                <div className="relative flex-1 sm:w-60">
+                <div className="relative w-full sm:flex-1 sm:w-60">
                   <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
@@ -1679,7 +1851,7 @@ export const AdminDashboard: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleExportFeedbacksPdf}
-                  className="h-11 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center gap-2 cursor-pointer shrink-0"
+                  className="w-full sm:w-auto h-11 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
                   title="Download filtered feedbacks as PDF"
                 >
                   <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
@@ -1888,7 +2060,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Identical Width Side-by-Side 2-Column Media Upload Grid (Event Poster & Event PDF) */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Column 1: EVENT POSTER (IMAGE) */}
               <div className="min-w-0">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
@@ -2210,7 +2382,7 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Identical Width Side-by-Side 2-Column Media Upload Grid (Poster & PDF) */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Column 1: EVENT POSTER (IMAGE) */}
               <div className="min-w-0">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">

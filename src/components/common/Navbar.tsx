@@ -13,6 +13,8 @@ interface NavbarProps {
   onOpenJoinModal?: () => void;
   isAdminDashboard?: boolean;
   onAdminLogout?: () => void;
+  mobileNavOpen?: boolean;
+  onToggleMobileNav?: () => void;
 }
 
 const getGreeting = (): string => {
@@ -23,7 +25,7 @@ const getGreeting = (): string => {
   return 'Welcome';
 };
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboard, onAdminLogout }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboard, onAdminLogout, mobileNavOpen, onToggleMobileNav }) => {
   const { theme, toggleTheme } = useTheme();
   const { openAdminModal, isAdminLoggedIn, setShowDashboard, adminName } = useAdminAuth();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -118,23 +120,46 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-2">
-          {/* Left: Club Shield Logo (Image 1) */}
-          <Link
-            to="/"
-            className="flex items-center gap-3 focus:outline-none group cursor-pointer shrink-0"
-            aria-label="Cloud Stack Club Home"
-          >
-            <ClubLogo size="md" showText={true} />
-          </Link>
+          {/* Left: Hamburger (mobile admin) OR Club Logo (desktop admin / public) */}
+          {isAdminDashboard ? (
+            <>
+              {/* Mobile admin: hamburger icon in the logo slot */}
+              <button
+                onClick={onToggleMobileNav}
+                className="flex md:hidden items-center justify-center w-9 h-9 rounded-xl glass-panel text-slate-700 dark:text-slate-200 cursor-pointer shrink-0"
+                aria-label="Toggle navigation menu"
+              >
+                {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+
+              {/* Desktop admin: show the club logo */}
+              <Link
+                to="/"
+                className="hidden md:flex items-center gap-3 focus:outline-none group cursor-pointer shrink-0"
+                aria-label="Cloud Stack Club Home"
+              >
+                <ClubLogo size="md" showText={true} />
+              </Link>
+            </>
+          ) : (
+            <Link
+              to="/"
+              className="flex items-center gap-3 focus:outline-none group cursor-pointer shrink-0"
+              aria-label="Cloud Stack Club Home"
+            >
+              <ClubLogo size="md" showText={true} />
+            </Link>
+          )}
 
           {/* Center: Desktop Navigation Links OR Admin Dashboard Title */}
           {isAdminDashboard ? (
-            <div className="flex flex-col items-center justify-center shrink-0 text-center py-0.5">
-              <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white whitespace-nowrap leading-tight">
-                Admin Management Dashboard
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-0.5 min-w-0 px-2">
+              <h1 className="text-xs sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white truncate leading-tight">
+                <span className="sm:hidden">Admin Dashboard</span>
+                <span className="hidden sm:inline">Admin Management Dashboard</span>
               </h1>
               {adminName && (
-                <p className="text-[11px] sm:text-xs font-semibold text-blue-600 dark:text-sky-400 leading-tight mt-0.5">
+                <p className="text-[10px] sm:text-xs font-semibold text-blue-600 dark:text-sky-400 leading-tight mt-0.5 truncate max-w-full">
                   {getGreeting()}, <span className="font-bold text-slate-800 dark:text-slate-200">{adminName}</span> 👋
                 </p>
               )}
@@ -172,7 +197,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
             </nav>
           )}
 
-          {/* Right: CU Logo (Image 2) + Theme Toggle + Admin Login + Join Button */}
+          {/* Right: CU Logo (Image 2) + Theme Toggle + Admin Login + Join Button — desktop only */}
           <div className="hidden md:flex items-center gap-4">
             <CULogo size="sm" />
 
@@ -224,8 +249,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
             )}
           </div>
 
-          {/* Mobile Right Controls */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile Right Controls: theme toggle + icon-only logout (admin) OR hamburger (public) */}
+          <div className="flex md:hidden items-center gap-1.5 shrink-0">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-xl glass-panel text-slate-700 dark:text-slate-200 cursor-pointer"
@@ -234,14 +259,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
               {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
             </button>
 
-            {/* Admin Logout on mobile (replaces hamburger) */}
             {isAdminDashboard ? (
+              /* Admin: icon-only logout button */
               <button
                 onClick={onAdminLogout}
                 className="p-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer"
                 aria-label="Logout"
+                title="Logout"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-4 h-4" />
               </button>
             ) : (
               <button

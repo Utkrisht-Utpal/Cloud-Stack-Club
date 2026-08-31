@@ -26,6 +26,7 @@ export const MainLayout: React.FC = () => {
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [eventsList, setEventsList] = useState<Event[]>(() => {
     try {
       const cached = localStorage.getItem('csc_custom_events_list');
@@ -60,9 +61,14 @@ export const MainLayout: React.FC = () => {
       <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
         <ScrollToTop />
         <CloudBackground />
-        <Navbar isAdminDashboard={true} onAdminLogout={logout} />
+        <Navbar
+          isAdminDashboard={true}
+          onAdminLogout={logout}
+          mobileNavOpen={mobileNavOpen}
+          onToggleMobileNav={() => setMobileNavOpen((prev) => !prev)}
+        />
         <ErrorBoundary>
-          <AdminDashboard />
+          <AdminDashboard mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} />
         </ErrorBoundary>
         <Footer />
       </div>
