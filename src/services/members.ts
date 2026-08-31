@@ -4,6 +4,17 @@ import { generateUUID } from '../utils/uuid';
 import { formatPersonName } from '../utils/formatters';
 import type { Member, MemberApplicationPayload } from '../types/database';
 
+/**
+ * Safe public shape for a core member — only the 4 fields needed for
+ * the "Meet The Team" section. No emails, UIDs, phone numbers, or IDs.
+ */
+export interface CoreMember {
+  name: string;
+  department: string | null;
+  year: string | null;
+  role: { name: string | null };
+}
+
 const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
 
 const getInactiveMemberIds = (): string[] => {
@@ -195,7 +206,7 @@ export const rejectMemberApplicationService = async (
   }
 };
 
-export const getCoreMembers = async (): Promise<any[]> => {
+export const getCoreMembers = async (): Promise<CoreMember[]> => {
   if (!isSupabaseConfigured()) {
     return [];
   }
