@@ -46,6 +46,20 @@ export interface Member {
   role?: Role | null;
 }
 
+export interface CoreTeamMember {
+  id: string;
+  member_id: string;
+  name: string;
+  role: string | null;
+  department: string | null;
+  year: string | null;
+  description: string | null;
+  photo_url: string | null;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Event {
   id: string;
   title: string;
