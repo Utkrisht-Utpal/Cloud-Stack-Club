@@ -223,7 +223,7 @@ export const TeamMediaManagement: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/60 dark:border-slate-700/60 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
               <span>{refreshing ? 'Syncing...' : 'Sync Records'}</span>
@@ -285,10 +285,10 @@ export const TeamMediaManagement: React.FC = () => {
                         key={member.id}
                         type="button"
                         onClick={() => setSelectedMemberId(member.id)}
-                        className={`w-full p-3 rounded-xl transition-all flex items-center justify-between gap-3 text-left cursor-pointer ${
+                        className={`w-full p-3 rounded-xl transition-all flex items-center justify-between gap-3 text-left cursor-pointer group ${
                           isSelected
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-500/50 font-bold'
-                            : 'bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-800 dark:text-slate-200'
+                            : 'bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-800 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white'
                         }`}
                       >
                         {/* Member Name & Photo Indicator */}
@@ -311,7 +311,11 @@ export const TeamMediaManagement: React.FC = () => {
                             <div className="text-xs sm:text-sm font-extrabold truncate">
                               {member.name}
                             </div>
-                            <div className={`text-[11px] truncate ${isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                            <div className={`text-[11px] truncate ${
+                              isSelected
+                                ? 'text-blue-100'
+                                : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+                            }`}>
                               {member.role || 'Core Member'}
                             </div>
                           </div>
@@ -319,7 +323,9 @@ export const TeamMediaManagement: React.FC = () => {
 
                         {/* Department on the right */}
                         <div className={`text-right shrink-0 text-[11px] font-semibold ${
-                          isSelected ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'
+                          isSelected
+                            ? 'text-blue-100'
+                            : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'
                         }`}>
                           <div className="truncate max-w-[110px]">{member.department || 'N/A'}</div>
                           <div className="text-[10px] opacity-80">{member.year || ''}</div>
@@ -454,7 +460,7 @@ export const TeamMediaManagement: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setIsEditDescOpen(true)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-500/20 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-750 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                         title="Edit Description"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
