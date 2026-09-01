@@ -615,7 +615,14 @@ export default {
 
         // Size Caps
         const isPdf = folder === 'event-pdfs' || rawPath.startsWith('event-pdfs/');
-        const maxSizeBytes = isPdf ? 2 * 1024 * 1024 : 1 * 1024 * 1024;
+        const isTeamBanner = rawPath.startsWith('team-photos/banner_') || rawPath.includes('banner');
+        let maxSizeBytes = 1 * 1024 * 1024; // 1 MB default (member photos, event posters, gallery)
+
+        if (isTeamBanner) {
+          maxSizeBytes = 5 * 1024 * 1024; // 5 MB specifically for Meet Our Team Section Banner
+        } else if (isPdf) {
+          maxSizeBytes = 2 * 1024 * 1024; // 2 MB for Event schedule PDFs
+        }
 
         if (file.size > maxSizeBytes) {
           const maxMb = maxSizeBytes / (1024 * 1024);
@@ -646,7 +653,11 @@ export default {
         } else if (folder === 'event-pdfs' || rawPath.startsWith('event-pdfs/')) {
           safeStoragePath = `event-pdfs/schedules/${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
         } else if (folder === 'team-photos' || rawPath.startsWith('team-photos/')) {
-          safeStoragePath = `team-photos/${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
+          if (isTeamBanner) {
+            safeStoragePath = `team-photos/banner_${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
+          } else {
+            safeStoragePath = `team-photos/${timestamp}_${uniqueId.slice(0, 8)}.${detectedType}`;
+          }
         } else if (folder === 'event-gallery' || rawPath.startsWith('event-gallery/')) {
           let subfolder = 'general';
           if (rawPath.startsWith('event-gallery/')) {

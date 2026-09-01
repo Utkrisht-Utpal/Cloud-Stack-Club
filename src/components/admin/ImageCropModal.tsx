@@ -21,6 +21,7 @@ interface ImageCropModalProps {
   onCropComplete: (croppedFile: File) => void;
   memberName?: string;
   initialAspectRatio?: AspectRatioPreset;
+  maxOutputSizeBytes?: number;
 }
 
 export const ImageCropModal: React.FC<ImageCropModalProps> = ({
@@ -30,6 +31,7 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
   onCropComplete,
   memberName,
   initialAspectRatio = '4:5',
+  maxOutputSizeBytes = 1 * 1024 * 1024,
 }) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [aspectPreset, setAspectPreset] = useState<AspectRatioPreset>(initialAspectRatio);
@@ -302,8 +304,8 @@ export const ImageCropModal: React.FC<ImageCropModalProps> = ({
             return;
           }
 
-          if (blob.size > 1 * 1024 * 1024) {
-            // Re-compress slightly if over 1MB
+          if (blob.size > maxOutputSizeBytes) {
+            // Re-compress slightly if over target limit
             canvas.toBlob(
               (compressedBlob) => {
                 if (!compressedBlob) {

@@ -119,10 +119,24 @@ export const TeamMediaManagement: React.FC = () => {
     return teamMembers.find((m) => m.id === selectedMemberId) || null;
   }, [teamMembers, selectedMemberId, isBannerSelected]);
 
-  // Trigger file upload from local machine
+  // Trigger file upload from local machine (Max 5MB for Banner, Max 1MB for Member Photos)
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const maxAllowedSize = isBannerSelected ? 5 * 1024 * 1024 : 1 * 1024 * 1024;
+      const sizeLimitLabel = isBannerSelected ? '5 MB' : '1 MB';
+
+      if (file.size > maxAllowedSize) {
+        showToast(
+          `File size exceeds the allowed limit of ${sizeLimitLabel} for ${
+            isBannerSelected ? 'the team banner' : 'member profile photos'
+          }.`,
+          'error'
+        );
+        e.target.value = '';
+        return;
+      }
+
       setRawUploadFile(file);
       setIsCropModalOpen(true);
       e.target.value = '';
@@ -711,6 +725,7 @@ export const TeamMediaManagement: React.FC = () => {
           onCropComplete={handleCropComplete}
           memberName={isBannerSelected ? 'Team Page Banner' : selectedMember?.name}
           initialAspectRatio={isBannerSelected ? '16:9' : '4:5'}
+          maxOutputSizeBytes={isBannerSelected ? 5 * 1024 * 1024 : 1 * 1024 * 1024}
         />
       )}
 
