@@ -25,6 +25,7 @@ import {
   Shield,
   RefreshCw,
   Camera,
+  ArrowUp,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
@@ -116,6 +117,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
+  const [sortRecentMembers, setSortRecentMembers] = useState(false);
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -757,7 +759,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   };
 
   const filteredMembers = useMemo(() => {
-    return membersList.filter((m) => {
+    const list = membersList.filter((m) => {
       const query = memberSearch.toLowerCase().trim();
       const matchesSearch =
         !query ||
@@ -773,10 +775,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
       return true;
     });
-  }, [membersList, memberSearch, memberFilter]);
+
+    if (sortRecentMembers) {
+      return [...list].sort((a, b) => {
+        const dateA = new Date(a.created_at || a.joined_at || 0).getTime();
+        const dateB = new Date(b.created_at || b.joined_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+
+    return list;
+  }, [membersList, memberSearch, memberFilter, sortRecentMembers]);
 
   const filteredApplications = useMemo(() => {
-    return pendingApplications.filter((app) => {
+    const list = pendingApplications.filter((app) => {
       const query = memberSearch.toLowerCase().trim();
       const matchesSearch =
         !query ||
@@ -789,7 +801,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
       return true;
     });
-  }, [pendingApplications, memberSearch]);
+
+    if (sortRecentMembers) {
+      return [...list].sort((a, b) => {
+        const dateA = new Date(a.created_at || a.joined_at || 0).getTime();
+        const dateB = new Date(b.created_at || b.joined_at || 0).getTime();
+        return dateB - dateA;
+      });
+    }
+
+    return list;
+  }, [pendingApplications, memberSearch, sortRecentMembers]);
 
   const handleExportMembersExcel = () => {
     const currentMembers =
@@ -1293,7 +1315,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                        <th className="py-3.5 px-4 font-bold">MEMBER INFO</th>
+                        <th className="py-3.5 px-4 font-bold">
+                          <div className="flex items-center gap-1.5">
+                            <span>MEMBER INFO</span>
+                            <button
+                              type="button"
+                              onClick={() => setSortRecentMembers((prev) => !prev)}
+                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${
+                                sortRecentMembers
+                                  ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                              }`}
+                              title={sortRecentMembers ? 'Sorting: Most recent added first (click for A-Z)' : 'Click to sort by most recently added'}
+                              aria-label="Toggle sort by most recent members"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </th>
                         <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
                         <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
                         <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
@@ -1373,7 +1412,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                        <th className="py-3.5 px-4 font-bold">MEMBER INFO</th>
+                        <th className="py-3.5 px-4 font-bold">
+                          <div className="flex items-center gap-1.5">
+                            <span>MEMBER INFO</span>
+                            <button
+                              type="button"
+                              onClick={() => setSortRecentMembers((prev) => !prev)}
+                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${
+                                sortRecentMembers
+                                  ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                              }`}
+                              title={sortRecentMembers ? 'Sorting: Most recent added first (click for A-Z)' : 'Click to sort by most recently added'}
+                              aria-label="Toggle sort by most recent members"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </th>
                         <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
                         <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
                         <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
