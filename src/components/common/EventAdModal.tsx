@@ -339,7 +339,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                       ) : (
                         <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
                           <Ticket className="w-3.5 h-3.5" />
-                          <span>Max {activeAdEvent.max_registrations} seats available</span>
+                          <span>{Math.max(0, activeAdEvent.max_registrations - regCount)} seats available</span>
                         </span>
                       )
                     )}
