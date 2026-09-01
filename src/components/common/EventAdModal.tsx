@@ -226,7 +226,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Event Status Pill (First) */}
                   {statusInfo.type === 'ongoing' || diffDays === 0 ? (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider border bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm animate-pulse">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider border bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-sm animate-pulse">
                       <Sparkles className="w-3.5 h-3.5 text-current" />
                       <span>ONGOING EVENT</span>
                     </div>
