@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   Search,
-  Crop,
   Trash2,
   Edit3,
   RefreshCw,
