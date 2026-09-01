@@ -13,14 +13,15 @@ import {
   CheckCircle2, 
   Plus, 
   Trash2, 
-  ArrowRight
+  ArrowRight,
+  Ticket
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
 import { ErrorPopupModal } from './ErrorPopupModal';
 import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
-import { getFormForEvent } from '../../services/registrationForms';
+import { getFormForEvent, getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
 import { formatEventTime } from '../../utils/formatters';
 import type { Event, EventFormField, EventRegistration } from '../../types/database';
@@ -69,12 +70,14 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrationResult, setRegistrationResult] = useState<EventRegistration | null>(null);
+  const [isCapacityFull, setIsCapacityFull] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen && event) {
       setRegistrationResult(null);
       setError(null);
       resetCooldown();
+      setIsCapacityFull(false);
       setFormData({
         name: '',
         email: '',
@@ -87,6 +90,18 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       setTeamMembers([{ name: '', email: '', uid: '', phone: '' }]);
       setCustomAnswers({});
       setTurnstileToken('');
+
+      // Check current capacity
+      if (event.max_registrations) {
+        getEventRegistrationCountsMap()
+          .then((counts) => {
+            const current = counts[event.id.toLowerCase()] ?? 0;
+            if (current >= event.max_registrations!) {
+              setIsCapacityFull(true);
+            }
+          })
+          .catch(() => {});
+      }
 
       // Fetch dynamic custom form fields if configured for this event
       const loadEventForm = async () => {
@@ -136,6 +151,19 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     e.preventDefault();
     if (isCoolingDown || isSubmitting) return;
     setError(null);
+
+    // Guard against race conditions where capacity was filled while modal was open
+    if (event.max_registrations) {
+      try {
+        const counts = await getEventRegistrationCountsMap();
+        const current = counts[event.id.toLowerCase()] ?? 0;
+        if (current >= event.max_registrations) {
+          setIsCapacityFull(true);
+          triggerErrorWithCooldown('Registration for this event has reached full capacity.');
+          return;
+        }
+      } catch (err) {}
+    }
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.uid.trim()) {
       triggerErrorWithCooldown(
@@ -254,9 +282,41 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={registrationResult ? 'Registration Successful 🎉' : `Event Registration — ${event.title}`}
+      title={
+        isCapacityFull
+          ? `Registration Full — ${event.title}`
+          : registrationResult
+          ? 'Registration Successful 🎉'
+          : `Event Registration — ${event.title}`
+      }
     >
-      {registrationResult ? (
+      {isCapacityFull ? (
+        /* Capacity Reached Screen */
+        <div className="space-y-6 text-center py-6">
+          <div className="w-16 h-16 rounded-3xl bg-amber-500/15 text-amber-500 flex items-center justify-center mx-auto border border-amber-500/30 shadow-inner">
+            <Ticket className="w-8 h-8" />
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+              Registration Full • Capacity Reached
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
+              Registration for <span className="font-bold text-slate-900 dark:text-white">{event.title}</span> has reached its maximum capacity of {event.max_registrations} seats. No further registrations are being accepted.
+            </p>
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-extrabold transition-all cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      ) : registrationResult ? (
         /* Success Ticket Confirmation Screen */
         <div className="space-y-6 text-center py-4">
           <div className="w-16 h-16 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/30">

@@ -491,6 +491,24 @@ export default {
       }
     }
 
+    // E. PUBLIC AGGREGATED EVENT REGISTRATION COUNTS (Zero Student PII)
+    if (request.method === 'GET' && url.pathname === '/api/event-registration-counts') {
+      try {
+        const countsResult = await callSupabaseRpc(env, 'get_event_registration_counts', {});
+        return new Response(JSON.stringify(countsResult || {}), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+            'Cache-Control': 'public, max-age=15, stale-while-revalidate=30',
+          },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({}), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // -------------------------------------------------------------------------
     // 3. R2 MEDIA STORAGE OPERATIONS
     // -------------------------------------------------------------------------

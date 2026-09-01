@@ -467,23 +467,31 @@ export const getEventRegistrationCountsMap = async (): Promise<Record<string, nu
             }
           });
         }
-      } else {
-        // Fallback query if RPC not yet created
-        const { data } = await supabase
-          .from('event_registrations')
-          .select('event_id');
-
-        if (data) {
-          data.forEach((r) => {
-            if (r.event_id) {
-              const key = r.event_id.toLowerCase();
-              countsMap[key] = (countsMap[key] || 0) + 1;
-            }
-          });
-        }
       }
     } catch (e) {
-      console.warn('Error fetching registration counts map:', e);
+      console.warn('Error fetching registration counts map from Supabase RPC:', e);
+    }
+  }
+
+  // 2. Worker Gateway Fallback
+  if (Object.keys(countsMap).length === 0) {
+    const workerUrl = import.meta.env.VITE_MEDIA_WORKER_URL || '';
+    if (workerUrl) {
+      try {
+        const res = await fetch(`${workerUrl}/api/event-registration-counts`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            Object.keys(data).forEach((eventId) => {
+              if (eventId) {
+                countsMap[eventId.toLowerCase()] = Number(data[eventId]) || 0;
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching counts from worker gateway:', err);
+      }
     }
   }
 

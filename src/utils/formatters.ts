@@ -71,9 +71,19 @@ export const getEventStatusInfo = (dateStr?: string | null): EventStatusInfo => 
   }
 };
 
-export const isRegistrationActive = (evt?: any): boolean => {
+export const isRegistrationFull = (evt?: any, currentCount?: number): boolean => {
+  if (!evt || !evt.max_registrations || typeof currentCount !== 'number') return false;
+  return currentCount >= evt.max_registrations;
+};
+
+export const isRegistrationActive = (evt?: any, currentCount?: number): boolean => {
   if (!evt) return false;
   if (!evt.registration_enabled) return false;
+
+  // If maximum registration capacity has been reached
+  if (evt.max_registrations && typeof currentCount === 'number' && currentCount >= evt.max_registrations) {
+    return false;
+  }
 
   const now = new Date();
 
