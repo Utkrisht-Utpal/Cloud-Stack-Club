@@ -95,6 +95,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const lastActivityRef = useRef<number>(Date.now());
+  const verifiedAdminUserIdRef = useRef<string | null>(null);
 
   // Record user activity
   const recordActivity = useCallback(() => {
@@ -106,6 +107,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, []);
 
   const logout = useCallback(async () => {
+    verifiedAdminUserIdRef.current = null;
     setIsAdminLoggedIn(false);
     setAdminEmail(null);
     setAdminName(null);
@@ -189,11 +191,12 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
         // Check if inactive
         const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
-        const isInactive = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
+        const isInactive = lastActivity > 0 && Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
 
         if (session?.user && !isInactive) {
           const hasAdminPerms = await verifyIsAdmin(session.user);
           if (hasAdminPerms) {
+            verifiedAdminUserIdRef.current = session.user.id;
             setIsAdminLoggedIn(true);
             setAdminEmail(session.user.email || null);
             setAdminName(extractAdminName(session.user));
@@ -210,6 +213,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           // Auto logout on startup if inactive for > 5 min
           logout();
         } else {
+          verifiedAdminUserIdRef.current = null;
           setIsAdminLoggedIn(false);
           setAdminEmail(null);
           setAdminName(null);
@@ -232,7 +236,17 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const hasAdminPerms = await verifyIsAdmin(session.user);
+        // If this user was already verified as admin, retain verified status on background token refresh
+        const alreadyVerified = verifiedAdminUserIdRef.current === session.user.id;
+        let hasAdminPerms = alreadyVerified;
+
+        if (!alreadyVerified) {
+          hasAdminPerms = await verifyIsAdmin(session.user);
+          if (hasAdminPerms) {
+            verifiedAdminUserIdRef.current = session.user.id;
+          }
+        }
+
         if (hasAdminPerms) {
           setIsAdminLoggedIn(true);
           setAdminEmail(session.user.email || null);
@@ -244,13 +258,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             } catch {}
             recordActivity();
           }
-        } else {
+        } else if (event === 'SIGNED_IN') {
+          verifiedAdminUserIdRef.current = null;
           setIsAdminLoggedIn(false);
           setAdminEmail(null);
           setAdminName(null);
           setShowDashboard(false);
         }
       } else {
+        verifiedAdminUserIdRef.current = null;
         setIsAdminLoggedIn(false);
         setAdminEmail(null);
         setAdminName(null);

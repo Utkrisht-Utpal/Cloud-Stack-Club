@@ -56,6 +56,31 @@ export const MainLayout: React.FC = () => {
   const handleOpenJoinModal = () => setJoinModalOpen(true);
   const handleCloseJoinModal = () => setJoinModalOpen(false);
 
+  // Check if admin dashboard was active prior to page reload
+  const wasAdminDashboardActive = (() => {
+    try {
+      return localStorage.getItem('csc_admin_dashboard_active') === 'true';
+    } catch {
+      return false;
+    }
+  })();
+
+  // While session is being verified on page reload:
+  // If the admin dashboard was active, render a clean loading screen to prevent flashing public UI & popup
+  if (isLoading && wasAdminDashboardActive) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden select-none">
+        <CloudBackground />
+        <div className="relative z-10 flex flex-col items-center space-y-4 text-center p-6">
+          <div className="w-10 h-10 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-400 tracking-wider uppercase">
+            Loading Admin Panel...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoading && showDashboard && isAdminLoggedIn) {
     return (
       <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
