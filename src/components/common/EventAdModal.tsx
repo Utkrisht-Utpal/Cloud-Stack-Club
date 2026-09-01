@@ -312,43 +312,45 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   </div>
                 </div>
 
-                {/* Additional Details Badges */}
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {activeAdEvent.supports_teams && (
-                    <span className="px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5">
-                      <Users2 className="w-3.5 h-3.5" />
-                      <span>Teams (Max {activeAdEvent.max_team_size || 4} members)</span>
-                    </span>
-                  )}
-
-                  {activeAdEvent.max_registrations && (
-                    isCapacityFull ? (
-                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5 border border-amber-500/30">
-                        <Ticket className="w-3.5 h-3.5" />
-                        <span>Capacity Full ({activeAdEvent.max_registrations} seats filled)</span>
+                {/* Additional Details Badges (Only shown for upcoming / registration-active events, hidden when ongoing or in feedback window) */}
+                {!isFeedbackActive && (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {activeAdEvent.supports_teams && (
+                      <span className="px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5">
+                        <Users2 className="w-3.5 h-3.5" />
+                        <span>Teams (Max {activeAdEvent.max_team_size || 4} members)</span>
                       </span>
-                    ) : (
-                      <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
-                        <Ticket className="w-3.5 h-3.5" />
-                        <span>Max {activeAdEvent.max_registrations} seats available</span>
+                    )}
+
+                    {activeAdEvent.max_registrations && (
+                      isCapacityFull ? (
+                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5 border border-amber-500/30">
+                          <Ticket className="w-3.5 h-3.5" />
+                          <span>Capacity Full ({activeAdEvent.max_registrations} seats filled)</span>
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
+                          <Ticket className="w-3.5 h-3.5" />
+                          <span>Max {activeAdEvent.max_registrations} seats available</span>
+                        </span>
+                      )
+                    )}
+
+                    {activeAdEvent.registration_enabled && regStartFormatted && (
+                      <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 text-[11px] font-semibold flex items-center gap-1.5">
+                        <Timer className="w-3.5 h-3.5" />
+                        <span>Registration Starts: {regStartFormatted}</span>
                       </span>
-                    )
-                  )}
+                    )}
 
-                  {activeAdEvent.registration_enabled && regStartFormatted && (
-                    <span className="px-2.5 py-1 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 text-[11px] font-semibold flex items-center gap-1.5">
-                      <Timer className="w-3.5 h-3.5" />
-                      <span>Registration Starts: {regStartFormatted}</span>
-                    </span>
-                  )}
-
-                  {activeAdEvent.registration_enabled && regEndFormatted && (
-                    <span className="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[11px] font-semibold flex items-center gap-1.5">
-                      <Timer className="w-3.5 h-3.5" />
-                      <span>Registration Ends: {regEndFormatted}</span>
-                    </span>
-                  )}
-                </div>
+                    {activeAdEvent.registration_enabled && regEndFormatted && (
+                      <span className="px-2.5 py-1 rounded-xl bg-rose-500/15 text-rose-600 dark:text-rose-400 text-[11px] font-semibold flex items-center gap-1.5">
+                        <Timer className="w-3.5 h-3.5" />
+                        <span>Registration Ends: {regEndFormatted}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}
