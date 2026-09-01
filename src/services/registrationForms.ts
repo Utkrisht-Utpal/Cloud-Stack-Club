@@ -44,10 +44,6 @@ export const getFormForEvent = async (eventId: string): Promise<EventRegistratio
       .maybeSingle();
 
     if (formError || !formData) {
-      // Auto-sync: If cached form exists with fields, push to Supabase DB now
-      if (cachedForm && cachedForm.fields && cachedForm.fields.length > 0) {
-        saveFormForEvent(eventId, cachedForm.fields, cachedForm.title, cachedForm.description || undefined);
-      }
       return cachedForm;
     }
 
@@ -58,20 +54,14 @@ export const getFormForEvent = async (eventId: string): Promise<EventRegistratio
       .eq('form_id', (formData as any).id)
       .order('display_order', { ascending: true });
 
-    let fieldsList = (fieldsData as EventFormField[]) || [];
-
-    // If Supabase has form record but no fields, and cachedForm has fields, auto-sync cached fields to DB!
-    if (fieldsList.length === 0 && cachedForm && cachedForm.fields && cachedForm.fields.length > 0) {
-      saveFormForEvent(eventId, cachedForm.fields, formData.title, formData.description || undefined);
-      fieldsList = cachedForm.fields;
-    }
+    const fieldsList = (fieldsData as EventFormField[]) || [];
 
     const fullForm: EventRegistrationForm = {
       ...(formData as EventRegistrationForm),
       fields: fieldsList,
     };
 
-    // Update local cache
+    // Update local read cache
     localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(fullForm));
 
     return fullForm;
@@ -81,28 +71,12 @@ export const getFormForEvent = async (eventId: string): Promise<EventRegistratio
   }
 };
 
+/**
+ * No-op: Removed automatic push of unauthenticated client localStorage to database
+ * to prevent unauthorized state manipulation and ensure least-privilege explicit saves.
+ */
 export const syncAllLocalFormsToSupabase = async (): Promise<void> => {
-  if (!isSupabaseConfigured()) return;
-
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(LOCAL_FORM_PREFIX)) {
-        const eventId = key.replace(LOCAL_FORM_PREFIX, '');
-        const val = localStorage.getItem(key);
-        if (val) {
-          try {
-            const formObj: EventRegistrationForm = JSON.parse(val);
-            if (formObj && formObj.fields && formObj.fields.length > 0) {
-              await saveFormForEvent(eventId, formObj.fields, formObj.title, formObj.description || undefined);
-            }
-          } catch (e) {}
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('Error syncing local forms to Supabase:', err);
-  }
+  // Deliberately no-op for security. Form definitions are saved via explicit admin action.
 };
 
 export const saveFormForEvent = async (

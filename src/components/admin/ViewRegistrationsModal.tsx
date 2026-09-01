@@ -18,7 +18,17 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { sanitizeFormulaValue } from '../../utils/exportDirectory';
 import type { Event, EventRegistration, EventFormField } from '../../types/database';
+
+/**
+ * Validates that a string is a safe HTTP or HTTPS URL to prevent Stored XSS via javascript: or data: URIs.
+ */
+const isValidHttpUrl = (str: string): boolean => {
+  if (!str || typeof str !== 'string') return false;
+  const trimmed = str.trim().toLowerCase();
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
+};
 
 interface ViewRegistrationsModalProps {
   isOpen: boolean;
@@ -126,24 +136,24 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       const regAnswers = answersMap[r.id] || {};
 
       // Custom questions column dictionary for this registration
-      const customAnswersDict: Record<string, string> = {};
+      const customAnswersDict: Record<string, any> = {};
       formFields.forEach((field) => {
         const ansVal = regAnswers[field.id] || regAnswers[field.field_key] || '';
-        customAnswersDict[field.label] = ansVal;
+        customAnswersDict[field.label] = sanitizeFormulaValue(ansVal);
       });
 
       if (teamInfo && teamInfo.members && teamInfo.members.length > 0) {
         // 1. Team Leader Row
         exportRows.push({
           'S.No': serialNo,
-          'Registration No': r.registration_number || '',
-          'Team Reg ID': teamInfo.registration_number || '',
-          'Team Name': teamInfo.team_name || '',
+          'Registration No': sanitizeFormulaValue(r.registration_number || ''),
+          'Team Reg ID': sanitizeFormulaValue(teamInfo.registration_number || ''),
+          'Team Name': sanitizeFormulaValue(teamInfo.team_name || ''),
           'Member Role': 'Team Leader',
-          'Member Name': r.registrant_name || '',
-          'Email': r.registrant_email || '',
-          'Phone': r.registrant_phone || '',
-          'University UID': r.uid || '',
+          'Member Name': sanitizeFormulaValue(r.registrant_name || ''),
+          'Email': sanitizeFormulaValue(r.registrant_email || ''),
+          'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
+          'University UID': sanitizeFormulaValue(r.uid || ''),
           ...customAnswersDict,
           'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
         });
@@ -157,14 +167,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
           exportRows.push({
             'S.No': '',
-            'Registration No': m.registration_number || '',
-            'Team Reg ID': teamInfo.registration_number || '',
-            'Team Name': teamInfo.team_name || '',
+            'Registration No': sanitizeFormulaValue(m.registration_number || ''),
+            'Team Reg ID': sanitizeFormulaValue(teamInfo.registration_number || ''),
+            'Team Name': sanitizeFormulaValue(teamInfo.team_name || ''),
             'Member Role': `Teammate #${mIdx + 2}`,
-            'Member Name': m.name || '',
-            'Email': m.email || '',
-            'Phone': m.phone || '',
-            'University UID': m.uid || '',
+            'Member Name': sanitizeFormulaValue(m.name || ''),
+            'Email': sanitizeFormulaValue(m.email || ''),
+            'Phone': sanitizeFormulaValue(m.phone || ''),
+            'University UID': sanitizeFormulaValue(m.uid || ''),
             ...blankCustomDict,
             'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
           });
@@ -173,14 +183,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         // Individual Registrant Row
         exportRows.push({
           'S.No': serialNo,
-          'Registration No': r.registration_number || '',
+          'Registration No': sanitizeFormulaValue(r.registration_number || ''),
           'Team Reg ID': '',
           'Team Name': '',
           'Member Role': 'Individual Registrant',
-          'Member Name': r.registrant_name || '',
-          'Email': r.registrant_email || '',
-          'Phone': r.registrant_phone || '',
-          'University UID': r.uid || '',
+          'Member Name': sanitizeFormulaValue(r.registrant_name || ''),
+          'Email': sanitizeFormulaValue(r.registrant_email || ''),
+          'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
+          'University UID': sanitizeFormulaValue(r.uid || ''),
           ...customAnswersDict,
           'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
         });
@@ -564,12 +574,12 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                             {field.label}
                           </div>
                           <div className="text-sm font-medium text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 whitespace-pre-wrap">
-                            {field.field_type === 'url' && ansVal !== 'Not answered' ? (
-                              <a href={ansVal} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            {field.field_type === 'url' && ansVal !== 'Not answered' && isValidHttpUrl(ansVal) ? (
+                              <a href={ansVal} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-sky-400 hover:underline break-all">
                                 {ansVal}
                               </a>
                             ) : (
-                              ansVal
+                              <span className="break-all">{ansVal}</span>
                             )}
                           </div>
                         </div>

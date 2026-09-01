@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from '../ui/CustomSelect';
 import { Modal } from '../ui/Modal';
-import { getFormForEvent, saveFormForEvent, syncAllLocalFormsToSupabase } from '../../services/registrationForms';
+import { getFormForEvent, saveFormForEvent } from '../../services/registrationForms';
 import type { Event, EventFormField, FieldType } from '../../types/database';
 
 interface EventFormBuilderProps {
@@ -72,10 +72,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
-    syncAllLocalFormsToSupabase();
-  }, []);
-
-  useEffect(() => {
     if (propSelectedEventId) {
       setSelectedEventId(propSelectedEventId);
     }
@@ -92,10 +88,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
       const form = await getFormForEvent(eventId);
       if (form && form.fields && form.fields.length > 0) {
         setFields(form.fields);
-        // Ensure form is synced to Supabase DB
-        const selectedEvt = events.find((e) => e.id === eventId);
-        const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
-        saveFormForEvent(eventId, form.fields, formTitle);
       } else {
         setFields([]);
       }

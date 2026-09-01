@@ -52,29 +52,43 @@ const extractAdminName = (user: any): string | null => {
   return null;
 };
 
-export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Synchronous initialization for smooth refresh persistence (with 5-minute inactivity check)
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    try {
-      const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
-      const isExpired = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
-      if (isExpired) return false;
-      return localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
-    } catch {
-      return false;
+/**
+ * Server-side verification that the authenticated user actually has administrator rights.
+ * Checks app_metadata role claims, database is_admin() RPC, and admin_users table.
+ */
+const verifyIsAdmin = async (user: any): Promise<boolean> => {
+  if (!user || !user.id) return false;
+  try {
+    // 1. Check server-controlled app_metadata (tamper-proof JWT claim)
+    const appMeta = user.app_metadata || {};
+    if (appMeta.is_admin === true || appMeta.role === 'admin') {
+      return true;
     }
-  });
 
-  const [showDashboard, setShowDashboard] = useState<boolean>(() => {
-    try {
-      const lastActivity = parseInt(localStorage.getItem(STORAGE_KEY_LAST_ACTIVITY) || '0', 10);
-      const isExpired = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
-      if (isExpired) return false;
-      return localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
-    } catch {
-      return false;
+    // 2. Query database is_admin() function
+    const { data: isAdminResult, error: rpcError } = await supabase.rpc('is_admin');
+    if (!rpcError && isAdminResult === true) {
+      return true;
     }
-  });
+
+    // 3. Query admin_users allowlist table
+    const { data: adminRecord } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    return !!adminRecord;
+  } catch (err) {
+    console.warn('Admin permission verification check failed:', err);
+    return false;
+  }
+};
+
+export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Gated initialization: always false until verified cryptographic session check completes
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(false);
+  const [showDashboard, setShowDashboard] = useState<boolean>(false);
 
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
   const [adminName, setAdminName] = useState<string | null>(null);
@@ -168,7 +182,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Check existing session on startup
     supabase.auth
       .getSession()
-      .then(({ data: { session }, error }) => {
+      .then(async ({ data: { session }, error }) => {
         if (error) {
           console.warn('Session check notice:', error.message);
         }
@@ -178,14 +192,20 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const isInactive = !lastActivity || Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS;
 
         if (session?.user && !isInactive) {
-          setIsAdminLoggedIn(true);
-          setAdminEmail(session.user.email || null);
-          setAdminName(extractAdminName(session.user));
-          const wasActive = localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
-          if (wasActive) {
-            setShowDashboard(true);
+          const hasAdminPerms = await verifyIsAdmin(session.user);
+          if (hasAdminPerms) {
+            setIsAdminLoggedIn(true);
+            setAdminEmail(session.user.email || null);
+            setAdminName(extractAdminName(session.user));
+            const wasActive = localStorage.getItem(STORAGE_KEY_SHOW_DASHBOARD) === 'true';
+            if (wasActive) {
+              setShowDashboard(true);
+            }
+            recordActivity();
+          } else {
+            console.warn('Authenticated user lacks administrator privileges.');
+            await logout();
           }
-          recordActivity();
         } else if (isInactive && session?.user) {
           // Auto logout on startup if inactive for > 5 min
           logout();
@@ -210,17 +230,25 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Subscribe to live auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setIsAdminLoggedIn(true);
-        setAdminEmail(session.user.email || null);
-        setAdminName(extractAdminName(session.user));
-        if (event === 'SIGNED_IN') {
-          setShowDashboard(true);
-          try {
-            localStorage.setItem(STORAGE_KEY_SHOW_DASHBOARD, 'true');
-          } catch {}
-          recordActivity();
+        const hasAdminPerms = await verifyIsAdmin(session.user);
+        if (hasAdminPerms) {
+          setIsAdminLoggedIn(true);
+          setAdminEmail(session.user.email || null);
+          setAdminName(extractAdminName(session.user));
+          if (event === 'SIGNED_IN') {
+            setShowDashboard(true);
+            try {
+              localStorage.setItem(STORAGE_KEY_SHOW_DASHBOARD, 'true');
+            } catch {}
+            recordActivity();
+          }
+        } else {
+          setIsAdminLoggedIn(false);
+          setAdminEmail(null);
+          setAdminName(null);
+          setShowDashboard(false);
         }
       } else {
         setIsAdminLoggedIn(false);
@@ -268,6 +296,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
 
       if (data?.user) {
+        const hasAdminPerms = await verifyIsAdmin(data.user);
+        if (!hasAdminPerms) {
+          await supabase.auth.signOut();
+          return {
+            success: false,
+            error: 'Access denied: You do not have administrator permissions.',
+          };
+        }
+
         recordActivity();
         setIsAdminLoggedIn(true);
         setAdminEmail(data.user.email || cleanEmail);

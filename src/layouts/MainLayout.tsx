@@ -36,7 +36,7 @@ export const MainLayout: React.FC = () => {
     }
   });
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
-  const { showDashboard, logout } = useAdminAuth();
+  const { showDashboard, isAdminLoggedIn, isLoading, logout } = useAdminAuth();
 
   useEffect(() => {
     // Prioritized direct DB fetch (takes ~150ms) for 100% accurate live event popup
@@ -56,7 +56,7 @@ export const MainLayout: React.FC = () => {
   const handleOpenJoinModal = () => setJoinModalOpen(true);
   const handleCloseJoinModal = () => setJoinModalOpen(false);
 
-  if (showDashboard) {
+  if (!isLoading && showDashboard && isAdminLoggedIn) {
     return (
       <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
         <ScrollToTop />

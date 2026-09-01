@@ -37,7 +37,13 @@ export const VerificationDocModal: React.FC<VerificationDocModalProps> = ({
       ? filePath
       : `${R2_FOLDERS.REGISTRATION_FILES}/${filePath.replace(/^\/+/, '')}`;
     const url = resolveMediaUrl(cleanPath);
-    setDocUrl(url);
+
+    // Validate safe URL scheme
+    if (url && (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('blob:'))) {
+      setDocUrl(url);
+    } else {
+      setDocUrl(null);
+    }
     setLoading(false);
   }, [filePath, isOpen]);
 
@@ -57,7 +63,12 @@ export const VerificationDocModal: React.FC<VerificationDocModalProps> = ({
           <div className="space-y-4">
             {isPdf ? (
               <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl overflow-hidden h-[650px] shadow-inner bg-slate-950">
-                <iframe src={docUrl} className="w-full h-full" title="PDF Verification Preview" />
+                <iframe
+                  src={docUrl}
+                  className="w-full h-full"
+                  title="PDF Verification Preview"
+                  sandbox="allow-same-origin allow-scripts"
+                />
               </div>
             ) : (
               <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl overflow-hidden bg-slate-950 flex items-center justify-center p-3 min-h-[400px] max-h-[70vh] shadow-inner">

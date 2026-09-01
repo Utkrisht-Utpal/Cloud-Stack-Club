@@ -88,7 +88,16 @@ export const extractR2Path = (fullPathOrUrl: string): string => {
     clean = clean.replace(R2_PUBLIC_URL, '').replace(/^\/+/, '');
   }
 
-  return clean.replace(/^\/+/, '');
+  clean = clean.replace(/^\/+/, '');
+
+  // Normalize legacy relative paths (e.g. 'schedules/...' -> 'event-pdfs/schedules/...')
+  if (clean.startsWith('schedules/')) {
+    clean = `event-pdfs/${clean}`;
+  } else if (clean.startsWith('posters/')) {
+    clean = `event-images/${clean}`;
+  }
+
+  return clean;
 };
 
 /**
@@ -177,11 +186,21 @@ export const getR2PublicUrl = (folder: string, path: string): string => {
 export const resolveMediaUrl = (pathOrUrl: string | null): string => {
   if (!pathOrUrl) return '';
 
+  // Only allow authentic image data URIs or local object blobs
   if (
-    pathOrUrl.startsWith('data:') ||
+    pathOrUrl.startsWith('data:image/jpeg;base64,') ||
+    pathOrUrl.startsWith('data:image/png;base64,') ||
+    pathOrUrl.startsWith('data:image/webp;base64,') ||
     pathOrUrl.startsWith('blob:')
   ) {
     return pathOrUrl;
+  }
+
+  // Reject potentially dangerous protocols immediately
+  const lower = pathOrUrl.toLowerCase().trim();
+  if (lower.startsWith('javascript:') || lower.startsWith('data:')) {
+    console.warn('Blocked unsafe URL scheme:', pathOrUrl);
+    return '';
   }
 
   // If already an R2 URL (or old R2 URL), extract the object key and route through active R2_PUBLIC_URL

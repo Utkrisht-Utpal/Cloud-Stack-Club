@@ -474,40 +474,96 @@ export const updateEventAdmin = async (
   return (data || list[index] || eventPayload) as Event;
 };
 
-export const deleteEventPosterAdmin = async (eventId: string): Promise<boolean> => {
+export const deleteEventPosterAdmin = async (
+  eventId: string,
+  currentImageUrl?: string | null
+): Promise<boolean> => {
+  let imageUrl = currentImageUrl;
   const list = getLocalCustomEvents();
   const index = list.findIndex((e) => e.id === eventId);
   if (index !== -1) {
+    if (!imageUrl) imageUrl = list[index].image_url;
     list[index].image_url = null;
     localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(list));
   }
 
-  if (!isSupabaseConfigured()) return true;
+  if (isSupabaseConfigured()) {
+    if (!imageUrl) {
+      try {
+        const { data } = await supabase.from('events').select('image_url').eq('id', eventId).maybeSingle();
+        if (data?.image_url) imageUrl = data.image_url;
+      } catch (err) {
+        console.warn('Could not fetch poster URL before deletion:', err);
+      }
+    }
 
-  const { error } = await supabase
-    .from('events')
-    .update({ image_url: null, updated_at: new Date().toISOString() })
-    .eq('id', eventId);
+    const { error } = await supabase
+      .from('events')
+      .update({ image_url: null, updated_at: new Date().toISOString() })
+      .eq('id', eventId);
 
-  return !error;
+    if (error) {
+      console.warn('Supabase poster update error:', error);
+      return false;
+    }
+  }
+
+  // Delete from R2 Storage via Worker proxy
+  if (isR2Configured() && imageUrl) {
+    try {
+      await deleteFromR2(imageUrl);
+    } catch (err) {
+      console.warn('R2 poster deletion notice:', err);
+    }
+  }
+
+  return true;
 };
 
-export const deleteEventPdfAdmin = async (eventId: string): Promise<boolean> => {
+export const deleteEventPdfAdmin = async (
+  eventId: string,
+  currentPdfUrl?: string | null
+): Promise<boolean> => {
+  let pdfUrl = currentPdfUrl;
   const list = getLocalCustomEvents();
   const index = list.findIndex((e) => e.id === eventId);
   if (index !== -1) {
+    if (!pdfUrl) pdfUrl = list[index].pdf_url;
     list[index].pdf_url = null;
     localStorage.setItem(CUSTOM_EVENTS_KEY, JSON.stringify(list));
   }
 
-  if (!isSupabaseConfigured()) return true;
+  if (isSupabaseConfigured()) {
+    if (!pdfUrl) {
+      try {
+        const { data } = await supabase.from('events').select('pdf_url').eq('id', eventId).maybeSingle();
+        if (data?.pdf_url) pdfUrl = data.pdf_url;
+      } catch (err) {
+        console.warn('Could not fetch PDF URL before deletion:', err);
+      }
+    }
 
-  const { error } = await supabase
-    .from('events')
-    .update({ pdf_url: null, updated_at: new Date().toISOString() })
-    .eq('id', eventId);
+    const { error } = await supabase
+      .from('events')
+      .update({ pdf_url: null, updated_at: new Date().toISOString() })
+      .eq('id', eventId);
 
-  return !error;
+    if (error) {
+      console.warn('Supabase PDF update error:', error);
+      return false;
+    }
+  }
+
+  // Delete from R2 Storage via Worker proxy
+  if (isR2Configured() && pdfUrl) {
+    try {
+      await deleteFromR2(pdfUrl);
+    } catch (err) {
+      console.warn('R2 PDF deletion notice:', err);
+    }
+  }
+
+  return true;
 };
 
 export const deleteEventAdmin = async (

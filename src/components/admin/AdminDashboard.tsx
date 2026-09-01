@@ -78,6 +78,7 @@ import {
   fetchFreshEventFeedbacksFromDb,
 } from '../../services/feedback';
 import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
+import { validateFileSignature, validatePdfSignature } from '../../lib/fileValidation';
 import type { Member, Event, Role, ContactFeedback, EventFeedback } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
@@ -412,26 +413,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   };
 
   const handleDeleteEventPoster = async (eventId: string) => {
+    const targetEvent = eventsList.find((e) => e.id === eventId) || editingEvent;
+    const currentImageUrl = targetEvent?.image_url || editingEvent?.image_url;
+
     setEditingEvent((prev) => (prev ? { ...prev, image_url: null } : null));
     setEditPosterFile(null);
     setEventsList((prev) =>
       prev.map((e) => (e.id === eventId ? { ...e, image_url: null } : e))
     );
 
-    await deleteEventPosterAdmin(eventId);
-    setActionSuccess('Event poster deleted from database!');
+    await deleteEventPosterAdmin(eventId, currentImageUrl);
+    setActionSuccess('Event poster deleted from storage and database!');
     setTimeout(() => setActionSuccess(null), 2000);
   };
 
   const handleDeleteEventPdf = async (eventId: string) => {
+    const targetEvent = eventsList.find((e) => e.id === eventId) || editingEvent;
+    const currentPdfUrl = targetEvent?.pdf_url || editingEvent?.pdf_url;
+
     setEditingEvent((prev) => (prev ? { ...prev, pdf_url: null } : null));
     setEditPdfFile(null);
     setEventsList((prev) =>
       prev.map((e) => (e.id === eventId ? { ...e, pdf_url: null } : e))
     );
 
-    await deleteEventPdfAdmin(eventId);
-    setActionSuccess('Event PDF schedule deleted from database!');
+    await deleteEventPdfAdmin(eventId, currentPdfUrl);
+    setActionSuccess('Event PDF schedule deleted from storage and database!');
     setTimeout(() => setActionSuccess(null), 2000);
   };
 
@@ -558,11 +565,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
       let pdfUrl: string | null = null;
       if (eventPdfFile) {
+        const pdfVal = await validatePdfSignature(eventPdfFile);
+        if (!pdfVal.isValid) {
+          setActionError(pdfVal.error || 'Invalid PDF file. Only authentic PDF documents under 2MB are accepted.');
+          setIsUploadingMedia(false);
+          return;
+        }
         pdfUrl = await uploadEventPdf(eventPdfFile, eventId);
       }
 
       let imageUrl: string | null = null;
       if (eventPosterFile) {
+        const imgVal = await validateFileSignature(eventPosterFile);
+        if (!imgVal.isValid) {
+          setActionError(imgVal.error || 'Invalid poster image. Only authentic JPG, PNG, WebP images under 1MB are accepted.');
+          setIsUploadingMedia(false);
+          return;
+        }
         imageUrl = await uploadEventImage(eventPosterFile, eventId);
       }
 
@@ -662,11 +681,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     try {
       let pdfUrl = editingEvent.pdf_url;
       if (editPdfFile) {
+        const pdfVal = await validatePdfSignature(editPdfFile);
+        if (!pdfVal.isValid) {
+          setActionError(pdfVal.error || 'Invalid PDF file. Only authentic PDF documents under 2MB are accepted.');
+          setIsUploadingMedia(false);
+          return;
+        }
         pdfUrl = await uploadEventPdf(editPdfFile, editingEvent.id);
       }
 
       let imageUrl = editingEvent.image_url;
       if (editPosterFile) {
+        const imgVal = await validateFileSignature(editPosterFile);
+        if (!imgVal.isValid) {
+          setActionError(imgVal.error || 'Invalid poster image. Only authentic JPG, PNG, WebP images under 1MB are accepted.');
+          setIsUploadingMedia(false);
+          return;
+        }
         imageUrl = await uploadEventImage(editPosterFile, editingEvent.id);
       }
 

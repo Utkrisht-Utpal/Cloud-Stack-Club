@@ -3,6 +3,20 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Member, ContactFeedback, EventFeedback } from '../types/database';
 
+/**
+ * Sanitizes cell values to neutralize CSV / Excel Formula Injection (CWE-1236).
+ * Prepends a single quote to prevent execution of formulas starting with =, +, -, @, \t, or \r.
+ */
+export const sanitizeFormulaValue = (value: any): any => {
+  if (value === null || value === undefined) return '';
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  if (/^[=+\-@\t\r]/.test(trimmed)) {
+    return `'${trimmed}`;
+  }
+  return value;
+};
+
 export const exportMembersToExcel = (
   members: Member[],
   filterType: 'all' | 'members' | 'core',
@@ -10,15 +24,15 @@ export const exportMembersToExcel = (
 ) => {
   const data = members.map((m, index) => ({
     'S.No': index + 1,
-    'Member Name': m.name || '',
-    'Email': m.email || '',
-    'Mobile No': m.phone || 'N/A',
-    'University UID': m.uid || 'N/A',
-    'Registration ID': m.registration_id || 'N/A',
-    'Department': m.department || 'N/A',
-    'Year': m.year || 'N/A',
-    'Role / Core Status': m.is_core_member ? (m.role?.name || 'Core Member') : 'General Member',
-    'Status': m.status || 'active',
+    'Member Name': sanitizeFormulaValue(m.name || ''),
+    'Email': sanitizeFormulaValue(m.email || ''),
+    'Mobile No': sanitizeFormulaValue(m.phone || 'N/A'),
+    'University UID': sanitizeFormulaValue(m.uid || 'N/A'),
+    'Registration ID': sanitizeFormulaValue(m.registration_id || 'N/A'),
+    'Department': sanitizeFormulaValue(m.department || 'N/A'),
+    'Year': sanitizeFormulaValue(m.year || 'N/A'),
+    'Role / Core Status': sanitizeFormulaValue(m.is_core_member ? (m.role?.name || 'Core Member') : 'General Member'),
+    'Status': sanitizeFormulaValue(m.status || 'active'),
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(data);

@@ -23,18 +23,22 @@ import {
   deleteGalleryPhoto,
   MAX_GALLERY_PHOTO_SIZE,
 } from '../../services/gallery';
+import { validateFileSignature } from '../../lib/fileValidation';
 import type { Event, GalleryPhoto } from '../../types/database';
 
 // Format YYYY-MM-DD or ISO string to DD-MM-YYYY
 const formatToDDMMYYYY = (dateStr?: string | null): string => {
   if (!dateStr) return '';
-  const clean = dateStr.split('T')[0];
-  const parts = clean.split('-');
-  if (parts.length === 3) {
-    const [year, month, day] = parts;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
     return `${day}-${month}-${year}`;
+  } catch {
+    return dateStr;
   }
-  return dateStr;
 };
 
 // Find the event that just passed (most recent past event)
@@ -142,56 +146,54 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
     return photosList.filter((p) => p.event_id === eventId).length;
   };
 
-  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const processIncomingFiles = async (rawFiles: File[]) => {
+    const accepted: File[] = [];
+    let invalidCount = 0;
+    let oversizedCount = 0;
+
+    for (const f of rawFiles) {
+      const val = await validateFileSignature(f);
+      if (!val.isValid) {
+        if (f.size > MAX_GALLERY_PHOTO_SIZE) {
+          oversizedCount++;
+        } else {
+          invalidCount++;
+        }
+      } else {
+        accepted.push(f);
+      }
+    }
+
+    if (oversizedCount > 0 || invalidCount > 0) {
+      const errors = [];
+      if (oversizedCount > 0) errors.push(`${oversizedCount} photo(s) exceeded the 1MB limit`);
+      if (invalidCount > 0) errors.push(`${invalidCount} file(s) had an invalid format (only JPG, PNG, WebP allowed)`);
+      setStatusMsg({
+        type: 'error',
+        text: `Skipped: ${errors.join(' and ')}.`,
+      });
+    }
+
+    if (accepted.length > 0) {
+      setUploadFiles((prev) => {
+        const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
+        const newUnique = accepted.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
+        return [...prev, ...newUnique];
+      });
+    }
+  };
+
+  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const imageFiles = Array.from(e.target.files).filter((f) =>
-        f.type.startsWith('image/')
-      );
-      const accepted = imageFiles.filter((f) => f.size <= MAX_GALLERY_PHOTO_SIZE);
-      const oversized = imageFiles.filter((f) => f.size > MAX_GALLERY_PHOTO_SIZE);
-
-      if (oversized.length > 0) {
-        setStatusMsg({
-          type: 'error',
-          text: `${oversized.length} photo(s) exceeded the 1MB limit and were skipped. Only photos under 1MB are allowed.`,
-        });
-      }
-
-      if (accepted.length > 0) {
-        setUploadFiles((prev) => {
-          const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
-          const newUnique = accepted.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
-          return [...prev, ...newUnique];
-        });
-      }
-      // Clear input so selecting more files or re-selecting works immediately
+      await processIncomingFiles(Array.from(e.target.files));
       e.target.value = '';
     }
   };
 
-  const handleDropFiles = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDropFiles = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const imageFiles = Array.from(e.dataTransfer.files).filter((f) =>
-        f.type.startsWith('image/')
-      );
-      const accepted = imageFiles.filter((f) => f.size <= MAX_GALLERY_PHOTO_SIZE);
-      const oversized = imageFiles.filter((f) => f.size > MAX_GALLERY_PHOTO_SIZE);
-
-      if (oversized.length > 0) {
-        setStatusMsg({
-          type: 'error',
-          text: `${oversized.length} photo(s) exceeded the 1MB limit and were skipped. Only photos under 1MB are allowed.`,
-        });
-      }
-
-      if (accepted.length > 0) {
-        setUploadFiles((prev) => {
-          const existingKeys = new Set(prev.map((f) => `${f.name}_${f.size}`));
-          const newUnique = accepted.filter((f) => !existingKeys.has(`${f.name}_${f.size}`));
-          return [...prev, ...newUnique];
-        });
-      }
+      await processIncomingFiles(Array.from(e.dataTransfer.files));
     }
   };
 

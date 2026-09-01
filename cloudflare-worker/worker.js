@@ -292,7 +292,16 @@ export default {
 
         let fileBuffer = null;
         let detectedType = null;
-        let safeStoragePath = verification_file_url;
+        let safeStoragePath = '';
+
+        if (
+          verification_file_url &&
+          typeof verification_file_url === 'string' &&
+          verification_file_url.startsWith('registration-files/membership/') &&
+          !verification_file_url.includes('..')
+        ) {
+          safeStoragePath = verification_file_url;
+        }
 
         // If a verification file is attached, validate in memory BEFORE database insert
         if (fileToUpload) {

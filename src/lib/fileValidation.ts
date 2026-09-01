@@ -76,3 +76,52 @@ export const validateFileSignature = async (
     };
   }
 };
+
+const MAX_PDF_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
+
+/**
+ * Checks file header magic bytes against authentic PDF signatures (%PDF).
+ */
+export const validatePdfSignature = async (
+  file: File
+): Promise<{ isValid: boolean; error?: string }> => {
+  if (file.size > MAX_PDF_SIZE_BYTES) {
+    return {
+      isValid: false,
+      error: 'PDF file size exceeds the 2 MB limit.',
+    };
+  }
+
+  if (file.type && file.type.toLowerCase() !== 'application/pdf') {
+    return {
+      isValid: false,
+      error: 'Invalid file format. Only official PDF files are accepted.',
+    };
+  }
+
+  try {
+    const buffer = await file.slice(0, 8).arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    // PDF: %PDF (25 50 44 46)
+    const isPdf =
+      bytes[0] === 0x25 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x44 &&
+      bytes[3] === 0x46;
+
+    if (!isPdf) {
+      return {
+        isValid: false,
+        error: 'Security verification failed: File is not a valid PDF document.',
+      };
+    }
+
+    return { isValid: true };
+  } catch (err) {
+    return {
+      isValid: false,
+      error: 'Failed to inspect PDF integrity.',
+    };
+  }
+};
