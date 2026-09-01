@@ -482,22 +482,9 @@ export const TeamMediaManagement: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Top Action Overlay Buttons for Banner */}
+                        {/* Top Action Overlay Button for Banner */}
                         {bannerData?.banner_url && (
                           <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                fileInputRef.current?.click();
-                              }}
-                              disabled={isUploadingMedia}
-                              className="p-2 rounded-xl bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 shadow-lg hover:scale-105 transition-all cursor-pointer"
-                              title="Crop / Upload New Banner"
-                            >
-                              <Crop className="w-4 h-4 text-sky-400" />
-                            </button>
-
                             <button
                               type="button"
                               onClick={(e) => {
@@ -580,22 +567,9 @@ export const TeamMediaManagement: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Top Action Overlay Buttons */}
+                      {/* Top Action Overlay Button */}
                       {selectedMember.photo_url && (
                         <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              fileInputRef.current?.click();
-                            }}
-                            disabled={isUploadingMedia}
-                            className="p-2 rounded-xl bg-black/60 hover:bg-black/85 backdrop-blur-md text-white border border-white/20 shadow-lg hover:scale-105 transition-all cursor-pointer"
-                            title="Crop / Upload New Photo"
-                          >
-                            <Crop className="w-4 h-4 text-sky-400" />
-                          </button>
-
                           <button
                             type="button"
                             onClick={(e) => {
