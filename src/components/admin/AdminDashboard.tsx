@@ -46,6 +46,7 @@ import { TeamMediaManagement } from './TeamMediaManagement';
 import { EventRulesModal } from './EventRulesModal';
 import { RejectMemberModal } from './RejectMemberModal';
 import { BroadcastEventModal } from './BroadcastEventModal';
+import { UpdateFeedbackStatusModal } from './UpdateFeedbackStatusModal';
 import { EmailLogsManagement } from './EmailLogsManagement';
 import {
   sendMemberApprovalEmail,
@@ -93,7 +94,7 @@ import {
 } from '../../services/feedback';
 import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
 import { validateFileSignature, validatePdfSignature } from '../../lib/fileValidation';
-import type { Member, Event, Role, ContactFeedback, EventFeedback } from '../../types/database';
+import type { Member, Event, Role, ContactFeedback, EventFeedback, FeedbackStatus } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
   { value: 'Hackathons', label: 'Hackathons' },
@@ -134,9 +135,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
   const [sortRecentMembers, setSortRecentMembers] = useState(false);
 
-  // Email and Rejection / Broadcast States
+  // Email and Rejection / Broadcast / Feedback States
   const [rejectingMember, setRejectingMember] = useState<Member | null>(null);
   const [broadcastingEvent, setBroadcastingEvent] = useState<Event | null>(null);
+  const [pendingStatusFeedback, setPendingStatusFeedback] = useState<{
+    feedback: any;
+    isEvent: boolean;
+    targetStatus: FeedbackStatus;
+  } | null>(null);
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -404,9 +410,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     }
   };
 
-  const handleUpdateFeedbackStatus = async (id: string, newStatus: any, isEvent: boolean) => {
+  const handleConfirmFeedbackStatusUpdate = async (
+    targetFeedback: any,
+    newStatus: FeedbackStatus,
+    adminNote: string,
+    shouldSendEmail: boolean
+  ) => {
+    const id = targetFeedback.id;
+    const isEvent = feedbackViewTab === 'event' || !!targetFeedback.event_id || !!targetFeedback.event_title;
+
     if (isEvent) {
-      const targetFeedback = eventFeedbacksList.find((f) => f.id === id);
       setEventFeedbacksList((prev) =>
         prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
       );
@@ -415,28 +428,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         setActionSuccess(`Event feedback status updated to "${newStatus.toUpperCase()}"`);
         setTimeout(() => setActionSuccess(null), 2000);
 
-        if (targetFeedback && targetFeedback.email) {
+        if (shouldSendEmail && targetFeedback.email) {
           sendEventFeedbackEmail(
             { name: targetFeedback.name, email: targetFeedback.email, event_title: targetFeedback.event_title },
-            `Your event feedback has been updated to "${newStatus.toUpperCase()}". Thank you for sharing your experience.`
+            adminNote
           ).catch((e) => console.warn('Could not dispatch event feedback email:', e));
         }
       }
     } else {
-      const targetFeedback = contactFeedbacksList.find((f) => f.id === id);
       setContactFeedbacksList((prev) =>
         prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
       );
       const success = await updateFeedbackStatus(id, newStatus);
       if (success) {
-        setActionSuccess(`Contact feedback status updated to "${newStatus.toUpperCase()}"`);
+        setActionSuccess(`Contact inquiry status updated to "${newStatus.toUpperCase()}"`);
         setTimeout(() => setActionSuccess(null), 2000);
 
-        if (targetFeedback && targetFeedback.email) {
+        if (shouldSendEmail && targetFeedback.email) {
           sendContactUsStatusEmail(
             { name: targetFeedback.name, email: targetFeedback.email, subject: targetFeedback.subject },
             newStatus,
-            `Your inquiry has been updated to "${newStatus.toUpperCase()}". If you have further questions, feel free to reach out.`
+            adminNote
           ).catch((e) => console.warn('Could not dispatch contact status email:', e));
         }
       }
@@ -2196,7 +2208,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                     ? 'resolved'
                                     : f.status
                               }
-                              onChange={(newVal) => handleUpdateFeedbackStatus(f.id, newVal, feedbackViewTab === 'event')}
+                              onChange={(newVal) => {
+                                const current =
+                                  f.status === 'unread'
+                                    ? 'pending'
+                                    : f.status === 'responded'
+                                      ? 'resolved'
+                                      : f.status;
+                                if (newVal !== current) {
+                                  setPendingStatusFeedback({
+                                    feedback: f,
+                                    isEvent: feedbackViewTab === 'event',
+                                    targetStatus: newVal as FeedbackStatus,
+                                  });
+                                }
+                              }}
                               options={[
                                 { value: 'pending', label: '⏳ Pending' },
                                 { value: 'in_progress', label: '🔄 In Progress' },
@@ -3105,6 +3131,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           isOpen={!!broadcastingEvent}
           event={broadcastingEvent}
           onClose={() => setBroadcastingEvent(null)}
+        />
+
+        {/* Update Contact & Event Feedback Status Modal */}
+        <UpdateFeedbackStatusModal
+          isOpen={!!pendingStatusFeedback}
+          feedback={pendingStatusFeedback?.feedback || null}
+          isEvent={pendingStatusFeedback?.isEvent || false}
+          targetStatus={pendingStatusFeedback?.targetStatus || 'pending'}
+          onClose={() => setPendingStatusFeedback(null)}
+          onConfirm={handleConfirmFeedbackStatusUpdate}
         />
       </div>
     </div>
