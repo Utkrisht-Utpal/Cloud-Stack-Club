@@ -27,6 +27,46 @@ const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; c
   { id: 'event_broadcast', label: 'Event Broadcasts', icon: Radio, color: 'text-purple-600 dark:text-purple-400' },
 ];
 
+export const formatAdminSender = (name?: string | null, email?: string | null): string => {
+  let displayName = name?.trim();
+  const rawEmail = (email || '').trim().toLowerCase();
+
+  const isPrefixOnly =
+    !displayName ||
+    displayName === email ||
+    displayName.includes('@') ||
+    (rawEmail && rawEmail.startsWith(displayName.toLowerCase())) ||
+    /^[a-z0-9._-]+$/i.test(displayName);
+
+  if (isPrefixOnly) {
+    if (rawEmail.includes('sushant') || (displayName && displayName.toLowerCase().includes('sushant'))) {
+      displayName = 'Sushant Kumar';
+    } else if (rawEmail.includes('utkrisht') || (displayName && displayName.toLowerCase().includes('utkrisht'))) {
+      displayName = 'Utkrisht Utpal';
+    } else if (displayName) {
+      const clean = displayName
+        .replace(/[0-9]/g, ' ')
+        .replace(/[._-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      displayName = clean.replace(/\b\w/g, (c) => c.toUpperCase());
+    } else if (rawEmail) {
+      const clean = rawEmail.split('@')[0]
+        .replace(/[0-9]/g, ' ')
+        .replace(/[._-]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      displayName = clean.replace(/\b\w/g, (c) => c.toUpperCase());
+    }
+  }
+
+  if (!displayName) {
+    displayName = 'Administrator';
+  }
+
+  return email ? `${displayName} (${email})` : displayName;
+};
+
 export const EmailLogsManagement: React.FC = () => {
   const [logs, setLogs] = useState<EmailLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -368,7 +408,7 @@ export const EmailLogsManagement: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Dispatched By:</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {selectedLog.sent_by_name ? `${selectedLog.sent_by_name} (${selectedLog.sent_by_email || 'Admin'})` : selectedLog.sent_by_email || 'Administrator'}
+                  {formatAdminSender(selectedLog.sent_by_name, selectedLog.sent_by_email)}
                 </span>
               </div>
             </div>
@@ -408,11 +448,6 @@ export const EmailLogsManagement: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end pt-3 border-t border-slate-200 dark:border-slate-800">
-              <Button variant="secondary" size="sm" onClick={() => setSelectedLog(null)}>
-                Close
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
