@@ -27,6 +27,8 @@ import {
   Camera,
   ArrowUp,
   ScrollText,
+  Mail,
+  Radio,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
@@ -42,6 +44,15 @@ import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { GalleryManagement } from './GalleryManagement';
 import { TeamMediaManagement } from './TeamMediaManagement';
 import { EventRulesModal } from './EventRulesModal';
+import { RejectMemberModal } from './RejectMemberModal';
+import { BroadcastEventModal } from './BroadcastEventModal';
+import { EmailLogsManagement } from './EmailLogsManagement';
+import {
+  sendMemberApprovalEmail,
+  sendMemberRejectionEmail,
+  sendContactUsStatusEmail,
+  sendEventFeedbackEmail,
+} from '../../services/email';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { CustomSelect } from '../ui/CustomSelect';
 import { DatePicker } from '../ui/DatePicker';
@@ -117,11 +128,15 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = false, setMobileNavOpen }) => {
-  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'team'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'team' | 'emails'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
   const [sortRecentMembers, setSortRecentMembers] = useState(false);
+
+  // Email and Rejection / Broadcast States
+  const [rejectingMember, setRejectingMember] = useState<Member | null>(null);
+  const [broadcastingEvent, setBroadcastingEvent] = useState<Event | null>(null);
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -391,6 +406,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
   const handleUpdateFeedbackStatus = async (id: string, newStatus: any, isEvent: boolean) => {
     if (isEvent) {
+      const targetFeedback = eventFeedbacksList.find((f) => f.id === id);
       setEventFeedbacksList((prev) =>
         prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
       );
@@ -398,8 +414,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       if (success) {
         setActionSuccess(`Event feedback status updated to "${newStatus.toUpperCase()}"`);
         setTimeout(() => setActionSuccess(null), 2000);
+
+        if (targetFeedback && targetFeedback.email) {
+          sendEventFeedbackEmail(
+            { name: targetFeedback.name, email: targetFeedback.email, event_title: targetFeedback.event_title },
+            `Your event feedback has been updated to "${newStatus.toUpperCase()}". Thank you for sharing your experience.`
+          ).catch((e) => console.warn('Could not dispatch event feedback email:', e));
+        }
       }
     } else {
+      const targetFeedback = contactFeedbacksList.find((f) => f.id === id);
       setContactFeedbacksList((prev) =>
         prev.map((f) => (f.id === id ? { ...f, status: newStatus } : f))
       );
@@ -407,6 +431,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       if (success) {
         setActionSuccess(`Contact feedback status updated to "${newStatus.toUpperCase()}"`);
         setTimeout(() => setActionSuccess(null), 2000);
+
+        if (targetFeedback && targetFeedback.email) {
+          sendContactUsStatusEmail(
+            { name: targetFeedback.name, email: targetFeedback.email, subject: targetFeedback.subject },
+            newStatus,
+            `Your inquiry has been updated to "${newStatus.toUpperCase()}". If you have further questions, feel free to reach out.`
+          ).catch((e) => console.warn('Could not dispatch contact status email:', e));
+        }
       }
     }
   };
@@ -498,6 +530,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       loadPendingApps();
       loadAllMembers();
       setTimeout(() => setActionSuccess(null), 2000);
+
+      // Asynchronously dispatch official welcome email via Outlook
+      sendMemberApprovalEmail(member).catch((e) => console.warn('Could not dispatch approval email:', e));
     } catch (err: any) {
       setActionSuccess(`Approval failed: ${err?.message || 'Unknown error'}`);
       setTimeout(() => setActionSuccess(null), 2000);
@@ -505,24 +540,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   };
 
   const handleReject = (member: Member) => {
-    setConfirmModalConfig({
-      isOpen: true,
-      title: 'Reject Application?',
-      message: `Are you sure you want to reject application for ${member.name}? The status will be set to inactive.`,
-      confirmText: 'Reject Application',
-      variant: 'danger',
-      onConfirm: async () => {
-        setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
-        setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
-        setTimeout(() => setActionSuccess(null), 2000);
+    setRejectingMember(member);
+  };
 
-        try {
-          await rejectMemberApplicationService(member.id, member.verification_file_url);
-        } catch (err: any) {
-          console.warn('Rejection error:', err);
-        }
-      },
-    });
+  const handleConfirmReject = async (member: Member, reason: string) => {
+    setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
+    setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
+    setTimeout(() => setActionSuccess(null), 2000);
+
+    try {
+      await rejectMemberApplicationService(member.id, member.verification_file_url, reason);
+      // Dispatch official rejection email via Outlook
+      await sendMemberRejectionEmail(member, reason);
+    } catch (err: any) {
+      console.warn('Rejection error:', err);
+    }
   };
 
   const handleDeleteMember = (memberId: string, name: string) => {
@@ -1052,6 +1084,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Our Team</span>
                 </button>
+
+                {/* E-Mails */}
+                <button
+                  onClick={() => { setActiveTab('emails'); setMobileNavOpen && setMobileNavOpen(false); }}
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+                    activeTab === 'emails'
+                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
+                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    activeTab === 'emails' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                  }`}>
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <span className="truncate flex-1 font-extrabold text-sm">E - Mails</span>
+                </button>
               </div>
             </motion.div>
           )}
@@ -1147,6 +1196,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           >
             <Sparkles className="w-4 h-4" />
             <span>Our Team</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('emails')}
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'emails'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
+            }`}
+          >
+            <Mail className="w-4 h-4" />
+            <span>E - Mails</span>
           </button>
         </div>
 
@@ -1810,6 +1871,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                 <span>PDF</span>
                               </button>
                             )}
+
+                            <button
+                              type="button"
+                              onClick={() => setBroadcastingEvent(evt)}
+                              className="px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer"
+                              title="Broadcast event announcement to all registered users via email"
+                            >
+                              <Radio className="w-3.5 h-3.5" />
+                              <span>Broadcast</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -2156,6 +2227,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         {/* Tab Content 6: Our Team Management */}
         {activeTab === 'team' && (
           <TeamMediaManagement />
+        )}
+
+        {/* Tab Content 7: E-Mails Management */}
+        {activeTab === 'emails' && (
+          <EmailLogsManagement />
         )}
 
         {/* Create Event Modal */}
@@ -3009,6 +3085,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               setEditEventData((prev) => ({ ...prev, rules: savedRules }));
             }
           }}
+        />
+
+        {/* Reject Member Application with Reason Modal */}
+        <RejectMemberModal
+          isOpen={!!rejectingMember}
+          member={rejectingMember}
+          onClose={() => setRejectingMember(null)}
+          onConfirmReject={handleConfirmReject}
+        />
+
+        {/* Broadcast Event Announcement Modal */}
+        <BroadcastEventModal
+          isOpen={!!broadcastingEvent}
+          event={broadcastingEvent}
+          onClose={() => setBroadcastingEvent(null)}
         />
       </div>
     </div>

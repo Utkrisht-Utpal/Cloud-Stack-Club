@@ -80,7 +80,7 @@ export const AdminLoginModal: React.FC = () => {
                 setEmailInput(e.target.value);
                 if (error) setError(null);
               }}
-              placeholder="e.g. admin@cuchd.in"
+              placeholder="e.g. admin@cumail.in"
               className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-sm border border-slate-200 dark:border-slate-700/60"
             />
           </div>
