@@ -169,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                 const sectionId = link.href.replace('/#', '');
                 const isActive =
                   link.isExternalPage
-                    ? location.pathname === link.href
+                    ? location.pathname === link.href || (link.href !== '/' && location.pathname.startsWith(link.href))
                     : location.pathname === '/' && activeSection === sectionId;
 
                 return (

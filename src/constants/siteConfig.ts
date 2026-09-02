@@ -27,7 +27,7 @@ export const siteConfig: SiteConfig = {
     { name: 'Home', href: '/#hero' },
     { name: 'About', href: '/#about' },
     { name: 'Domains', href: '/#domains' },
-    { name: 'Events', href: '/#events' },
+    { name: 'Events', href: '/events', isExternalPage: true },
     { name: 'Gallery', href: '/gallery', isExternalPage: true },
     { name: 'Meet Our Team', href: '/team', isExternalPage: true },
     { name: 'Contact', href: '/#contact' },

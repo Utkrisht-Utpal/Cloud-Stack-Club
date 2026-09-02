@@ -23,7 +23,7 @@ import {
   getEventStatusInfo,
 } from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
-import { EVENT_CATEGORY_OPTIONS, type EventCategoryOption } from '../constants/data';
+import { EVENT_CATEGORY_OPTIONS } from '../constants/data';
 import { CustomSelect } from '../components/ui/CustomSelect';
 import type { Event } from '../types/database';
 
@@ -61,6 +61,44 @@ export const EventsDirectoryPage: React.FC = () => {
       isMounted = false;
     };
   }, []);
+
+  // Dynamically derive category options only from real event data in database
+  const availableCategories = useMemo(() => {
+    const validEvents = events.filter((evt) => evt.status !== 'cancelled');
+    const categoriesMap = new Map<string, string>();
+
+    validEvents.forEach((evt) => {
+      const rawCategory = evt.category?.trim();
+      if (rawCategory) {
+        const lower = rawCategory.toLowerCase();
+        if (!categoriesMap.has(lower)) {
+          const predefined = EVENT_CATEGORY_OPTIONS.find(
+            (opt) => opt.value.toLowerCase() === lower
+          );
+          categoriesMap.set(lower, predefined ? predefined.label : rawCategory);
+        }
+      }
+    });
+
+    const dynamicOptions = Array.from(categoriesMap.entries()).map(([value, label]) => ({
+      value,
+      label,
+    }));
+
+    dynamicOptions.sort((a, b) => a.label.localeCompare(b.label));
+
+    return [
+      { value: 'all', label: 'All Categories' },
+      ...dynamicOptions,
+    ];
+  }, [events]);
+
+  // Reset category filter if selected category no longer exists in real data
+  useEffect(() => {
+    if (categoryFilter !== 'all' && !availableCategories.some((c) => c.value === categoryFilter)) {
+      setCategoryFilter('all');
+    }
+  }, [availableCategories, categoryFilter]);
 
   // Filter events based on status, category, and search query
   const filteredEvents = useMemo(() => {
@@ -187,13 +225,7 @@ export const EventsDirectoryPage: React.FC = () => {
               <CustomSelect
                 value={categoryFilter}
                 onChange={(val) => setCategoryFilter(val)}
-                options={[
-                  { value: 'all', label: 'All Categories' },
-                  ...EVENT_CATEGORY_OPTIONS.map((cat: EventCategoryOption) => ({
-                    value: cat.value,
-                    label: cat.label,
-                  })),
-                ]}
+                options={availableCategories}
                 placeholder="All Categories"
                 triggerClassName="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white flex items-center justify-between cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               />

@@ -1795,9 +1795,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                       {/* Event Content Details */}
                       <div className="space-y-3 flex-1 flex flex-col justify-between">
                         <div className="space-y-2">
-                          <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-snug">
-                            {evt.title}
-                          </h3>
+                          <div className="flex items-start justify-between gap-2">
+                            <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-snug flex-1">
+                              {evt.title}
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={() => setBroadcastingEvent(evt)}
+                              className="group/bcast shrink-0 h-7 px-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/15 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-500/20 text-xs font-bold transition-all duration-300 ease-out flex items-center cursor-pointer shadow-xs hover:shadow-sm"
+                              title="Broadcast event announcement to all registered users via email"
+                            >
+                              <div className="flex items-center overflow-hidden">
+                                <Radio className="w-3.5 h-3.5 shrink-0 transition-transform duration-300 group-hover/bcast:scale-110" />
+                                <span className="max-w-0 opacity-0 group-hover/bcast:max-w-[80px] group-hover/bcast:opacity-100 group-hover/bcast:ml-1.5 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-[11px] font-black">
+                                  Broadcast
+                                </span>
+                              </div>
+                            </button>
+                          </div>
                           <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-medium">
                             {evt.description || 'No description provided for this event.'}
                           </p>
@@ -1871,16 +1886,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                 <span>PDF</span>
                               </button>
                             )}
-
-                            <button
-                              type="button"
-                              onClick={() => setBroadcastingEvent(evt)}
-                              className="px-3 py-2 rounded-xl bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer"
-                              title="Broadcast event announcement to all registered users via email"
-                            >
-                              <Radio className="w-3.5 h-3.5" />
-                              <span>Broadcast</span>
-                            </button>
                           </div>
                         </div>
                       </div>
