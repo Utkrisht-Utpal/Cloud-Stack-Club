@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Camera,
   ArrowUp,
+  ScrollText,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
@@ -40,6 +41,7 @@ import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { GalleryManagement } from './GalleryManagement';
 import { TeamMediaManagement } from './TeamMediaManagement';
+import { EventRulesModal } from './EventRulesModal';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { CustomSelect } from '../ui/CustomSelect';
 import { DatePicker } from '../ui/DatePicker';
@@ -170,6 +172,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     date: '',
     time: '10:00',
     location: '',
+    rules: '',
     registration_enabled: false,
     registration_start: '',
     registration_end: '',
@@ -187,6 +190,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     date: '',
     time: '',
     location: '',
+    rules: '',
     registration_enabled: true,
     registration_start: '',
     registration_end: '',
@@ -196,6 +200,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   });
   const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
   const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
+
+  // Event Rules Modal State
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [activeRulesTarget, setActiveRulesTarget] = useState<'create' | 'edit'>('create');
 
   // Global Themed Alert / Warning Modal State
   const [alertModalConfig, setAlertModalConfig] = useState<{
@@ -595,6 +603,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         start_time: newEventData.time,
         end_time: null,
         location: newEventData.location.trim() || 'Chandigarh University',
+        rules: newEventData.rules.trim() || null,
         pdf_url: pdfUrl,
         image_url: imageUrl,
         registration_enabled: newEventData.registration_enabled,
@@ -621,6 +630,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         date: '',
         time: '10:00',
         location: '',
+        rules: '',
         registration_enabled: false,
         registration_start: '',
         registration_end: '',
@@ -651,6 +661,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       date: evt.date ? evt.date.split('T')[0] : '',
       time: evt.start_time || '10:00',
       location: evt.location || '',
+      rules: evt.rules || '',
       registration_enabled: evt.registration_enabled ?? true,
       registration_start: evt.registration_start ? evt.registration_start.split('T')[0] : '',
       registration_end: evt.registration_end ? evt.registration_end.split('T')[0] : '',
@@ -723,6 +734,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         date: editEventData.date,
         start_time: editEventData.time,
         location: editEventData.location.trim(),
+        rules: editEventData.rules.trim() || null,
         pdf_url: pdfUrl,
         image_url: imageUrl,
         status: computedStatus,
@@ -2346,17 +2358,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={newEventData.location}
-                onChange={(e) => setNewEventData({ ...newEventData, location: e.target.value })}
-                placeholder="e.g. CU Main Auditorium"
-                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-              />
+            {/* Location & Rules Split 2-Column Row (50 / 50) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={newEventData.location}
+                  onChange={(e) => setNewEventData({ ...newEventData, location: e.target.value })}
+                  placeholder="e.g. Chandigarh University"
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Event Rules</span>
+                  {newEventData.rules.trim() && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-0.5">
+                      <Check className="w-3 h-3" /> Configured
+                    </span>
+                  )}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveRulesTarget('create');
+                    setIsRulesModalOpen(true);
+                  }}
+                  className={`w-full h-11 px-3.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    newEventData.rules.trim()
+                      ? 'bg-emerald-500/10 hover:bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                      : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <ScrollText className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span className="truncate">
+                    {newEventData.rules.trim() ? 'Edit Event Rules' : 'Configure Rules'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Registration & Team Configuration Section */}
@@ -2721,16 +2764,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={editEventData.location}
-                onChange={(e) => setEditEventData({ ...editEventData, location: e.target.value })}
-                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
-              />
+            {/* Location & Rules Split 2-Column Row (50 / 50) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  value={editEventData.location}
+                  onChange={(e) => setEditEventData({ ...editEventData, location: e.target.value })}
+                  placeholder="e.g. Chandigarh University"
+                  className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                  <span>Event Rules</span>
+                  {editEventData.rules.trim() && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-0.5">
+                      <Check className="w-3 h-3" /> Configured
+                    </span>
+                  )}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveRulesTarget('edit');
+                    setIsRulesModalOpen(true);
+                  }}
+                  className={`w-full h-11 px-3.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    editEventData.rules.trim()
+                      ? 'bg-emerald-500/10 hover:bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-sm'
+                      : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <ScrollText className="w-4 h-4 text-blue-500 shrink-0" />
+                  <span className="truncate">
+                    {editEventData.rules.trim() ? 'Edit Event Rules' : 'Configure Rules'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Edit Registration & Team Configuration Section */}
@@ -2913,6 +2988,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           title={alertModalConfig.title}
           message={alertModalConfig.message}
           variant={alertModalConfig.variant}
+        />
+
+        {/* Event Rules & Guidelines Configuration Modal */}
+        <EventRulesModal
+          isOpen={isRulesModalOpen}
+          onClose={() => setIsRulesModalOpen(false)}
+          eventTitle={
+            activeRulesTarget === 'create'
+              ? newEventData.title || 'New Event'
+              : editEventData.title || 'Edit Event'
+          }
+          initialRules={
+            activeRulesTarget === 'create'
+              ? newEventData.rules
+              : editEventData.rules
+          }
+          onSave={(savedRules) => {
+            if (activeRulesTarget === 'create') {
+              setNewEventData((prev) => ({ ...prev, rules: savedRules }));
+            } else {
+              setEditEventData((prev) => ({ ...prev, rules: savedRules }));
+            }
+          }}
         />
       </div>
     </div>

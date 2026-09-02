@@ -79,6 +79,7 @@ export interface Event {
   max_team_size: number | null;
   max_registrations: number | null;
   category?: string | null;
+  rules?: string | null;
   created_at: string;
   updated_at: string;
 }

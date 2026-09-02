@@ -365,6 +365,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     max_team_size: eventPayload.max_team_size ?? 1,
     max_registrations: eventPayload.max_registrations ?? null,
     category: eventPayload.category || null,
+    rules: eventPayload.rules || null,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
@@ -450,6 +451,7 @@ export const updateEventAdmin = async (
     supports_teams: eventPayload.supports_teams ?? false,
     max_team_size: eventPayload.max_team_size ?? 1,
     max_registrations: eventPayload.max_registrations ?? null,
+    rules: eventPayload.rules !== undefined ? eventPayload.rules : null,
     updated_at: new Date().toISOString(),
   };
 
