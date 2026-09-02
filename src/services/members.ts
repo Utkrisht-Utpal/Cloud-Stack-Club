@@ -182,7 +182,8 @@ export const approveMemberApplicationService = async (
 
 export const rejectMemberApplicationService = async (
   memberId: string,
-  _verificationFilePath?: string | null
+  _verificationFilePath?: string | null,
+  reason?: string
 ): Promise<void> => {
   markMemberInactiveLocally(memberId);
 
@@ -194,6 +195,7 @@ export const rejectMemberApplicationService = async (
   // The file is automatically purged after 24 hours via R2 Lifecycle rules.
   const { error: rpcError } = await supabase.rpc('reject_member_application', {
     p_member_id: memberId,
+    p_rejection_reason: reason || null,
   });
 
   if (rpcError) {
@@ -202,6 +204,7 @@ export const rejectMemberApplicationService = async (
         .from('members')
         .update({
           status: 'inactive',
+          rejection_reason: reason || null,
         })
         .eq('id', memberId);
     } catch (err) {
