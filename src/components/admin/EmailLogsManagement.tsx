@@ -143,16 +143,16 @@ export const EmailLogsManagement: React.FC = () => {
           </div>
         </div>
 
-        <Button
-          variant="secondary"
-          size="sm"
+        <button
+          type="button"
           onClick={loadLogs}
           disabled={loading}
-          className="flex items-center gap-2 self-start sm:self-auto"
+          className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 hover:border-blue-500/40 dark:hover:border-sky-500/40 hover:bg-blue-50/50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm whitespace-nowrap self-start sm:self-auto disabled:opacity-50 disabled:cursor-not-allowed group"
+          title="Refresh Delivery Logs"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Logs</span>
-        </Button>
+          <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-sky-400 transition-transform duration-500 ${loading ? 'animate-spin' : 'group-hover:rotate-180'}`} />
+          <span>{loading ? 'Refreshing...' : 'Refresh Logs'}</span>
+        </button>
       </div>
 
       {/* Overview Stat Counters */}
