@@ -16,9 +16,15 @@ import {
 } from 'lucide-react';
 import { getEvents } from '../services/events';
 import { getEventRegistrationCountsMap } from '../services/registrationForms';
-import { formatEventDate, formatEventTime, isRegistrationFull } from '../utils/formatters';
+import {
+  formatEventDate,
+  formatEventTime,
+  isRegistrationFull,
+  getEventStatusInfo,
+} from '../utils/formatters';
 import { generateSlug } from '../utils/slug';
 import { EVENT_CATEGORY_OPTIONS, type EventCategoryOption } from '../constants/data';
+import { CustomSelect } from '../components/ui/CustomSelect';
 import type { Event } from '../types/database';
 
 export const EventsDirectoryPage: React.FC = () => {
@@ -177,19 +183,20 @@ export const EventsDirectoryPage: React.FC = () => {
             </div>
 
             {/* Category Filter */}
-            <div className="relative w-full sm:w-48">
-              <select
+            <div className="w-full sm:w-48">
+              <CustomSelect
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 cursor-pointer"
-              >
-                <option value="all">All Categories</option>
-                {EVENT_CATEGORY_OPTIONS.map((cat: EventCategoryOption) => (
-                  <option key={cat.value} value={cat.value}>
-                    {cat.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setCategoryFilter(val)}
+                options={[
+                  { value: 'all', label: 'All Categories' },
+                  ...EVENT_CATEGORY_OPTIONS.map((cat: EventCategoryOption) => ({
+                    value: cat.value,
+                    label: cat.label,
+                  })),
+                ]}
+                placeholder="All Categories"
+                triggerClassName="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-900 dark:text-white flex items-center justify-between cursor-pointer hover:border-slate-300 dark:hover:border-slate-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+              />
             </div>
           </div>
         </div>
@@ -250,59 +257,71 @@ export const EventsDirectoryPage: React.FC = () => {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.3) }}
                   onClick={() => navigate(`/events/${slug}`)}
-                  className="rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm hover:border-blue-500/40 dark:hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/10 transition-all flex flex-col justify-between group cursor-pointer"
+                  className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 shadow-lg hover:shadow-xl transition-all flex flex-col justify-between space-y-4 group cursor-pointer"
                 >
-                  {/* Poster Thumbnail */}
-                  <div className="relative h-52 w-full overflow-hidden bg-slate-900">
+                  {/* Vertical Instagram Poster Frame with Ambient Blur Fill */}
+                  <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-700/60 shadow-md flex items-center justify-center">
                     {evt.image_url ? (
-                      <img
-                        src={evt.image_url}
-                        alt={evt.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
+                      <>
+                        {/* Ambient Blurred Background to prevent letterbox gaps */}
+                        <div
+                          className="absolute inset-0 bg-cover bg-center blur-xl opacity-40 scale-110"
+                          style={{ backgroundImage: `url(${evt.image_url})` }}
+                        />
+                        <img
+                          src={evt.image_url}
+                          alt={evt.title}
+                          className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300 drop-shadow-md rounded-xl"
+                          loading="lazy"
+                        />
+                      </>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-900/40 to-slate-950 p-6 text-center">
-                        <Sparkles className="w-10 h-10 text-blue-400/60 mb-2" />
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                          Cloud Stack Club
-                        </span>
+                      <div className="w-full h-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center p-6 text-center text-white font-bold">
+                        <Sparkles className="w-12 h-12 opacity-50" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent pointer-events-none" />
 
-                    {/* Status & Category Badges */}
-                    <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between gap-2 pointer-events-none">
-                      {/* Event Status Pill */}
-                      {evt.status === 'live' ? (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/90 text-white shadow-md backdrop-blur-sm flex items-center gap-1.5 animate-pulse">
-                          <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-                          Ongoing Event
-                        </span>
-                      ) : evt.status === 'upcoming' ? (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-blue-600/90 text-white shadow-md backdrop-blur-sm flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" />
-                          Upcoming Event
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-800/85 text-slate-300 shadow-md backdrop-blur-sm">
-                          Completed
-                        </span>
-                      )}
+                    {/* Status & Category Badges (Top-Left & Top-Right) Matching Image 2 & 3 */}
+                    <div className="absolute top-3.5 left-3.5 right-3.5 z-30 flex items-center justify-between gap-2 pointer-events-none">
+                      {/* Left: Status Badge */}
+                      {(() => {
+                        const statusInfo = getEventStatusInfo(evt.date);
+                        if (statusInfo.type === 'ongoing') {
+                          return (
+                            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500 text-white shadow-md backdrop-blur-sm flex items-center gap-1.5 animate-pulse">
+                              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                              Ongoing Event
+                            </span>
+                          );
+                        }
+                        if (statusInfo.type === 'upcoming') {
+                          return (
+                            <span className="px-3 py-1 rounded-full text-[11px] font-extrabold bg-blue-600 text-white shadow-md backdrop-blur-sm flex items-center gap-1">
+                              <Sparkles className="w-3.5 h-3.5 text-white" />
+                              Upcoming Event
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-900/85 text-slate-300 shadow-md backdrop-blur-sm">
+                            Completed
+                          </span>
+                        );
+                      })()}
 
-                      {/* Category Pill */}
-                      {evt.category && (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-slate-950/80 text-white border border-white/10 backdrop-blur-sm">
-                          {evt.category}
+                      {/* Right: Category Badge */}
+                      {evt.category && evt.category.trim() && (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-950/85 text-white border border-white/15 backdrop-blur-sm shadow-md">
+                          {evt.category.toUpperCase()}
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Card Body */}
-                  <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-4">
-                    <div className="space-y-2.5">
-                      <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors line-clamp-1">
+                  <div className="space-y-3 flex-1 flex flex-col justify-between">
+                    <div className="space-y-1.5">
+                      <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 tracking-tight leading-snug transition-colors line-clamp-1">
                         {evt.title}
                       </h3>
 
@@ -311,25 +330,25 @@ export const EventsDirectoryPage: React.FC = () => {
                           {evt.description}
                         </p>
                       )}
+                    </div>
 
-                      {/* Metadata: Date, Time, Location */}
-                      <div className="pt-2 space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                          <span>{formatEventDate(evt.date)}</span>
-                          {evt.start_time && (
-                            <>
-                              <span className="text-slate-400">•</span>
-                              <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                              <span>{formatEventTime(evt.start_time)}</span>
-                            </>
-                          )}
-                        </div>
+                    {/* Metadata: Date, Time, Location */}
+                    <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span>{formatEventDate(evt.date)}</span>
+                        {evt.start_time && (
+                          <>
+                            <span className="text-slate-400">•</span>
+                            <Clock className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            <span>{formatEventTime(evt.start_time)}</span>
+                          </>
+                        )}
+                      </div>
 
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                          <span className="truncate">{evt.location || 'Chandigarh University'}</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                        <span className="truncate">{evt.location || 'Chandigarh University'}</span>
                       </div>
                     </div>
 
