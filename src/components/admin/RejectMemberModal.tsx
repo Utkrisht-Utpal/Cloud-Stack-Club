@@ -72,8 +72,14 @@ export const RejectMemberModal: React.FC<RejectMemberModalProps> = ({
             <h4 className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
               {member.name}
             </h4>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-              {member.email} � {member.registration_id || 'No ID'}
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
+              <span>{member.email}</span>
+              {member.registration_id && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-600 font-bold">•</span>
+                  <span className="font-mono">{member.registration_id}</span>
+                </>
+              )}
             </p>
           </div>
           <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0">
