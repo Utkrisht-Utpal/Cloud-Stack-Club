@@ -13,8 +13,8 @@ import {
   Sparkles,
   Radio,
 } from 'lucide-react';
-import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import { ConfirmModal } from '../ui/ConfirmModal';
 import type { EmailLog, EmailCategory } from '../../types/email';
 import { fetchEmailLogs, deleteEmailLog } from '../../services/email';
 
@@ -74,6 +74,7 @@ export const EmailLogsManagement: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [logToDelete, setLogToDelete] = useState<string | null>(null);
 
   const loadLogs = async () => {
     setLoading(true);
@@ -96,15 +97,16 @@ export const EmailLogsManagement: React.FC = () => {
     loadLogs();
   };
 
-  const handleDelete = async (logId: string) => {
-    if (!window.confirm('Are you sure you want to delete this log entry?')) return;
+  const handleConfirmDelete = async () => {
+    if (!logToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteEmailLog(logId);
-      setLogs((prev) => prev.filter((item) => item.id !== logId));
-      if (selectedLog?.id === logId) {
+      await deleteEmailLog(logToDelete);
+      setLogs((prev) => prev.filter((item) => item.id !== logToDelete));
+      if (selectedLog?.id === logToDelete) {
         setSelectedLog(null);
       }
+      setLogToDelete(null);
     } catch (err) {
       console.error('Failed to delete log:', err);
     } finally {
@@ -334,25 +336,23 @@ export const EmailLogsManagement: React.FC = () => {
                   </td>
                   <td className="py-3 px-4 text-right whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        variant="secondary"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => setSelectedLog(log)}
-                        className="p-1.5 h-auto text-blue-600 hover:text-blue-700"
+                        className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/25 hover:bg-blue-100 dark:hover:bg-blue-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
                         title="View Details"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleDelete(log.id)}
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLogToDelete(log.id)}
                         disabled={isDeleting}
-                        className="p-1.5 h-auto text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                        className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-500/25 hover:bg-rose-100 dark:hover:bg-rose-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Delete Log"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -451,6 +451,19 @@ export const EmailLogsManagement: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!logToDelete}
+        onClose={() => setLogToDelete(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Email Log"
+        message="Are you sure you want to delete this dispatch log entry? This action is permanent and cannot be undone."
+        confirmText="Delete Log"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

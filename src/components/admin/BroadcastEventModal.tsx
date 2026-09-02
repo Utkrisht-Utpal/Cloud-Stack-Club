@@ -188,36 +188,25 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-              <Button
+            <div className="flex items-center justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
                 type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onClose}
-                disabled={isBroadcasting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
                 onClick={handleBroadcast}
                 disabled={isBroadcasting || loadingRecipients || recipients.length === 0}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
               >
                 {isBroadcasting ? (
                   <>
-                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
                     <span>Broadcasting ({recipients.length})...</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-3.5 h-3.5 shrink-0" />
                     <span>Send Announcement ({recipients.length})</span>
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </>
         )}

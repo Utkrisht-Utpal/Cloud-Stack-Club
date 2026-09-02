@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollText, Check, X, AlertCircle } from 'lucide-react';
+import { ScrollText, Check, AlertCircle } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
 
 interface EventRulesModalProps {
   isOpen: boolean;
@@ -112,26 +111,15 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <Button
+        <div className="flex items-center justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button
             type="button"
-            variant="secondary"
-            onClick={onClose}
-            className="text-xs font-bold px-4"
-          >
-            <X className="w-3.5 h-3.5 mr-1" />
-            Cancel
-          </Button>
-
-          <Button
-            type="button"
-            variant="primary"
             onClick={handleSave}
-            className="text-xs font-bold px-5 bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98]"
           >
-            <Check className="w-3.5 h-3.5 mr-1" />
-            Save Rules
-          </Button>
+            <Check className="w-3.5 h-3.5 text-white" />
+            <span>Save Rules</span>
+          </button>
         </div>
       </div>
     </Modal>
