@@ -133,10 +133,6 @@ export const EventDetailPage: React.FC = () => {
 
   const currentCount = registrationCounts[event.id] || 0;
   const isFull = isRegistrationFull(event, currentCount);
-  const remainingSeats =
-    event.max_registrations !== null && event.max_registrations !== undefined
-      ? Math.max(0, event.max_registrations - currentCount)
-      : null;
   const isRegActive = isRegistrationActive(event, currentCount);
   const isFeedback = isFeedbackActive(event);
 
@@ -301,15 +297,15 @@ export const EventDetailPage: React.FC = () => {
               </div>
 
               {/* Capacity */}
-              {event.status === 'upcoming' && remainingSeats !== null ? (
-                <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex items-center gap-3">
+              {event.max_registrations !== null && event.max_registrations !== undefined ? (
+                <div className="p-3 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-white/60 dark:border-slate-700/60 flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                     <Sparkles className="w-4 h-4" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Capacity</p>
                     <p className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400 truncate">
-                      {isFull ? 'Full' : `${remainingSeats} / ${event.max_registrations}`}
+                      {currentCount} / {event.max_registrations}
                     </p>
                   </div>
                 </div>
