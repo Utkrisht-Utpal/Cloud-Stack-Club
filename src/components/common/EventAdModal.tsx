@@ -279,41 +279,41 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   </p>
                 )}
 
-                {/* Meta Details Pill Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-                  <div className="flex items-center gap-2">
+                {/* Meta Details Pill Row */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+                  <div className="flex items-center gap-2 shrink-0">
                     <div className="w-7 h-7 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center shrink-0">
                       <Calendar className="w-3.5 h-3.5" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-[9px] uppercase font-bold text-slate-400">Date</div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    <div>
+                      <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Date</div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         {eventDateFormatted}
                       </div>
                     </div>
                   </div>
 
                   {activeAdEvent.start_time && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <div className="w-7 h-7 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
                         <Clock className="w-3.5 h-3.5" />
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[9px] uppercase font-bold text-slate-400">Time</div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      <div>
+                        <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Time</div>
+                        <div className="text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
                           {formatEventTime(activeAdEvent.start_time)}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <div className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                       <MapPin className="w-3.5 h-3.5" />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-[9px] uppercase font-bold text-slate-400">Venue</div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    <div>
+                      <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Venue</div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
                         {activeAdEvent.location || 'CU Venue'}
                       </div>
                     </div>
