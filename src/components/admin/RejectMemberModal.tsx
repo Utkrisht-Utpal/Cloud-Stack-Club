@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Send } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
 import type { Member } from '../../types';
 
 interface RejectMemberModalProps {
@@ -137,35 +136,24 @@ export const RejectMemberModal: React.FC<RejectMemberModalProps> = ({
         )}
 
         {/* Modal Actions */}
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={onClose}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
+        <div className="flex items-center justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button
             type="submit"
-            variant="primary"
-            size="sm"
             disabled={isSubmitting || !reason.trim()}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+            className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:bg-red-700 text-white text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-red-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {isSubmitting ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
                 <span>Sending &amp; Rejecting...</span>
               </>
             ) : (
               <>
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 shrink-0" />
                 <span>Reject &amp; Send Email</span>
               </>
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </Modal>
