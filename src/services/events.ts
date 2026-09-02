@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { uploadToR2, deleteFromR2, resolveMediaUrl, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
+import { generateSlug } from '../utils/slug';
 import type { Event } from '../types/database';
 
 const CUSTOM_EVENTS_KEY = 'csc_custom_events_list';
@@ -154,7 +155,7 @@ export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
     });
 };
 
-export const SAFE_PUBLIC_EVENT_COLUMNS = 'id, title, slug, category, description, date, start_time, end_time, location, image_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at';
+export const SAFE_PUBLIC_EVENT_COLUMNS = 'id, title, slug, category, description, rules, date, start_time, end_time, location, image_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at';
 
 export const getEvents = async (): Promise<Event[]> => {
   if (!isSupabaseConfigured()) {
@@ -346,10 +347,11 @@ export const uploadEventImage = async (file: File, eventId: string): Promise<str
 
 export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> => {
   const eventId = eventPayload.id || generateUUID();
+  const title = eventPayload.title?.trim() || 'New Event';
   const createdEvent: Event = {
     id: eventId,
-    title: eventPayload.title || 'New Event',
-    slug: eventPayload.slug || `event-${Date.now()}`,
+    title,
+    slug: eventPayload.slug || generateSlug(title) || 'event',
     description: eventPayload.description || null,
     date: eventPayload.date || new Date().toISOString().split('T')[0],
     start_time: eventPayload.start_time || null,
@@ -641,33 +643,49 @@ export const deleteEventAdmin = async (
 };
 
 export const getEventBySlug = async (slug: string): Promise<Event | null> => {
+  const cleanSlug = slug.toLowerCase().trim();
+
   if (!isSupabaseConfigured()) {
-    return null;
+    const local = getLocalCustomEvents();
+    return local.find((e) => e.slug === cleanSlug || generateSlug(e.title) === cleanSlug) || null;
   }
 
-  // 1. Try public_events view or fallback to explicit safe public columns
+  // 1. Try public_events view by exact slug
   let { data, error } = await supabase
     .from('public_events')
     .select('*')
-    .eq('slug', slug)
+    .eq('slug', cleanSlug)
     .maybeSingle();
 
+  // 2. Fallback: query events table by exact slug using safe public columns
   if (error || !data) {
     const fallback = await supabase
       .from('events')
       .select(SAFE_PUBLIC_EVENT_COLUMNS)
-      .eq('slug', slug)
+      .eq('slug', cleanSlug)
       .maybeSingle();
     data = fallback.data;
     error = fallback.error;
   }
 
-  if (error) {
-    console.error(`Error fetching event ${slug}:`, error.message);
-    return null;
+  // 3. Fallback: query all events and match against generateSlug(e.title) in case of legacy slug format
+  if (!data) {
+    try {
+      const allEvents = await getEvents();
+      const match = allEvents.find(
+        (e) => (e.slug && e.slug.toLowerCase() === cleanSlug) || generateSlug(e.title) === cleanSlug
+      );
+      if (match) return match;
+    } catch {}
   }
 
-  return data as Event | null;
+  // 4. Fallback to local storage if present
+  if (!data) {
+    const local = getLocalCustomEvents();
+    return local.find((e) => e.slug === cleanSlug || generateSlug(e.title) === cleanSlug) || null;
+  }
+
+  return (data as Event) || null;
 };
 
 export const getEventById = async (id: string): Promise<Event | null> => {

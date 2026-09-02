@@ -47,6 +47,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { DatePicker } from '../ui/DatePicker';
 import { TimePicker } from '../ui/TimePicker';
 import { generateUUID } from '../../utils/uuid';
+import { generateSlug } from '../../utils/slug';
 import { CustomCheckbox } from '../ui/CustomCheckbox';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { AlertModal } from '../ui/AlertModal';
@@ -565,11 +566,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     setIsUploadingMedia(true);
     try {
       const eventId = generateUUID();
-      const autoSlug =
-        newEventData.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '') || `event-${Date.now()}`;
+      const autoSlug = generateSlug(newEventData.title) || `event-${Date.now()}`;
 
       let pdfUrl: string | null = null;
       if (eventPdfFile) {
@@ -729,6 +726,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
       const updatedPayload: Partial<Event> = {
         title: editEventData.title.trim(),
+        slug: generateSlug(editEventData.title.trim()) || editingEvent.slug,
         category: editEventData.category || null,
         description: editEventData.description.trim() || null,
         date: editEventData.date,

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { HeroSection } from '../components/sections/HeroSection';
 import { AboutSection } from '../components/sections/AboutSection';
 import { WhatWeDoSection } from '../components/sections/WhatWeDoSection';
@@ -11,11 +12,10 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onJoinClick }) => {
+  const navigate = useNavigate();
+
   const handleExploreEvents = () => {
-    const el = document.getElementById('events');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    navigate('/events');
   };
 
   return (

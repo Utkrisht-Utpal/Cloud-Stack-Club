@@ -41,6 +41,47 @@ export const formatEventTime = (timeStr?: string | null): string => {
   return trimmed;
 };
 
+/**
+ * Formats a date string (YYYY-MM-DD) into readable format: "Sep 15, 2026"
+ */
+export const formatEventDate = (dateStr?: string | null): string => {
+  if (!dateStr) return 'Date TBA';
+  try {
+    const clean = dateStr.split('T')[0];
+    const [year, month, day] = clean.split('-').map(Number);
+    if (!year || !month || !day) return dateStr;
+    const dateObj = new Date(year, month - 1, day);
+    return dateObj.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+};
+
+/**
+ * Checks if feedback is currently open for an event (during live event or T+1 feedback window)
+ */
+export const isFeedbackActive = (evt?: any): boolean => {
+  if (!evt || !evt.date) return false;
+  if (evt.status === 'live') return true;
+  try {
+    const today = new Date();
+    const cleanDate = evt.date.split('T')[0];
+    const [ey, em, ed] = cleanDate.split('-').map(Number);
+    if (!ey || !em || !ed) return false;
+    const dEvent = new Date(ey, em - 1, ed);
+    const dToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diffTime = dEvent.getTime() - dToday.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays === 0 || diffDays === -1;
+  } catch {
+    return false;
+  }
+};
+
 export interface EventStatusInfo {
   label: string;
   type: 'ongoing' | 'upcoming' | 'completed';

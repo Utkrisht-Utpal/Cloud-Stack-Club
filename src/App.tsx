@@ -6,6 +6,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 import { MainLayout } from './layouts/MainLayout';
 import { HomePage } from './pages/HomePage';
+import { EventsDirectoryPage } from './pages/EventsDirectoryPage';
+import { EventDetailPage } from './pages/EventDetailPage';
 import { GalleryPage } from './pages/GalleryPage';
 import { TeamPage } from './pages/TeamPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -24,6 +26,8 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<HomeWrapper />} />
+              <Route path="events" element={<EventsDirectoryPage />} />
+              <Route path="events/:slug" element={<EventDetailPage />} />
               <Route path="gallery" element={<GalleryPage />} />
               <Route path="team" element={<TeamPage />} />
               <Route path="*" element={<NotFoundPage />} />

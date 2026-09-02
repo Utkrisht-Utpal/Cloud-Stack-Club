@@ -11,6 +11,23 @@ export const TECH_BADGES: TechBadge[] = [
   { name: 'Node.js', category: 'Backend' },
 ];
 
+export interface EventCategoryOption {
+  value: string;
+  label: string;
+}
+
+export const EVENT_CATEGORY_OPTIONS: EventCategoryOption[] = [
+  { value: 'Bootcamp', label: 'Bootcamp' },
+  { value: 'Workshop', label: 'Workshop' },
+  { value: 'Hackathon', label: 'Hackathon' },
+  { value: 'Tech Talk', label: 'Tech Talk' },
+  { value: 'Seminar', label: 'Seminar' },
+  { value: 'Competition', label: 'Competition' },
+  { value: 'Certification', label: 'Certification' },
+  { value: 'Social', label: 'Social' },
+  { value: 'Other', label: 'Other' },
+];
+
 /**
  * About section pillars — sourced from official club Mission & Vision posters.
  *
