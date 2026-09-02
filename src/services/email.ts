@@ -10,8 +10,26 @@ async function invokeSendEmail(action: string, data: Record<string, any>): Promi
     return { success: true, sentCount: 1, total: 1 };
   }
 
+  let callerName = data.caller_name;
+  if (!callerName) {
+    try {
+      const { data: authData } = await supabase.auth.getUser();
+      const meta = authData?.user?.user_metadata || {};
+      callerName = meta.full_name || meta.name;
+      if (!callerName && authData?.user?.email) {
+        const em = authData.user.email.toLowerCase();
+        if (em.includes('sushant')) callerName = 'Sushant Kumar';
+        else if (em.includes('utkrisht')) callerName = 'Utkrisht Utpal';
+        else {
+          const prefix = em.split('@')[0].replace(/[0-9]/g, ' ').replace(/[._-]/g, ' ').trim();
+          callerName = prefix.replace(/\b\w/g, (c: string) => c.toUpperCase());
+        }
+      }
+    } catch {}
+  }
+
   const { data: result, error } = await supabase.functions.invoke('send-email', {
-    body: { action, data },
+    body: { action, data: { ...data, caller_name: callerName } },
   });
 
   if (error) {
