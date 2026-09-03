@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileSpreadsheet, 
   Plus, 
@@ -43,8 +43,36 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   selectedEventId: propSelectedEventId,
   onEventSelect,
 }) => {
+  // Filter only upcoming / yet to come events
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    return events
+      .filter((e) => {
+        // Exclude completed or cancelled events
+        if (e.status === 'completed' || e.status === 'cancelled') return false;
+
+        // Check event date against today
+        const dateStr = e.date ? e.date.split('T')[0] : '';
+        if (dateStr) {
+          return dateStr >= todayStr;
+        }
+
+        // If no date is set, include only if status is upcoming or live
+        return e.status === 'upcoming' || e.status === 'live';
+      })
+      .sort((a, b) => {
+        const aDate = a.date ? a.date.split('T')[0] : '';
+        const bDate = b.date ? b.date.split('T')[0] : '';
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return aDate.localeCompare(bDate);
+      });
+  }, [events]);
+
   const [selectedEventId, setSelectedEventId] = useState<string>(
-    propSelectedEventId || (events[0]?.id || '')
+    propSelectedEventId || (upcomingEvents[0]?.id || '')
   );
   const [fields, setFields] = useState<Partial<EventFormField>[]>([]);
   const [loading, setLoading] = useState(false);
@@ -75,11 +103,20 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   useEffect(() => {
     if (propSelectedEventId) {
       setSelectedEventId(propSelectedEventId);
+    } else if (upcomingEvents.length > 0) {
+      if (!selectedEventId || !upcomingEvents.some((e) => e.id === selectedEventId)) {
+        setSelectedEventId(upcomingEvents[0].id);
+      }
+    } else {
+      setSelectedEventId('');
     }
-  }, [propSelectedEventId]);
+  }, [propSelectedEventId, upcomingEvents, selectedEventId]);
 
   useEffect(() => {
-    if (!selectedEventId) return;
+    if (!selectedEventId) {
+      setFields([]);
+      return;
+    }
     loadFormFields(selectedEventId);
   }, [selectedEventId]);
 
@@ -201,7 +238,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
     }
   };
 
-  const selectedEvent = events.find((e) => e.id === selectedEventId);
+  const selectedEvent = upcomingEvents.find((e) => e.id === selectedEventId) || events.find((e) => e.id === selectedEventId);
 
   const getFieldTypeIcon = (type: string) => {
     switch (type) {
@@ -235,8 +272,8 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             <button
               type="button"
               onClick={() => setIsPreviewOpen(true)}
-              disabled={fields.length === 0}
-              className="h-10 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              disabled={fields.length === 0 || !selectedEventId}
+              className="h-10 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Eye className="w-4 h-4" />
               <span>Preview Form</span>
@@ -245,7 +282,8 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             <button
               type="button"
               onClick={handleSaveForm}
-              className="h-10 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-lg hover:shadow-xl flex items-center gap-2 cursor-pointer"
+              disabled={!selectedEventId}
+              className="h-10 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-lg hover:shadow-xl flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               <span>Save Form Configuration</span>
@@ -267,10 +305,14 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
                 setSelectedEventId(val);
                 if (onEventSelect) onEventSelect(val);
               }}
-              options={events.map((e) => ({
-                value: e.id,
-                label: `${e.title} (${e.date ? new Date(e.date).toLocaleDateString() : 'Upcoming'})`,
-              }))}
+              options={
+                upcomingEvents.length > 0
+                  ? upcomingEvents.map((e) => ({
+                      value: e.id,
+                      label: `${e.title} (${e.date ? new Date(e.date).toLocaleDateString() : 'Upcoming'})`,
+                    }))
+                  : [{ value: '', label: 'No upcoming events available' }]
+              }
               triggerClassName="w-full h-11 px-4 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer flex items-center justify-between text-xs font-bold"
             />
           </div>
@@ -298,7 +340,8 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
           <button
             type="button"
             onClick={handleOpenAddField}
-            className="px-4 py-2 rounded-2xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            disabled={!selectedEventId}
+            className="px-4 py-2 rounded-2xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             <span>Add Custom Question</span>
