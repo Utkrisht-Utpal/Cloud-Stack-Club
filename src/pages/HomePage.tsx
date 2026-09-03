@@ -19,7 +19,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onJoinClick }) => {
     let targetId = '';
     if (location.pathname === '/about') targetId = 'about';
     else if (location.pathname === '/domains') targetId = 'domains';
-    else if (location.pathname === '/contact') targetId = 'contact';
+    else if (location.pathname === '/contact' || location.pathname === '/contact-us') targetId = 'contact';
     else if (location.hash) targetId = location.hash.replace('#', '');
 
     if (targetId) {

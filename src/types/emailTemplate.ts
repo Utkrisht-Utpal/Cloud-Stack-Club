@@ -101,8 +101,8 @@ We encourage you to continue participating in our public tech events and reapply
 We have reviewed your inquiry regarding "{{subject_topic}}" and updated its status to {{new_status}}.
 
 If you have further questions or need additional assistance, feel free to reach out to us again through the portal.`,
-    button_text: 'Visit Portal',
-    button_url: 'https://cloudstackclub.vercel.app',
+    button_text: 'Contact Us / Support',
+    button_url: 'https://cloudstackclub.vercel.app/contact-us',
     footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University.',
     is_active: true,
   },

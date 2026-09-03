@@ -33,6 +33,7 @@ export const App: React.FC = () => {
               <Route path="about" element={<HomeWrapper />} />
               <Route path="domains" element={<HomeWrapper />} />
               <Route path="contact" element={<HomeWrapper />} />
+              <Route path="contact-us" element={<HomeWrapper />} />
               <Route path="admin" element={<HomeWrapper />} />
               <Route path="admin/login" element={<HomeWrapper />} />
               <Route path="events" element={<EventsDirectoryPage />} />

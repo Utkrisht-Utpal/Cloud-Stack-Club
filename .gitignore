@@ -33,5 +33,7 @@ dist-ssr
 
 /supabase
 /cloudflare-worker
+cloudflare-worker.js
+cloudflare-worker.*
 
 /tests
