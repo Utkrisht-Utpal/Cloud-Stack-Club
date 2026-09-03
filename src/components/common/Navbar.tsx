@@ -268,7 +268,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
 
               {/* Hanging Notice Board Directly Suspended Below Navbar (0 Gap) */}
               <AnimatePresence>
-                {activeNotice && (
+                {activeNotice && !isScrolled && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -302,7 +302,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                       return (
                         <div
                           onClick={() => setIsNoticeDetailOpen(true)}
-                          className="group flex items-center justify-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-2 rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_14px_rgba(163,177,198,0.5),-4px_-4px_14px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 dark:border dark:border-blue-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/80 dark:border-slate-800 max-w-full lg:max-w-3xl xl:max-w-4xl shrink-0 whitespace-nowrap select-none"
+                          className="group flex items-center justify-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-[5px] rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_14px_rgba(163,177,198,0.5),-4px_-4px_14px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 dark:border dark:border-blue-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/80 dark:border-slate-800 max-w-full lg:max-w-3xl xl:max-w-4xl shrink-0 whitespace-nowrap select-none"
                           title="Click to view full notice bulletin"
                         >
                           <span
@@ -316,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                             <span className="leading-none">{style.label}</span>
                           </span>
 
-                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[220px] sm:max-w-[420px] md:max-w-[560px] lg:max-w-[700px] group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors leading-none">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[220px] sm:max-w-[420px] md:max-w-[560px] lg:max-w-[700px] group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors leading-normal py-0.5">
                             {activeNotice.title}
                           </span>
 
@@ -324,14 +324,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                             <button
                               type="button"
                               onClick={handleLinkClick}
-                              className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 hover:underline shrink-0 leading-none cursor-pointer z-10 p-0.5"
+                              className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 hover:underline shrink-0 leading-normal cursor-pointer z-10 py-0.5 px-1"
                               title={`Navigate to ${activeNotice.link_url}`}
                             >
                               <span>{activeNotice.link_text || 'View Details'}</span>
                               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                             </button>
                           ) : (
-                            <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 shrink-0 leading-none">
+                            <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 shrink-0 leading-normal py-0.5">
                               <span>{activeNotice.link_text || 'View Details'}</span>
                               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                             </div>
