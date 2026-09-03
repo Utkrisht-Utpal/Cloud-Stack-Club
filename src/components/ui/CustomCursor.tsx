@@ -11,14 +11,14 @@ interface Particle {
   decay: number;
 }
 
-const PARTICLE_COLORS = ['#38bdf8', '#0ea5e9', '#818cf8', '#a855f7', '#e0f2fe'];
+const PARTICLE_COLORS = ['#38bdf8', '#0ea5e9', '#818cf8', '#c084fc', '#ffffff', '#38bdf8'];
 
 export const CustomCursor: React.FC = () => {
-  const [enabled, setEnabled] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [isClicking, setIsClicking] = useState(false);
   const [isTextInput, setIsTextInput] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
@@ -29,28 +29,35 @@ export const CustomCursor: React.FC = () => {
   const particles = useRef<Particle[]>([]);
   const animFrameId = useRef<number | null>(null);
   const lastSpawnPos = useRef({ x: -100, y: -100 });
+  const isVisibleRef = useRef(false);
 
   useEffect(() => {
-    // Only enable on non-touch devices with fine pointers and no reduced motion preference
-    const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Only exclude pure touch devices (phones/tablets without mice)
+    const isPureTouch =
+      window.matchMedia('(pointer: coarse) and (hover: none)').matches &&
+      'ontouchstart' in window;
 
-    if (!hasFinePointer || prefersReducedMotion) {
+    if (isPureTouch) {
       return;
     }
 
-    setEnabled(true);
+    setMounted(true);
+    document.body.classList.add('custom-cursor-active');
 
     const handleMouseMove = (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
-      if (!isVisible) setIsVisible(true);
 
-      // Check distance moved to spawn particles smoothly
+      if (!isVisibleRef.current) {
+        isVisibleRef.current = true;
+        setIsVisible(true);
+      }
+
+      // Check distance moved to spawn trail particles
       const dx = e.clientX - lastSpawnPos.current.x;
       const dy = e.clientY - lastSpawnPos.current.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist > 6) {
+      if (dist > 5) {
         lastSpawnPos.current = { x: e.clientX, y: e.clientY };
         spawnParticles(e.clientX, e.clientY, 2);
       }
@@ -59,7 +66,7 @@ export const CustomCursor: React.FC = () => {
     const handleMouseDown = (e: MouseEvent) => {
       setIsClicking(true);
       // Starburst particle burst on click!
-      spawnParticles(e.clientX, e.clientY, 8, true);
+      spawnParticles(e.clientX, e.clientY, 12, true);
     };
 
     const handleMouseUp = () => {
@@ -67,17 +74,24 @@ export const CustomCursor: React.FC = () => {
     };
 
     const handleMouseEnter = () => {
+      isVisibleRef.current = true;
       setIsVisible(true);
     };
 
     const handleMouseLeave = () => {
+      isVisibleRef.current = false;
       setIsVisible(false);
     };
 
-    // Detect hover over interactive elements
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement | null;
       if (!target) return;
+
+      const isText = Boolean(
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      );
 
       const isInteractive = Boolean(
         target.closest('button') ||
@@ -88,14 +102,8 @@ export const CustomCursor: React.FC = () => {
         target.classList.contains('cursor-pointer')
       );
 
-      const isText = Boolean(
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      );
-
-      setIsHovering(isInteractive && !isText);
       setIsTextInput(isText);
+      setIsHovering(isInteractive && !isText);
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -106,6 +114,7 @@ export const CustomCursor: React.FC = () => {
     document.addEventListener('mouseover', handleMouseOver, { passive: true });
 
     return () => {
+      document.body.classList.remove('custom-cursor-active');
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -113,34 +122,33 @@ export const CustomCursor: React.FC = () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
       document.removeEventListener('mouseover', handleMouseOver);
     };
-  }, [isVisible]);
+  }, []);
 
   // Particle Spawner
   const spawnParticles = (x: number, y: number, count: number, isBurst = false) => {
-    // Cap maximum active particles for consistent 120 FPS performance
-    if (particles.current.length > 60) return;
+    if (particles.current.length > 70) return;
 
     for (let i = 0; i < count; i++) {
-      const angle = isBurst ? Math.random() * Math.PI * 2 : Math.random() * Math.PI * 2;
-      const speed = isBurst ? Math.random() * 2.5 + 1.2 : Math.random() * 0.8 + 0.3;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = isBurst ? Math.random() * 3 + 1.5 : Math.random() * 0.9 + 0.3;
       const color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
 
       particles.current.push({
         x: x + (Math.random() - 0.5) * 6,
         y: y + (Math.random() - 0.5) * 6,
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - (isBurst ? 0 : 0.4), // Subtle upward float
-        size: Math.random() * 2.5 + 1.2,
+        vy: Math.sin(angle) * speed - (isBurst ? 0 : 0.5), // Gentle cosmic upward drift
+        size: Math.random() * 2.8 + 1.4,
         color,
         alpha: 1,
-        decay: Math.random() * 0.03 + 0.025,
+        decay: Math.random() * 0.035 + 0.02,
       });
     }
   };
 
   // Canvas Resize & Animation Loop
   useEffect(() => {
-    if (!enabled) return;
+    if (!mounted) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -157,12 +165,12 @@ export const CustomCursor: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     const render = () => {
-      // 1. Lerp trailing ring
+      // 1. Lerp trailing cosmic ring towards cursor
       const ease = 0.22;
       ringPos.current.x += (mousePos.current.x - ringPos.current.x) * ease;
       ringPos.current.y += (mousePos.current.y - ringPos.current.y) * ease;
 
-      // 2. Update DOM positions
+      // 2. Update DOM positions via translate3d for GPU acceleration
       if (dotRef.current) {
         dotRef.current.style.transform = `translate3d(${mousePos.current.x}px, ${mousePos.current.y}px, 0) translate(-50%, -50%)`;
       }
@@ -189,7 +197,7 @@ export const CustomCursor: React.FC = () => {
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
-        ctx.shadowBlur = 6;
+        ctx.shadowBlur = 8;
         ctx.shadowColor = p.color;
         ctx.fill();
       }
@@ -205,29 +213,29 @@ export const CustomCursor: React.FC = () => {
         cancelAnimationFrame(animFrameId.current);
       }
     };
-  }, [enabled]);
+  }, [mounted]);
 
-  if (!enabled) return null;
+  if (!mounted) return null;
 
   return (
     <>
       {/* Background Particle Canvas */}
       <canvas
         ref={canvasRef}
-        className="fixed inset-0 pointer-events-none z-[99998]"
+        className="fixed inset-0 pointer-events-none z-[999998]"
       />
 
       {/* Trailing Dashed Cosmic Ring */}
       <div
         ref={ringRef}
-        className={`fixed top-0 left-0 pointer-events-none rounded-full z-[99999] transition-all duration-200 ease-out ${
+        className={`fixed top-0 left-0 pointer-events-none rounded-full z-[999999] transition-all duration-200 ease-out ${
           !isVisible || isTextInput ? 'opacity-0 scale-50' : 'opacity-100'
         } ${
           isClicking
-            ? 'w-5 h-5 border-2 border-sky-400 bg-sky-400/20 shadow-[0_0_12px_rgba(56,189,248,0.5)]'
+            ? 'w-6 h-6 border-2 border-sky-400 bg-sky-400/30 shadow-[0_0_15px_rgba(56,189,248,0.7)]'
             : isHovering
-              ? 'w-10 h-10 border border-sky-400/80 bg-sky-400/10 shadow-[0_0_15px_rgba(56,189,248,0.35)] scale-110'
-              : 'w-6 h-6 border border-dashed border-sky-400/40 bg-transparent'
+              ? 'w-14 h-14 border-2 border-sky-400 bg-sky-400/15 shadow-[0_0_22px_rgba(56,189,248,0.45)] scale-110'
+              : 'w-8 h-8 border border-sky-400/60 shadow-[0_0_10px_rgba(56,189,248,0.25)] bg-transparent'
         }`}
         style={{ willChange: 'transform' }}
       />
@@ -235,12 +243,12 @@ export const CustomCursor: React.FC = () => {
       {/* Central Precision Glowing Dot */}
       <div
         ref={dotRef}
-        className={`fixed top-0 left-0 pointer-events-none rounded-full z-[99999] transition-opacity duration-150 ${
+        className={`fixed top-0 left-0 pointer-events-none rounded-full z-[999999] transition-all duration-150 ${
           !isVisible || isTextInput ? 'opacity-0' : 'opacity-100'
         } ${
           isHovering
-            ? 'w-2 h-2 bg-white shadow-[0_0_10px_#ffffff]'
-            : 'w-1.5 h-1.5 bg-sky-400 shadow-[0_0_8px_#38bdf8]'
+            ? 'w-3 h-3 bg-white shadow-[0_0_14px_#ffffff,0_0_24px_#38bdf8] scale-125'
+            : 'w-2 h-2 bg-sky-400 shadow-[0_0_10px_#38bdf8,0_0_20px_rgba(56,189,248,0.6)]'
         }`}
         style={{ willChange: 'transform' }}
       />
