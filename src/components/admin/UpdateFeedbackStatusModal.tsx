@@ -11,7 +11,6 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
 import type { FeedbackStatus } from '../../types/database';
 
 interface UpdateFeedbackStatusModalProps {
@@ -169,6 +168,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
       onClose={onClose}
       title={isEvent ? 'Event Feedback Status Update' : 'Inquiry Status Update'}
       maxWidth="max-w-xl"
+      hideCloseButton={true}
     >
       <form onSubmit={handleSubmit} className="space-y-4 pt-1">
         {error && (
@@ -278,34 +278,32 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
         </div>
 
         <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-          <Button
+          <button
             type="button"
-            variant="secondary"
-            size="sm"
             onClick={onClose}
             disabled={isSubmitting}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+
+          <button
             type="submit"
-            variant="primary"
-            size="sm"
             disabled={isSubmitting || (sendEmail && !note.trim())}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {isSubmitting ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Updating & Sending...</span>
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                <span>Updating &amp; Sending...</span>
               </>
             ) : (
               <>
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 shrink-0" />
                 <span>{sendEmail ? 'Update & Send Email' : 'Update Status Only'}</span>
               </>
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </Modal>

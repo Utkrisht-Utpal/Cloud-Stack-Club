@@ -53,6 +53,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Event Rules & Guidelines — ${eventTitle || 'New Event'}`}
+      hideCloseButton={true}
     >
       <div className="space-y-4">
         {/* Header Notice Banner */}
@@ -111,7 +112,15 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+          >
+            Cancel
+          </button>
+
           <button
             type="button"
             onClick={handleSave}

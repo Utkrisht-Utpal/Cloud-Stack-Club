@@ -9,9 +9,17 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  hideCloseButton?: boolean;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }) => {
+export const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  maxWidth = 'max-w-lg',
+  hideCloseButton = false,
+}) => {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -71,13 +79,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
           >
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
               <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{title}</h3>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                aria-label="Close modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {!hideCloseButton && (
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  aria-label="Close modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
             <div>{children}</div>
           </motion.div>
