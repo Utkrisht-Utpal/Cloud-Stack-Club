@@ -1119,22 +1119,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         </AnimatePresence>
 
         {/* DESKTOP (sm+): Horizontal scrollable tab bar */}
-        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none min-w-0">
+        <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none w-full min-w-0">
           <button
             onClick={() => setActiveTab('members')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'members'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <Users className="w-4 h-4" />
-            <span>Members Management</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black">
+            <Users className="w-4 h-4 shrink-0" />
+            <span>Members<span className="hidden xl:inline"> Management</span></span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-black min-w-[18px] text-center">
               {membersList.length}
             </span>
             {pendingApplications.length > 0 && (
-              <span className="ml-0.5 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black" title={`${pendingApplications.length} pending application(s)`}>
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black min-w-[18px] text-center shadow-sm" title={`${pendingApplications.length} pending application(s)`}>
                 {pendingApplications.length}
               </span>
             )}
@@ -1142,44 +1142,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('events')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'events'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <Calendar className="w-4 h-4" />
-            <span>Events Management</span>
-            <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span>Events<span className="hidden xl:inline"> Management</span></span>
+            <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 min-w-[18px] text-center font-bold">
               {eventsList.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('forms')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'forms'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <FileSpreadsheet className="w-4 h-4" />
-            <span>Registration Form Builder</span>
+            <FileSpreadsheet className="w-4 h-4 shrink-0" />
+            <span><span className="hidden xl:inline">Registration </span>Form Builder</span>
           </button>
 
           <button
             onClick={() => setActiveTab('feedbacks')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'feedbacks'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <MessageSquare className="w-4 h-4" />
-            <span>Contact &amp; Feedbacks</span>
+            <MessageSquare className="w-4 h-4 shrink-0" />
+            <span><span className="hidden xl:inline">Contact &amp; </span>Feedbacks</span>
             {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
               eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
+              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black min-w-[18px] text-center shadow-sm">
                 {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
                   eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
               </span>
@@ -1188,38 +1188,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('gallery')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'gallery'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <Camera className="w-4 h-4" />
-            <span>Event Gallery</span>
+            <Camera className="w-4 h-4 shrink-0" />
+            <span><span className="hidden xl:inline">Event </span>Gallery</span>
           </button>
 
           <button
             onClick={() => setActiveTab('team')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'team'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
-            <span>Our Team</span>
+            <Sparkles className="w-4 h-4 shrink-0" />
+            <span><span className="hidden xl:inline">Our </span>Team</span>
           </button>
 
           <button
             onClick={() => setActiveTab('emails')}
-            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer shrink-0 ${
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeTab === 'emails'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
             }`}
           >
-            <Mail className="w-4 h-4" />
-            <span>E - Mails</span>
+            <Mail className="w-4 h-4 shrink-0" />
+            <span>Emails</span>
           </button>
         </div>
 

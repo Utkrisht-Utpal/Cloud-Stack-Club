@@ -180,7 +180,7 @@ export const EmailLogsManagement: React.FC = () => {
               E - Mails Management
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Review history and delivery logs of automated emails dispatched from your official @cumail.in Outlook account.
+              Review history and delivery logs of automated emails dispatched from your official cloudstackclub@cumail.in account.
             </p>
           </div>
         </div>
@@ -198,30 +198,65 @@ export const EmailLogsManagement: React.FC = () => {
       </div>
 
       {/* Overview Stat Counters */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Logged</p>
-          <p className="text-xl font-black text-slate-900 dark:text-white mt-1">{stats.total}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 transition-all hover:scale-[1.02] shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Logged</p>
+            <div className="w-5 h-5 rounded-md bg-slate-200/60 dark:bg-slate-700/60 flex items-center justify-center text-slate-600 dark:text-slate-300">
+              <Mail className="w-3 h-3" />
+            </div>
+          </div>
+          <p className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{stats.total}</p>
         </div>
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Approvals</p>
-          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{stats.approvals}</p>
+
+        <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 transition-all hover:scale-[1.02] shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Approvals</p>
+            <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <UserCheck className="w-3 h-3" />
+            </div>
+          </div>
+          <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 mt-0.5">{stats.approvals}</p>
         </div>
-        <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Rejections</p>
-          <p className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">{stats.rejections}</p>
+
+        <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 transition-all hover:scale-[1.02] shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Rejections</p>
+            <div className="w-5 h-5 rounded-md bg-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400">
+              <UserX className="w-3 h-3" />
+            </div>
+          </div>
+          <p className="text-lg font-black text-rose-600 dark:text-rose-400 mt-0.5">{stats.rejections}</p>
         </div>
-        <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-sky-400">Contact Us</p>
-          <p className="text-xl font-black text-blue-600 dark:text-sky-400 mt-1">{stats.inquiries}</p>
+
+        <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 transition-all hover:scale-[1.02] shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-sky-400">Contact Us</p>
+            <div className="w-5 h-5 rounded-md bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-sky-400">
+              <MessageSquare className="w-3 h-3" />
+            </div>
+          </div>
+          <p className="text-lg font-black text-blue-600 dark:text-sky-400 mt-0.5">{stats.inquiries}</p>
         </div>
-        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Feedbacks</p>
-          <p className="text-xl font-black text-amber-600 dark:text-amber-400 mt-1">{stats.feedbacks}</p>
+
+        <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 transition-all hover:scale-[1.02] shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">Feedbacks</p>
+            <div className="w-5 h-5 rounded-md bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <Sparkles className="w-3 h-3" />
+            </div>
+          </div>
+          <p className="text-lg font-black text-amber-600 dark:text-amber-400 mt-0.5">{stats.feedbacks}</p>
         </div>
-        <div className="p-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">Broadcasts</p>
-          <p className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1">{stats.broadcasts}</p>
+
+        <div className="px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20 transition-all hover:scale-[1.02] shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400">Broadcasts</p>
+            <div className="w-5 h-5 rounded-md bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400">
+              <Radio className="w-3 h-3" />
+            </div>
+          </div>
+          <p className="text-lg font-black text-purple-600 dark:text-purple-400 mt-0.5">{stats.broadcasts}</p>
         </div>
       </div>
 
@@ -236,11 +271,10 @@ export const EmailLogsManagement: React.FC = () => {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
-                  isActive
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${isActive
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-                }`}
+                  }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{cat.label}</span>
@@ -297,10 +331,16 @@ export const EmailLogsManagement: React.FC = () => {
                   className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
                 >
                   <td className="py-3 px-4">
-                    <div className="font-extrabold text-slate-900 dark:text-white truncate max-w-[180px]">
+                    <div
+                      className="font-extrabold text-slate-900 dark:text-white truncate max-w-[200px] lg:max-w-[240px]"
+                      title={log.recipient_name || 'Member / User'}
+                    >
                       {log.recipient_name || 'Member / User'}
                     </div>
-                    <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[180px]">
+                    <div
+                      className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px] lg:max-w-[240px]"
+                      title={log.recipient_email}
+                    >
                       {log.recipient_email}
                     </div>
                   </td>
@@ -308,18 +348,21 @@ export const EmailLogsManagement: React.FC = () => {
                     {getCategoryBadge(log.category)}
                   </td>
                   <td className="py-3 px-4">
-                    <div className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[280px]">
+                    <div
+                      className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[300px] lg:max-w-[420px]"
+                      title={log.subject}
+                    >
                       {log.subject}
                     </div>
                   </td>
                   <td className="py-3 px-4 whitespace-nowrap">
                     {log.status === 'sent' ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Sent
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                         <XCircle className="w-3.5 h-3.5" />
                         Failed
                       </span>
