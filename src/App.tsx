@@ -28,6 +28,8 @@ export const App: React.FC = () => {
               <Route index element={<HomeWrapper />} />
               <Route path="join" element={<HomeWrapper />} />
               <Route path="apply" element={<HomeWrapper />} />
+              <Route path="discrepancy" element={<HomeWrapper />} />
+              <Route path="query" element={<HomeWrapper />} />
               <Route path="about" element={<HomeWrapper />} />
               <Route path="domains" element={<HomeWrapper />} />
               <Route path="contact" element={<HomeWrapper />} />

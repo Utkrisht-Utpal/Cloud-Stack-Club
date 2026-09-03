@@ -291,6 +291,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                         if (activeNotice.link_url) {
                           e.stopPropagation();
                           const url = activeNotice.link_url.trim();
+                          if (url === '/discrepancy' || url === 'discrepancy' || url.endsWith('/discrepancy') || url.endsWith('/query')) {
+                            window.dispatchEvent(new CustomEvent('csc-open-discrepancy-modal'));
+                            return;
+                          }
                           if (url.startsWith('http://') || url.startsWith('https://')) {
                             window.open(url, '_blank', 'noopener,noreferrer');
                           } else {
@@ -474,6 +478,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                           e.stopPropagation();
                           setMobileMenuOpen(false);
                           const url = activeNotice.link_url!.trim();
+                          if (url === '/discrepancy' || url === 'discrepancy' || url.endsWith('/discrepancy') || url.endsWith('/query')) {
+                            window.dispatchEvent(new CustomEvent('csc-open-discrepancy-modal'));
+                            return;
+                          }
                           if (url.startsWith('http://') || url.startsWith('https://')) {
                             window.open(url, '_blank', 'noopener,noreferrer');
                           } else {

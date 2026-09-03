@@ -18,6 +18,7 @@ import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { AdminLoginModal } from '../components/admin/AdminLoginModal';
 
 import { JoinModal } from '../components/common/JoinModal';
+import { DiscrepancyModal } from '../components/common/DiscrepancyModal';
 import { EventRegisterModal } from '../components/common/EventRegisterModal';
 import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
@@ -27,6 +28,8 @@ export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [joinModalDismissed, setJoinModalDismissed] = useState(false);
+  const [discrepancyModalOpen, setDiscrepancyModalOpen] = useState(false);
+  const [discrepancyModalDismissed, setDiscrepancyModalDismissed] = useState(false);
   const [adminModalDismissed, setAdminModalDismissed] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
@@ -53,9 +56,10 @@ export const MainLayout: React.FC = () => {
       .catch(console.error);
   }, []);
 
-  // Handle URL-based modal opening (/join, /apply, /admin, /admin/login)
+  // Handle URL-based modal opening (/join, /apply, /admin, /admin/login, /discrepancy, /query)
   const isJoinUrl = location.pathname === '/join' || location.pathname === '/apply';
   const isAdminUrl = location.pathname === '/admin' || location.pathname === '/admin/login';
+  const isDiscrepancyUrl = location.pathname === '/discrepancy' || location.pathname === '/query';
 
   useEffect(() => {
     if (!isJoinUrl) {
@@ -70,10 +74,28 @@ export const MainLayout: React.FC = () => {
   }, [isAdminUrl]);
 
   useEffect(() => {
+    if (!isDiscrepancyUrl) {
+      setDiscrepancyModalDismissed(false);
+    }
+  }, [isDiscrepancyUrl]);
+
+  useEffect(() => {
     if (isJoinUrl && !joinModalDismissed) {
       setJoinModalOpen(true);
     }
   }, [isJoinUrl, joinModalDismissed]);
+
+  useEffect(() => {
+    if (isDiscrepancyUrl && !discrepancyModalDismissed) {
+      setDiscrepancyModalOpen(true);
+    }
+  }, [isDiscrepancyUrl, discrepancyModalDismissed]);
+
+  useEffect(() => {
+    const handleOpen = () => setDiscrepancyModalOpen(true);
+    window.addEventListener('csc-open-discrepancy-modal', handleOpen);
+    return () => window.removeEventListener('csc-open-discrepancy-modal', handleOpen);
+  }, []);
 
   useEffect(() => {
     if (isAdminUrl && !adminModalDismissed) {
@@ -100,6 +122,14 @@ export const MainLayout: React.FC = () => {
     setJoinModalOpen(false);
     setJoinModalDismissed(true);
     if (location.pathname === '/join' || location.pathname === '/apply') {
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  const handleCloseDiscrepancyModal = React.useCallback(() => {
+    setDiscrepancyModalOpen(false);
+    setDiscrepancyModalDismissed(true);
+    if (location.pathname === '/discrepancy' || location.pathname === '/query') {
       navigate('/', { replace: true });
     }
   }, [location.pathname, navigate]);
@@ -250,6 +280,14 @@ export const MainLayout: React.FC = () => {
           <JoinModal
             isOpen={joinModalOpen}
             onClose={handleCloseJoinModal}
+          />
+        )}
+
+        {/* Discrepancy / Query Submission Modal */}
+        {discrepancyModalOpen && (
+          <DiscrepancyModal
+            isOpen={discrepancyModalOpen}
+            onClose={handleCloseDiscrepancyModal}
           />
         )}
 

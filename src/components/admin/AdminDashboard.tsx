@@ -30,6 +30,7 @@ import {
   Mail,
   Radio,
   Bell,
+  HelpCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
@@ -50,7 +51,9 @@ import { BroadcastEventModal } from './BroadcastEventModal';
 import { UpdateFeedbackStatusModal } from './UpdateFeedbackStatusModal';
 import { EmailLogsManagement } from './EmailLogsManagement';
 import { NoticeManagementModal } from './NoticeManagementModal';
+import { DiscrepancyManagementModal } from './DiscrepancyManagementModal';
 import { getActiveNotices } from '../../services/notices';
+import { getAllDiscrepancies } from '../../services/discrepancies';
 import {
   sendMemberApprovalEmail,
   sendMemberRejectionEmail,
@@ -163,6 +166,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     window.addEventListener('csc-notice-updated', checkActiveNotices);
     return () => window.removeEventListener('csc-notice-updated', checkActiveNotices);
   }, [checkActiveNotices]);
+
+  // Discrepancies & Student Queries State
+  const [isDiscrepancyModalOpen, setIsDiscrepancyModalOpen] = useState(false);
+  const [discrepancyCount, setDiscrepancyCount] = useState(0);
+
+  const checkDiscrepancies = React.useCallback(async () => {
+    try {
+      const list = await getAllDiscrepancies();
+      setDiscrepancyCount(list.length);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    checkDiscrepancies();
+    window.addEventListener('csc-discrepancy-updated', checkDiscrepancies);
+    return () => window.removeEventListener('csc-discrepancy-updated', checkDiscrepancies);
+  }, [checkDiscrepancies]);
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -1270,6 +1290,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 >
                   <Shield className="w-3.5 h-3.5 text-blue-500" />
                   <span>Roles</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsDiscrepancyModalOpen(true)}
+                  className="flex-1 sm:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                  title="View Student Discrepancies & CUIMS Issue Reports"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Discrepancy</span>
+                  {discrepancyCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-white leading-none">
+                      {discrepancyCount}
+                    </span>
+                  )}
                 </button>
 
                 <button
@@ -3093,6 +3128,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           onRolesUpdated={() => {
             loadAllMembers();
           }}
+        />
+
+        {/* Discrepancy Submissions Management Modal */}
+        <DiscrepancyManagementModal
+          isOpen={isDiscrepancyModalOpen}
+          onClose={() => setIsDiscrepancyModalOpen(false)}
         />
 
         {/* Event PDF Viewer Modal */}
