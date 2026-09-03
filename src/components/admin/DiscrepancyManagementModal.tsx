@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { CustomSelect } from '../ui/CustomSelect';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -51,8 +52,14 @@ const STATUS_CONFIG: Record<
     text: 'text-emerald-600 dark:text-emerald-400',
     border: 'border-emerald-500/30',
   },
+  archived: {
+    label: 'Archived',
+    bg: 'bg-slate-500/15',
+    text: 'text-slate-600 dark:text-slate-400',
+    border: 'border-slate-500/30',
+  },
   dismissed: {
-    label: 'Dismissed',
+    label: 'Archived',
     bg: 'bg-slate-500/15',
     text: 'text-slate-600 dark:text-slate-400',
     border: 'border-slate-500/30',
@@ -71,26 +78,31 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
   const [deletingTicket, setDeletingTicket] = useState<Discrepancy | null>(null);
   const [adminNotesDraft, setAdminNotesDraft] = useState<Record<string, string>>({});
 
-  const loadSubmissions = async () => {
-    setLoading(true);
+  const loadSubmissions = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const data = await getAllDiscrepancies();
       setSubmissions(data);
     } catch (err) {
       console.error('Failed to load discrepancy submissions:', err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      loadSubmissions();
+      loadSubmissions(submissions.length === 0);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    const handleUpdate = () => loadSubmissions();
+    const handleUpdate = () => {
+      // Silently sync in background without unmounting the table or toggling loading state
+      getAllDiscrepancies()
+        .then((data) => setSubmissions(data))
+        .catch(() => {});
+    };
     window.addEventListener('csc-discrepancy-updated', handleUpdate);
     return () => window.removeEventListener('csc-discrepancy-updated', handleUpdate);
   }, []);
@@ -100,7 +112,11 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
     setSubmissions((prev) =>
       prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
     );
-    await updateDiscrepancyStatus(id, newStatus, notes);
+    try {
+      await updateDiscrepancyStatus(id, newStatus, notes);
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
   };
 
   const handleSaveNotes = async (id: string) => {
@@ -308,7 +324,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                       <th className="py-3.5 px-4 font-black">Registration No</th>
                       <th className="py-3.5 px-4 font-black">Student Name</th>
                       <th className="py-3.5 px-4 font-black">Contact Details</th>
-                      <th className="py-3.5 px-4 font-black">Type / Team Details</th>
+                      <th className="py-3.5 px-4 font-black">Department / Year</th>
                       <th className="py-3.5 px-4 font-black">Date & Time</th>
                       <th className="py-3.5 px-4 font-black text-right">Actions</th>
                     </tr>
@@ -392,21 +408,24 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                                       <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                                         Status:
                                       </span>
-                                      <select
-                                        value={r.status}
-                                        onChange={(e) =>
-                                          handleStatusChange(
-                                            r.id,
-                                            e.target.value as DiscrepancyStatus
-                                          )
-                                        }
-                                        className={`px-3 py-1 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
-                                      >
-                                        <option value="pending">Pending</option>
-                                        <option value="in_review">In Review</option>
-                                        <option value="resolved">Resolved</option>
-                                        <option value="dismissed">Dismissed</option>
-                                      </select>
+                                      <div className="w-[145px]">
+                                        <CustomSelect
+                                          value={r.status}
+                                          onChange={(val) =>
+                                            handleStatusChange(
+                                              r.id,
+                                              val as DiscrepancyStatus
+                                            )
+                                          }
+                                          options={[
+                                            { value: 'pending', label: '⏳ Pending' },
+                                            { value: 'in_review', label: '🔍 In Review' },
+                                            { value: 'resolved', label: '✅ Resolved' },
+                                            { value: 'archived', label: '📁 Archived' },
+                                          ]}
+                                          triggerClassName={`w-full h-8 px-3 rounded-xl text-xs font-bold border flex items-center justify-between gap-1.5 transition-all cursor-pointer whitespace-nowrap ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}
+                                        />
+                                      </div>
                                     </div>
 
                                     {/* Direct WhatsApp & Email Buttons */}

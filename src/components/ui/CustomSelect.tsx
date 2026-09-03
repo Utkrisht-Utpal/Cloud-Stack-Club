@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 export interface SelectOption {
   value: string;
@@ -58,7 +58,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       const viewportWidth = window.innerWidth;
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldDropUp = spaceBelow < 220 && rect.top > 200;
-      const menuWidth = Math.max(rect.width, 160);
+      const menuWidth = rect.width;
       let menuLeft = rect.left;
       if (menuLeft + menuWidth > viewportWidth - 12) {
         menuLeft = Math.max(12, viewportWidth - menuWidth - 12);
@@ -135,11 +135,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       {/* Select Trigger Box */}
       <button
         type="button"
-        id="yos"
         onClick={() => setIsOpen(!isOpen)}
         className={triggerClassName || defaultTriggerClass}
       >
-        <span className="text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2 text-left min-w-0 flex-1 whitespace-nowrap">
+        <span className={`text-xs sm:text-sm font-medium flex items-center gap-2 text-left min-w-0 flex-1 whitespace-nowrap ${triggerClassName ? 'text-inherit' : 'text-slate-900 dark:text-slate-100'}`}>
           {showDot && (
             <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />
           )}
@@ -148,9 +147,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           </span>
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-blue-600 dark:text-sky-400 transition-transform duration-300 shrink-0 ml-2 ${
-            isOpen ? "rotate-180" : "rotate-0"
-          }`}
+          className={`w-4 h-4 transition-transform duration-300 shrink-0 ml-1.5 ${
+            triggerClassName ? 'text-inherit opacity-80' : 'text-blue-600 dark:text-sky-400'
+          } ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         />
       </button>
 
@@ -181,7 +180,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     : "auto",
                 left: `${portalStyle.left}px`,
                 width: `${portalStyle.width}px`,
-                minWidth: "160px",
                 zIndex: 99999,
               }}
               className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl p-1.5 space-y-1 overflow-y-auto max-h-48 custom-scrollbar focus:outline-none"
@@ -196,7 +194,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                       onChange(option.value);
                       setIsOpen(false);
                     }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                    className={`w-full px-3 py-2 rounded-xl text-left transition-all flex items-center gap-2 cursor-pointer ${
                       isSelected
                         ? "bg-blue-600 text-white font-semibold shadow-md"
                         : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300"
@@ -218,9 +216,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                         </span>
                       )}
                     </div>
-                    {isSelected && (
-                      <Check className="w-4 h-4 text-white shrink-0" />
-                    )}
                   </button>
                 );
               })}

@@ -873,8 +873,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const handleSyncRecords = async () => {
     setIsSyncingMembers(true);
     try {
-      await Promise.all([loadPendingApps(), loadAllMembers()]);
-      setActionSuccess('Member & Core records synced successfully!');
+      await Promise.all([
+        loadPendingApps(),
+        loadAllMembers(),
+        checkDiscrepancies(),
+      ]);
+      window.dispatchEvent(new CustomEvent('csc-discrepancy-updated'));
+      setActionSuccess('Member, Core & Discrepancy records synced successfully!');
       setTimeout(() => setActionSuccess(null), 2000);
     } catch (err) {
       console.error('Error syncing records:', err);

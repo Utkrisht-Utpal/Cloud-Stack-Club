@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { formatPersonName } from '../utils/formatters';
 
-export type DiscrepancyStatus = 'pending' | 'in_review' | 'resolved' | 'dismissed';
+export type DiscrepancyStatus = 'pending' | 'in_review' | 'resolved' | 'archived' | 'dismissed';
 
 export interface Discrepancy {
   id: string;
