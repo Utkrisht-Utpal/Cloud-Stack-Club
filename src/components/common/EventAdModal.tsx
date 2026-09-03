@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, MapPin, Sparkles, ArrowRight, FileText, Users2, Ticket, Timer, MessageSquare } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
@@ -41,12 +42,20 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   onViewPdfClick,
   onFeedbackClick,
 }) => {
+  const location = useLocation();
   const [activeAdEvent, setActiveAdEvent] = useState<Event | null>(null);
   const [isFeedbackWindow, setIsFeedbackWindow] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [regCountsMap, setRegCountsMap] = useState<Record<string, number>>({});
   const { isAdminLoggedIn } = useAdminAuth();
   const userDismissedRef = useRef(false);
+
+  // The ad pop up should only come when visiting the Home page or sections of that (e.g. /about, /domains, /contact)
+  const isHomeOrSection =
+    location.pathname === '/' ||
+    location.pathname === '/about' ||
+    location.pathname === '/domains' ||
+    location.pathname === '/contact';
 
   // Load real-time registration counts map (zero student PII)
   useEffect(() => {
@@ -56,6 +65,10 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   }, [events]);
 
   useEffect(() => {
+    if (!isHomeOrSection) {
+      setIsOpen(false);
+      return;
+    }
     if (!events || events.length === 0) return;
     if (userDismissedRef.current) return;
 
@@ -110,7 +123,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     setActiveAdEvent(null);
     setIsFeedbackWindow(false);
     setIsOpen(false);
-  }, [events]);
+  }, [events, isHomeOrSection]);
 
   useEffect(() => {
     if (isOpen) {
@@ -145,7 +158,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     setIsOpen(false);
   };
 
-  if (!activeAdEvent || !isOpen) return null;
+  if (!isHomeOrSection || !activeAdEvent || !isOpen) return null;
 
   const diffDays = getDiffDays(activeAdEvent.date);
   const isFeedbackActive = isFeedbackWindow || diffDays === 0 || diffDays === -1 || activeAdEvent.status === 'live';
