@@ -1,6 +1,8 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { EmailLog, SendEmailResult, EmailCategory } from '../types/email';
 
+import { getAllEmailTemplates } from './emailTemplates';
+
 /**
  * Invoke the secure Supabase Edge Function to send an email.
  */
@@ -28,8 +30,18 @@ async function invokeSendEmail(action: string, data: Record<string, any>): Promi
     } catch {}
   }
 
+  let customTemplate = data.custom_template;
+  if (!customTemplate) {
+    try {
+      const templates = await getAllEmailTemplates();
+      if (templates && templates[action as EmailCategory]) {
+        customTemplate = templates[action as EmailCategory];
+      }
+    } catch {}
+  }
+
   const { data: result, error } = await supabase.functions.invoke('send-email', {
-    body: { action, data: { ...data, caller_name: callerName } },
+    body: { action, data: { ...data, caller_name: callerName, custom_template: customTemplate } },
   });
 
   if (error) {

@@ -404,14 +404,14 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                   type="button"
                   onClick={handleModalClose}
                   disabled={isSubmitting}
-                  className="h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
+                  className="h-11 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-50 shrink-0"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || isCoolingDown}
-                  className="h-10 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 text-white text-xs font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-row items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-11 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 text-white text-xs font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
                   {isSubmitting ? (
                     <>
