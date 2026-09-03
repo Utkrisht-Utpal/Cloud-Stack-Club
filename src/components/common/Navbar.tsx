@@ -266,9 +266,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                 })}
               </nav>
 
-              {/* Hanging Notice Board Directly Suspended Below Navbar (0 Gap) */}
+              {/* Hanging Notice Board Directly Suspended Below Navbar (0 Gap, Home Page Only) */}
               <AnimatePresence>
-                {activeNotice && !isScrolled && (
+                {activeNotice && !isScrolled && (location.pathname === '/' || location.pathname === '') && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -302,7 +302,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                       return (
                         <div
                           onClick={() => setIsNoticeDetailOpen(true)}
-                          className="group flex items-center justify-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-[5px] rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_14px_rgba(163,177,198,0.5),-4px_-4px_14px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 dark:border dark:border-blue-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/80 dark:border-slate-800 max-w-full lg:max-w-3xl xl:max-w-4xl shrink-0 whitespace-nowrap select-none"
+                          className="group flex items-center justify-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-[5px] rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_14px_rgba(163,177,198,0.5),-4px_-4px_14px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 dark:border dark:border-blue-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/80 dark:border-slate-800 max-w-[calc(100vw-360px)] lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl shrink-0 whitespace-nowrap select-none"
                           title="Click to view full notice bulletin"
                         >
                           <span
@@ -316,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                             <span className="leading-none">{style.label}</span>
                           </span>
 
-                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[220px] sm:max-w-[420px] md:max-w-[560px] lg:max-w-[700px] group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors leading-normal py-0.5">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors leading-normal py-0.5 whitespace-nowrap">
                             {activeNotice.title}
                           </span>
 
@@ -446,8 +446,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                   <CULogo size="sm" />
                 </div>
 
-                {/* Mobile Live Notice Banner */}
-                {activeNotice && (
+                {/* Mobile Live Notice Banner (Home Page Only) */}
+                {activeNotice && (location.pathname === '/' || location.pathname === '') && (
                   <div
                     onClick={() => {
                       setMobileMenuOpen(false);

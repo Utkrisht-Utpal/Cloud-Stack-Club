@@ -53,7 +53,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
 
         {/* Top Announcement Pill / Covered Space for Hanging Notice Board */}
-        <div className="flex justify-center mb-6 sm:mb-8">
+        <div className="flex justify-center mb-6 sm:mb-3">
           {hasActiveNotice ? (
             /* Spacer preserving the exact 30-40px clearance above club logo while navbar notice board hangs */
             <div className="h-8 w-full max-w-md pointer-events-none" aria-hidden="true" />
