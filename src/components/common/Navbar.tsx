@@ -48,6 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
     return null;
   });
   const [isNoticeDetailOpen, setIsNoticeDetailOpen] = useState(false);
+  const [isAdminHovered, setIsAdminHovered] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -355,29 +356,66 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
 
             <div className="h-6 w-px bg-slate-300 dark:bg-slate-800" />
 
-            {/* Theme Toggle Button */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={toggleTheme}
-              className="p-2.5 rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
-              aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-            >
-              {theme === 'light' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-            </motion.button>
-
-            {/* Admin Login Button */}
-            {!isAdminDashboard && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleAdminClick}
-                className="p-2.5 rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-colors cursor-pointer"
-                title={isAdminLoggedIn ? "Admin Panel" : "Admin Login"}
-                aria-label={isAdminLoggedIn ? "Admin Panel" : "Admin Login"}
+            {isAdminDashboard ? (
+              /* In Admin Dashboard: Single Theme Toggle (No phantom admin envelope) */
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="w-[38px] h-[38px] rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-colors flex items-center justify-center cursor-pointer shrink-0"
+                aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
               >
-                <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400" />
-              </motion.button>
+                {theme === 'light' ? (
+                  <Moon className="w-4 h-4 shrink-0" />
+                ) : (
+                  <Sun className="w-4 h-4 shrink-0" />
+                )}
+              </button>
+            ) : (
+              /* Public / Main site: Theme Toggle + Expandable Admin Button (Zero Layout Shift Envelope) */
+              <div className="relative w-[84px] h-[38px] shrink-0">
+                {/* Theme Toggle Button (Left slot) */}
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className={`absolute left-0 top-0 w-[38px] h-[38px] rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-all duration-200 ease-out flex items-center justify-center cursor-pointer ${
+                    isAdminHovered ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'
+                  }`}
+                  aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+                  tabIndex={isAdminHovered ? -1 : 0}
+                >
+                  {theme === 'light' ? (
+                    <Moon className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <Sun className="w-4 h-4 shrink-0" />
+                  )}
+                </button>
+
+                {/* Expandable Admin Button (Right slot, expands leftward smoothly to 84px) */}
+                <button
+                  type="button"
+                  onMouseEnter={() => setIsAdminHovered(true)}
+                  onMouseLeave={() => setIsAdminHovered(false)}
+                  onClick={handleAdminClick}
+                  className={`absolute right-0 top-0 h-[38px] rounded-xl bg-[#e6ecf5] dark:bg-slate-900 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer flex items-center justify-center overflow-hidden z-10 ${
+                    isAdminHovered
+                      ? 'w-[84px] px-2.5 gap-1.5'
+                      : 'w-[38px] p-2'
+                  }`}
+                  title={isAdminLoggedIn ? "Admin Panel" : "Admin Login"}
+                  aria-label={isAdminLoggedIn ? "Admin Panel" : "Admin Login"}
+                >
+                  <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                  <span
+                    className={`text-xs font-black tracking-wide whitespace-nowrap text-slate-900 dark:text-white transition-all duration-200 ease-out ${
+                      isAdminHovered
+                        ? 'opacity-100 max-w-[50px] translate-x-0'
+                        : 'opacity-0 max-w-0 -translate-x-2 pointer-events-none'
+                    }`}
+                  >
+                    Admin
+                  </span>
+                </button>
+              </div>
             )}
 
             {/* Logout (admin) or Join Club (public) */}

@@ -228,3 +228,52 @@ export async function deleteEmailLog(logId: string): Promise<boolean> {
   }
   return true;
 }
+
+export interface EmailStats {
+  total: number;
+  approvals: number;
+  rejections: number;
+  inquiries: number;
+  broadcasts: number;
+  feedbacks: number;
+}
+
+/**
+ * Fetches universal email metrics directly from backend database across all logs.
+ */
+export async function fetchEmailStats(): Promise<EmailStats> {
+  const defaultStats: EmailStats = {
+    total: 0,
+    approvals: 0,
+    rejections: 0,
+    inquiries: 0,
+    broadcasts: 0,
+    feedbacks: 0,
+  };
+
+  if (!isSupabaseConfigured()) return defaultStats;
+
+  try {
+    const { data, error } = await supabase
+      .from('email_logs')
+      .select('category');
+
+    if (error || !data) {
+      console.error('Failed to fetch universal email stats:', error);
+      return defaultStats;
+    }
+
+    return {
+      total: data.length,
+      approvals: data.filter((r) => r.category === 'approval').length,
+      rejections: data.filter((r) => r.category === 'rejection').length,
+      inquiries: data.filter((r) => r.category === 'contact_us').length,
+      feedbacks: data.filter((r) => r.category === 'event_feedback').length,
+      broadcasts: data.filter((r) => r.category === 'event_broadcast').length,
+    };
+  } catch (err) {
+    console.error('Failed to query email stats:', err);
+    return defaultStats;
+  }
+}
+

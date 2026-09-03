@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Mail,
   Search,
@@ -18,7 +18,7 @@ import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { EmailTemplatesModal } from './EmailTemplatesModal';
 import type { EmailLog, EmailCategory } from '../../types/email';
-import { fetchEmailLogs, deleteEmailLog } from '../../services/email';
+import { fetchEmailLogs, deleteEmailLog, fetchEmailStats, type EmailStats } from '../../services/email';
 import { supabase } from '../../services/supabase';
 
 const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; color: string }> = [
@@ -173,6 +173,32 @@ export const EmailLogsManagement: React.FC = () => {
     loadLogs();
   };
 
+  const [stats, setStats] = useState<EmailStats>({
+    total: 0,
+    approvals: 0,
+    rejections: 0,
+    inquiries: 0,
+    broadcasts: 0,
+    feedbacks: 0,
+  });
+
+  const loadStats = async () => {
+    try {
+      const data = await fetchEmailStats();
+      setStats(data);
+    } catch (err) {
+      console.warn('Failed to load universal stats:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const handleRefresh = async () => {
+    await Promise.all([loadLogs(), loadStats()]);
+  };
+
   const handleConfirmDelete = async () => {
     if (!logToDelete) return;
     setIsDeleting(true);
@@ -183,23 +209,13 @@ export const EmailLogsManagement: React.FC = () => {
         setSelectedLog(null);
       }
       setLogToDelete(null);
+      loadStats();
     } catch (err) {
       console.error('Failed to delete log:', err);
     } finally {
       setIsDeleting(false);
     }
   };
-
-  // Summary Metrics
-  const stats = useMemo(() => {
-    const total = logs.length;
-    const approvals = logs.filter((l) => l.category === 'approval').length;
-    const rejections = logs.filter((l) => l.category === 'rejection').length;
-    const inquiries = logs.filter((l) => l.category === 'contact_us').length;
-    const broadcasts = logs.filter((l) => l.category === 'event_broadcast').length;
-    const feedbacks = logs.filter((l) => l.category === 'event_feedback').length;
-    return { total, approvals, rejections, inquiries, broadcasts, feedbacks };
-  }, [logs]);
 
   const getCategoryBadge = (category: EmailCategory) => {
     switch (category) {
@@ -274,7 +290,7 @@ export const EmailLogsManagement: React.FC = () => {
 
           <button
             type="button"
-            onClick={loadLogs}
+            onClick={handleRefresh}
             disabled={loading}
             className="px-4 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 hover:border-blue-500/40 dark:hover:border-sky-500/40 hover:bg-blue-50/50 dark:hover:bg-slate-800 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed group"
             title="Refresh Delivery Logs"
@@ -385,19 +401,20 @@ export const EmailLogsManagement: React.FC = () => {
       </div>
 
       {/* Email History Table */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 uppercase font-black text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800">
-            <tr>
-              <th className="py-3 px-4">Recipient</th>
-              <th className="py-3 px-4">Category</th>
-              <th className="py-3 px-4">Subject</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Dispatched At</th>
-              <th className="py-3 px-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div className={`overflow-x-auto ${logs.length > 5 ? 'max-h-[350px] overflow-y-auto custom-scrollbar' : ''}`}>
+          <table className="w-full text-left text-xs border-collapse">
+            <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur text-slate-500 dark:text-slate-400 uppercase font-black text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 shadow-sm">
+              <tr>
+                <th className="py-3 px-4">Recipient</th>
+                <th className="py-3 px-4">Category</th>
+                <th className="py-3 px-4">Subject</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Dispatched At</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
             {loading ? (
               <tr>
                 <td colSpan={6} className="py-12 text-center text-slate-400">
@@ -492,6 +509,7 @@ export const EmailLogsManagement: React.FC = () => {
           </tbody>
         </table>
       </div>
+    </div>
 
       {/* Log Detail Modal */}
       {selectedLog && (
