@@ -202,8 +202,8 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recipient:</span>
               <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{recipientName}</p>
             </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email Address:</span>
+            <div className="sm:text-right">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Email Address:</span>
               <p className="font-mono text-slate-600 dark:text-slate-300 mt-0.5 truncate">{recipientEmail || 'N/A'}</p>
             </div>
           </div>
