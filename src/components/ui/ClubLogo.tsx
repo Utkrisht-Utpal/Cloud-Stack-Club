@@ -38,10 +38,14 @@ export const ClubLogo: React.FC<ClubLogoProps> = ({
       </div>
       {showText && (
         <div className="flex flex-col justify-center">
-          <span className={`font-black ${textMap[size].main} tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none mb-1`}>
+          <span
+            className={`font-black ${textMap[size].main} tracking-tight text-slate-900 dark:text-white flex items-center gap-1 leading-none mb-1`}
+          >
             Cloud Stack <span className="text-blue-600 dark:text-sky-400">Club</span>
           </span>
-          <span className={`${textMap[size].sub} font-extrabold text-slate-600 dark:text-slate-400 tracking-widest uppercase leading-none`}>
+          <span
+            className={`${textMap[size].sub} font-extrabold text-slate-600 dark:text-slate-400 tracking-widest uppercase leading-none`}
+          >
             Chandigarh University
           </span>
         </div>
@@ -49,3 +53,5 @@ export const ClubLogo: React.FC<ClubLogoProps> = ({
     </div>
   );
 };
+
+

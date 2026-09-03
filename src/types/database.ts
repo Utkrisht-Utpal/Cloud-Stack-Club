@@ -18,6 +18,20 @@ export type FieldType =
   | 'url';
 export type RegistrationStatus = 'registered' | 'confirmed' | 'cancelled' | 'attended';
 export type FeedbackStatus = 'pending' | 'in_progress' | 'resolved' | 'unread' | 'read' | 'archived' | 'responded';
+export type NoticeType = 'urgent' | 'announcement' | 'event' | 'info';
+
+export interface Notice {
+  id: string;
+  title: string;
+  content: string | null;
+  type: NoticeType;
+  link_url?: string | null;
+  link_text?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
+}
 
 export interface Role {
   id: string;

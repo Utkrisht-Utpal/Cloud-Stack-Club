@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, MotionConfig } from 'framer-motion';
 import { ArrowRight, Calendar, Terminal, Cpu } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TECH_BADGES } from '../../constants/data';
 import { ClubLogo } from '../ui/ClubLogo';
-
+import { getActiveNotices } from '../../services/notices';
 
 interface HeroSectionProps {
   onJoinClick: () => void;
@@ -12,31 +12,74 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExploreEventsClick }) => {
+  const [hasActiveNotice, setHasActiveNotice] = useState<boolean>(() => {
+    try {
+      const cached = localStorage.getItem('csc_active_notices_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed && parsed.length > 0;
+      }
+    } catch {}
+    return false;
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchNotice = async () => {
+      try {
+        const notices = await getActiveNotices();
+        if (isMounted) {
+          setHasActiveNotice(notices.length > 0);
+        }
+      } catch (err) {
+        console.warn('Failed to load active notice in Hero:', err);
+      }
+    };
+
+    fetchNotice();
+
+    const handleUpdate = () => fetchNotice();
+    window.addEventListener('csc-notice-updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('csc-notice-updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
+
   return (
     <section id="hero" className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
 
-        {/* Top Announcement Pill*/}
+        {/* Top Announcement Pill / Covered Space for Hanging Notice Board */}
         <div className="flex justify-center mb-6 sm:mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="inline-flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-blue-500/30 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden"
-          >
-            <span className="flex h-2 w-2 relative shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
-            </span>
+          {hasActiveNotice ? (
+            /* Spacer preserving the exact 30-40px clearance above club logo while navbar notice board hangs */
+            <div className="h-8 w-full max-w-md pointer-events-none" aria-hidden="true" />
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: -15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="inline-flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[3px_3px_8px_rgba(163,177,198,0.5),-3px_-3px_8px_#ffffff] dark:shadow-none dark:border dark:border-blue-500/30 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden"
+            >
+              <span className="flex h-2 w-2 relative shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+              </span>
 
-            <span className="font-extrabold tracking-wide uppercase whitespace-nowrap shrink-0">
-              <span className="text-red-600 dark:text-red-500">CHANDIGARH</span>{' '}
-              <span className="text-slate-900 dark:text-white">UNIVERSITY</span>
-            </span>
+              <span className="font-extrabold tracking-wide uppercase whitespace-nowrap shrink-0">
+                <span className="text-red-600 dark:text-red-500">CHANDIGARH</span>{' '}
+                <span className="text-slate-900 dark:text-white">UNIVERSITY</span>
+              </span>
 
-            <span className="text-slate-400 hidden xs:inline">•</span>
-            <span className="text-slate-700 dark:text-slate-300 font-medium truncate hidden sm:inline">Empowering Student Builders</span>
-          </motion.div>
+              <span className="text-slate-400 hidden xs:inline">•</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium truncate hidden sm:inline">
+                Empowering Student Builders
+              </span>
+            </motion.div>
+          )}
         </div>
 
         {/* Main Hero Header */}

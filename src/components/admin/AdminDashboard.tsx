@@ -29,6 +29,7 @@ import {
   ScrollText,
   Mail,
   Radio,
+  Bell,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
@@ -48,6 +49,8 @@ import { RejectMemberModal } from './RejectMemberModal';
 import { BroadcastEventModal } from './BroadcastEventModal';
 import { UpdateFeedbackStatusModal } from './UpdateFeedbackStatusModal';
 import { EmailLogsManagement } from './EmailLogsManagement';
+import { NoticeManagementModal } from './NoticeManagementModal';
+import { getActiveNotices } from '../../services/notices';
 import {
   sendMemberApprovalEmail,
   sendMemberRejectionEmail,
@@ -143,6 +146,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     isEvent: boolean;
     targetStatus: FeedbackStatus;
   } | null>(null);
+
+  // Notice Board State
+  const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+  const [activeNoticeCount, setActiveNoticeCount] = useState(0);
+
+  const checkActiveNotices = React.useCallback(async () => {
+    try {
+      const active = await getActiveNotices();
+      setActiveNoticeCount(active.length);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    checkActiveNotices();
+    window.addEventListener('csc-notice-updated', checkActiveNotices);
+    return () => window.removeEventListener('csc-notice-updated', checkActiveNotices);
+  }, [checkActiveNotices]);
 
   // Pending Applications State
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
@@ -1620,12 +1640,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         {/* Tab Content 3: Events Management */}
         {activeTab === 'events' && (
           <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
               <div>
                 <h2 className="text-base font-bold">Club Events Management</h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Create, edit, or delete club events, upload event poster & PDF schedules, and manage registration windows.
                 </p>
+              </div>
+
+              {/* Centre: Notice Board Button */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNoticeModalOpen(true)}
+                  className="px-3.5 py-1.5 sm:py-2 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:border-amber-500/50 text-xs font-black flex items-center gap-2 transition-all shadow-sm hover:shadow-md cursor-pointer group shrink-0"
+                  title="Manage Hanging Navbar Notice Board"
+                >
+                  <div className="relative">
+                    <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 group-hover:rotate-12 transition-transform" />
+                    {activeNoticeCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                    )}
+                  </div>
+                  <span>Notice Board</span>
+                  {activeNoticeCount > 0 ? (
+                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500 text-white leading-none">
+                      Active
+                    </span>
+                  ) : null}
+                </button>
               </div>
 
               <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap w-full sm:w-auto shrink-0 justify-between sm:justify-end">
@@ -3141,6 +3184,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           targetStatus={pendingStatusFeedback?.targetStatus || 'pending'}
           onClose={() => setPendingStatusFeedback(null)}
           onConfirm={handleConfirmFeedbackStatusUpdate}
+        />
+
+        {/* Notice Board Management Modal */}
+        <NoticeManagementModal
+          isOpen={isNoticeModalOpen}
+          onClose={() => setIsNoticeModalOpen(false)}
+          onNoticeUpdated={checkActiveNotices}
         />
       </div>
     </div>
