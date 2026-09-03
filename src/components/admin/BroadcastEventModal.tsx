@@ -88,6 +88,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
       onClose={onClose}
       title="Broadcast Event Announcement"
       maxWidth="max-w-2xl"
+      hideCloseButton={true}
     >
       <div className="space-y-6">
         {successResult ? (
@@ -197,7 +198,16 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
             )}
 
             {/* Actions */}
-            <div className="flex items-center justify-end pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isBroadcasting}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+
               <button
                 type="button"
                 onClick={handleBroadcast}
