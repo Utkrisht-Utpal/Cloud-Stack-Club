@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Mail, KeyRound, LogIn, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
 export const AdminLoginModal: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { isAdminModalOpen, closeAdminModal, login } = useAdminAuth();
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -61,6 +64,9 @@ export const AdminLoginModal: React.FC = () => {
     setEmailInput('');
     setPasswordInput('');
     closeAdminModal();
+    if (location.pathname === '/admin' || location.pathname === '/admin/login') {
+      navigate('/', { replace: true });
+    }
   };
 
   return (

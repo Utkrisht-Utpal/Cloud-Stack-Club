@@ -26,6 +26,8 @@ export const MainLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [joinModalOpen, setJoinModalOpen] = useState(false);
+  const [joinModalDismissed, setJoinModalDismissed] = useState(false);
+  const [adminModalDismissed, setAdminModalDismissed] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -52,14 +54,29 @@ export const MainLayout: React.FC = () => {
   }, []);
 
   // Handle URL-based modal opening (/join, /apply, /admin, /admin/login)
-  useEffect(() => {
-    if (location.pathname === '/join' || location.pathname === '/apply') {
-      setJoinModalOpen(true);
-    }
-  }, [location.pathname]);
+  const isJoinUrl = location.pathname === '/join' || location.pathname === '/apply';
+  const isAdminUrl = location.pathname === '/admin' || location.pathname === '/admin/login';
 
   useEffect(() => {
-    if (location.pathname === '/admin' || location.pathname === '/admin/login') {
+    if (!isJoinUrl) {
+      setJoinModalDismissed(false);
+    }
+  }, [isJoinUrl]);
+
+  useEffect(() => {
+    if (!isAdminUrl) {
+      setAdminModalDismissed(false);
+    }
+  }, [isAdminUrl]);
+
+  useEffect(() => {
+    if (isJoinUrl && !joinModalDismissed) {
+      setJoinModalOpen(true);
+    }
+  }, [isJoinUrl, joinModalDismissed]);
+
+  useEffect(() => {
+    if (isAdminUrl && !adminModalDismissed) {
       if (!isLoading) {
         if (isAdminLoggedIn) {
           setShowDashboard(true);
@@ -68,19 +85,41 @@ export const MainLayout: React.FC = () => {
         }
       }
     }
-  }, [location.pathname, isAdminLoggedIn, isLoading, setShowDashboard, openAdminModal]);
+  }, [isAdminUrl, adminModalDismissed, isAdminLoggedIn, isLoading, setShowDashboard, openAdminModal]);
 
   // Hide native vertical scrollbar while ScrollProgress indicator is healthy;
   // automatically restores it if the indicator fails or is removed.
   useScrollbarFallback('[data-scroll-progress]');
 
-  const handleOpenJoinModal = () => setJoinModalOpen(true);
-  const handleCloseJoinModal = () => {
+  const handleOpenJoinModal = React.useCallback(() => {
+    setJoinModalDismissed(false);
+    setJoinModalOpen(true);
+  }, []);
+
+  const handleCloseJoinModal = React.useCallback(() => {
     setJoinModalOpen(false);
+    setJoinModalDismissed(true);
     if (location.pathname === '/join' || location.pathname === '/apply') {
       navigate('/', { replace: true });
     }
-  };
+  }, [location.pathname, navigate]);
+
+  const handleRegisterEventClick = React.useCallback((evt: Event) => {
+    setSelectedRegisterEvent(evt);
+  }, []);
+
+  const handleFeedbackEventClick = React.useCallback((evt: Event) => {
+    setSelectedFeedbackEvent(evt);
+  }, []);
+
+  const outletContextValue = React.useMemo(
+    () => ({
+      onJoinClick: handleOpenJoinModal,
+      onRegisterEventClick: handleRegisterEventClick,
+      onFeedbackEventClick: handleFeedbackEventClick,
+    }),
+    [handleOpenJoinModal, handleRegisterEventClick, handleFeedbackEventClick]
+  );
 
   // Check if admin dashboard was active prior to page reload
   const wasAdminDashboardActive = (() => {
@@ -142,13 +181,7 @@ export const MainLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-grow relative z-10">
-        <Outlet
-          context={{
-            onJoinClick: handleOpenJoinModal,
-            onRegisterEventClick: (evt: Event) => setSelectedRegisterEvent(evt),
-            onFeedbackEventClick: (evt: Event) => setSelectedFeedbackEvent(evt),
-          }}
-        />
+        <Outlet context={outletContextValue} />
       </main>
 
       {/* Floating CTA on Mobile */}

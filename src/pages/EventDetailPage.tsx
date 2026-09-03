@@ -45,21 +45,35 @@ export const EventDetailPage: React.FC = () => {
   const [isPosterModalOpen, setIsPosterModalOpen] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
+  const [regModalDismissed, setRegModalDismissed] = useState(false);
+  const [feedbackModalDismissed, setFeedbackModalDismissed] = useState(false);
+
+  const isRegisterRoute =
+    location.pathname.endsWith('/register') || location.pathname.endsWith('/registration');
+  const isFeedbackRoute = location.pathname.endsWith('/feedback');
+
+  useEffect(() => {
+    if (!isRegisterRoute) {
+      setRegModalDismissed(false);
+    }
+  }, [isRegisterRoute]);
+
+  useEffect(() => {
+    if (!isFeedbackRoute) {
+      setFeedbackModalDismissed(false);
+    }
+  }, [isFeedbackRoute]);
 
   // Deep-link modal auto-open based on URL (/register, /registration, /feedback)
   useEffect(() => {
     if (!event || loading) return;
 
-    const isRegisterRoute =
-      location.pathname.endsWith('/register') || location.pathname.endsWith('/registration');
-    const isFeedbackRoute = location.pathname.endsWith('/feedback');
-
-    if (isRegisterRoute && outletContext?.onRegisterEventClick) {
+    if (isRegisterRoute && !regModalDismissed && outletContext?.onRegisterEventClick) {
       outletContext.onRegisterEventClick(event);
-    } else if (isFeedbackRoute && outletContext?.onFeedbackEventClick) {
+    } else if (isFeedbackRoute && !feedbackModalDismissed && outletContext?.onFeedbackEventClick) {
       outletContext.onFeedbackEventClick(event);
     }
-  }, [event, loading, location.pathname, outletContext]);
+  }, [event, loading, isRegisterRoute, isFeedbackRoute, regModalDismissed, feedbackModalDismissed, outletContext]);
 
   useEffect(() => {
     let isMounted = true;
@@ -335,6 +349,7 @@ export const EventDetailPage: React.FC = () => {
                   variant="primary"
                   size="lg"
                   onClick={() => {
+                    setFeedbackModalDismissed(false);
                     navigate(`/events/${slug}/feedback`);
                     outletContext?.onFeedbackEventClick?.(event);
                   }}
@@ -355,6 +370,7 @@ export const EventDetailPage: React.FC = () => {
                     variant="primary"
                     size="lg"
                     onClick={() => {
+                      setRegModalDismissed(false);
                       navigate(`/events/${slug}/register`);
                       outletContext?.onRegisterEventClick?.(event);
                     }}
