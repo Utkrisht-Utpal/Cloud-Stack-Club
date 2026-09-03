@@ -4,6 +4,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import type { Event } from '../../types';
 import { fetchAllRegisteredUsersForBroadcast, sendEventBroadcastEmail } from '../../services/email';
+import { formatEventDate, formatEventTime } from '../../utils/formatters';
 
 interface BroadcastEventModalProps {
   isOpen: boolean;
@@ -137,7 +138,15 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
               <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
                 <div className="flex items-center gap-1.5 truncate">
                   <Calendar className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span>{event.date} {event.start_time ? `� ${event.start_time}` : ''}</span>
+                  <span className="truncate">
+                    {formatEventDate(event.date)}
+                    {event.start_time && (
+                      <>
+                        <span className="text-slate-300 dark:text-slate-600 font-bold mx-1.5">•</span>
+                        <span>{formatEventTime(event.start_time)}</span>
+                      </>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1.5 truncate">
                   <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
@@ -157,7 +166,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
                     Target Recipient Audience
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    All registered student members in the database
+                    All active registered club members in the database
                   </p>
                 </div>
               </div>
@@ -177,7 +186,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
               <span>
-                This will dispatch an official event announcement email via Outlook to all {recipients.length} registered members. Please verify all event details before confirming.
+                This will dispatch an official event announcement email to all {recipients.length} active registered club members. Please verify all event details before confirming.
               </span>
             </div>
 

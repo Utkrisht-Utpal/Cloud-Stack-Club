@@ -142,10 +142,11 @@ export async function fetchAllRegisteredUsersForBroadcast(): Promise<Array<{ ema
   if (!isSupabaseConfigured()) return [];
 
   try {
-    // 1. Fetch from members table
+    // 1. Fetch strictly active members from members table
     const { data: members, error: memErr } = await supabase
       .from('members')
-      .select('email, name')
+      .select('email, name, status')
+      .eq('status', 'active')
       .not('email', 'is', null);
 
     if (memErr) throw memErr;
