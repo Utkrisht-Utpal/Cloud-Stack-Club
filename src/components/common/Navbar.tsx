@@ -286,30 +286,57 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                     {(() => {
                       const style = getNoticeStyle(activeNotice.type);
                       const NoticeIcon = style.icon;
+
+                      const handleLinkClick = (e: React.MouseEvent) => {
+                        if (activeNotice.link_url) {
+                          e.stopPropagation();
+                          const url = activeNotice.link_url.trim();
+                          if (url.startsWith('http://') || url.startsWith('https://')) {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          } else {
+                            window.location.href = url;
+                          }
+                        }
+                      };
+
                       return (
-                        <button
-                          type="button"
+                        <div
                           onClick={() => setIsNoticeDetailOpen(true)}
-                          className="group flex items-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-2 rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_14px_rgba(163,177,198,0.5),-4px_-4px_14px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 dark:border dark:border-blue-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/80 dark:border-slate-800 max-w-full lg:max-w-3xl xl:max-w-4xl shrink-0 whitespace-nowrap"
+                          className="group flex items-center justify-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-2 rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_14px_rgba(163,177,198,0.5),-4px_-4px_14px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 dark:border dark:border-blue-500/40 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer border border-white/80 dark:border-slate-800 max-w-full lg:max-w-3xl xl:max-w-4xl shrink-0 whitespace-nowrap select-none"
                           title="Click to view full notice bulletin"
                         >
                           <span
-                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm shrink-0 ${style.badge}`}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shadow-sm shrink-0 leading-none ${style.badge}`}
                           >
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-                            <NoticeIcon className="w-3 h-3" />
-                            <span>{style.label}</span>
+                            <span className="relative flex h-1.5 w-1.5 shrink-0 items-center justify-center">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+                            </span>
+                            <NoticeIcon className="w-3 h-3 shrink-0" />
+                            <span className="leading-none">{style.label}</span>
                           </span>
 
-                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[220px] sm:max-w-[420px] md:max-w-[560px] lg:max-w-[700px] group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
+                          <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white truncate max-w-[220px] sm:max-w-[420px] md:max-w-[560px] lg:max-w-[700px] group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors leading-none">
                             {activeNotice.title}
                           </span>
 
-                          <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 shrink-0">
-                            <span>{activeNotice.link_text || 'View Details'}</span>
-                            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                          </div>
-                        </button>
+                          {activeNotice.link_url ? (
+                            <button
+                              type="button"
+                              onClick={handleLinkClick}
+                              className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 hover:underline shrink-0 leading-none cursor-pointer z-10 p-0.5"
+                              title={`Navigate to ${activeNotice.link_url}`}
+                            >
+                              <span>{activeNotice.link_text || 'View Details'}</span>
+                              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            </button>
+                          ) : (
+                            <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 shrink-0 leading-none">
+                              <span>{activeNotice.link_text || 'View Details'}</span>
+                              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          )}
+                        </div>
                       );
                     })()}
                   </motion.div>
@@ -421,8 +448,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
 
                 {/* Mobile Live Notice Banner */}
                 {activeNotice && (
-                  <button
-                    type="button"
+                  <div
                     onClick={() => {
                       setMobileMenuOpen(false);
                       setIsNoticeDetailOpen(true);
@@ -441,8 +467,28 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
                         {activeNotice.title}
                       </p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                  </button>
+                    {activeNotice.link_url ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMobileMenuOpen(false);
+                          const url = activeNotice.link_url!.trim();
+                          if (url.startsWith('http://') || url.startsWith('https://')) {
+                            window.open(url, '_blank', 'noopener,noreferrer');
+                          } else {
+                            window.location.href = url;
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-blue-600 dark:text-sky-400 hover:bg-blue-500/20 shrink-0 cursor-pointer"
+                        title="Open Link"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                    )}
+                  </div>
                 )}
 
                 {siteConfig.navLinks.map((link) => (
