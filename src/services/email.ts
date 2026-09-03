@@ -95,7 +95,7 @@ export async function sendContactUsStatusEmail(
   return invokeSendEmail('contact_us', {
     recipient_email: inquiry.email,
     recipient_name: inquiry.name,
-    subject_topic: inquiry.subject,
+    subject_topic: inquiry.subject || 'Your Inquiry',
     new_status: newStatus,
     admin_reply: adminReply,
   });

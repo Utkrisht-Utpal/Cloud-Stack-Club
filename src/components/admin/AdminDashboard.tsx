@@ -298,6 +298,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const [feedbackSearch, setFeedbackSearch] = useState('');
   const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'in_progress' | 'resolved' | 'archived'>('all');
   const [isSyncingFeedbacks, setIsSyncingFeedbacks] = useState(false);
+  const [viewingFeedback, setViewingFeedback] = useState<any | null>(null);
 
   const filteredContactFeedbacks = useMemo(() => {
     return contactFeedbacksList.filter((f) => {
@@ -2188,10 +2189,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                         <th className="py-3.5 px-4 font-bold">EVENT & RATINGS</th>
                       )}
                       <th className="py-3.5 px-4 font-bold">
-                        {feedbackViewTab === 'event' ? 'DETAILED FEEDBACK' : 'MESSAGE / INQUIRY'}
+                        {feedbackViewTab === 'event' ? 'DETAILED FEEDBACK' : 'SUBJECT'}
                       </th>
+                      <th className="py-3.5 px-4 font-bold text-center">ACTION</th>
                       <th className="py-3.5 px-4 font-bold">SUBMISSION DATE</th>
-                      <th className="py-3.5 px-4 text-right font-bold">STATUS & ACTION</th>
+                      <th className="py-3.5 px-4 text-right font-bold">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -2271,18 +2273,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             })()}
                           </td>
                         )}
-                        <td className="py-3.5 px-4 min-w-[280px]">
-                          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl text-xs space-y-1.5">
-                            {f.subject && (
-                              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
-                                <span className="text-[10px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-sky-400">
-                                  Subject
-                                </span>
-                                <span>{f.subject}</span>
-                              </div>
-                            )}
-                            <div>{f.message}</div>
-                          </div>
+                        <td className="py-3.5 px-4 min-w-[180px] max-w-[280px]">
+                          {feedbackViewTab === 'event' ? (
+                            <div className="line-clamp-2 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                              {f.message || 'No feedback remarks'}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="font-semibold text-slate-900 dark:text-white text-xs truncate max-w-[240px] inline-block"
+                                title={f.subject || f.message || 'General Inquiry'}
+                              >
+                                {f.subject || (
+                                  <span className="text-slate-400 font-normal italic">General Inquiry</span>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => setViewingFeedback(f)}
+                            className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/25 hover:bg-blue-100 dark:hover:bg-blue-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 mx-auto"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                         </td>
                         <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
                           {f.created_at
@@ -3246,6 +3263,119 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           onClose={() => setIsNoticeModalOpen(false)}
           onNoticeUpdated={checkActiveNotices}
         />
+
+        {/* Full Inquiry / Message Details Modal */}
+        {viewingFeedback && (
+          <Modal
+            isOpen={!!viewingFeedback}
+            onClose={() => setViewingFeedback(null)}
+            title={feedbackViewTab === 'event' ? 'Event Feedback Details' : 'Inquiry Message Details'}
+            maxWidth="max-w-2xl"
+            hideCloseButton={true}
+          >
+            <div className="space-y-4 text-xs">
+              {/* Header Details Card */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                      Sender Name
+                    </span>
+                    <p className="text-sm font-black text-slate-900 dark:text-white mt-0.5">
+                      {viewingFeedback.name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                      Status
+                    </span>
+                    <span
+                      className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[11px] mt-0.5 ${
+                        viewingFeedback.status === 'resolved' || viewingFeedback.status === 'responded'
+                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                          : viewingFeedback.status === 'in_progress'
+                            ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border border-blue-500/30'
+                            : viewingFeedback.status === 'archived'
+                              ? 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30'
+                              : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                      }`}
+                    >
+                      {viewingFeedback.status === 'unread'
+                        ? 'PENDING'
+                        : viewingFeedback.status === 'responded'
+                          ? 'RESOLVED'
+                          : viewingFeedback.status?.toUpperCase() || 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Email Address
+                    </span>
+                    <a
+                      href={`mailto:${viewingFeedback.email}`}
+                      className="font-mono text-blue-600 dark:text-sky-400 hover:underline"
+                    >
+                      {viewingFeedback.email}
+                    </a>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                      Submission Time
+                    </span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">
+                      {viewingFeedback.created_at
+                        ? `${new Date(viewingFeedback.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • ${new Date(viewingFeedback.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subject Box */}
+              {viewingFeedback.subject && (
+                <div className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 block mb-1">
+                    Subject / Topic
+                  </span>
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                    {viewingFeedback.subject}
+                  </p>
+                </div>
+              )}
+
+              {/* Full Message */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                  Full Message Content
+                </span>
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 leading-relaxed max-h-[300px] overflow-y-auto custom-scrollbar whitespace-pre-wrap text-xs">
+                  {viewingFeedback.message || 'No message provided.'}
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setViewingFeedback(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+                <a
+                  href={`mailto:${viewingFeedback.email}?subject=Re: ${encodeURIComponent(viewingFeedback.subject || 'Your Cloud Stack Club Inquiry')}`}
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Reply via Email</span>
+                </a>
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
     </div>
   );
