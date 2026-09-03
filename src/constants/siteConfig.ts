@@ -7,7 +7,7 @@ export const siteConfig: SiteConfig = {
   coordinators: {
     faculty: 'Dr. Deepti Sharma',
     coFaculty: 'Prof. Navjot Singh',
-    secretary: 'Lakshay Gosai',
+    secretary: 'Lakshya Gosai',
     jointSecretary: 'Bani Kaur',
   },
   contact: {

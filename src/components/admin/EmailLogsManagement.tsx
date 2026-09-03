@@ -19,6 +19,7 @@ import { ConfirmModal } from '../ui/ConfirmModal';
 import { EmailTemplatesModal } from './EmailTemplatesModal';
 import type { EmailLog, EmailCategory } from '../../types/email';
 import { fetchEmailLogs, deleteEmailLog } from '../../services/email';
+import { supabase } from '../../services/supabase';
 
 const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; color: string }> = [
   { id: 'all', label: 'All Emails', icon: Mail, color: 'text-slate-600 dark:text-slate-300' },
@@ -29,9 +30,26 @@ const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; c
   { id: 'event_broadcast', label: 'Event Broadcasts', icon: Radio, color: 'text-purple-600 dark:text-purple-400' },
 ];
 
-export const formatAdminSender = (name?: string | null, email?: string | null): string => {
+export const getAdminDisplayName = (name?: string | null, email?: string | null): string => {
   let displayName = name?.trim();
   const rawEmail = (email || '').trim().toLowerCase();
+
+  if (
+    rawEmail.includes('laksh') ||
+    rawEmail.includes('gosai') ||
+    (displayName && (displayName.toLowerCase().includes('laksh') || displayName.toLowerCase().includes('gosai')))
+  ) {
+    return 'Lakshya Gosai';
+  }
+  if (rawEmail.includes('sushant') || (displayName && displayName.toLowerCase().includes('sushant'))) {
+    return 'Sushant Kumar';
+  }
+  if (rawEmail.includes('utkrisht') || (displayName && displayName.toLowerCase().includes('utkrisht'))) {
+    return 'Utkrisht Utpal';
+  }
+  if (rawEmail.includes('bani') || (displayName && displayName.toLowerCase().includes('bani'))) {
+    return 'Bani Kaur';
+  }
 
   const isPrefixOnly =
     !displayName ||
@@ -41,11 +59,7 @@ export const formatAdminSender = (name?: string | null, email?: string | null): 
     /^[a-z0-9._-]+$/i.test(displayName);
 
   if (isPrefixOnly) {
-    if (rawEmail.includes('sushant') || (displayName && displayName.toLowerCase().includes('sushant'))) {
-      displayName = 'Sushant Kumar';
-    } else if (rawEmail.includes('utkrisht') || (displayName && displayName.toLowerCase().includes('utkrisht'))) {
-      displayName = 'Utkrisht Utpal';
-    } else if (displayName) {
+    if (displayName) {
       const clean = displayName
         .replace(/[0-9]/g, ' ')
         .replace(/[._-]/g, ' ')
@@ -62,11 +76,47 @@ export const formatAdminSender = (name?: string | null, email?: string | null): 
     }
   }
 
-  if (!displayName) {
-    displayName = 'Administrator';
+  return displayName || 'Administrator';
+};
+
+export const getAdminRole = (
+  name?: string | null,
+  email?: string | null,
+  customRoleMap?: Record<string, string>
+): string => {
+  const rawEmail = (email || '').trim().toLowerCase();
+  const rawName = (name || '').trim().toLowerCase();
+
+  // 1. Check custom role map from database if present
+  if (customRoleMap && rawEmail && customRoleMap[rawEmail]) {
+    return customRoleMap[rawEmail];
   }
 
-  return email ? `${displayName} (${email})` : displayName;
+  // 2. Recognized leadership roles
+  if (rawEmail.includes('laksh') || rawEmail.includes('gosai') || rawName.includes('laksh') || rawName.includes('gosai')) {
+    return 'Secretary';
+  }
+  if (rawEmail.includes('utkrisht') || rawName.includes('utkrisht')) {
+    return 'President / Lead';
+  }
+  if (rawEmail.includes('sushant') || rawName.includes('sushant')) {
+    return 'Technical Lead';
+  }
+  if (rawEmail.includes('bani') || rawName.includes('bani')) {
+    return 'Joint Secretary';
+  }
+
+  return 'Administrator';
+};
+
+export const formatAdminSender = (
+  name?: string | null,
+  email?: string | null,
+  customRoleMap?: Record<string, string>
+): string => {
+  const displayName = getAdminDisplayName(name, email);
+  const role = getAdminRole(name, email, customRoleMap);
+  return `${displayName} (${role})`;
 };
 
 export const EmailLogsManagement: React.FC = () => {
@@ -78,6 +128,29 @@ export const EmailLogsManagement: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [logToDelete, setLogToDelete] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState<boolean>(false);
+  const [memberRoleMap, setMemberRoleMap] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const fetchMemberRoles = async () => {
+      try {
+        const { data } = await supabase
+          .from('members')
+          .select('email, role:roles(name)');
+        if (data && Array.isArray(data)) {
+          const map: Record<string, string> = {};
+          data.forEach((m: any) => {
+            if (m.email && m.role?.name) {
+              map[m.email.toLowerCase().trim()] = m.role.name;
+            }
+          });
+          setMemberRoleMap(map);
+        }
+      } catch (err) {
+        console.warn('Could not load member roles map:', err);
+      }
+    };
+    fetchMemberRoles();
+  }, []);
 
   const loadLogs = async () => {
     setLoading(true);
@@ -466,7 +539,7 @@ export const EmailLogsManagement: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Dispatched By:</span>
                 <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {formatAdminSender(selectedLog.sent_by_name, selectedLog.sent_by_email)}
+                  {formatAdminSender(selectedLog.sent_by_name, selectedLog.sent_by_email, memberRoleMap)}
                 </span>
               </div>
             </div>

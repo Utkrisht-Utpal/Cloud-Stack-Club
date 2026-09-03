@@ -5,6 +5,7 @@ import { Footer } from '../components/common/Footer';
 import { FloatingMobileCTA } from '../components/common/FloatingMobileCTA';
 import { CloudBackground } from '../components/ui/CloudBackground';
 import { ScrollProgress } from '../components/ui/ScrollProgress';
+import { CustomCursor } from '../components/ui/CustomCursor';
 import { ScrollToTop } from '../components/common/ScrollToTop';
 import { EventAdModal } from '../components/common/EventAdModal';
 import { useAdminAuth } from '../context/AdminAuthContext';
@@ -202,6 +203,9 @@ export const MainLayout: React.FC = () => {
 
       {/* Top Scroll Reading Progress */}
       <ScrollProgress />
+
+      {/* Cosmic Particle Custom Cursor */}
+      <CustomCursor />
 
       {/* Cloud & Particle Background */}
       <CloudBackground />

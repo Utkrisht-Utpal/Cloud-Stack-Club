@@ -22,6 +22,8 @@ async function invokeSendEmail(action: string, data: Record<string, any>): Promi
         const em = authData.user.email.toLowerCase();
         if (em.includes('sushant')) callerName = 'Sushant Kumar';
         else if (em.includes('utkrisht')) callerName = 'Utkrisht Utpal';
+        else if (em.includes('laksh') || em.includes('gosai')) callerName = 'Lakshya Gosai';
+        else if (em.includes('bani')) callerName = 'Bani Kaur';
         else {
           const prefix = em.split('@')[0].replace(/[0-9]/g, ' ').replace(/[._-]/g, ' ').trim();
           callerName = prefix.replace(/\b\w/g, (c: string) => c.toUpperCase());
