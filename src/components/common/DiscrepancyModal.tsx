@@ -392,43 +392,45 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
               </div>
             </div>
 
-            {/* Cloudflare Turnstile Verification */}
-            <div className="pt-1">
-              <TurnstileWidget onVerify={(token) => setTurnstileToken(token)} />
-            </div>
+            {/* Cloudflare Turnstile & Actions Footer */}
+            <div className="space-y-2 pt-1">
+              <TurnstileWidget
+                className="flex justify-center my-0"
+                onVerify={(token) => setTurnstileToken(token)}
+              />
 
-            {/* Form Actions */}
-            <div className="pt-2 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleModalClose}
-                disabled={isSubmitting}
-                className="h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting || isCoolingDown}
-                className="h-10 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 text-white text-xs font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-row items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
-                    <span>Submitting...</span>
-                  </>
-                ) : isCoolingDown ? (
-                  <>
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    <span>Wait {cooldown}s</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 shrink-0" />
-                    <span>Submit Query</span>
-                  </>
-                )}
-              </button>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleModalClose}
+                  disabled={isSubmitting}
+                  className="h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isCoolingDown}
+                  className="h-10 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 text-white text-xs font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-row items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : isCoolingDown ? (
+                    <>
+                      <ShieldCheck className="w-4 h-4 shrink-0" />
+                      <span>Wait {cooldown}s</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 shrink-0" />
+                      <span>Submit Query</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
         )}
