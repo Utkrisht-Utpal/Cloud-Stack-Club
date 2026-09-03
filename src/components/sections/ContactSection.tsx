@@ -141,7 +141,8 @@ export const ContactSection: React.FC = () => {
                       <div className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
                         <p>Chandigarh University</p>
                         <p>NH-05 Chandigarh-Ludhiana Highway,</p>
-                        <p>Mohali, Punjab (INDIA)</p>
+                        <p>Mohali, Punjab</p>
+                        <p>140413, India</p>
                       </div>
                     </div>
                   </div>
