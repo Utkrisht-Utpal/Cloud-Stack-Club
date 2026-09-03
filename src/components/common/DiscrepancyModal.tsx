@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   User,
@@ -21,6 +21,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 import { submitDiscrepancy, type Discrepancy } from '../../services/discrepancies';
+import { getActiveNotices } from '../../services/notices';
 
 interface DiscrepancyModalProps {
   isOpen: boolean;
@@ -42,6 +43,29 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
 }) => {
   const [turnstileToken, setTurnstileToken] = useState<string>('');
   const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
+  const [activeNoticeDesc, setActiveNoticeDesc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let isMounted = true;
+    getActiveNotices()
+      .then((notices) => {
+        if (!isMounted) return;
+        const currentNotice = notices && notices.length > 0 ? notices[0] : null;
+        const desc = currentNotice?.content || (currentNotice as any)?.description || null;
+        if (desc && typeof desc === 'string' && desc.trim()) {
+          setActiveNoticeDesc(desc.trim());
+        } else {
+          setActiveNoticeDesc(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setActiveNoticeDesc(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -149,7 +173,8 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={handleModalClose}
-      title={submittedTicket ? 'Query Submitted Successfully' : 'Club Membership / CUIMS Discrepancy Form'}
+      title={submittedTicket ? 'Query Submitted Successfully' : 'Club Discrepancy Form'}
+      hideCloseButton={true}
       maxWidth="max-w-xl"
     >
       <AnimatePresence mode="wait">
@@ -214,13 +239,13 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
           </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Header info notice */}
-            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
-              <HelpCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="leading-relaxed">
-                Facing issues deregistering from your current club on CUIMS, or unable to complete your membership? Submit this form with your details to request direct coordinator support.
-              </p>
-            </div>
+            {/* Header info notice: ONLY shown if currently active notice has a non-empty description */}
+            {activeNoticeDesc && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+                <HelpCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="leading-relaxed whitespace-pre-wrap">{activeNoticeDesc}</p>
+              </div>
+            )}
 
             {error && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-2">
@@ -253,7 +278,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                     required
                     value={formData.name}
                     onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g. John Doe"
+                    placeholder="e.g. Ravi Kishan"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -269,7 +294,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                     type="text"
                     value={formData.uid}
                     onChange={(e) => setFormData((prev) => ({ ...prev, uid: e.target.value.toUpperCase() }))}
-                    placeholder="e.g. 24BCF10063"
+                    placeholder="e.g. 24BCF1000X"
                     maxLength={10}
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
@@ -290,7 +315,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                     required
                     value={formData.email}
                     onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                    placeholder="student@cuchd.in"
+                    placeholder="student@gmail.in"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -298,7 +323,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-                  Phone Number (10 Digits) <span className="text-red-500">*</span>
+                  Phone Number <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -308,7 +333,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                     maxLength={10}
                     value={formData.phone}
                     onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value.replace(/\D/g, '') }))}
-                    placeholder="9876543210"
+                    placeholder="Enter 10 Digit Phone Number"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -328,7 +353,7 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                     required
                     value={formData.department}
                     onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))}
-                    placeholder="e.g. CSE - Cloud Computing / AIT"
+                    placeholder="e.g. AIT - CSE / FullStack Development"
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -338,12 +363,15 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                   Year of Study <span className="text-red-500">*</span>
                 </label>
-                <CustomSelect
-                  value={formData.year}
-                  onChange={(val) => setFormData((prev) => ({ ...prev, year: val }))}
-                  options={YEAR_OPTIONS}
-                  triggerClassName="w-full"
-                />
+                <div className="relative">
+                  <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                  <CustomSelect
+                    value={formData.year}
+                    onChange={(val) => setFormData((prev) => ({ ...prev, year: val }))}
+                    options={YEAR_OPTIONS}
+                    triggerClassName="w-full pl-10 pr-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-900 dark:text-white flex items-center justify-between transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-h-[38px]"
+                  />
+                </div>
               </div>
             </div>
 
@@ -371,39 +399,36 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
 
             {/* Form Actions */}
             <div className="pt-2 flex items-center justify-end gap-3">
-              <Button
+              <button
                 type="button"
-                variant="outline"
-                size="md"
                 onClick={handleModalClose}
                 disabled={isSubmitting}
+                className="h-10 px-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-50"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 type="submit"
-                variant="primary"
-                size="md"
                 disabled={isSubmitting || isCoolingDown}
-                className="gap-2 shadow-lg shadow-blue-500/20"
+                className="h-10 px-6 rounded-xl bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 text-white text-xs font-bold shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex flex-row items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
                   <>
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
                     <span>Submitting...</span>
                   </>
                 ) : isCoolingDown ? (
                   <>
-                    <ShieldCheck className="w-4 h-4" />
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
                     <span>Wait {cooldown}s</span>
                   </>
                 ) : (
                   <>
-                    <Send className="w-4 h-4" />
+                    <Send className="w-4 h-4 shrink-0" />
                     <span>Submit Query</span>
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </form>
         )}
