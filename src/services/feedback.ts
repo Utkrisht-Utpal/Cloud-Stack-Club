@@ -8,6 +8,7 @@ import type { ContactFeedback, EventFeedback, FeedbackStatus } from '../types/da
 export interface SubmitFeedbackPayload {
   name: string;
   email: string;
+  subject?: string;
   message: string;
   turnstileToken?: string;
 }
@@ -22,6 +23,7 @@ export const submitFeedback = async (
     id: tempId,
     name: payload.name.trim(),
     email: payload.email.trim(),
+    subject: payload.subject ? payload.subject.trim() : undefined,
     message: payload.message.trim(),
     status: 'pending',
     created_at: new Date().toISOString(),
@@ -51,6 +53,7 @@ export const submitFeedback = async (
     body: JSON.stringify({
       name: payload.name.trim(),
       email: payload.email.trim(),
+      subject: payload.subject ? payload.subject.trim() : undefined,
       message: payload.message.trim(),
       turnstile_token: payload.turnstileToken,
     }),
@@ -101,6 +104,7 @@ export const fetchFreshContactFeedbacksFromDb = async (): Promise<ContactFeedbac
       id: f.id,
       name: f.name,
       email: f.email,
+      subject: f.subject || f.topic || undefined,
       message: f.message,
       status: f.status || 'pending',
       created_at: f.created_at,

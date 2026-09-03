@@ -2272,8 +2272,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           </td>
                         )}
                         <td className="py-3.5 px-4 min-w-[280px]">
-                          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl text-xs">
-                            {f.message}
+                          <div className="p-3 rounded-xl bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-medium leading-relaxed max-w-xl text-xs space-y-1.5">
+                            {f.subject && (
+                              <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-xs">
+                                <span className="text-[10px] uppercase font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-sky-400">
+                                  Subject
+                                </span>
+                                <span>{f.subject}</span>
+                              </div>
+                            )}
+                            <div>{f.message}</div>
                           </div>
                         </td>
                         <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">

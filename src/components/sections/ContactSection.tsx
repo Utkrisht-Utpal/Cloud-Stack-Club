@@ -26,6 +26,7 @@ export const ContactSection: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    subject: '',
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,8 +53,8 @@ export const ContactSection: React.FC = () => {
     e.preventDefault();
     if (isCoolingDown || isSubmitting) return;
 
-    if (!formData.name || !formData.email || !formData.message) {
-      triggerErrorWithCooldown('Please fill in your name, email, and message.');
+    if (!formData.name || !formData.email || !formData.subject || !formData.message) {
+      triggerErrorWithCooldown('Please fill in your name, email, subject, and message.');
       return;
     }
 
@@ -69,13 +70,14 @@ export const ContactSection: React.FC = () => {
       await submitFeedback({
         name: formData.name.trim(),
         email: formData.email.trim(),
+        subject: formData.subject.trim(),
         message: formData.message.trim(),
         turnstileToken: turnstileToken.trim(),
       });
 
       setIsSubmitted(true);
       resetCooldown();
-      setFormData({ name: '', email: '', message: '' });
+      setFormData({ name: '', email: '', subject: '', message: '' });
       setTurnstileToken(''); // Reset token
 
       // Automatically reset back to normal form after 3 seconds
@@ -131,14 +133,16 @@ export const ContactSection: React.FC = () => {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100/80 dark:bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-100/80 dark:bg-blue-500/10 text-blue-600 dark:text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
                       <MapPin className="w-5 h-5" />
                     </div>
                     <div>
                       <span className="text-xs text-slate-500 dark:text-slate-400 block uppercase font-medium">Location</span>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                        {siteConfig.contact.location}
-                      </p>
+                      <div className="text-sm font-semibold text-slate-900 dark:text-white leading-relaxed">
+                        <p>Chandigarh University</p>
+                        <p>NH-05 Chandigarh-Ludhiana Highway,</p>
+                        <p>Mohali, Punjab (INDIA)</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -245,6 +249,22 @@ export const ContactSection: React.FC = () => {
                           className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
                         />
                       </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="subject" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                        Subject / Topic <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="subject"
+                        required
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                        onFocus={onFormTouch}
+                        placeholder="e.g. Club Membership Inquiry, Technical Collaboration..."
+                        className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-800 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-all text-sm"
+                      />
                     </div>
 
                     <div>
