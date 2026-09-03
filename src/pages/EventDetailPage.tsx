@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import {
   Calendar,
   Clock,
@@ -31,6 +31,7 @@ import type { Event, GalleryPhoto } from '../types/database';
 export const EventDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const outletContext = useOutletContext<{
     onRegisterEventClick?: (evt: Event) => void;
     onFeedbackEventClick?: (evt: Event) => void;
@@ -44,6 +45,21 @@ export const EventDetailPage: React.FC = () => {
   const [isPosterModalOpen, setIsPosterModalOpen] = useState<boolean>(false);
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<boolean>(false);
+
+  // Deep-link modal auto-open based on URL (/register, /registration, /feedback)
+  useEffect(() => {
+    if (!event || loading) return;
+
+    const isRegisterRoute =
+      location.pathname.endsWith('/register') || location.pathname.endsWith('/registration');
+    const isFeedbackRoute = location.pathname.endsWith('/feedback');
+
+    if (isRegisterRoute && outletContext?.onRegisterEventClick) {
+      outletContext.onRegisterEventClick(event);
+    } else if (isFeedbackRoute && outletContext?.onFeedbackEventClick) {
+      outletContext.onFeedbackEventClick(event);
+    }
+  }, [event, loading, location.pathname, outletContext]);
 
   useEffect(() => {
     let isMounted = true;
@@ -318,7 +334,10 @@ export const EventDetailPage: React.FC = () => {
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={() => outletContext?.onFeedbackEventClick?.(event)}
+                  onClick={() => {
+                    navigate(`/events/${slug}/feedback`);
+                    outletContext?.onFeedbackEventClick?.(event);
+                  }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25"
                 >
                   Give Event Feedback
@@ -335,7 +354,10 @@ export const EventDetailPage: React.FC = () => {
                   <Button
                     variant="primary"
                     size="lg"
-                    onClick={() => outletContext?.onRegisterEventClick?.(event)}
+                    onClick={() => {
+                      navigate(`/events/${slug}/register`);
+                      outletContext?.onRegisterEventClick?.(event);
+                    }}
                     className="w-full shadow-xl shadow-blue-500/25 text-sm font-bold"
                   >
                     Register Now

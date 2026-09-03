@@ -26,8 +26,18 @@ export const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<HomeWrapper />} />
+              <Route path="join" element={<HomeWrapper />} />
+              <Route path="apply" element={<HomeWrapper />} />
+              <Route path="about" element={<HomeWrapper />} />
+              <Route path="domains" element={<HomeWrapper />} />
+              <Route path="contact" element={<HomeWrapper />} />
+              <Route path="admin" element={<HomeWrapper />} />
+              <Route path="admin/login" element={<HomeWrapper />} />
               <Route path="events" element={<EventsDirectoryPage />} />
               <Route path="events/:slug" element={<EventDetailPage />} />
+              <Route path="events/:slug/register" element={<EventDetailPage />} />
+              <Route path="events/:slug/registration" element={<EventDetailPage />} />
+              <Route path="events/:slug/feedback" element={<EventDetailPage />} />
               <Route path="gallery" element={<GalleryPage />} />
               <Route path="team" element={<TeamPage />} />
               <Route path="*" element={<NotFoundPage />} />

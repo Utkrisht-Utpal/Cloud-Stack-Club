@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
 import { FloatingMobileCTA } from '../components/common/FloatingMobileCTA';
@@ -23,6 +23,8 @@ import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
 
 export const MainLayout: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [joinModalOpen, setJoinModalOpen] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
@@ -36,7 +38,7 @@ export const MainLayout: React.FC = () => {
     }
   });
   const [selectedAdPdf, setSelectedAdPdf] = useState<{ url: string; title: string } | null>(null);
-  const { showDashboard, isAdminLoggedIn, isLoading, logout } = useAdminAuth();
+  const { showDashboard, setShowDashboard, isAdminLoggedIn, isLoading, logout, openAdminModal } = useAdminAuth();
 
   useEffect(() => {
     // Prioritized direct DB fetch (takes ~150ms) for 100% accurate live event popup
@@ -49,12 +51,36 @@ export const MainLayout: React.FC = () => {
       .catch(console.error);
   }, []);
 
+  // Handle URL-based modal opening (/join, /apply, /admin, /admin/login)
+  useEffect(() => {
+    if (location.pathname === '/join' || location.pathname === '/apply') {
+      setJoinModalOpen(true);
+    }
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (location.pathname === '/admin' || location.pathname === '/admin/login') {
+      if (!isLoading) {
+        if (isAdminLoggedIn) {
+          setShowDashboard(true);
+        } else {
+          openAdminModal();
+        }
+      }
+    }
+  }, [location.pathname, isAdminLoggedIn, isLoading, setShowDashboard, openAdminModal]);
+
   // Hide native vertical scrollbar while ScrollProgress indicator is healthy;
   // automatically restores it if the indicator fails or is removed.
   useScrollbarFallback('[data-scroll-progress]');
 
   const handleOpenJoinModal = () => setJoinModalOpen(true);
-  const handleCloseJoinModal = () => setJoinModalOpen(false);
+  const handleCloseJoinModal = () => {
+    setJoinModalOpen(false);
+    if (location.pathname === '/join' || location.pathname === '/apply') {
+      navigate('/', { replace: true });
+    }
+  };
 
   // Check if admin dashboard was active prior to page reload
   const wasAdminDashboardActive = (() => {
@@ -145,7 +171,18 @@ export const MainLayout: React.FC = () => {
         {selectedRegisterEvent && (
           <EventRegisterModal
             isOpen={!!selectedRegisterEvent}
-            onClose={() => setSelectedRegisterEvent(null)}
+            onClose={() => {
+              setSelectedRegisterEvent(null);
+              if (
+                location.pathname.endsWith('/register') ||
+                location.pathname.endsWith('/registration')
+              ) {
+                const baseEventPath = location.pathname
+                  .replace(/\/register$/, '')
+                  .replace(/\/registration$/, '');
+                navigate(baseEventPath, { replace: true });
+              }
+            }}
             event={selectedRegisterEvent}
           />
         )}
@@ -154,7 +191,13 @@ export const MainLayout: React.FC = () => {
         {selectedFeedbackEvent && (
           <EventFeedbackModal
             isOpen={!!selectedFeedbackEvent}
-            onClose={() => setSelectedFeedbackEvent(null)}
+            onClose={() => {
+              setSelectedFeedbackEvent(null);
+              if (location.pathname.endsWith('/feedback')) {
+                const baseEventPath = location.pathname.replace(/\/feedback$/, '');
+                navigate(baseEventPath, { replace: true });
+              }
+            }}
             event={selectedFeedbackEvent}
           />
         )}
