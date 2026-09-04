@@ -192,18 +192,18 @@ export const TeamSection: React.FC = () => {
           maxWidth="max-w-4xl lg:max-w-5xl"
         >
           <div className="pt-2">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-              {/* Member Photo (4:5 on mobile, stretches to match right column baseline on md+) */}
-              <div className="md:col-span-5 w-full flex flex-col min-h-0">
-                <div className="relative w-full aspect-[4/5] md:aspect-auto md:h-full flex-1 rounded-2xl lg:rounded-3xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl group flex flex-col min-h-0">
+            <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
+              {/* Member Photo (Preserves authentic 4:5 portrait ratio with increased dimensions) */}
+              <div className="w-full sm:w-[340px] md:w-[360px] lg:w-[380px] shrink-0 mx-auto md:mx-0">
+                <div className="relative w-full aspect-[4/5] rounded-2xl lg:rounded-3xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl group">
                   {selectedMemberModal.photo_url ? (
                     <img
                       src={selectedMemberModal.photo_url}
                       alt={selectedMemberModal.name}
-                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02] flex-1 min-h-0"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center flex-1">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center">
                       <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-slate-400 mb-3">
                         <User className="w-10 h-10" />
                       </div>
@@ -213,10 +213,10 @@ export const TeamSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Member Info & Contributions */}
-              <div className="md:col-span-7 flex flex-col justify-between space-y-4 sm:space-y-5 min-w-0 w-full min-h-0">
+              {/* Member Info & Contributions (Matched exactly to photo height on md+) */}
+              <div className="flex-1 min-w-0 w-full md:h-[450px] lg:h-[475px] flex flex-col justify-between space-y-4">
                 {/* Header Information */}
-                <div className="space-y-2.5 sm:space-y-3">
+                <div className="space-y-2.5 sm:space-y-3 shrink-0">
                   {/* Badges Row */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-blue-600 dark:bg-blue-500 text-white shadow-sm shadow-blue-500/25 tracking-wide">
@@ -245,16 +245,16 @@ export const TeamSection: React.FC = () => {
                   )}
                 </div>
 
-                {/* About & Contributions Section */}
-                <div className="rounded-2xl p-4 sm:p-6 bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs flex-1 flex flex-col justify-start min-h-0">
+                {/* About & Contributions Section (Fills remaining height down to baseline) */}
+                <div className="rounded-2xl p-4 sm:p-5 lg:p-6 bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs flex-1 flex flex-col justify-start min-h-0">
                   <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
                     <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     <span>About &amp; Contributions</span>
                   </div>
 
                   {selectedMemberModal.description ? (
-                    <div className="max-h-[360px] sm:max-h-[440px] overflow-y-auto custom-scrollbar pr-2 sm:pr-3 flex-1">
-                      <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line font-normal">
+                    <div className="overflow-y-auto custom-scrollbar pr-2 sm:pr-3 flex-1 min-h-0">
+                      <p className="text-sm sm:text-[15px] text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line font-normal">
                         {selectedMemberModal.description}
                       </p>
                     </div>
