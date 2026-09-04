@@ -1937,11 +1937,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               <button
                                 type="button"
                                 onClick={() => setViewRegsEvent(evt)}
-                                className="flex-1 sm:flex-none justify-center px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                className="group/regs shrink-0 h-7 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-600/40 text-xs font-bold transition-all duration-300 ease-out flex items-center cursor-pointer shadow-xs hover:shadow-sm"
                                 title="View registered students for this event"
                               >
-                                <Users className="w-3.5 h-3.5 text-blue-500" />
-                                <span>Registrations</span>
+                                <div className="flex items-center overflow-hidden">
+                                  <Users className="w-3.5 h-3.5 text-blue-500 shrink-0 transition-transform duration-300 group-hover/regs:scale-110" />
+                                  <span className="max-w-0 opacity-0 group-hover/regs:max-w-[100px] group-hover/regs:opacity-100 group-hover/regs:ml-1.5 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-[11px] font-black">
+                                    Registrations
+                                  </span>
+                                </div>
                               </button>
                             )}
 
@@ -1950,11 +1954,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                 href={evt.drive_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex-1 sm:flex-none justify-center px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover:shadow-sm"
+                                className="group/drive shrink-0 h-7 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/20 text-xs font-bold transition-all duration-300 ease-out flex items-center cursor-pointer shadow-xs hover:shadow-sm"
                                 title="Open Event Drive Link"
                               >
-                                <GoogleDriveIcon className="w-3.5 h-3.5 shrink-0" />
-                                <span>Drive</span>
+                                <div className="flex items-center overflow-hidden">
+                                  <GoogleDriveIcon className="w-3.5 h-3.5 shrink-0 transition-transform duration-300 group-hover/drive:scale-110" />
+                                  <span className="max-w-0 opacity-0 group-hover/drive:max-w-[60px] group-hover/drive:opacity-100 group-hover/drive:ml-1.5 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-[11px] font-black">
+                                    Drive
+                                  </span>
+                                </div>
                               </a>
                             )}
                           </div>
