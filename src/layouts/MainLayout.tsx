@@ -23,6 +23,7 @@ import { DiscrepancyModal } from '../components/common/DiscrepancyModal';
 import { EventRegisterModal } from '../components/common/EventRegisterModal';
 import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
+import { TeachersDayCelebration } from '../components/teachers-day/TeachersDayCelebration';
 
 export const MainLayout: React.FC = () => {
   const location = useLocation();
@@ -209,6 +210,9 @@ export const MainLayout: React.FC = () => {
 
       {/* Cloud & Particle Background */}
       <CloudBackground />
+
+      {/* Teacher's Day Celebration Ribbon & Floating Widget */}
+      <TeachersDayCelebration />
 
       {/* Sticky Navbar */}
       <Navbar onOpenJoinModal={handleOpenJoinModal} />

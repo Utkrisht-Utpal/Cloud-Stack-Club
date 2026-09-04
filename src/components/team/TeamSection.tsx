@@ -137,6 +137,15 @@ export const TeamSection: React.FC = () => {
                 {/* Gradient vignette overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent opacity-80 pointer-events-none" />
 
+                {/* Teacher's Day Mentor Ribbon for Faculty */}
+                {(member.role?.name?.toLowerCase().includes('faculty') || member.role?.name?.toLowerCase().includes('advisor')) && (
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold bg-amber-400 dark:bg-amber-500 text-slate-950 shadow-md border border-amber-300/60 tracking-wide">
+                      <span>🌸 Teacher's Day Honoree</span>
+                    </span>
+                  </div>
+                )}
+
                 {/* Role Pill on top of photo */}
                 <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 z-10">
                   <span className="px-3 py-1 rounded-xl text-xs font-black tracking-wide bg-blue-600/90 text-white backdrop-blur-md shadow-lg border border-blue-400/30 truncate">
@@ -249,6 +258,13 @@ export const TeamSection: React.FC = () => {
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/70">
                         <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                         <span>{selectedMemberModal.year}</span>
+                      </span>
+                    )}
+
+                    {(selectedMemberModal.role?.name?.toLowerCase().includes('faculty') || selectedMemberModal.role?.name?.toLowerCase().includes('advisor')) && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 tracking-wide">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+                        <span>Teacher's Day Honoree 🌸</span>
                       </span>
                     )}
                   </div>
