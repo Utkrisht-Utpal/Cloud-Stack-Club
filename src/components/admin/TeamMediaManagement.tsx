@@ -77,6 +77,34 @@ export const TeamMediaManagement: React.FC = () => {
     setTimeout(() => setStatusNotice(null), 3500);
   };
 
+  // Synchronize Left Box height strictly to Right Preview Box height on desktop (same baseline)
+  const rightPaneRef = useRef<HTMLDivElement>(null);
+  const [rightPaneHeight, setRightPaneHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024 && rightPaneRef.current) {
+        setRightPaneHeight(rightPaneRef.current.offsetHeight);
+      } else {
+        setRightPaneHeight(null);
+      }
+    };
+
+    updateHeight();
+
+    if (!rightPaneRef.current) return;
+    const ro = new ResizeObserver(() => {
+      updateHeight();
+    });
+    ro.observe(rightPaneRef.current);
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [selectedMemberId, bannerData, teamMembers, loading]);
+
   const loadData = async () => {
     try {
       const [membersList, banner] = await Promise.all([
@@ -315,7 +343,12 @@ export const TeamMediaManagement: React.FC = () => {
           /* Split-Pane: Left List + Right Preview */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
             {/* ── LEFT PANE: Search Bar & Selection List ── */}
-            <div className="lg:col-span-5 flex flex-col space-y-3 bg-slate-50/70 dark:bg-slate-950/50 rounded-2xl p-3.5 border border-slate-200/60 dark:border-slate-800/60">
+            <div
+              style={{
+                height: rightPaneHeight ? `${rightPaneHeight}px` : undefined,
+              }}
+              className="lg:col-span-5 flex flex-col space-y-3 bg-slate-50/70 dark:bg-slate-950/50 rounded-2xl p-3.5 border border-slate-200/60 dark:border-slate-800/60 transition-[height] duration-150"
+            >
               {/* Search Bar */}
               <div className="relative shrink-0">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -334,8 +367,8 @@ export const TeamMediaManagement: React.FC = () => {
                 <span>{filteredMembers.length} Members</span>
               </div>
 
-              {/* Scrollable Selection List */}
-              <div className="space-y-1.5 max-h-[632px] overflow-y-auto scrollbar-none pr-0.5">
+              {/* Scrollable Selection List (Hidden Scrollbar) */}
+              <div className="space-y-1.5 flex-1 min-h-0 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden pr-0.5 pb-1">
                 {/* Pinned Top Item: Team Section Banner */}
                 <button
                   type="button"
@@ -458,7 +491,10 @@ export const TeamMediaManagement: React.FC = () => {
             </div>
 
             {/* ── RIGHT PANE: Preview of Details & Action Controls ── */}
-            <div className="lg:col-span-7 bg-slate-50/70 dark:bg-slate-950/50 rounded-2xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800/60 space-y-4">
+            <div
+              ref={rightPaneRef}
+              className="lg:col-span-7 bg-slate-50/70 dark:bg-slate-950/50 rounded-2xl p-4 sm:p-5 border border-slate-200/60 dark:border-slate-800/60 space-y-4"
+            >
               {/* Header: Centered */}
               <div className="flex items-center justify-center pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 text-center shrink-0">
                 <span className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
