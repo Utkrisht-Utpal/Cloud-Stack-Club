@@ -5,7 +5,19 @@ import { X, Calendar, Clock, MapPin, Sparkles, ArrowRight, FileText, Users2, Tic
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { formatEventTime, getEventStatusInfo, isRegistrationActive, isRegistrationFull } from '../../utils/formatters';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
+import { getStoredDriveUrlsMap } from '../../services/events';
 import type { Event } from '../../types/database';
+
+const GoogleDriveIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg viewBox="0 0 87.3 78" className={className} fill="none">
+    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da" />
+    <path d="M43.65 25 29.9 1.2c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44C.4 49.9 0 51.45 0 53h27.45z" fill="#00ac47" />
+    <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H59.85l6.45 11.2z" fill="#ea4335" />
+    <path d="M43.65 25 57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d" />
+    <path d="M59.85 53H27.45L13.7 76.8c1.35.8 2.9 1.2 4.5 1.2h50.9c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc" />
+    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25l16.2 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00" />
+  </svg>
+);
 
 interface EventAdModalProps {
   events: Event[];
@@ -421,18 +433,38 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   )
                 )}
 
-                {isAdminLoggedIn && activeAdEvent.pdf_url && onViewPdfClick && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onViewPdfClick(activeAdEvent.pdf_url!, activeAdEvent.title);
-                    }}
-                    className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
-                  >
-                    <FileText className="w-4 h-4 text-blue-500" />
-                    <span>View Event PDF</span>
-                  </button>
-                )}
+                {isAdminLoggedIn && (() => {
+                  const driveUrl = activeAdEvent.drive_url || getStoredDriveUrlsMap()[activeAdEvent.id];
+                  if (driveUrl) {
+                    return (
+                      <a
+                        href={driveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 shadow-xs"
+                        title="Open Event Drive Link (Admin Only)"
+                      >
+                        <GoogleDriveIcon className="w-4 h-4 shrink-0" />
+                        <span>Event Drive</span>
+                      </a>
+                    );
+                  }
+                  if (activeAdEvent.pdf_url && onViewPdfClick) {
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onViewPdfClick(activeAdEvent.pdf_url!, activeAdEvent.title);
+                        }}
+                        className="w-full sm:w-auto py-3 px-5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                      >
+                        <FileText className="w-4 h-4 text-blue-500" />
+                        <span>View Event PDF</span>
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </div>

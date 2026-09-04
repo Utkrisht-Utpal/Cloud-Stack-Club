@@ -59,6 +59,29 @@ export const saveStoredCategory = (eventId: string, category: string | null) => 
   } catch {}
 };
 
+const DRIVE_URL_MAP_KEY = 'csc_event_drive_urls_map';
+
+export const getStoredDriveUrlsMap = (): Record<string, string> => {
+  try {
+    const data = localStorage.getItem(DRIVE_URL_MAP_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveStoredDriveUrl = (eventId: string, driveUrl: string | null) => {
+  try {
+    const map = getStoredDriveUrlsMap();
+    if (driveUrl && driveUrl.trim()) {
+      map[eventId] = driveUrl.trim();
+    } else {
+      delete map[eventId];
+    }
+    localStorage.setItem(DRIVE_URL_MAP_KEY, JSON.stringify(map));
+  } catch {}
+};
+
 export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
 
@@ -247,12 +270,14 @@ export const getAdminEvents = async (): Promise<Event[]> => {
 
     const dbEvents = (data as Event[]) || [];
     const catMap = getStoredCategoriesMap();
-    const eventsWithCat = dbEvents.map((e) => ({
+    const driveMap = getStoredDriveUrlsMap();
+    const eventsWithExtras = dbEvents.map((e) => ({
       ...e,
       category: e.category || catMap[e.id] || null,
+      drive_url: e.drive_url || driveMap[e.id] || null,
     }));
 
-    return sortEventsByRelevance(eventsWithCat);
+    return sortEventsByRelevance(eventsWithExtras);
   } catch (err) {
     console.warn('Exception in getAdminEvents:', err);
     const localEvents = getLocalCustomEvents();
@@ -375,6 +400,9 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   };
 
   saveStoredCategory(createdEvent.id, createdEvent.category || null);
+  if (createdEvent.drive_url) {
+    saveStoredDriveUrl(createdEvent.id, createdEvent.drive_url);
+  }
 
   // Save locally first so creation NEVER fails on frontend UI
   saveLocalCustomEvent(createdEvent);
@@ -390,7 +418,13 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     .select('*')
     .maybeSingle();
 
-  if (error && (error.message.includes('category') || error.message.includes('drive_url'))) {
+  if (
+    error &&
+    (error.message.includes('category') ||
+      error.message.includes('drive_url') ||
+      error.message.includes('schema cache') ||
+      (error as any).code === 'PGRST204')
+  ) {
     const { category, drive_url, ...rest } = createdEvent;
     const retry = await supabase.from('events').insert([rest]).select('*').maybeSingle();
     data = retry.data;
@@ -401,7 +435,10 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     console.warn('DB Event insert notice (event saved locally):', error.message);
   }
 
-  return (data as Event) || createdEvent;
+  return {
+    ...((data as Event) || createdEvent),
+    drive_url: createdEvent.drive_url || null,
+  };
 };
 
 export const updateEventAdmin = async (
@@ -410,6 +447,9 @@ export const updateEventAdmin = async (
 ): Promise<Event> => {
   if (eventPayload.category !== undefined) {
     saveStoredCategory(eventId, eventPayload.category);
+  }
+  if (eventPayload.drive_url !== undefined) {
+    saveStoredDriveUrl(eventId, eventPayload.drive_url || null);
   }
 
   // Recalculate status based on date if date is provided and status is not explicitly cancelled
@@ -467,9 +507,21 @@ export const updateEventAdmin = async (
     .select('*')
     .maybeSingle();
 
-  if (error && (error.message.includes('category') || error.message.includes('drive_url'))) {
+  if (
+    error &&
+    (error.message.includes('category') ||
+      error.message.includes('drive_url') ||
+      error.message.includes('schema cache') ||
+      (error as any).code === 'PGRST204')
+  ) {
     if (error.message.includes('category')) delete updateFields.category;
-    if (error.message.includes('drive_url')) delete updateFields.drive_url;
+    if (
+      error.message.includes('drive_url') ||
+      error.message.includes('schema cache') ||
+      (error as any).code === 'PGRST204'
+    ) {
+      delete updateFields.drive_url;
+    }
     const retry = await supabase
       .from('events')
       .update(updateFields)
@@ -479,7 +531,17 @@ export const updateEventAdmin = async (
     data = retry.data;
   }
 
-  return (data || list[index] || eventPayload) as Event;
+  const mergedResult: Event = {
+    ...((data as Event) || list[index] || (eventPayload as Event)),
+    drive_url:
+      eventPayload.drive_url !== undefined
+        ? eventPayload.drive_url
+          ? eventPayload.drive_url.trim()
+          : null
+        : (data?.drive_url || list[index]?.drive_url || getStoredDriveUrlsMap()[eventId] || null),
+  };
+
+  return mergedResult;
 };
 
 export const deleteEventPosterAdmin = async (
