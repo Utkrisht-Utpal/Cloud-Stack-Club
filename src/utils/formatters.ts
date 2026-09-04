@@ -152,3 +152,53 @@ export const isRegistrationActive = (evt?: any, currentCount?: number): boolean 
 
   return true;
 };
+
+/**
+ * Normalizes any LinkedIn input (handle, in/handle, full URL) into a standard https:// URL
+ */
+export const formatLinkedInUrl = (raw?: string | null): string => {
+  if (!raw) return '';
+  let str = raw.trim();
+  if (!str) return '';
+  if (str.startsWith('http://') || str.startsWith('https://')) {
+    return str;
+  }
+  if (str.startsWith('linkedin.com') || str.startsWith('www.linkedin.com')) {
+    return `https://${str}`;
+  }
+  if (str.startsWith('in/')) {
+    return `https://www.linkedin.com/${str}`;
+  }
+  if (str.startsWith('@')) {
+    return `https://www.linkedin.com/in/${str.substring(1)}`;
+  }
+  return `https://www.linkedin.com/in/${str}`;
+};
+
+/**
+ * Extracts a neat, human-readable handle to display in UI (e.g. "in/username")
+ */
+export const formatLinkedInDisplay = (raw?: string | null): string => {
+  if (!raw) return '';
+  let str = raw.trim();
+  if (!str) return '';
+  try {
+    if (str.startsWith('http://') || str.startsWith('https://')) {
+      const url = new URL(str);
+      const path = url.pathname.replace(/\/+$/, '').replace(/^\/+/, '');
+      return path ? (path.startsWith('in/') ? path : `in/${path}`) : 'LinkedIn Profile';
+    }
+  } catch {}
+  if (str.startsWith('linkedin.com/') || str.startsWith('www.linkedin.com/')) {
+    const after = str.replace(/^(?:www\.)?linkedin\.com\//, '').replace(/\/+$/, '');
+    return after ? (after.startsWith('in/') ? after : `in/${after}`) : 'LinkedIn Profile';
+  }
+  if (str.startsWith('in/')) {
+    return str.replace(/\/+$/, '');
+  }
+  if (str.startsWith('@')) {
+    return `in/${str.substring(1)}`;
+  }
+  return `in/${str}`;
+};
+

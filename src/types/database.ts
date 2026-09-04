@@ -55,6 +55,8 @@ export interface Member {
   joined_at: string;
   status: MemberStatus;
   verification_file_url?: string | null;
+  linkedin_url?: string | null;
+  linkedin_text?: string | null;
   created_at: string;
   updated_at: string;
   role?: Role | null;
@@ -69,6 +71,8 @@ export interface CoreTeamMember {
   year: string | null;
   description: string | null;
   photo_url: string | null;
+  linkedin_url?: string | null;
+  linkedin_text?: string | null;
   display_order: number;
   created_at: string;
   updated_at: string;

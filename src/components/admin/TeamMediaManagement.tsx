@@ -17,14 +17,20 @@ import {
   Upload,
   Maximize2,
   ImageIcon,
+  ArrowUpRight,
+  Globe,
 } from 'lucide-react';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Modal } from '../ui/Modal';
 import { ImageCropModal } from './ImageCropModal';
 import { EditMemberDescriptionModal } from './EditMemberDescriptionModal';
+import { EditMemberSocialsModal } from './EditMemberSocialsModal';
+import { LinkedinIcon } from '../ui/SocialIcons';
+import { formatLinkedInUrl, formatLinkedInDisplay } from '../../utils/formatters';
 import {
   getCoreTeamMembersAdmin,
   updateCoreTeamMemberDescription,
+  updateCoreTeamMemberSocialsAdmin,
   uploadCoreTeamPhoto,
   deleteCoreTeamPhoto,
   getTeamPageBanner,
@@ -55,6 +61,9 @@ export const TeamMediaManagement: React.FC = () => {
   // Bio Modal state
   const [isBioModalOpen, setIsBioModalOpen] = useState<boolean>(false);
   const [bioModalMode, setBioModalMode] = useState<'view' | 'edit'>('view');
+
+  // Socials Modal state
+  const [isSocialsModalOpen, setIsSocialsModalOpen] = useState<boolean>(false);
 
   // Delete Confirm state
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState<boolean>(false);
@@ -185,6 +194,24 @@ export const TeamMediaManagement: React.FC = () => {
     );
 
     showToast(`Description updated for ${selectedMember.name}!`);
+  };
+
+  // Handle member socials (LinkedIn) save
+  const handleSaveSocials = async (payload: { linkedin_url: string | null; linkedin_text: string | null }) => {
+    if (!selectedMember) return;
+
+    await updateCoreTeamMemberSocialsAdmin(selectedMember.id, payload);
+
+    // Update local state
+    setTeamMembers((prev) =>
+      prev.map((m) =>
+        m.id === selectedMember.id
+          ? { ...m, linkedin_url: payload.linkedin_url, linkedin_text: payload.linkedin_text }
+          : m
+      )
+    );
+
+    showToast(`Social links updated for ${selectedMember.name}!`);
   };
 
   // Handle media deletion
@@ -398,8 +425,11 @@ export const TeamMediaManagement: React.FC = () => {
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <div className="text-xs sm:text-sm font-extrabold truncate">
-                              {member.name}
+                            <div className="text-xs sm:text-sm font-extrabold truncate flex items-center gap-1.5">
+                              <span className="truncate">{member.name}</span>
+                              {member.linkedin_url && (
+                                <Globe className={`w-3 h-3 shrink-0 ${isSelected ? 'text-white' : 'text-blue-500 dark:text-sky-400'}`} />
+                              )}
                             </div>
                             <div className={`text-[11px] truncate ${
                               isSelected
@@ -604,7 +634,7 @@ export const TeamMediaManagement: React.FC = () => {
                   {/* Member Meta: Name, Year, Role, Department (Image 1 Style) */}
                   <div className="w-full bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-2">
                     <div className="flex items-start justify-between gap-2 flex-wrap">
-                      <div>
+                      <div className="space-y-1">
                         <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
                           {selectedMember.name}
                         </h3>
@@ -619,12 +649,42 @@ export const TeamMediaManagement: React.FC = () => {
                             <span>{selectedMember.department || 'Department N/A'}</span>
                           </span>
                         </div>
+
+                        {selectedMember.linkedin_url && (
+                          <div className="pt-0.5">
+                            <a
+                              href={formatLinkedInUrl(selectedMember.linkedin_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-sky-400 hover:underline"
+                              title="Open LinkedIn profile in new tab"
+                            >
+                              <LinkedinIcon className="w-3.5 h-3.5 text-[#0a66c2] dark:text-[#0077b5] shrink-0" />
+                              <span>{selectedMember.linkedin_text || formatLinkedInDisplay(selectedMember.linkedin_url)}</span>
+                              <ArrowUpRight className="w-3 h-3 shrink-0" />
+                            </a>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end gap-1.5 shrink-0">
                         <span className="px-3 py-1 rounded-xl text-xs font-extrabold bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-400 border border-blue-200 dark:border-blue-500/30">
                           {selectedMember.role || 'Core Member'}
                         </span>
+
+                        {/* Socials Button just below the Roles */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsSocialsModalOpen(true);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-500/15 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+                          title="Configure Member Socials"
+                        >
+                          <Globe className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
+                          <span>Socials</span>
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -739,6 +799,19 @@ export const TeamMediaManagement: React.FC = () => {
           initialDescription={selectedMember.description}
           initialMode={bioModalMode}
           onSave={handleSaveDescription}
+        />
+      )}
+
+      {/* Member Socials Edit Modal */}
+      {selectedMember && isSocialsModalOpen && (
+        <EditMemberSocialsModal
+          isOpen={isSocialsModalOpen}
+          onClose={() => setIsSocialsModalOpen(false)}
+          memberName={selectedMember.name}
+          memberRole={selectedMember.role}
+          initialLinkedinUrl={selectedMember.linkedin_url}
+          initialLinkedinText={selectedMember.linkedin_text}
+          onSave={handleSaveSocials}
         />
       )}
 

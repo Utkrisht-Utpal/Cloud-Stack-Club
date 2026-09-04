@@ -6,8 +6,11 @@ import {
   User,
   GraduationCap,
   Sparkles,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { LinkedinIcon } from '../ui/SocialIcons';
+import { formatLinkedInUrl, formatLinkedInDisplay } from '../../utils/formatters';
 import { getCoreMembers, getTeamPageBanner, type CoreMember, type TeamPageBannerData } from '../../services/members';
 
 export const TeamSection: React.FC = () => {
@@ -155,6 +158,25 @@ export const TeamSection: React.FC = () => {
                     {member.name}
                   </h3>
 
+                  {member.linkedin_url && (
+                    <div className="pt-0.5">
+                      <a
+                        href={formatLinkedInUrl(member.linkedin_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 hover:underline transition-colors group/link w-fit z-10 relative"
+                        title="Open LinkedIn Profile"
+                      >
+                        <LinkedinIcon className="w-3.5 h-3.5 shrink-0 text-[#0a66c2] dark:text-[#0077b5]" />
+                        <span className="truncate max-w-[150px] sm:max-w-[170px] font-medium">
+                          {member.linkedin_text || formatLinkedInDisplay(member.linkedin_url)}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 shrink-0 text-blue-500 dark:text-sky-400 group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      </a>
+                    </div>
+                  )}
+
                   {member.department && (
                     <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                       <Building2 className="w-3.5 h-3.5 shrink-0 text-blue-600 dark:text-sky-400" />
@@ -189,12 +211,12 @@ export const TeamSection: React.FC = () => {
           isOpen={!!selectedMemberModal}
           onClose={() => setSelectedMemberModal(null)}
           title="Core Council Member Details"
-          maxWidth="max-w-4xl lg:max-w-5xl"
+          maxWidth="max-w-4xl lg:max-w-5xl xl:max-w-6xl"
         >
           <div className="pt-2">
             <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
-              {/* Member Photo (Preserves authentic 4:5 portrait ratio with increased dimensions) */}
-              <div className="w-full sm:w-[340px] md:w-[360px] lg:w-[380px] shrink-0 mx-auto md:mx-0">
+              {/* Member Photo (Preserves authentic 4:5 portrait ratio with enlarged width & height) */}
+              <div className="w-full sm:w-[350px] md:w-[384px] lg:w-[416px] xl:w-[440px] shrink-0 mx-auto md:mx-0">
                 <div className="relative w-full aspect-[4/5] rounded-2xl lg:rounded-3xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl group">
                   {selectedMemberModal.photo_url ? (
                     <img
@@ -213,8 +235,8 @@ export const TeamSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Member Info & Contributions (Matched exactly to photo height on md+) */}
-              <div className="flex-1 min-w-0 w-full md:h-[450px] lg:h-[475px] flex flex-col justify-between space-y-4">
+              {/* Member Info & Contributions (Matched exactly to photo 4:5 height on md+) */}
+              <div className="flex-1 min-w-0 w-full md:h-[480px] lg:h-[520px] xl:h-[550px] flex flex-col justify-between space-y-4">
                 {/* Header Information */}
                 <div className="space-y-2.5 sm:space-y-3 shrink-0">
                   {/* Badges Row */}
@@ -236,13 +258,29 @@ export const TeamSection: React.FC = () => {
                     {selectedMemberModal.name}
                   </h3>
 
-                  {/* Department / Discipline */}
-                  {selectedMemberModal.department && (
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 w-fit">
-                      <Building2 className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
-                      <span>{selectedMemberModal.department}</span>
-                    </div>
-                  )}
+                  {/* Details Row directly below Name (LinkedIn Badge & Department) */}
+                  <div className="flex items-center gap-2.5 flex-wrap pt-0.5">
+                    {selectedMemberModal.linkedin_url && (
+                      <a
+                        href={formatLinkedInUrl(selectedMemberModal.linkedin_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#0a66c2]/10 dark:bg-[#0a66c2]/20 border border-[#0a66c2]/30 dark:border-[#0a66c2]/40 text-xs sm:text-sm font-bold text-[#0a66c2] dark:text-[#70b5f9] hover:bg-[#0a66c2]/20 dark:hover:bg-[#0a66c2]/30 transition-all w-fit shadow-xs group/link"
+                        title="Open LinkedIn Profile"
+                      >
+                        <LinkedinIcon className="w-4 h-4 shrink-0 text-[#0a66c2] dark:text-[#70b5f9]" />
+                        <span>{selectedMemberModal.linkedin_text || formatLinkedInDisplay(selectedMemberModal.linkedin_url)}</span>
+                        <ArrowUpRight className="w-3.5 h-3.5 shrink-0 text-[#0a66c2] dark:text-[#70b5f9] group-hover/link:translate-x-0.5 group-hover/link:-translate-y-0.5 transition-transform" />
+                      </a>
+                    )}
+
+                    {selectedMemberModal.department && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 w-fit">
+                        <Building2 className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                        <span>{selectedMemberModal.department}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* About & Contributions Section (Fills remaining height down to baseline) */}

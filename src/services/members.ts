@@ -17,7 +17,43 @@ export interface CoreMember {
   role: { name: string | null };
   description?: string | null;
   photo_url?: string | null;
+  linkedin_url?: string | null;
+  linkedin_text?: string | null;
 }
+
+const MEMBER_SOCIALS_MAP_KEY = 'csc_member_socials_map';
+
+export interface MemberSocials {
+  linkedin_url?: string | null;
+  linkedin_text?: string | null;
+}
+
+export const getStoredMemberSocialsMap = (): Record<string, MemberSocials> => {
+  try {
+    const data = localStorage.getItem(MEMBER_SOCIALS_MAP_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveStoredMemberSocials = (
+  memberOrCoreId: string,
+  socials: MemberSocials
+): void => {
+  try {
+    const map = getStoredMemberSocialsMap();
+    if (!socials.linkedin_url && !socials.linkedin_text) {
+      delete map[memberOrCoreId];
+    } else {
+      map[memberOrCoreId] = {
+        linkedin_url: socials.linkedin_url?.trim() || null,
+        linkedin_text: socials.linkedin_text?.trim() || null,
+      };
+    }
+    localStorage.setItem(MEMBER_SOCIALS_MAP_KEY, JSON.stringify(map));
+  } catch {}
+};
 
 const INACTIVE_MEMBERS_KEY = 'csc_inactive_member_ids';
 
@@ -219,40 +255,51 @@ export const getCoreMembers = async (): Promise<CoreMember[]> => {
   }
 
   try {
+    const socialsMap = getStoredMemberSocialsMap();
     const { data: membersData, error } = await supabase.rpc('get_public_members');
 
     if (!error && membersData) {
       const parsed = typeof membersData === 'string' ? JSON.parse(membersData) : membersData;
-      return (parsed || []).map((m: any) => ({
-        id: m.id,
-        member_id: m.member_id,
-        name: m.name,
-        department: m.department || null,
-        year: m.year || null,
-        role: { name: m.role || null },
-        description: m.description || null,
-        photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
-      }));
+      return (parsed || []).map((m: any) => {
+        const savedSocials = socialsMap[m.id] || (m.member_id ? socialsMap[m.member_id] : undefined);
+        return {
+          id: m.id,
+          member_id: m.member_id,
+          name: m.name,
+          department: m.department || null,
+          year: m.year || null,
+          role: { name: m.role || null },
+          description: m.description || null,
+          photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
+          linkedin_url: m.linkedin_url || savedSocials?.linkedin_url || null,
+          linkedin_text: m.linkedin_text || savedSocials?.linkedin_text || null,
+        };
+      });
     }
 
     // Direct fallback from core_team_members table
     const { data: directData } = await supabase
       .from('core_team_members')
-      .select('id, member_id, name, role, department, year, description, photo_url')
+      .select('id, member_id, name, role, department, year, description, photo_url, linkedin_url, linkedin_text')
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
 
     if (directData && directData.length > 0) {
-      return directData.map((m: any) => ({
-        id: m.id,
-        member_id: m.member_id,
-        name: m.name,
-        department: m.department || null,
-        year: m.year || null,
-        role: { name: m.role || null },
-        description: m.description || null,
-        photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
-      }));
+      return directData.map((m: any) => {
+        const savedSocials = socialsMap[m.id] || (m.member_id ? socialsMap[m.member_id] : undefined);
+        return {
+          id: m.id,
+          member_id: m.member_id,
+          name: m.name,
+          department: m.department || null,
+          year: m.year || null,
+          role: { name: m.role || null },
+          description: m.description || null,
+          photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
+          linkedin_url: m.linkedin_url || savedSocials?.linkedin_url || null,
+          linkedin_text: m.linkedin_text || savedSocials?.linkedin_text || null,
+        };
+      });
     }
 
     return [];
@@ -407,14 +454,57 @@ export const getCoreTeamMembersAdmin = async (): Promise<CoreTeamMember[]> => {
       return [];
     }
 
-    return (data || []).map((m) => ({
-      ...m,
-      photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
-    }));
+    const socialsMap = getStoredMemberSocialsMap();
+    return (data || []).map((m) => {
+      const savedSocials = socialsMap[m.id] || (m.member_id ? socialsMap[m.member_id] : undefined);
+      return {
+        ...m,
+        photo_url: m.photo_url ? resolveMediaUrl(m.photo_url) : null,
+        linkedin_url: m.linkedin_url || savedSocials?.linkedin_url || null,
+        linkedin_text: m.linkedin_text || savedSocials?.linkedin_text || null,
+      };
+    });
   } catch (err) {
     console.error('Exception fetching core team members admin:', err);
     return [];
   }
+};
+
+/**
+ * Update a core team member's socials (LinkedIn URL & Display text).
+ */
+export const updateCoreTeamMemberSocialsAdmin = async (
+  coreTeamMemberId: string,
+  payload: { linkedin_url?: string | null; linkedin_text?: string | null }
+): Promise<boolean> => {
+  const cleanPayload: MemberSocials = {
+    linkedin_url: payload.linkedin_url ? payload.linkedin_url.trim() : null,
+    linkedin_text: payload.linkedin_text ? payload.linkedin_text.trim() : null,
+  };
+
+  // Always save locally so updates are immediate and resilient
+  saveStoredMemberSocials(coreTeamMemberId, cleanPayload);
+
+  if (!isSupabaseConfigured()) return true;
+
+  try {
+    const { error } = await supabase
+      .from('core_team_members')
+      .update({
+        linkedin_url: cleanPayload.linkedin_url,
+        linkedin_text: cleanPayload.linkedin_text,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', coreTeamMemberId);
+
+    if (error) {
+      console.warn('DB update notice for member socials (saved locally):', error.message);
+    }
+  } catch (err: any) {
+    console.warn('Exception updating member socials (saved locally):', err?.message);
+  }
+
+  return true;
 };
 
 /**
