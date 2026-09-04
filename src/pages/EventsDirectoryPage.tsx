@@ -399,7 +399,7 @@ export const EventsDirectoryPage: React.FC = () => {
                               {remainingSeats} seats available
                             </span>
                           )
-                        ) : evt.rules ? (
+                        ) : (evt.status === 'upcoming' || evt.status === 'live') && evt.rules ? (
                           <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
                             <ScrollText className="w-3 h-3 text-blue-500" />
                             Rules available

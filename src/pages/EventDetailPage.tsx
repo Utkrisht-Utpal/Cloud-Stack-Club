@@ -172,6 +172,18 @@ export const EventDetailPage: React.FC = () => {
     .map((r) => r.trim())
     .filter((r) => r.length > 0);
 
+  // Only show rules on public page when event is ongoing or upcoming
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const eventDateStr = event.date ? event.date.split('T')[0] : '';
+  const isOngoing = event.status === 'live';
+  const isUpcoming =
+    (event.status === 'upcoming' || (!event.status && eventDateStr >= todayStr)) &&
+    (!eventDateStr || eventDateStr >= todayStr);
+  const isOngoingOrUpcoming =
+    (isOngoing || isUpcoming) && event.status !== 'completed' && event.status !== 'cancelled';
+  const showRules = isOngoingOrUpcoming && rulesList.length > 0;
+
   return (
     <div className="min-h-screen pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto relative z-10 space-y-6">
       {/* Top Breadcrumbs & Back Navigation */}
@@ -409,8 +421,8 @@ export const EventDetailPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Card 3: Rules & Participation Guidelines (if applicable) */}
-      {rulesList.length > 0 && (
+      {/* Card 3: Rules & Participation Guidelines (only shown for ongoing or upcoming events) */}
+      {showRules && (
         <div className="neumorphic-card p-6 sm:p-8 rounded-3xl relative overflow-hidden space-y-4">
           <div className="flex items-center gap-2.5 text-blue-600 dark:text-sky-400">
             <ScrollText className="w-5 h-5 shrink-0" />
