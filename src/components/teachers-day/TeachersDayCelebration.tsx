@@ -4,16 +4,20 @@ import { Sparkles, GraduationCap, X, BookOpen } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { TeachersDayModal } from './TeachersDayModal';
 
-const DISMISSED_KEY = 'csc_teachers_day_banner_dismissed';
+interface TeachersDayCelebrationProps {
+  isScrolled?: boolean;
+  isDismissed?: boolean;
+  onDismiss?: () => void;
+}
 
-export const TeachersDayCelebration: React.FC = () => {
-  const [isBannerVisible, setIsBannerVisible] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem(DISMISSED_KEY) !== 'true';
-    } catch {
-      return true;
-    }
-  });
+export const TeachersDayCelebration: React.FC<TeachersDayCelebrationProps> = ({
+  isScrolled = false,
+  isDismissed: externalDismissed,
+  onDismiss: externalOnDismiss,
+}) => {
+  // Session-scoped dismissal: in-memory state resets on browser refresh / page reload
+  const [internalDismissed, setInternalDismissed] = useState<boolean>(false);
+  const isDismissed = externalDismissed !== undefined ? externalDismissed : internalDismissed;
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
   // Trigger an initial subtle welcome celebration on first load
@@ -23,11 +27,11 @@ export const TeachersDayCelebration: React.FC = () => {
       sessionStorage.setItem('csc_teachers_day_celebrated', 'true');
       const timer = setTimeout(() => {
         confetti({
-          particleCount: 45,
+          particleCount: 50,
           spread: 60,
-          origin: { y: 0.12, x: 0.5 },
+          origin: { y: 0.1, x: 0.5 },
+          colors: ['#f59e0b', '#ec4899', '#3b82f6', '#10b981'],
           zIndex: 999999,
-          colors: ['#f59e0b', '#fbbf24', '#ec4899', '#38bdf8', '#10b981'],
         });
       }, 1200);
       return () => clearTimeout(timer);
@@ -37,62 +41,65 @@ export const TeachersDayCelebration: React.FC = () => {
   const handleCelebrate = (e: React.MouseEvent) => {
     e.stopPropagation();
     confetti({
-      particleCount: 70,
-      spread: 70,
-      origin: { y: 0.25 },
+      particleCount: 80,
+      spread: 75,
+      origin: { y: 0.3 },
+      colors: ['#f59e0b', '#fbbf24', '#ec4899', '#8b5cf6', '#10b981'],
       zIndex: 999999,
-      colors: ['#f59e0b', '#fbbf24', '#ec4899', '#f43f5e', '#38bdf8', '#10b981'],
     });
   };
 
   const handleDismiss = () => {
-    setIsBannerVisible(false);
-    try {
-      sessionStorage.setItem(DISMISSED_KEY, 'true');
-    } catch {}
+    if (externalOnDismiss) {
+      externalOnDismiss();
+    } else {
+      setInternalDismissed(true);
+    }
   };
+
+  const isRibbonVisible = !isDismissed && !isScrolled;
 
   return (
     <>
       {/* ── 1. TOP CELEBRATORY ANNOUNCEMENT RIBBON ── */}
-      <AnimatePresence>
-        {isBannerVisible && (
+      <AnimatePresence initial={false}>
+        {isRibbonVisible && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="relative z-50 bg-slate-950/95 dark:bg-slate-950/95 text-slate-200 border-b border-amber-500/25 shadow-md select-none backdrop-blur-md overflow-hidden"
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="w-full overflow-hidden bg-gradient-to-r from-amber-600 via-orange-500 to-rose-600 dark:from-amber-700 dark:via-orange-600 dark:to-rose-700 text-white shadow-md border-b border-amber-400/30 select-none relative z-50"
           >
-            {/* Elegant golden shimmer bottom line */}
-            <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent pointer-events-none" />
+            {/* Animated shimmer overlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.15)_50%,transparent_100%)] bg-[length:200%_100%] animate-[shimmer_3s_infinite] pointer-events-none" />
 
-            <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between gap-3 text-xs font-medium">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3 text-xs font-semibold relative z-10">
               {/* Left & Center Message */}
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap min-w-0">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold uppercase tracking-wider shrink-0">
-                  <GraduationCap className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/25 text-amber-200 border border-white/20 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0">
+                  <GraduationCap className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
                   <span>Teacher's Day</span>
                 </span>
 
-                <p className="truncate text-xs text-slate-300 font-normal">
-                  <span className="font-bold text-white">Happy National Teacher's Day! </span>
-                  <span className="opacity-90 hidden sm:inline text-slate-300">Honoring our mentors &amp; faculty at </span>
-                  <span className="font-semibold text-amber-300">Chandigarh University</span>
-                  <span className="hidden lg:inline text-slate-400"> who guide us to Learn • Build • Scale 🌸</span>
+                <p className="truncate text-xs text-white/95 font-bold tracking-tight">
+                  <span className="hidden md:inline font-black text-amber-100">Happy National Teacher's Day! </span>
+                  <span className="font-normal opacity-90 hidden sm:inline">Honoring our mentors &amp; faculty who guide us to </span>
+                  <span className="font-extrabold text-amber-200 underline decoration-amber-300/40">Learn • Build • Scale</span>
+                  <span className="hidden lg:inline"> at Chandigarh University 🌸</span>
                 </p>
               </div>
 
               {/* Right Action Controls */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {/* Celebrate Button */}
                 <button
                   type="button"
                   onClick={handleCelebrate}
-                  className="px-2.5 sm:px-3 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 active:scale-95 text-amber-300 hover:text-amber-200 text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer border border-amber-500/30 shadow-xs"
+                  className="px-2.5 sm:px-3 py-1 rounded-xl bg-white/20 hover:bg-white/30 active:scale-95 text-white text-[11px] sm:text-xs font-black flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-xs border border-white/25 shadow-xs"
                   title="Celebrate with floral confetti"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>Celebrate 🌸</span>
                 </button>
 
@@ -100,10 +107,10 @@ export const TeachersDayCelebration: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(true)}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 hover:text-white text-xs font-medium transition-all cursor-pointer border border-white/10"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-black/30 hover:bg-black/40 text-amber-200 hover:text-white text-xs font-extrabold transition-all cursor-pointer border border-white/15"
                   title="View Teacher's Day Tribute"
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+                  <BookOpen className="w-3.5 h-3.5" />
                   <span>Tribute</span>
                 </button>
 
@@ -111,7 +118,7 @@ export const TeachersDayCelebration: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDismiss}
-                  className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
+                  className="p-1 rounded-lg hover:bg-black/20 text-white/80 hover:text-white transition-colors cursor-pointer"
                   title="Dismiss banner"
                 >
                   <X className="w-4 h-4" />
@@ -124,16 +131,16 @@ export const TeachersDayCelebration: React.FC = () => {
 
       {/* ── 2. FLOATING CELEBRATION BADGE (When Banner is Dismissed) ── */}
       <AnimatePresence>
-        {!isBannerVisible && (
+        {isDismissed && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             onClick={() => setIsModalOpen(true)}
-            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 px-3.5 py-2 rounded-2xl bg-slate-900/95 hover:bg-slate-800 text-amber-300 shadow-xl shadow-black/50 border border-amber-500/35 text-xs font-semibold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md group"
+            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 px-3.5 py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white shadow-xl shadow-amber-500/25 border border-white/25 text-xs font-black flex items-center gap-2 hover:scale-105 active:scale-95 transition-all cursor-pointer backdrop-blur-md group"
             title="Happy Teacher's Day • View Tribute"
           >
-            <GraduationCap className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+            <GraduationCap className="w-4 h-4 text-amber-200 group-hover:rotate-12 transition-transform" />
             <span className="hidden sm:inline">Happy Teacher's Day 🌸</span>
             <span className="sm:hidden">Teacher's Day 🌸</span>
           </motion.button>

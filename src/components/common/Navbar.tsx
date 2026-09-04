@@ -10,6 +10,7 @@ import { ClubLogo } from '../ui/ClubLogo';
 import { CULogo } from '../ui/CULogo';
 import { getActiveNotices } from '../../services/notices';
 import { NoticeDetailModal } from './NoticeDetailModal';
+import { TeachersDayCelebration } from '../teachers-day/TeachersDayCelebration';
 import type { Notice } from '../../types/database';
 
 interface NavbarProps {
@@ -18,6 +19,8 @@ interface NavbarProps {
   onAdminLogout?: () => void;
   mobileNavOpen?: boolean;
   onToggleMobileNav?: () => void;
+  isTeachersDayDismissed?: boolean;
+  onDismissTeachersDay?: () => void;
 }
 
 const getGreeting = (): string => {
@@ -28,7 +31,15 @@ const getGreeting = (): string => {
   return 'Welcome';
 };
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboard, onAdminLogout, mobileNavOpen, onToggleMobileNav }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenJoinModal,
+  isAdminDashboard,
+  onAdminLogout,
+  mobileNavOpen,
+  onToggleMobileNav,
+  isTeachersDayDismissed,
+  onDismissTeachersDay,
+}) => {
   const { theme, toggleTheme } = useTheme();
   const { openAdminModal, isAdminLoggedIn, setShowDashboard, adminName } = useAdminAuth();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -186,10 +197,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJoinModal, isAdminDashboar
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-        isScrolled ? 'glass-nav py-2.5 shadow-xl shadow-blue-500/5' : 'bg-transparent py-4'
+        isScrolled ? 'glass-nav shadow-xl shadow-blue-500/5' : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Teacher's Day Celebratory Ribbon at the very top of header (Public Site Only) */}
+      {!isAdminDashboard && (
+        <TeachersDayCelebration
+          isScrolled={isScrolled}
+          isDismissed={isTeachersDayDismissed}
+          onDismiss={onDismissTeachersDay}
+        />
+      )}
+
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
+        isScrolled ? 'py-2.5' : 'py-3.5'
+      }`}>
         <div className="flex items-center justify-between gap-2">
           {/* Left: Hamburger (mobile admin) OR Club Logo (desktop admin / public) */}
           {isAdminDashboard ? (

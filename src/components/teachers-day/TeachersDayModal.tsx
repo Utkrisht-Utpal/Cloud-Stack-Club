@@ -12,35 +12,13 @@ export const TeachersDayModal: React.FC<TeachersDayModalProps> = ({ isOpen, onCl
   const [copied, setCopied] = useState(false);
 
   const triggerCelebration = () => {
-    // Multi-angle festive shower in front of the modal
-    // Main upward center burst
+    // Elegant festive burst of golden & floral confetti in front of modal
     confetti({
-      particleCount: 70,
-      spread: 90,
-      origin: { x: 0.5, y: 0.6 },
+      particleCount: 100,
+      spread: 80,
+      origin: { y: 0.5 },
+      colors: ['#f59e0b', '#ec4899', '#3b82f6', '#10b981', '#fbbf24', '#f43f5e'],
       zIndex: 999999,
-      colors: ['#f59e0b', '#fbbf24', '#f43f5e', '#ec4899', '#38bdf8', '#10b981'],
-      startVelocity: 35,
-    });
-
-    // Left cannon burst
-    confetti({
-      particleCount: 40,
-      angle: 60,
-      spread: 60,
-      origin: { x: 0.15, y: 0.65 },
-      zIndex: 999999,
-      colors: ['#f59e0b', '#ec4899', '#f43f5e', '#fbbf24'],
-    });
-
-    // Right cannon burst
-    confetti({
-      particleCount: 40,
-      angle: 120,
-      spread: 60,
-      origin: { x: 0.85, y: 0.65 },
-      zIndex: 999999,
-      colors: ['#f59e0b', '#ec4899', '#f43f5e', '#fbbf24'],
     });
   };
 
@@ -49,13 +27,7 @@ export const TeachersDayModal: React.FC<TeachersDayModalProps> = ({ isOpen, onCl
   const handleCopyGreeting = () => {
     navigator.clipboard.writeText(greetingMessage);
     setCopied(true);
-    confetti({
-      particleCount: 50,
-      spread: 70,
-      origin: { y: 0.65 },
-      zIndex: 999999,
-      colors: ['#f59e0b', '#fbbf24', '#ec4899', '#10b981'],
-    });
+    triggerCelebration();
     setTimeout(() => setCopied(false), 2500);
   };
 
@@ -79,34 +51,34 @@ export const TeachersDayModal: React.FC<TeachersDayModalProps> = ({ isOpen, onCl
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.25 }}
-          className="relative w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-amber-500/30 bg-slate-950/95 dark:bg-slate-950/95 text-white my-auto overflow-hidden backdrop-blur-xl"
+          className="relative w-full max-w-2xl rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-amber-400/40 dark:border-amber-500/30 bg-gradient-to-b from-amber-500/10 via-white to-slate-50 dark:from-amber-500/10 dark:via-slate-900 dark:to-slate-950 text-slate-900 dark:text-white my-auto overflow-hidden"
         >
           {/* Subtle Decorative Ambient Background Glows */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-400/15 dark:bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-rose-400/15 dark:bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
 
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition-colors z-20 cursor-pointer"
+            className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800/60 transition-colors z-20 cursor-pointer"
             title="Close"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Header Banner */}
-          <div className="text-center space-y-3 pb-5 border-b border-slate-800 relative z-10">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+          <div className="text-center space-y-3 pb-5 border-b border-amber-200/80 dark:border-slate-800 relative z-10">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 via-rose-500/20 to-amber-500/20 border border-amber-400/40 dark:border-amber-500/40 text-amber-800 dark:text-amber-300 text-xs font-black uppercase tracking-wider shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
               <span>National Teacher's Day • 5th September</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
             </div>
 
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight">
-              A Heartfelt Tribute to Our <span className="bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 bg-clip-text text-transparent">Mentors &amp; Faculty</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+              A Heartfelt Tribute to Our <span className="bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 bg-clip-text text-transparent">Mentors &amp; Teachers</span>
             </h2>
 
-            <p className="text-xs sm:text-sm text-slate-300 max-w-lg mx-auto italic font-medium leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-lg mx-auto italic font-medium leading-relaxed">
               &ldquo;Guru is the lamp that dispels the darkness of ignorance and guides our journey of learning and innovation.&rdquo;
             </p>
           </div>
@@ -114,47 +86,47 @@ export const TeachersDayModal: React.FC<TeachersDayModalProps> = ({ isOpen, onCl
           {/* Faculty Mentor Spotlight Cards */}
           <div className="py-5 space-y-3 relative z-10">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
                 <Award className="w-4 h-4" />
                 <span>Cloud Stack Club Faculty Leadership</span>
               </span>
-              <span className="text-[11px] font-semibold text-slate-400">
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                 Chandigarh University
               </span>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {/* Mentor 1: Dr. Deepti Sharma */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-amber-500/40 shadow-xs transition-all flex items-start gap-3 group">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-                  <GraduationCap className="w-6 h-6 text-amber-100" />
+              <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-amber-200/80 dark:border-amber-500/20 shadow-xs hover:border-amber-400/60 transition-all flex items-start gap-3 group">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+                  <GraduationCap className="w-6 h-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-white truncate">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
                     Dr. Deepti Sharma
                   </h4>
-                  <p className="text-xs font-semibold text-amber-400">
+                  <p className="text-xs font-bold text-amber-600 dark:text-amber-400">
                     Faculty Advisor
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                     Guiding students with 26+ years of academic, research, and cloud excellence.
                   </p>
                 </div>
               </div>
 
               {/* Mentor 2: Prof. Navjot Singh */}
-              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-blue-500/40 shadow-xs transition-all flex items-start gap-3 group">
+              <div className="p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-amber-200/80 dark:border-amber-500/20 shadow-xs hover:border-amber-400/60 transition-all flex items-start gap-3 group">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                  <BookOpen className="w-6 h-6 text-blue-100" />
+                  <BookOpen className="w-6 h-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-bold text-white truncate">
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
                     Prof. Navjot Singh
                   </h4>
-                  <p className="text-xs font-semibold text-sky-400">
+                  <p className="text-xs font-bold text-blue-600 dark:text-sky-400">
                     Co-Faculty Advisor
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                     Mentoring club coordinators and driving technical innovation across domains.
                   </p>
                 </div>
@@ -162,41 +134,41 @@ export const TeachersDayModal: React.FC<TeachersDayModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Gratitude Message Card */}
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs sm:text-[13px] text-slate-300 leading-relaxed space-y-1.5">
-              <p className="font-semibold text-amber-300 flex items-center gap-1.5">
-                <Heart className="w-4 h-4 text-rose-400 shrink-0 fill-rose-400" />
+            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-300/60 dark:border-amber-500/20 text-xs sm:text-[13px] text-slate-700 dark:text-slate-300 leading-relaxed space-y-1.5">
+              <p className="font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                <Heart className="w-4 h-4 text-rose-500 shrink-0 fill-rose-500" />
                 <span>With profound respect and gratitude from all students &amp; council members:</span>
               </p>
-              <p className="text-slate-300">
+              <p>
                 To all our professors, instructors, lab coordinators, and mentors at Chandigarh University—thank you for your patience, dedication, and for inspiring us to reach greater heights every single day!
               </p>
             </div>
           </div>
 
           {/* Modal Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-800 relative z-10">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800 relative z-10">
             <button
               type="button"
               onClick={triggerCelebration}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-500 hover:from-amber-300 hover:to-amber-400 active:scale-95 text-slate-950 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 transition-all cursor-pointer border border-amber-200"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 hover:from-amber-600 hover:to-rose-600 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-slate-950" />
+              <Sparkles className="w-4 h-4" />
               <span>Shower Flowers &amp; Confetti 🌸</span>
             </button>
 
             <button
               type="button"
               onClick={handleCopyGreeting}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 active:scale-95 text-slate-200 border border-slate-700/80 text-xs sm:text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
             >
               {copied ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400 font-bold">Wishes Copied!</span>
+                  <Check className="w-4 h-4 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">Wishes Copied!</span>
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4 text-slate-400" />
+                  <Copy className="w-4 h-4 text-slate-500" />
                   <span>Copy Teacher's Day Message</span>
                 </>
               )}

@@ -62,19 +62,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
               initial={{ opacity: 0, y: -15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="inline-flex items-center gap-2 sm:gap-2.5 px-4 py-1.5 rounded-full bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 dark:border-amber-500/35 text-[10px] sm:text-xs font-medium text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden shadow-xs"
+              className="inline-flex items-center gap-2 sm:gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-rose-500/15 dark:from-amber-500/20 dark:via-orange-500/20 dark:to-rose-500/20 border border-amber-400/50 dark:border-amber-500/40 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden shadow-xs"
             >
               <span className="flex h-2 w-2 relative shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
               </span>
 
-              <span className="font-bold tracking-wide uppercase whitespace-nowrap shrink-0 text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <span className="font-black tracking-wide uppercase whitespace-nowrap shrink-0 text-amber-700 dark:text-amber-300 flex items-center gap-1">
                 <span>🎓 Happy Teacher's Day</span>
               </span>
 
-              <span className="text-amber-500/40 hidden xs:inline">•</span>
-              <span className="text-slate-600 dark:text-slate-300 font-medium truncate hidden sm:inline">
+              <span className="text-amber-500/60 hidden xs:inline">•</span>
+              <span className="text-slate-700 dark:text-slate-300 font-medium truncate hidden sm:inline">
                 Honoring Our Mentors at Chandigarh University 🌸
               </span>
             </motion.div>

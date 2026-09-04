@@ -140,7 +140,7 @@ export const TeamSection: React.FC = () => {
                 {/* Teacher's Day Mentor Ribbon for Faculty */}
                 {(member.role?.name?.toLowerCase().includes('faculty') || member.role?.name?.toLowerCase().includes('advisor')) && (
                   <div className="absolute top-3 left-3 z-10">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-[10px] sm:text-[11px] font-bold bg-amber-400 dark:bg-amber-500 text-slate-950 shadow-md border border-amber-300/60 tracking-wide">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-xl text-[10px] sm:text-[11px] font-black bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white backdrop-blur-md shadow-lg shadow-amber-500/30 border border-white/30 tracking-wide">
                       <span>🌸 Teacher's Day Honoree</span>
                     </span>
                   </div>
@@ -262,8 +262,8 @@ export const TeamSection: React.FC = () => {
                     )}
 
                     {(selectedMemberModal.role?.name?.toLowerCase().includes('faculty') || selectedMemberModal.role?.name?.toLowerCase().includes('advisor')) && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 tracking-wide">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 animate-spin" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 text-white shadow-sm shadow-amber-500/25 tracking-wide">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-spin" />
                         <span>Teacher's Day Honoree 🌸</span>
                       </span>
                     )}

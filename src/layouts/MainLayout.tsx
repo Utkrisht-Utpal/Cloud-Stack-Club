@@ -23,7 +23,6 @@ import { DiscrepancyModal } from '../components/common/DiscrepancyModal';
 import { EventRegisterModal } from '../components/common/EventRegisterModal';
 import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
-import { TeachersDayCelebration } from '../components/teachers-day/TeachersDayCelebration';
 
 export const MainLayout: React.FC = () => {
   const location = useLocation();
@@ -33,6 +32,7 @@ export const MainLayout: React.FC = () => {
   const [discrepancyModalOpen, setDiscrepancyModalOpen] = useState(false);
   const [discrepancyModalDismissed, setDiscrepancyModalDismissed] = useState(false);
   const [adminModalDismissed, setAdminModalDismissed] = useState(false);
+  const [isTeachersDayDismissed, setIsTeachersDayDismissed] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -211,14 +211,20 @@ export const MainLayout: React.FC = () => {
       {/* Cloud & Particle Background */}
       <CloudBackground />
 
-      {/* Teacher's Day Celebration Ribbon & Floating Widget */}
-      <TeachersDayCelebration />
+      {/* Sticky Navbar (Includes Teacher's Day Ribbon at Top) */}
+      <Navbar
+        onOpenJoinModal={handleOpenJoinModal}
+        isTeachersDayDismissed={isTeachersDayDismissed}
+        onDismissTeachersDay={() => setIsTeachersDayDismissed(true)}
+      />
 
-      {/* Sticky Navbar */}
-      <Navbar onOpenJoinModal={handleOpenJoinModal} />
-
-      {/* Main Content Area */}
-      <main className="flex-grow relative z-10">
+      {/* Main Content Area — dynamically adjusts top padding when celebration bar is closed */}
+      <main
+        className="flex-grow relative z-10 transition-all duration-300 ease-in-out"
+        style={{
+          paddingTop: !isTeachersDayDismissed ? '42px' : '0px',
+        }}
+      >
         <Outlet context={outletContextValue} />
       </main>
 
