@@ -30,6 +30,7 @@ export const CustomCursor: React.FC = () => {
   const animFrameId = useRef<number | null>(null);
   const lastSpawnPos = useRef({ x: -100, y: -100 });
   const isVisibleRef = useRef(false);
+  const isHoveringRef = useRef(false);
 
   useEffect(() => {
     // Only exclude pure touch devices (phones/tablets without mice)
@@ -90,7 +91,9 @@ export const CustomCursor: React.FC = () => {
       const isText = Boolean(
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
+        target.isContentEditable ||
+        target.closest('input') ||
+        target.closest('textarea')
       );
 
       const isInteractive = Boolean(
@@ -102,8 +105,10 @@ export const CustomCursor: React.FC = () => {
         target.classList.contains('cursor-pointer')
       );
 
+      const hoverActive = isInteractive && !isText;
       setIsTextInput(isText);
-      setIsHovering(isInteractive && !isText);
+      setIsHovering(hoverActive);
+      isHoveringRef.current = hoverActive;
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -165,12 +170,12 @@ export const CustomCursor: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     const render = () => {
-      // 1. Lerp trailing cosmic ring towards cursor
-      const ease = 0.22;
+      // 1. Lerp trailing cosmic ring towards cursor (snappy lock on hover, fluid follow normally)
+      const ease = isHoveringRef.current ? 0.48 : 0.32;
       ringPos.current.x += (mousePos.current.x - ringPos.current.x) * ease;
       ringPos.current.y += (mousePos.current.y - ringPos.current.y) * ease;
 
-      // 2. Update DOM positions via translate3d for GPU acceleration
+      // 2. Update DOM positions via translate3d for GPU acceleration (Zero CSS transition conflicts)
       if (dotRef.current) {
         dotRef.current.style.transform = `translate3d(${mousePos.current.x}px, ${mousePos.current.y}px, 0) translate(-50%, -50%)`;
       }
@@ -225,33 +230,39 @@ export const CustomCursor: React.FC = () => {
         className="fixed inset-0 pointer-events-none z-[999998]"
       />
 
-      {/* Trailing Dashed Cosmic Ring */}
+      {/* Trailing Cosmic Ring (Position Wrapper + Visual Child) */}
       <div
         ref={ringRef}
-        className={`fixed top-0 left-0 pointer-events-none rounded-full z-[999999] transition-all duration-200 ease-out ${
-          !isVisible || isTextInput ? 'opacity-0 scale-50' : 'opacity-100'
-        } ${
-          isClicking
-            ? 'w-6 h-6 border-2 border-sky-400 bg-sky-400/30 shadow-[0_0_15px_rgba(56,189,248,0.7)]'
-            : isHovering
-              ? 'w-14 h-14 border-2 border-sky-400 bg-sky-400/15 shadow-[0_0_22px_rgba(56,189,248,0.45)] scale-110'
-              : 'w-8 h-8 border border-sky-400/60 shadow-[0_0_10px_rgba(56,189,248,0.25)] bg-transparent'
-        }`}
-        style={{ willChange: 'transform' }}
-      />
+        className="fixed top-0 left-0 pointer-events-none z-[999999] will-change-transform"
+        style={{ transform: 'translate3d(-100px, -100px, 0) translate(-50%, -50%)' }}
+      >
+        <div
+          className={`rounded-full transition-all duration-200 ease-out ${
+            !isVisible || isTextInput ? 'opacity-0 scale-50' : 'opacity-100'
+          } ${
+            isClicking
+              ? 'w-7 h-7 border-2 border-sky-300 bg-sky-400/40 shadow-[0_0_18px_rgba(56,189,248,0.8)] scale-90'
+              : isHovering
+                ? 'w-12 h-12 border-2 border-sky-400 bg-sky-400/20 shadow-[0_0_24px_rgba(56,189,248,0.45)] backdrop-blur-[0.5px] scale-100'
+                : 'w-8 h-8 border border-sky-400/70 bg-transparent shadow-[0_0_10px_rgba(56,189,248,0.25)]'
+          }`}
+        />
+      </div>
 
-      {/* Central Precision Glowing Dot */}
+      {/* Central Precision Glowing Dot (Position Wrapper + Visual Child) */}
       <div
         ref={dotRef}
-        className={`fixed top-0 left-0 pointer-events-none rounded-full z-[999999] transition-all duration-150 ${
-          !isVisible || isTextInput ? 'opacity-0' : 'opacity-100'
-        } ${
-          isHovering
-            ? 'w-3 h-3 bg-white shadow-[0_0_14px_#ffffff,0_0_24px_#38bdf8] scale-125'
-            : 'w-2 h-2 bg-sky-400 shadow-[0_0_10px_#38bdf8,0_0_20px_rgba(56,189,248,0.6)]'
-        }`}
-        style={{ willChange: 'transform' }}
-      />
+        className="fixed top-0 left-0 pointer-events-none z-[999999] will-change-transform"
+        style={{ transform: 'translate3d(-100px, -100px, 0) translate(-50%, -50%)' }}
+      >
+        <div
+          className={`rounded-full transition-all duration-150 ease-out ${
+            !isVisible || isTextInput || isHovering
+              ? 'opacity-0 scale-0'
+              : 'opacity-100 scale-100'
+          } w-2.5 h-2.5 bg-sky-400 shadow-[0_0_10px_#38bdf8,0_0_18px_rgba(56,189,248,0.85)]`}
+        />
+      </div>
     </>
   );
 };
