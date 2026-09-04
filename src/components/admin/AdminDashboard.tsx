@@ -84,8 +84,6 @@ import {
   updateEventAdmin,
   deleteEventAdmin,
   deleteEventPosterAdmin,
-  deleteEventPdfAdmin,
-  uploadEventPdf,
   uploadEventImage,
   sortEventsByRelevance,
 } from '../../services/events';
@@ -99,7 +97,7 @@ import {
   fetchFreshEventFeedbacksFromDb,
 } from '../../services/feedback';
 import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
-import { validateFileSignature, validatePdfSignature } from '../../lib/fileValidation';
+import { validateFileSignature } from '../../lib/fileValidation';
 import type { Member, Event, Role, ContactFeedback, EventFeedback, FeedbackStatus } from '../../types/database';
 
 const EVENT_CATEGORY_OPTIONS = [
@@ -128,6 +126,17 @@ const getInitialEventFeedbacksCache = (): EventFeedback[] => {
     return [];
   }
 };
+
+const GoogleDriveIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6.6 66.85L10.45 73.5C11.25 74.9 12.4 76 13.75 76.8L27.5 53H0C0 54.55 0.4 56.1 1.2 57.5L6.6 66.85Z" fill="#0066DA" />
+    <path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 48.5C0.4 49.9 0 51.45 0 53H27.5L43.65 25Z" fill="#00AC47" />
+    <path d="M73.55 76.8C74.9 76 76.05 74.9 76.85 73.5L86.1 57.5C86.9 56.1 87.3 54.55 87.3 53H59.8L73.55 76.8Z" fill="#EA4335" />
+    <path d="M43.65 25L57.4 1.2C56.05 0.45 54.5 0 52.9 0H34.4C32.8 0 31.25 0.45 29.9 1.2L43.65 25Z" fill="#00832D" />
+    <path d="M59.8 53H27.5L13.75 76.8C15.1 77.6 16.65 78 18.25 78H69.05C70.65 78 72.2 77.6 73.55 76.8L59.8 53Z" fill="#2684FC" />
+    <path d="M73.4 26.5L60.7 4.5C59.9 3.1 58.75 2 57.4 1.2L43.65 25L59.8 53H87.3C87.3 51.45 86.9 49.9 86.1 48.5L73.4 26.5Z" fill="#FFBA00" />
+  </svg>
+);
 
 interface AdminDashboardProps {
   mobileNavOpen?: boolean;
@@ -217,7 +226,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const [eventFilter, setEventFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [isCreateEventOpen, setIsCreateEventOpen] = useState(false);
-  const [eventPdfFile, setEventPdfFile] = useState<File | null>(null);
   const [eventPosterFile, setEventPosterFile] = useState<File | null>(null);
   const [selectedEventPdf, setSelectedEventPdf] = useState<{ url: string; title: string } | null>(null);
   const [selectedEventPoster, setSelectedEventPoster] = useState<{ url: string; title: string } | null>(null);
@@ -235,6 +243,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     time: '10:00',
     location: '',
     rules: '',
+    drive_url: '',
     registration_enabled: false,
     registration_start: '',
     registration_end: '',
@@ -253,6 +262,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     time: '',
     location: '',
     rules: '',
+    drive_url: '',
     registration_enabled: true,
     registration_start: '',
     registration_end: '',
@@ -260,7 +270,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     max_team_size: 1,
     max_registrations: '',
   });
-  const [editPdfFile, setEditPdfFile] = useState<File | null>(null);
   const [editPosterFile, setEditPosterFile] = useState<File | null>(null);
 
   // Event Rules Modal State
@@ -521,21 +530,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     setTimeout(() => setActionSuccess(null), 2000);
   };
 
-  const handleDeleteEventPdf = async (eventId: string) => {
-    const targetEvent = eventsList.find((e) => e.id === eventId) || editingEvent;
-    const currentPdfUrl = targetEvent?.pdf_url || editingEvent?.pdf_url;
-
-    setEditingEvent((prev) => (prev ? { ...prev, pdf_url: null } : null));
-    setEditPdfFile(null);
-    setEventsList((prev) =>
-      prev.map((e) => (e.id === eventId ? { ...e, pdf_url: null } : e))
-    );
-
-    await deleteEventPdfAdmin(eventId, currentPdfUrl);
-    setActionSuccess('Event PDF schedule deleted from storage and database!');
-    setTimeout(() => setActionSuccess(null), 2000);
-  };
-
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
 
@@ -653,17 +647,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       const eventId = generateUUID();
       const autoSlug = generateSlug(newEventData.title) || `event-${Date.now()}`;
 
-      let pdfUrl: string | null = null;
-      if (eventPdfFile) {
-        const pdfVal = await validatePdfSignature(eventPdfFile);
-        if (!pdfVal.isValid) {
-          setActionError(pdfVal.error || 'Invalid PDF file. Only authentic PDF documents under 2MB are accepted.');
-          setIsUploadingMedia(false);
-          return;
-        }
-        pdfUrl = await uploadEventPdf(eventPdfFile, eventId);
-      }
-
       let imageUrl: string | null = null;
       if (eventPosterFile) {
         const imgVal = await validateFileSignature(eventPosterFile);
@@ -686,7 +669,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         end_time: null,
         location: newEventData.location.trim() || 'Chandigarh University',
         rules: newEventData.rules.trim() || null,
-        pdf_url: pdfUrl,
+        pdf_url: null,
+        drive_url: newEventData.drive_url.trim() || null,
         image_url: imageUrl,
         registration_enabled: newEventData.registration_enabled,
         registration_start: newEventData.registration_enabled ? (newEventData.registration_start || null) : null,
@@ -703,7 +687,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       setEventsList((prev) => [newEventObj, ...prev.filter((e) => e.id !== eventId)]);
       setActionSuccess(`Successfully created event "${newEventData.title}"!`);
       setIsCreateEventOpen(false);
-      setEventPdfFile(null);
       setEventPosterFile(null);
       setNewEventData({
         title: '',
@@ -713,6 +696,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         time: '10:00',
         location: '',
         rules: '',
+        drive_url: '',
         registration_enabled: false,
         registration_start: '',
         registration_end: '',
@@ -734,7 +718,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
   const handleOpenEditEvent = (evt: Event) => {
     setEditingEvent(evt);
-    setEditPdfFile(null);
     setEditPosterFile(null);
     setEditEventData({
       title: evt.title,
@@ -744,6 +727,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       time: evt.start_time || '10:00',
       location: evt.location || '',
       rules: evt.rules || '',
+      drive_url: evt.drive_url || '',
       registration_enabled: evt.registration_enabled ?? true,
       registration_start: evt.registration_start ? evt.registration_start.split('T')[0] : '',
       registration_end: evt.registration_end ? evt.registration_end.split('T')[0] : '',
@@ -772,17 +756,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
     setIsUploadingMedia(true);
     try {
-      let pdfUrl = editingEvent.pdf_url;
-      if (editPdfFile) {
-        const pdfVal = await validatePdfSignature(editPdfFile);
-        if (!pdfVal.isValid) {
-          setActionError(pdfVal.error || 'Invalid PDF file. Only authentic PDF documents under 2MB are accepted.');
-          setIsUploadingMedia(false);
-          return;
-        }
-        pdfUrl = await uploadEventPdf(editPdfFile, editingEvent.id);
-      }
-
       let imageUrl = editingEvent.image_url;
       if (editPosterFile) {
         const imgVal = await validateFileSignature(editPosterFile);
@@ -818,7 +791,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         start_time: editEventData.time,
         location: editEventData.location.trim(),
         rules: editEventData.rules.trim() || null,
-        pdf_url: pdfUrl,
+        pdf_url: editingEvent.pdf_url,
+        drive_url: editEventData.drive_url.trim() || null,
         image_url: imageUrl,
         status: computedStatus,
         registration_enabled: editEventData.registration_enabled,
@@ -836,7 +810,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       );
       setActionSuccess(`Successfully updated event "${editEventData.title}"!`);
       setEditingEvent(null);
-      setEditPdfFile(null);
       setEditPosterFile(null);
       setTimeout(() => setActionSuccess(null), 2000);
 
@@ -1972,15 +1945,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               </button>
                             )}
 
-                            {evt.pdf_url && (
-                              <button
-                                type="button"
-                                onClick={() => setSelectedEventPdf({ url: evt.pdf_url!, title: evt.title })}
-                                className="px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 text-xs font-extrabold transition-all flex items-center gap-1 cursor-pointer"
+                            {evt.drive_url && (
+                              <a
+                                href={evt.drive_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 sm:flex-none justify-center px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-500/15 dark:hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover:shadow-sm"
+                                title="Open Event Drive Link"
                               >
-                                <FileText className="w-3.5 h-3.5" />
-                                <span>PDF</span>
-                              </button>
+                                <GoogleDriveIcon className="w-3.5 h-3.5 shrink-0" />
+                                <span>Drive</span>
+                              </a>
                             )}
                           </div>
                         </div>
@@ -2473,64 +2448,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 )}
               </div>
 
-              {/* Column 2: EVENT PDF (DOCUMENT) */}
+              {/* Column 2: EVENT DRIVE LINK */}
               <div className="min-w-0">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="truncate">Event PDF (Max 2MB)</span>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <GoogleDriveIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Event Drive Link</span>
                 </label>
-
-                {eventPdfFile ? (
-                  <div className="p-2 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
-                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
-                      <FileText className="w-4 h-4 text-red-500 shrink-0" />
-                      <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
-                        {eventPdfFile.name}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setEventPdfFile(null)}
-                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
-                      title="Remove PDF"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="relative group">
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          const file = e.target.files[0];
-                          if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-                            showAlert('Invalid File Format', 'Only PDF files (.pdf) are accepted.', 'warning');
-                            return;
-                          }
-                          if (file.size > 2 * 1024 * 1024) {
-                            showAlert(
-                              'PDF Size Limit Exceeded',
-                              `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress the PDF.`,
-                              'warning'
-                            );
-                            return;
-                          }
-                          setEventPdfFile(file);
-                        }
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
-                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Upload PDF</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    value={newEventData.drive_url}
+                    onChange={(e) => setNewEventData({ ...newEventData, drive_url: e.target.value })}
+                    className="w-full h-12 px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2855,89 +2787,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 )}
               </div>
 
-              {/* Column 2: EVENT PDF (DOCUMENT) */}
+              {/* Column 2: EVENT DRIVE LINK */}
               <div className="min-w-0">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
-                  <FileText className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                  <span className="truncate">Event PDF (Max 2MB)</span>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <GoogleDriveIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Event Drive Link</span>
                 </label>
-
-                {editPdfFile ? (
-                  <div className="p-2.5 rounded-2xl bg-blue-50/80 dark:bg-slate-900/90 border border-blue-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
-                    <div className="flex items-center gap-1.5 overflow-hidden min-w-0">
-                      <FileText className="w-4 h-4 text-red-500 shrink-0" />
-                      <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">
-                        {editPdfFile.name}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditPdfFile(null)}
-                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
-                      title="Remove PDF"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : editingEvent?.pdf_url ? (
-                  <div className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-1.5 h-12">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 truncate min-w-0">
-                      <FileText className="w-4 h-4 text-blue-500 shrink-0" />
-                      <span className="truncate">Attached PDF</span>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedEventPdf({ url: editingEvent.pdf_url!, title: editingEvent.title })}
-                        className="px-2 py-1 rounded-lg bg-blue-500/15 text-blue-600 dark:text-sky-400 text-[10px] font-bold"
-                      >
-                        Preview
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteEventPdf(editingEvent.id)}
-                        className="px-2 py-1 rounded-lg bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-500/25 text-[10px] font-extrabold transition-all flex items-center gap-1 cursor-pointer"
-                        title="Delete PDF schedule from database"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative group">
-                    <input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-                          showAlert('Invalid File Format', 'Only PDF files (.pdf) are accepted.', 'warning');
-                          return;
-                        }
-                        if (file.size > 2 * 1024 * 1024) {
-                          showAlert(
-                            'PDF Size Limit Exceeded',
-                            `PDF size is ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed size is 2 MB. Please compress the PDF.`,
-                            'warning'
-                          );
-                          return;
-                        }
-                        setEditPdfFile(file);
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div className="p-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 group-hover:border-blue-500 bg-slate-50/50 dark:bg-slate-900/50 text-center transition-all space-y-0.5 h-12 flex flex-col justify-center items-center">
-                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
-                        <UploadCloud className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Upload PDF</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="relative">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    value={editEventData.drive_url}
+                    onChange={(e) => setEditEventData({ ...editEventData, drive_url: e.target.value })}
+                    className="w-full h-12 px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-xs font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                </div>
               </div>
             </div>
 

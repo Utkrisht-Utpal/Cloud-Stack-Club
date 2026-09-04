@@ -85,6 +85,7 @@ export interface Event {
   location: string | null;
   image_url: string | null;
   pdf_url: string | null;
+  drive_url?: string | null;
   status: EventStatus;
   registration_enabled: boolean;
   registration_start: string | null;
@@ -310,6 +311,7 @@ export interface Database {
           location?: string | null;
           image_url?: string | null;
           pdf_url?: string | null;
+          drive_url?: string | null;
           status?: EventStatus;
           registration_enabled?: boolean;
           registration_start?: string | null;
@@ -331,6 +333,7 @@ export interface Database {
           location?: string | null;
           image_url?: string | null;
           pdf_url?: string | null;
+          drive_url?: string | null;
           status?: EventStatus;
           registration_enabled?: boolean;
           registration_start?: string | null;

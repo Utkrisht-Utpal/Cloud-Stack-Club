@@ -207,6 +207,7 @@ export const getEvents = async (): Promise<Event[]> => {
     const eventsWithCat = dbEvents.map((e) => ({
       ...e,
       pdf_url: null, // Guarantee pdf_url is stripped from public memory
+      drive_url: null, // Guarantee drive_url is stripped from public memory (Admin only)
       category: e.category || catMap[e.id] || null,
     }));
 
@@ -359,6 +360,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     location: eventPayload.location || 'Chandigarh University',
     image_url: eventPayload.image_url || null,
     pdf_url: eventPayload.pdf_url || null,
+    drive_url: eventPayload.drive_url ? eventPayload.drive_url.trim() : null,
     status: (eventPayload.status as any) || 'upcoming',
     registration_enabled: eventPayload.registration_enabled ?? true,
     registration_start: eventPayload.registration_start || null,
@@ -388,8 +390,8 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     .select('*')
     .maybeSingle();
 
-  if (error && error.message.includes('category')) {
-    const { category, ...rest } = createdEvent;
+  if (error && (error.message.includes('category') || error.message.includes('drive_url'))) {
+    const { category, drive_url, ...rest } = createdEvent;
     const retry = await supabase.from('events').insert([rest]).select('*').maybeSingle();
     data = retry.data;
     error = retry.error;
@@ -445,6 +447,7 @@ export const updateEventAdmin = async (
     start_time: eventPayload.start_time || null,
     location: eventPayload.location || null,
     pdf_url: eventPayload.pdf_url || null,
+    ...(eventPayload.drive_url !== undefined ? { drive_url: eventPayload.drive_url ? eventPayload.drive_url.trim() : null } : {}),
     image_url: eventPayload.image_url || null,
     status: eventPayload.status || undefined,
     registration_enabled: eventPayload.registration_enabled ?? true,
@@ -464,8 +467,9 @@ export const updateEventAdmin = async (
     .select('*')
     .maybeSingle();
 
-  if (error && error.message.includes('category')) {
-    delete updateFields.category;
+  if (error && (error.message.includes('category') || error.message.includes('drive_url'))) {
+    if (error.message.includes('category')) delete updateFields.category;
+    if (error.message.includes('drive_url')) delete updateFields.drive_url;
     const retry = await supabase
       .from('events')
       .update(updateFields)
@@ -685,7 +689,7 @@ export const getEventBySlug = async (slug: string): Promise<Event | null> => {
     return local.find((e) => e.slug === cleanSlug || generateSlug(e.title) === cleanSlug) || null;
   }
 
-  return (data as Event) || null;
+  return data ? ({ ...(data as Event), pdf_url: null, drive_url: null }) : null;
 };
 
 export const getEventById = async (id: string): Promise<Event | null> => {
@@ -715,7 +719,7 @@ export const getEventById = async (id: string): Promise<Event | null> => {
     return null;
   }
 
-  return data as Event | null;
+  return data ? ({ ...(data as Event), pdf_url: null, drive_url: null }) : null;
 };
 
 export const getAdminEventById = async (id: string): Promise<Event | null> => {
