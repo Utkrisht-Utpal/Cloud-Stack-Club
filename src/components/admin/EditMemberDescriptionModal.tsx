@@ -55,7 +55,7 @@ export const EditMemberDescriptionModal: React.FC<EditMemberDescriptionModalProp
       isOpen={isOpen}
       onClose={onClose}
       title={mode === 'edit' ? `Edit Bio — ${memberName}` : `Member Bio — ${memberName}`}
-      maxWidth="max-w-xl"
+      maxWidth="max-w-2xl sm:max-w-3xl"
     >
       <div className="space-y-4">
         {/* Member Meta Banner */}
@@ -85,9 +85,11 @@ export const EditMemberDescriptionModal: React.FC<EditMemberDescriptionModalProp
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 relative">
               <Quote className="w-6 h-6 text-slate-300 dark:text-slate-700 absolute top-3 right-3 pointer-events-none opacity-60" />
               {description ? (
-                <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-normal">
-                  {description}
-                </p>
+                <div className="max-h-[360px] overflow-y-auto custom-scrollbar pr-2">
+                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-normal">
+                    {description}
+                  </p>
+                </div>
               ) : (
                 <p className="text-xs text-slate-400 dark:text-slate-500 italic">
                   No bio description has been written for this member yet. Click "Edit Bio" above to add one.
@@ -129,18 +131,18 @@ export const EditMemberDescriptionModal: React.FC<EditMemberDescriptionModalProp
                   <span>Bio Description</span>
                 </label>
                 <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
-                  {description.length} / 500 chars
+                  {description.length} / 1000 chars
                 </span>
               </div>
 
               <textarea
                 id="memberDescriptionInput"
-                rows={6}
-                maxLength={500}
+                rows={8}
+                maxLength={1000}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Write a brief professional bio, focus areas, or contributions of this core team member..."
-                className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-xs sm:text-sm border border-slate-200 dark:border-slate-700/80 leading-relaxed resize-none"
+                placeholder="Write a brief professional bio, focus areas, or contributions of this core team member (up to 1000 characters)..."
+                className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-xs sm:text-sm border border-slate-200 dark:border-slate-700/80 leading-relaxed custom-scrollbar resize-y min-h-[160px] max-h-[380px]"
               />
 
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-normal">

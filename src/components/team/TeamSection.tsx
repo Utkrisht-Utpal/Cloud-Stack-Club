@@ -5,7 +5,7 @@ import {
   Building2,
   User,
   GraduationCap,
-  FileText,
+  Sparkles,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { getCoreMembers, getTeamPageBanner, type CoreMember, type TeamPageBannerData } from '../../services/members';
@@ -189,21 +189,21 @@ export const TeamSection: React.FC = () => {
           isOpen={!!selectedMemberModal}
           onClose={() => setSelectedMemberModal(null)}
           title="Core Council Member Details"
-          maxWidth="max-w-3xl"
+          maxWidth="max-w-4xl lg:max-w-5xl"
         >
-          <div className="space-y-6 pt-1">
-            <div className="flex flex-col sm:flex-row gap-6 sm:gap-7 items-start">
-              {/* Member Photo (4:5 Portrait) */}
-              <div className="w-full sm:w-[290px] shrink-0 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl">
-                <div style={{ aspectRatio: '4/5' }} className="relative w-full overflow-hidden">
+          <div className="pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+              {/* Member Photo (4:5 on mobile, stretches to match right column baseline on md+) */}
+              <div className="md:col-span-5 w-full flex flex-col min-h-0">
+                <div className="relative w-full aspect-[4/5] md:aspect-auto md:h-full flex-1 rounded-2xl lg:rounded-3xl overflow-hidden bg-slate-950 border border-slate-200/80 dark:border-slate-800 shadow-xl group flex flex-col min-h-0">
                   {selectedMemberModal.photo_url ? (
                     <img
                       src={selectedMemberModal.photo_url}
                       alt={selectedMemberModal.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02] flex-1 min-h-0"
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center">
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500 p-6 text-center flex-1">
                       <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-slate-400 mb-3">
                         <User className="w-10 h-10" />
                       </div>
@@ -213,47 +213,53 @@ export const TeamSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* Member Info */}
-              <div className="flex-1 space-y-4 sm:space-y-5 min-w-0 w-full">
-                <div className="space-y-2.5">
+              {/* Member Info & Contributions */}
+              <div className="md:col-span-7 flex flex-col justify-between space-y-4 sm:space-y-5 min-w-0 w-full min-h-0">
+                {/* Header Information */}
+                <div className="space-y-2.5 sm:space-y-3">
+                  {/* Badges Row */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-blue-600 text-white shadow-md shadow-blue-500/20">
+                    <span className="px-3.5 py-1.5 rounded-xl text-xs font-black bg-blue-600 dark:bg-blue-500 text-white shadow-sm shadow-blue-500/25 tracking-wide">
                       {selectedMemberModal.role?.name || 'Core Member'}
                     </span>
 
                     {selectedMemberModal.year && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60">
-                        <GraduationCap className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-slate-700/70">
+                        <GraduationCap className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                         <span>{selectedMemberModal.year}</span>
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                  {/* Name */}
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
                     {selectedMemberModal.name}
                   </h3>
 
+                  {/* Department / Discipline */}
                   {selectedMemberModal.department && (
-                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 w-fit">
                       <Building2 className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
                       <span>{selectedMemberModal.department}</span>
                     </div>
                   )}
                 </div>
 
-                {/* Full Bio / Description */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 space-y-2.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    <FileText className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+                {/* About & Contributions Section */}
+                <div className="rounded-2xl p-4 sm:p-6 bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800/80 space-y-3 shadow-xs flex-1 flex flex-col justify-start min-h-0">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider pb-2.5 border-b border-slate-200/60 dark:border-slate-800/60 shrink-0">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     <span>About &amp; Contributions</span>
                   </div>
 
                   {selectedMemberModal.description ? (
-                    <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line max-h-[260px] overflow-y-auto pr-1">
-                      {selectedMemberModal.description}
-                    </p>
+                    <div className="max-h-[360px] sm:max-h-[440px] overflow-y-auto custom-scrollbar pr-2 sm:pr-3 flex-1">
+                      <p className="text-sm sm:text-base text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line font-normal">
+                        {selectedMemberModal.description}
+                      </p>
+                    </div>
                   ) : (
-                    <p className="text-xs sm:text-sm text-slate-400 italic">
+                    <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-500 italic py-2">
                       Core Council Member • Cloud Stack Club, Chandigarh University.
                     </p>
                   )}
