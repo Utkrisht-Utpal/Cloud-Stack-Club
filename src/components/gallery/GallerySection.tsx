@@ -291,12 +291,6 @@ export const GallerySection: React.FC = () => {
                     {eventItem.title}
                   </h2>
 
-                  {/* Description: ONLY rendered if present */}
-                  {eventItem.description && eventItem.description.trim() && (
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed max-w-4xl">
-                      {eventItem.description}
-                    </p>
-                  )}
                 </div>
 
                 {/* Google Photos Style Responsive Justified Layout */}
