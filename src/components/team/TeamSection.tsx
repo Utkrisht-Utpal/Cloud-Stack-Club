@@ -5,6 +5,7 @@ import {
   Building2,
   User,
   GraduationCap,
+  Sparkles,
   ArrowUpRight,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
