@@ -168,7 +168,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     try {
       const active = await getActiveNotices();
       setActiveNoticeCount(active.length);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     try {
       const list = await getAllDiscrepancies();
       setDiscrepancyCount(list.length);
-    } catch {}
+    } catch { }
   }, []);
 
   useEffect(() => {
@@ -994,22 +994,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 {/* Members */}
                 <button
                   onClick={() => { setActiveTab('members'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'members'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'members'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                    }`}>
                     <Users className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Members Management</span>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${
-                      activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
-                    }`}>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-black ${activeTab === 'members' ? 'bg-white/20 text-white' : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                      }`}>
                       {membersList.length}
                     </span>
                     {pendingApplications.length > 0 && (
@@ -1023,21 +1020,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 {/* Events */}
                 <button
                   onClick={() => { setActiveTab('events'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'events'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'events'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                    }`}>
                     <Calendar className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Events Management</span>
-                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-black shrink-0 ${
-                    activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
-                  }`}>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-black shrink-0 ${activeTab === 'events' ? 'bg-white/20 text-white' : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300'
+                    }`}>
                     {eventsList.length}
                   </span>
                 </button>
@@ -1045,15 +1039,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 {/* Registration Form Builder */}
                 <button
                   onClick={() => { setActiveTab('forms'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'forms'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'forms'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'forms' ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'forms' ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    }`}>
                     <FileSpreadsheet className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Form Builder</span>
@@ -1062,39 +1054,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 {/* Contact & Feedbacks */}
                 <button
                   onClick={() => { setActiveTab('feedbacks'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'feedbacks'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'feedbacks'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-white/80 dark:hover:bg-slate-850/80'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'feedbacks' ? 'bg-white/20 text-white' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    }`}>
                     <MessageSquare className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Contact &amp; Feedbacks</span>
                   {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
                     eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
-                    <span className="px-2.5 py-0.5 rounded-full text-xs bg-amber-400 text-slate-950 font-black shrink-0">
-                      {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
-                        eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
-                    </span>
-                  )}
+                      <span className="px-2.5 py-0.5 rounded-full text-xs bg-amber-400 text-slate-950 font-black shrink-0">
+                        {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                          eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
+                      </span>
+                    )}
                 </button>
 
                 {/* Event Gallery */}
                 <button
                   onClick={() => { setActiveTab('gallery'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'gallery'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'gallery'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'gallery' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'gallery' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
+                    }`}>
                     <Camera className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Event Gallery</span>
@@ -1103,15 +1091,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 {/* Our Team */}
                 <button
                   onClick={() => { setActiveTab('team'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'team'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'team'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'team' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'team' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                    }`}>
                     <Sparkles className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">Our Team</span>
@@ -1120,15 +1106,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 {/* E-Mails */}
                 <button
                   onClick={() => { setActiveTab('emails'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                    activeTab === 'emails'
+                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'emails'
                       ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
                       : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    activeTab === 'emails' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
-                  }`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'emails' ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-600 dark:text-sky-400'
+                    }`}>
                     <Mail className="w-5 h-5" />
                   </div>
                   <span className="truncate flex-1 font-extrabold text-sm">E - Mails</span>
@@ -1142,11 +1126,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         <div className="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1.5 scrollbar-none w-full min-w-0">
           <button
             onClick={() => setActiveTab('members')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'members'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'members'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <Users className="w-4 h-4 shrink-0" />
             <span>Members<span className="hidden xl:inline"> Management</span></span>
@@ -1162,11 +1145,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('events')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'events'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'events'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <Calendar className="w-4 h-4 shrink-0" />
             <span>Events<span className="hidden xl:inline"> Management</span></span>
@@ -1177,11 +1159,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('forms')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'forms'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'forms'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <FileSpreadsheet className="w-4 h-4 shrink-0" />
             <span><span className="hidden xl:inline">Registration </span>Form Builder</span>
@@ -1189,30 +1170,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('feedbacks')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'feedbacks'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'feedbacks'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <MessageSquare className="w-4 h-4 shrink-0" />
             <span><span className="hidden xl:inline">Contact &amp; </span>Feedbacks</span>
             {(contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
               eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length) > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black min-w-[18px] text-center shadow-sm">
-                {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
-                  eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
-              </span>
-            )}
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black min-w-[18px] text-center shadow-sm">
+                  {contactFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length +
+                    eventFeedbacksList.filter((f) => f.status === 'pending' || f.status === 'unread').length}
+                </span>
+              )}
           </button>
 
           <button
             onClick={() => setActiveTab('gallery')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'gallery'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'gallery'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <Camera className="w-4 h-4 shrink-0" />
             <span><span className="hidden xl:inline">Event </span>Gallery</span>
@@ -1220,11 +1199,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('team')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'team'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'team'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <Sparkles className="w-4 h-4 shrink-0" />
             <span><span className="hidden xl:inline">Our </span>Team</span>
@@ -1232,11 +1210,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
           <button
             onClick={() => setActiveTab('emails')}
-            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-              activeTab === 'emails'
+            className={`flex-1 min-w-fit justify-center px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'emails'
                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
                 : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-            }`}
+              }`}
           >
             <Mail className="w-4 h-4 shrink-0" />
             <span>Emails</span>
@@ -1305,11 +1282,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               <button
                 type="button"
                 onClick={() => setMemberViewTab('applications')}
-                className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
-                  memberViewTab === 'applications'
+                className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${memberViewTab === 'applications'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
@@ -1339,11 +1315,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               <button
                 type="button"
                 onClick={() => setMemberViewTab('directory')}
-                className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
-                  memberViewTab === 'directory'
+                className={`p-4 sm:p-6 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${memberViewTab === 'directory'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
@@ -1396,19 +1371,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           key={f.id}
                           type="button"
                           onClick={() => setMemberFilter(f.id)}
-                          className={`h-9 px-2.5 sm:px-3.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${
-                            isActive
+                          className={`h-9 px-2.5 sm:px-3.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer shrink-0 whitespace-nowrap ${isActive
                               ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
                               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/50'
-                          }`}
+                            }`}
                         >
                           <span>{f.label}</span>
                           <span
-                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
-                              isActive
+                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${isActive
                                 ? 'bg-white/20 text-white'
                                 : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                            }`}
+                              }`}
                           >
                             {f.count}
                           </span>
@@ -1470,11 +1443,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             <button
                               type="button"
                               onClick={() => setSortRecentMembers((prev) => !prev)}
-                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${
-                                sortRecentMembers
+                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${sortRecentMembers
                                   ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
                                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800'
-                              }`}
+                                }`}
                               title={sortRecentMembers ? 'Sorting: Most recent added first (click for A-Z)' : 'Click to sort by most recently added'}
                               aria-label="Toggle sort by most recent members"
                             >
@@ -1553,25 +1525,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   {memberFilter === 'core'
                     ? 'No core members found matching your search or filters.'
                     : memberFilter === 'member'
-                    ? 'No general members found matching your search or filters.'
-                    : 'No members found matching your search or filters.'}
+                      ? 'No general members found matching your search or filters.'
+                      : 'No members found matching your search or filters.'}
                 </div>
               ) : (
                 <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-2xl border border-slate-200/80 dark:border-slate-800 custom-scrollbar">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                        <th className="py-3.5 px-4 font-bold w-[26%] max-w-[210px]">
+                        <th className="py-3.5 px-4 font-bold w-[34%] min-w-[240px]">
                           <div className="flex items-center gap-1.5">
                             <span>MEMBER INFO</span>
                             <button
                               type="button"
                               onClick={() => setSortRecentMembers((prev) => !prev)}
-                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${
-                                sortRecentMembers
+                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${sortRecentMembers
                                   ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
                                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800'
-                              }`}
+                                }`}
                               title={sortRecentMembers ? 'Sorting: Most recent added first (click for A-Z)' : 'Click to sort by most recently added'}
                               aria-label="Toggle sort by most recent members"
                             >
@@ -1582,13 +1553,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                         <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
                         <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
                         <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
-                        <th className="py-3.5 px-4 text-right font-bold min-w-[130px]">ACTIONS</th>
+                        <th className="py-3.5 px-4 text-right font-bold min-w-[140px]">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {filteredMembers.map((member) => (
                         <tr key={member.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3.5 px-4 max-w-[210px]">
+                          <td className="py-3.5 px-4 w-[34%] min-w-[240px]">
                             <div>
                               <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 flex-wrap">
                                 <span>{member.name}</span>
@@ -1598,7 +1569,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[11px] text-slate-500 truncate" title={member.email}>{member.email}</div>
+                              <div className="text-[11px] text-slate-500">{member.email}</div>
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono">
@@ -1616,11 +1587,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           <td className="py-3.5 px-4">
                             <button
                               onClick={() => setSelectedMemberForRole(member)}
-                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${
-                                member.is_core_member
+                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${member.is_core_member
                                   ? 'bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/25'
                                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                              }`}
+                                }`}
                               title="Click to manage core responsibility or convert to normal user"
                             >
                               {member.is_core_member ? (
@@ -1634,7 +1604,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             </button>
                           </td>
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-1.5">
+                            <div className="flex items-center justify-end gap-2">
                               {member.phone ? (
                                 <a
                                   href={`https://wa.me/91${member.phone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
@@ -1642,7 +1612,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                   )}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-1.5 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all inline-flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 active:scale-95"
                                   title={`WhatsApp ${member.name} (${member.phone})`}
                                 >
                                   <Phone className="w-4 h-4" />
@@ -1653,7 +1623,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                   href={`mailto:${member.email}?subject=${encodeURIComponent(
                                     'CloudStack Club — Member Communication'
                                   )}`}
-                                  className="p-1.5 rounded-xl text-blue-600 dark:text-sky-400 hover:bg-blue-500/15 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-600 dark:text-sky-400 hover:bg-blue-500/25 transition-all inline-flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 active:scale-95"
                                   title={`Email ${member.name} (${member.email})`}
                                 >
                                   <Mail className="w-4 h-4" />
@@ -1661,7 +1631,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               ) : null}
                               <button
                                 onClick={() => handleDeleteMember(member.id, member.name)}
-                                className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-500/10 dark:hover:bg-red-500/15 transition-colors cursor-pointer inline-flex items-center justify-center"
+                                className="w-8 h-8 rounded-xl bg-red-500/10 dark:bg-red-500/15 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/25 transition-all inline-flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 active:scale-95"
                                 title="Delete Member"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -2040,11 +2010,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               <button
                 type="button"
                 onClick={() => setFeedbackViewTab('contact')}
-                className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
-                  feedbackViewTab === 'contact'
+                className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${feedbackViewTab === 'contact'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
@@ -2074,11 +2043,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               <button
                 type="button"
                 onClick={() => setFeedbackViewTab('event')}
-                className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${
-                  feedbackViewTab === 'event'
+                className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${feedbackViewTab === 'event'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">
@@ -2114,11 +2082,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     key={st}
                     type="button"
                     onClick={() => setFeedbackFilter(st)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer shrink-0 ${
-                      feedbackFilter === st
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer shrink-0 ${feedbackFilter === st
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                         : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60'
-                    }`}
+                      }`}
                   >
                     {st.replace('_', ' ')}
                   </button>
@@ -2182,8 +2149,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   {feedbackSearch || selectedFeedbackEvent !== 'all' || feedbackFilter !== 'all'
                     ? 'No submissions match your active search or filter.'
                     : feedbackViewTab === 'event'
-                    ? 'There are no event-specific feedbacks submitted yet.'
-                    : 'There are no contact form feedbacks to display.'}
+                      ? 'There are no event-specific feedbacks submitted yet.'
+                      : 'There are no contact form feedbacks to display.'}
                 </p>
               </div>
             ) : (
@@ -2252,11 +2219,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                 <div className="space-y-1.5">
                                   <div className="flex items-center gap-1.5 flex-wrap">
                                     <span
-                                      className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${
-                                        isEventCancelled
+                                      className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${isEventCancelled
                                           ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                                           : 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300'
-                                      }`}
+                                        }`}
                                     >
                                       {eventTitle}
                                     </span>
@@ -2347,15 +2313,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                 { value: 'resolved', label: '✅ Resolved' },
                                 { value: 'archived', label: '📁 Archived' },
                               ]}
-                              triggerClassName={`min-w-[150px] sm:min-w-[155px] w-auto h-9 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${
-                                f.status === 'pending' || f.status === 'unread'
+                              triggerClassName={`min-w-[150px] sm:min-w-[155px] w-auto h-9 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${f.status === 'pending' || f.status === 'unread'
                                   ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                   : f.status === 'in_progress'
                                     ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-500/30'
                                     : f.status === 'resolved' || f.status === 'responded'
                                       ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
                                       : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
-                              }`}
+                                }`}
                             />
                           </div>
                         </td>
@@ -2568,11 +2533,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     setActiveRulesTarget('create');
                     setIsRulesModalOpen(true);
                   }}
-                  className={`w-full h-11 px-3.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    newEventData.rules.trim()
+                  className={`w-full h-11 px-3.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${newEventData.rules.trim()
                       ? 'bg-emerald-500/10 hover:bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-sm'
                       : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
-                  }`}
+                    }`}
                 >
                   <ScrollText className="w-4 h-4 text-blue-500 shrink-0" />
                   <span className="truncate">
@@ -2906,11 +2870,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     setActiveRulesTarget('edit');
                     setIsRulesModalOpen(true);
                   }}
-                  className={`w-full h-11 px-3.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                    editEventData.rules.trim()
+                  className={`w-full h-11 px-3.5 rounded-xl text-xs sm:text-sm font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${editEventData.rules.trim()
                       ? 'bg-emerald-500/10 hover:bg-emerald-500/15 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 shadow-sm'
                       : 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300'
-                  }`}
+                    }`}
                 >
                   <ScrollText className="w-4 h-4 text-blue-500 shrink-0" />
                   <span className="truncate">
@@ -3189,15 +3152,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                       Status
                     </span>
                     <span
-                      className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[11px] mt-0.5 ${
-                        viewingFeedback.status === 'resolved' || viewingFeedback.status === 'responded'
+                      className={`inline-block px-2.5 py-0.5 rounded-full font-bold text-[11px] mt-0.5 ${viewingFeedback.status === 'resolved' || viewingFeedback.status === 'responded'
                           ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                           : viewingFeedback.status === 'in_progress'
                             ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border border-blue-500/30'
                             : viewingFeedback.status === 'archived'
                               ? 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border border-slate-500/30'
                               : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-                      }`}
+                        }`}
                     >
                       {viewingFeedback.status === 'unread'
                         ? 'PENDING'
