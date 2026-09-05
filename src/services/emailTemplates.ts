@@ -287,7 +287,7 @@ export function renderEmailHtmlPreview(
       <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
         <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Membership Details</p>
         <p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Name:</strong> ${data.name || 'Member'}</p>
-        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Registration ID:</strong> ${data.registration_id || 'CSC-26-4892'}</p>
+        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Member ID:</strong> ${data.member_id || 'CSC-26-4892'}</p>
         <p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Department:</strong> ${data.department || 'Computer Science & Engineering'}</p>
         <p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Status:</strong> <span style="color: #16a34a; font-weight: 800;">Active Member</span></p>
       </div>

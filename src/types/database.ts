@@ -43,7 +43,7 @@ export interface Role {
 
 export interface Member {
   id: string;
-  registration_id: string;
+  member_id: string;
   uid: string | null;
   name: string;
   email: string;
@@ -269,7 +269,7 @@ export interface Database {
         Row: Member;
         Insert: {
           id?: string;
-          registration_id?: string;
+          member_id?: string;
           uid?: string | null;
           name: string;
           email: string;
@@ -286,7 +286,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          registration_id?: string;
+          member_id?: string;
           uid?: string | null;
           name?: string;
           email?: string;

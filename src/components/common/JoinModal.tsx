@@ -143,7 +143,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       );
 
       setIsRenewalSubmission(!!newMember.is_renewal);
-      setRegisteredNumber(newMember.registration_id);
+      setRegisteredNumber(newMember.member_id || "");
       resetCooldown();
       if (onSuccessToast) onSuccessToast();
     } catch (err: any) {
@@ -197,12 +197,12 @@ export const JoinModal: React.FC<JoinModalProps> = ({
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
                 {isRenewalSubmission
                   ? "Welcome back! Your membership renewal request has been submitted for coordinator review."
-                  : "We will let you know after successful verification of your membership registration."}
+                  : "We will let you know after successful verification of your membership."}
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono text-center">
               <span className="text-[11px] font-bold tracking-wider text-slate-500 block uppercase">
-                Member Registration ID
+                Member ID
               </span>
               <span className="text-base font-extrabold tracking-wide text-blue-600 dark:text-sky-400 mt-0.5 block">
                 {registeredNumber}

@@ -74,10 +74,10 @@ export const RejectMemberModal: React.FC<RejectMemberModalProps> = ({
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
               <span>{member.email}</span>
-              {member.registration_id && (
+              {member.member_id && (
                 <>
                   <span className="text-slate-300 dark:text-slate-600 font-bold">•</span>
-                  <span className="font-mono">{member.registration_id}</span>
+                  <span className="font-mono">{member.member_id}</span>
                 </>
               )}
             </p>

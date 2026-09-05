@@ -85,7 +85,7 @@ export const ManageRoleModal: React.FC<ManageRoleModalProps> = ({
                 </span>
               )}
             </div>
-            <div className="text-xs text-slate-500 font-mono">{member.registration_id} • {member.email}</div>
+            <div className="text-xs text-slate-500 font-mono">{member.member_id} • {member.email}</div>
           </div>
         </div>
 

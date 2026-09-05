@@ -142,10 +142,11 @@ export const submitMemberApplication = async (
   }
 
   const result = await response.json();
+  const memberIdVal = result?.member_id || `CSC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
   const newMember: Member = {
     id: result?.id || generateUUID(),
-    registration_id: result?.registration_id || `CSC-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+    member_id: memberIdVal,
     uid: cleanUid,
     name: formattedName,
     email: cleanEmail,
@@ -422,7 +423,7 @@ export const getMemberByUid = async (uid: string): Promise<Member | null> => {
   return data as Member | null;
 };
 
-export const getMemberByRegistrationId = async (registrationId: string): Promise<Member | null> => {
+export const getMemberByMemberId = async (memberId: string): Promise<Member | null> => {
   if (!isSupabaseConfigured()) {
     return null;
   }
@@ -430,12 +431,12 @@ export const getMemberByRegistrationId = async (registrationId: string): Promise
   const { data, error } = await supabase
     .from('members')
     .select('*, role:roles(*)')
-    .eq('registration_id', registrationId)
+    .eq('member_id', memberId)
     .eq('status', 'active')
     .maybeSingle();
 
   if (error) {
-    console.error(`Error fetching member by registrationId ${registrationId}:`, error.message);
+    console.error(`Error fetching member by memberId ${memberId}:`, error.message);
     return null;
   }
 

@@ -60,13 +60,14 @@ async function invokeSendEmail(action: string, data: Record<string, any>): Promi
 export async function sendMemberApprovalEmail(member: {
   name: string;
   email: string;
-  registration_id?: string | null;
+  member_id?: string | null;
   department?: string | null;
 }): Promise<SendEmailResult> {
+  const memId = member.member_id || undefined;
   return invokeSendEmail('approval', {
     recipient_email: member.email,
     recipient_name: member.name,
-    registration_id: member.registration_id || undefined,
+    member_id: memId,
     department: member.department || undefined,
     portal_url: window.location.origin,
   });

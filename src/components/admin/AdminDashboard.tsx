@@ -577,7 +577,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const handleApprove = async (member: Member) => {
     try {
       await approveMemberApplicationService(member.id, member.verification_file_url);
-      setActionSuccess(`Approved ${member.name} (${member.registration_id}). Verification document deleted.`);
+      setActionSuccess(`Approved ${member.name} (${member.member_id}). Verification document deleted.`);
       loadPendingApps();
       loadAllMembers();
       setTimeout(() => setActionSuccess(null), 3000);
@@ -871,7 +871,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         !query ||
         m.name.toLowerCase().includes(query) ||
         (m.uid || '').toLowerCase().includes(query) ||
-        m.registration_id.toLowerCase().includes(query) ||
+        (m.member_id || '').toLowerCase().includes(query) ||
         m.email.toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
@@ -900,7 +900,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         !query ||
         app.name.toLowerCase().includes(query) ||
         (app.uid || '').toLowerCase().includes(query) ||
-        app.registration_id.toLowerCase().includes(query) ||
+        (app.member_id || '').toLowerCase().includes(query) ||
         app.email.toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
@@ -1481,7 +1481,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           </td>
                           <td className="py-3.5 px-4 font-mono">
                             <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
-                              {app.registration_id}
+                              {app.member_id}
                             </div>
                             <div className="text-slate-500 text-[11px] mt-0.5">
                               {app.uid ? `UID: ${app.uid}` : 'UID: N/A'}
@@ -1583,7 +1583,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           </td>
                           <td className="py-3.5 px-4 font-mono">
                             <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
-                              {member.registration_id}
+                              {member.member_id}
                             </div>
                             <div className="text-slate-500 text-[11px] mt-0.5">
                               {member.uid ? `UID: ${member.uid}` : 'UID: N/A'}

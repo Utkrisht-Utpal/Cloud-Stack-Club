@@ -182,7 +182,7 @@ export interface TemplateVariable {
 export const CATEGORY_VARIABLES: Record<EmailCategory, TemplateVariable[]> = {
   approval: [
     { key: '{{name}}', label: 'Member Name', sampleValue: 'Aarav Sharma', description: 'Full name of approved student' },
-    { key: '{{registration_id}}', label: 'Registration ID', sampleValue: 'CSC-26-4892', description: 'Unique club registration number' },
+    { key: '{{member_id}}', label: 'Member ID', sampleValue: 'CSC-26-4892', description: 'Unique club member identification number' },
     { key: '{{department}}', label: 'Department / Branch', sampleValue: 'Computer Science & Engineering', description: 'Academic department' },
     { key: '{{email}}', label: 'Member Email', sampleValue: 'aarav.sharma@cumail.in', description: 'Email address of member' },
     { key: '{{portal_url}}', label: 'Portal Link', sampleValue: 'https://cloudstackclub.vercel.app', description: 'URL to club website' },
