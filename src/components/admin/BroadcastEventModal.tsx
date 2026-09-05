@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Send, 
   AlertCircle, 
@@ -11,7 +11,10 @@ import {
   ChevronDown, 
   Sliders, 
   Check, 
-  X 
+  X,
+  Globe,
+  Crown,
+  Target
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -43,15 +46,32 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
   const [isCustomPickerOpen, setIsCustomPickerOpen] = useState(false);
   const [customSearchQuery, setCustomSearchQuery] = useState('');
 
+  const [isAudienceDropdownOpen, setIsAudienceDropdownOpen] = useState(false);
+  const audienceDropdownRef = useRef<HTMLDivElement>(null);
+
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<{ sent: number; total: number } | null>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (audienceDropdownRef.current && !audienceDropdownRef.current.contains(e.target as Node)) {
+        setIsAudienceDropdownOpen(false);
+      }
+    };
+    if (isAudienceDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isAudienceDropdownOpen]);
 
   useEffect(() => {
     if (isOpen && event) {
       setSuccessResult(null);
       setError(null);
       setAudienceType('all');
+      setIsAudienceDropdownOpen(false);
       setLoadingMembers(true);
       getMembers()
         .then((members) => {
@@ -100,6 +120,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
 
   const handleAudienceChange = (newAudience: BroadcastAudienceType) => {
     setAudienceType(newAudience);
+    setIsAudienceDropdownOpen(false);
     if (newAudience === 'custom') {
       setIsCustomPickerOpen(true);
     }
@@ -181,12 +202,53 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
     }
   };
 
-  const audienceDescriptions: Record<BroadcastAudienceType, string> = {
-    all: 'All active registered club members in the directory',
-    core: 'Exclusively active Core Team & Council members',
-    members: 'Exclusively active General Club members',
-    custom: `Custom selected list (${customSelectedIds.size} of ${allMembers.length} members)`,
-  };
+  const coreCount = allMembers.filter((m) => m.is_core_member).length;
+  const generalCount = allMembers.filter((m) => !m.is_core_member).length;
+
+  const audienceOptions: Array<{
+    id: BroadcastAudienceType;
+    label: string;
+    description: string;
+    count: number;
+    icon: React.ComponentType<{ className?: string }>;
+    accentColor: string;
+  }> = [
+    {
+      id: 'all',
+      label: '1. All Directory',
+      description: 'All active registered club members in database',
+      count: allMembers.length,
+      icon: Globe,
+      accentColor: 'text-blue-500 dark:text-sky-400 bg-blue-500/15',
+    },
+    {
+      id: 'core',
+      label: '2. Core Team',
+      description: 'Exclusively active Core Council & leadership members',
+      count: coreCount,
+      icon: Crown,
+      accentColor: 'text-purple-500 dark:text-purple-400 bg-purple-500/15',
+    },
+    {
+      id: 'members',
+      label: '3. Members',
+      description: 'Exclusively active general club members',
+      count: generalCount,
+      icon: Users,
+      accentColor: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/15',
+    },
+    {
+      id: 'custom',
+      label: '4. Custom Selection',
+      description: 'Handpick specific members from full directory',
+      count: customSelectedIds.size,
+      icon: Target,
+      accentColor: 'text-amber-500 dark:text-amber-400 bg-amber-500/15',
+    },
+  ];
+
+  const currentOption = audienceOptions.find((o) => o.id === audienceType) || audienceOptions[0];
+  const CurrentIcon = currentOption.icon;
 
   return (
     <>
@@ -275,7 +337,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
                         Target Recipient Audience
                       </h4>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {audienceDescriptions[audienceType]}
+                        {currentOption.description}
                       </p>
                     </div>
                   </div>
@@ -285,7 +347,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
                       <button
                         type="button"
                         onClick={() => setIsCustomPickerOpen(true)}
-                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                        className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                         title="Edit Custom Selected Members"
                       >
                         <Sliders className="w-3.5 h-3.5" />
@@ -304,32 +366,88 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
                   </div>
                 </div>
 
-                {/* Audience 4-Option Dropdown */}
-                <div className="pt-2 border-t border-blue-500/15">
+                {/* Custom Themed Audience Dropdown Menu */}
+                <div className="pt-2 border-t border-blue-500/15" ref={audienceDropdownRef}>
                   <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
                     Select Audience Group
                   </label>
                   <div className="relative">
-                    <select
-                      value={audienceType}
-                      onChange={(e) => handleAudienceChange(e.target.value as BroadcastAudienceType)}
+                    <button
+                      type="button"
+                      onClick={() => setIsAudienceDropdownOpen((prev) => !prev)}
                       disabled={loadingMembers}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm appearance-none pr-9"
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center justify-between gap-3 cursor-pointer shadow-sm ${
+                        isAudienceDropdownOpen
+                          ? 'border-blue-500 bg-white dark:bg-slate-900 ring-2 ring-blue-500/20 text-slate-900 dark:text-white'
+                          : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-900 text-slate-900 dark:text-white hover:border-slate-300 dark:hover:border-slate-600'
+                      }`}
+                      aria-expanded={isAudienceDropdownOpen}
                     >
-                      <option value="all">
-                        1. All Directory ({allMembers.length} active members)
-                      </option>
-                      <option value="core">
-                        2. Core Team ({allMembers.filter((m) => m.is_core_member).length} council members)
-                      </option>
-                      <option value="members">
-                        3. Members ({allMembers.filter((m) => !m.is_core_member).length} general members)
-                      </option>
-                      <option value="custom">
-                        4. Custom Selection ({customSelectedIds.size} selected)
-                      </option>
-                    </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${currentOption.accentColor}`}>
+                          <CurrentIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="truncate">{currentOption.label}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                          {audienceType === 'custom' ? `${customSelectedIds.size} selected` : `${currentOption.count} members`}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                          isAudienceDropdownOpen ? 'rotate-180 text-blue-500' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {/* Floating Dropdown Overlay */}
+                    {isAudienceDropdownOpen && (
+                      <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl space-y-1 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-xl">
+                        {audienceOptions.map((option) => {
+                          const IconComp = option.icon;
+                          const isSelected = audienceType === option.id;
+
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => handleAudienceChange(option.id)}
+                              className={`w-full p-2.5 rounded-xl text-left transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                                isSelected
+                                  ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-sky-400 font-bold'
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-700 dark:text-slate-300 font-semibold'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${option.accentColor}`}>
+                                  <IconComp className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs truncate flex items-center gap-2">
+                                    <span>{option.label}</span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-normal truncate">
+                                    {option.description}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  isSelected 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                }`}>
+                                  {option.id === 'custom' ? `${customSelectedIds.size}` : `${option.count}`}
+                                </span>
+                                {isSelected && (
+                                  <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0 stroke-[2.5]" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -339,7 +457,7 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
                 <span>
                   This will dispatch an official event announcement email to all{' '}
-                  <strong>{activeRecipients.length} recipients</strong> ({audienceType === 'all' ? 'All Directory' : audienceType === 'core' ? 'Core Team' : audienceType === 'members' ? 'General Members' : 'Custom Selection'}). Please verify all details before broadcasting.
+                  <strong>{activeRecipients.length} recipients</strong> ({currentOption.label}). Please verify all details before broadcasting.
                 </span>
               </div>
 
