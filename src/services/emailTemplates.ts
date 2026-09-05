@@ -268,16 +268,14 @@ export function renderEmailHtmlPreview(
     bannerHtml = `
       <tr>
         <td style="background: ${gradient}; padding: 34px 28px; text-align: center;">
-          <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; background: ${badgeBg}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 6px 18px; box-shadow: 0 8px 24px -4px rgba(0,0,0,0.2);">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; background: ${badgeBg}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 6px 20px; box-shadow: 0 8px 24px -4px rgba(0,0,0,0.2);">
             <tr>
-              <td style="vertical-align: middle; padding-right: 10px;">
-                <div style="width: 32px; height: 32px; border-radius: 9999px; background: ${logoBg}; border: 1px solid ${logoBorder}; padding: 2px; box-sizing: border-box;">
-                  <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="CSC" width="26" height="26" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
-                </div>
+              <td style="vertical-align: middle; padding-right: 12px;">
+                <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="CSC" width="34" height="34" style="display: block; width: 34px; height: 34px; object-fit: contain; margin: 0 auto; border: 0;" />
               </td>
               <td style="vertical-align: middle; text-align: left;">
-                <span style="color: ${titleColor}; font-size: 14px; font-weight: 900; letter-spacing: 0.5px; display: block; line-height: 1.2;">${bannerTitle}</span>
-                <span style="color: ${subtextColor}; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: block;">${bannerSubtitle}</span>
+                <span style="color: ${titleColor}; font-size: 15px; font-weight: 900; letter-spacing: 0.3px; display: block; line-height: 1.2;">${bannerTitle}</span>
+                <span style="color: ${subtextColor}; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; display: block; margin-top: 2px;">${bannerSubtitle}</span>
               </td>
             </tr>
           </table>
@@ -371,13 +369,22 @@ export function renderEmailHtmlPreview(
   } else if (style === 'compact_bar') {
     bannerHtml = `
       <tr>
-        <td style="background: ${gradient}; padding: 18px 26px; border-bottom: 3px solid ${borderAccent};">
+        <td style="background: ${gradient}; padding: 16px 26px; border-bottom: 3px solid ${borderAccent};">
           <table width="100%" border="0" cellpadding="0" cellspacing="0">
             <tr>
               <td style="vertical-align: middle; text-align: left;">
-                <span style="color: ${titleColor}; font-size: 16px; font-weight: 900; letter-spacing: -0.3px; vertical-align: middle;">
-                  ⚡ ${bannerTitle}
-                </span>
+                <table border="0" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align: middle; padding-right: 8px;">
+                      <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="CSC" width="20" height="20" style="display: block; width: 20px; height: 20px; object-fit: contain; border: 0;" />
+                    </td>
+                    <td style="vertical-align: middle;">
+                      <span style="color: ${titleColor}; font-size: 15px; font-weight: 900; letter-spacing: -0.3px;">
+                        ${bannerTitle}
+                      </span>
+                    </td>
+                  </tr>
+                </table>
               </td>
               <td style="vertical-align: middle; text-align: right;">
                 <span style="color: ${subtextColor}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;">

@@ -430,15 +430,17 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                   {/* Style 3: floating_pill */}
                   {selectedStyle === 'floating_pill' && (
                     <div className="p-7 text-center">
-                      <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border shadow-lg backdrop-blur-md bg-white/15 dark:bg-slate-900/20 border-white/30">
-                        <div className="w-8 h-8 rounded-full bg-white/20 p-1 flex items-center justify-center shrink-0">
-                          <img src={clubLogoImg} alt="CSC" className="w-full h-full object-contain" />
-                        </div>
+                      <div className="inline-flex items-center gap-3.5 px-6 py-2.5 rounded-full border shadow-lg backdrop-blur-md bg-white/15 dark:bg-slate-900/20 border-white/30">
+                        <img
+                          src={clubLogoImg}
+                          alt="CSC"
+                          className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0 filter drop-shadow-sm"
+                        />
                         <div className="text-left">
-                          <span style={{ color: titleColor }} className="text-xs font-black block leading-tight">
+                          <span style={{ color: titleColor }} className="text-sm sm:text-base font-black block leading-tight">
                             {previewTitle}
                           </span>
-                          <span style={{ color: subtextColor }} className="text-[10px] font-bold uppercase tracking-wider block">
+                          <span style={{ color: subtextColor }} className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider block mt-0.5">
                             {previewSubtitle}
                           </span>
                         </div>
@@ -521,10 +523,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                   {selectedStyle === 'compact_bar' && (
                     <div
                       style={{ borderBottomColor: currentThemeConfig.borderAccent }}
-                      className="px-6 py-4 border-b-2 flex items-center justify-between"
+                      className="px-6 py-3.5 border-b-2 flex items-center justify-between"
                     >
-                      <span style={{ color: titleColor }} className="text-sm font-black flex items-center gap-1.5">
-                        ⚡ {previewTitle}
+                      <span style={{ color: titleColor }} className="text-sm font-black flex items-center gap-2">
+                        <img src={clubLogoImg} alt="CSC" className="w-5 h-5 object-contain shrink-0 filter drop-shadow-xs" />
+                        <span>{previewTitle}</span>
                       </span>
                       <span style={{ color: subtextColor }} className="text-[11px] font-bold uppercase tracking-wider">
                         {previewSubtitle}
