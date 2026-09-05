@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -22,6 +22,7 @@ import {
   Radio,
   ArrowRight,
   Edit3,
+  RotateCcw,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
@@ -193,6 +194,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const [applySuccess, setApplySuccess] = useState(false);
   const [appliedCount, setAppliedCount] = useState(0);
   const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Scope selection dialog state
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
@@ -205,9 +207,6 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     'event_broadcast',
   ]);
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const initialLoadedRef = useRef(false);
-
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -215,7 +214,6 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   // Lock background scrolling completely when modal is open
   useEffect(() => {
     if (isOpen) {
-      initialLoadedRef.current = false;
       const count = parseInt(document.body.dataset.modalCount || '0', 10) + 1;
       document.body.dataset.modalCount = count.toString();
       if (count === 1) {
@@ -273,28 +271,6 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     const sampleData = getSampleCategoryData(previewCategory);
     return renderEmailHtmlPreview(baseTemplate, sampleData);
   }, [previewCategory, selectedStyle, selectedTheme, selectedTextColor, previewTitle, previewSubtitle]);
-
-  // Update iframe with live rendered HTML
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (doc) {
-        if (!initialLoadedRef.current || !doc.body || doc.body.innerHTML.trim() === '') {
-          iframe.srcdoc = previewHtml;
-          initialLoadedRef.current = true;
-          return;
-        }
-        const parser = new DOMParser();
-        const newDoc = parser.parseFromString(previewHtml, 'text/html');
-        doc.body.innerHTML = newDoc.body.innerHTML;
-      }
-    } catch {
-      iframe.srcdoc = previewHtml;
-    }
-  }, [previewHtml]);
 
   // Toggle individual category in custom scope
   const handleToggleCategory = (cat: EmailCategory) => {
@@ -695,7 +671,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 </span>
               </div>
 
-              {/* Sample Template Switcher */}
+              {/* Sample Template Switcher & Refresh */}
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
                   Preview Sample:
@@ -711,6 +687,14 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                   <option value="event_feedback">Event Feedback</option>
                   <option value="rejection">Member Rejection</option>
                 </select>
+                <button
+                  type="button"
+                  onClick={() => setRefreshKey((k) => k + 1)}
+                  title="Force Refresh Preview"
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
@@ -732,12 +716,13 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
 
             {/* Embedded Real-Time Live HTML Iframe Preview */}
             <div className="flex-1 p-3 overflow-hidden">
-              <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-slate-900">
+              <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-[#f8fafc] dark:bg-slate-900/50">
                 <iframe
-                  ref={iframeRef}
+                  key={`preview-${previewCategory}-${refreshKey}`}
+                  srcDoc={previewHtml}
                   title="Email Live Preview"
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-popups"
                 />
               </div>
             </div>

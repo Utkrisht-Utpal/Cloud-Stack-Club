@@ -59,21 +59,19 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
   const [includeButton, setIncludeButton] = useState(true);
   const [isBannerDropdownOpen, setIsBannerDropdownOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Focus ref for variable insertion
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const initialLoadedRef = useRef(false);
   const bannerDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Reset initialLoadedRef when category changes or modal reopens
+  // Reset dropdown when category changes or modal reopens
   useEffect(() => {
     if (isOpen) {
-      initialLoadedRef.current = false;
       setIsBannerDropdownOpen(false);
     }
   }, [isOpen, activeCategory]);
@@ -218,31 +216,6 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     },
     sampleData
   );
-
-  // Smooth live iframe update without white flicker
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    try {
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!doc) return;
-
-      if (!initialLoadedRef.current || !doc.body) {
-        doc.open();
-        doc.write(previewHtml);
-        doc.close();
-        initialLoadedRef.current = true;
-      } else {
-        const parser = new DOMParser();
-        const newDoc = parser.parseFromString(previewHtml, 'text/html');
-        doc.title = newDoc.title;
-        doc.body.innerHTML = newDoc.body.innerHTML;
-      }
-    } catch {
-      iframe.srcdoc = previewHtml;
-    }
-  }, [previewHtml]);
 
   if (!mounted || !isOpen) return null;
 
@@ -607,9 +580,19 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
                   Live Inbox Mockup
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-slate-400">
-                Sample Student View
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-slate-400">
+                  Sample Student View
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setRefreshKey((k) => k + 1)}
+                  title="Force Refresh Preview"
+                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Email Metadata Header Preview */}
@@ -630,12 +613,13 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
 
             {/* Embedded Live HTML Preview */}
             <div className="flex-1 p-3 overflow-hidden">
-              <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-slate-900">
+              <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-[#f8fafc] dark:bg-slate-900/50">
                 <iframe
-                  ref={iframeRef}
+                  key={`template-preview-${activeCategory}-${refreshKey}`}
+                  srcDoc={previewHtml}
                   title="Email Live Preview"
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-popups"
                 />
               </div>
             </div>
