@@ -254,7 +254,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                     className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5"
                   >
                     <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
-                    <span>Student Email <span className="text-red-500">*</span></span>
+                    <span>Email <span className="text-red-500">*</span></span>
                   </label>
                   <input
                     type="email"

@@ -101,6 +101,16 @@ export const DiscrepancyModal: React.FC<DiscrepancyModalProps> = ({
       return;
     }
 
+    if (formData.uid.trim() && (formData.uid.trim().length !== 10 || !/^[A-Za-z0-9]+$/.test(formData.uid.trim()))) {
+      triggerErrorWithCooldown('University ID (UID) must be exactly 10 alphanumeric characters.');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      triggerErrorWithCooldown('Please provide a valid email address.');
+      return;
+    }
+
     if (!/^\d{10}$/.test(formData.phone.trim())) {
       triggerErrorWithCooldown('Phone number must be exactly 10 digits.');
       return;

@@ -355,7 +355,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             <span>Standard Collected Information (Default for all events)</span>
           </div>
           <div className="flex flex-wrap gap-2 pt-1">
-            {['Full Name', 'Student Email', 'Phone Number', 'University UID', 'Department', 'Academic Year'].map((item) => (
+            {['Full Name', 'Email', 'Phone Number', 'University UID', 'Department', 'Academic Year'].map((item) => (
               <span key={item} className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 text-[11px] font-semibold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                 ✓ {item}
               </span>

@@ -84,7 +84,7 @@ export const submitDiscrepancy = async (
   // 2. Strict Input Normalization & Validation
   const formattedName = formatPersonName(input.name.trim());
   const cleanEmail = input.email.trim().toLowerCase();
-  const cleanPhone = input.phone.trim();
+  const cleanPhone = input.phone.trim().replace(/\D/g, '').slice(-10);
   const cleanUid = input.uid ? input.uid.trim().toUpperCase() : null;
   const cleanDepartment = input.department.trim();
   const cleanYear = input.year_of_study.trim();
@@ -94,11 +94,42 @@ export const submitDiscrepancy = async (
   if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
     throw new Error('Please provide a valid email address.');
   }
-  if (!cleanPhone || !/^\d{10}$/.test(cleanPhone)) {
+  if (!cleanPhone || cleanPhone.length !== 10) {
     throw new Error('Phone number must be exactly 10 digits.');
+  }
+  if (cleanUid && (cleanUid.length !== 10 || !/^[A-Z0-9]+$/.test(cleanUid))) {
+    throw new Error('University ID (UID) must be exactly 10 alphanumeric characters.');
   }
   if (!cleanDepartment) throw new Error('Department / Branch is required.');
   if (!cleanYear) throw new Error('Year of study is required.');
+
+  // Pre-check local storage cache to avoid duplicate active submissions offline
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (raw) {
+      const cached: Discrepancy[] = JSON.parse(raw);
+      const activeCached = cached.filter(
+        (item) => item.status === 'pending' || item.status === 'in_review'
+      );
+      if (cleanUid && activeCached.some((item) => item.uid && item.uid.trim().toUpperCase() === cleanUid)) {
+        throw new Error(`A discrepancy query with the University ID ${cleanUid} is already pending review.`);
+      }
+      if (activeCached.some((item) => item.email && item.email.trim().toLowerCase() === cleanEmail)) {
+        throw new Error(`A discrepancy query with the Email ID ${cleanEmail} is already pending review.`);
+      }
+      if (
+        activeCached.some(
+          (item) => item.phone && item.phone.trim().replace(/\D/g, '').slice(-10) === cleanPhone
+        )
+      ) {
+        throw new Error(`A discrepancy query with the Phone number ${cleanPhone} is already pending review.`);
+      }
+    }
+  } catch (err: any) {
+    if (err.message && err.message.includes('already pending review')) {
+      throw err;
+    }
+  }
 
   const newTicketNumber = generateTicketNumber();
   const newId = generateUUID();
@@ -158,13 +189,140 @@ export const submitDiscrepancy = async (
         if (response.status === 403 || (errJson.error && errJson.error.includes('Turnstile'))) {
           throw new Error(errJson.error || 'Turnstile verification failed. Please try again.');
         }
+        if (errJson.error && errJson.error.includes('already pending review')) {
+          throw new Error(errJson.error);
+        }
         console.warn('Worker submission error, falling back to direct Supabase:', errJson);
       }
     } catch (err: any) {
-      if (err.message && err.message.includes('Turnstile')) {
+      if (err.message && (err.message.includes('Turnstile') || err.message.includes('already pending review'))) {
         throw err;
       }
       console.warn('Worker gateway unreachable, using direct Supabase fallback:', err);
+    }
+  }
+
+  // 4. Supabase RPC / Pre-check Submission
+  if (isSupabaseConfigured()) {
+    try {
+      // A. Try RPC submit_discrepancy first for backend database-level enforcement
+      const { data: rpcData, error: rpcError } = await supabase.rpc('submit_discrepancy', {
+        p_ticket_number: newTicketNumber,
+        p_name: formattedName,
+        p_email: cleanEmail,
+        p_phone: cleanPhone,
+        p_uid: cleanUid,
+        p_department: cleanDepartment,
+        p_year_of_study: cleanYear,
+        p_description: cleanDescription,
+      });
+
+      if (!rpcError && rpcData) {
+        const finalTicket = rpcData as Discrepancy;
+        try {
+          const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const cached: Discrepancy[] = raw ? JSON.parse(raw) : [];
+          cached.unshift(finalTicket);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cached));
+        } catch {}
+        notifyDiscrepancyUpdated();
+        return finalTicket;
+      }
+
+      if (rpcError) {
+        if (
+          rpcError.message &&
+          (rpcError.message.includes('already pending review') ||
+            rpcError.message.includes('Full Name is required') ||
+            rpcError.message.includes('valid email address') ||
+            rpcError.message.includes('Phone number must be'))
+        ) {
+          throw new Error(rpcError.message);
+        }
+      }
+
+      // B. Fallback: Pre-check queries for duplicate active submissions before direct insert
+      if (cleanUid) {
+        const { data: existingUid } = await supabase
+          .from('discrepancies')
+          .select('id, ticket_number, uid')
+          .ilike('uid', cleanUid)
+          .in('status', ['pending', 'in_review'])
+          .limit(1);
+
+        if (existingUid && existingUid.length > 0) {
+          throw new Error(`A discrepancy query with the University ID ${cleanUid} is already pending review.`);
+        }
+      }
+
+      const { data: existingEmail } = await supabase
+        .from('discrepancies')
+        .select('id, ticket_number, email')
+        .ilike('email', cleanEmail)
+        .in('status', ['pending', 'in_review'])
+        .limit(1);
+
+      if (existingEmail && existingEmail.length > 0) {
+        throw new Error(`A discrepancy query with the Email ID ${cleanEmail} is already pending review.`);
+      }
+
+      const { data: existingPhone } = await supabase
+        .from('discrepancies')
+        .select('id, ticket_number, phone')
+        .ilike('phone', `%${cleanPhone}%`)
+        .in('status', ['pending', 'in_review'])
+        .limit(1);
+
+      if (existingPhone && existingPhone.length > 0) {
+        throw new Error(`A discrepancy query with the Phone number ${cleanPhone} is already pending review.`);
+      }
+
+      const { data, error } = await supabase
+        .from('discrepancies')
+        .insert({
+          id: newId,
+          ticket_number: newTicketNumber,
+          name: formattedName,
+          email: cleanEmail,
+          phone: cleanPhone,
+          uid: cleanUid,
+          department: cleanDepartment,
+          year_of_study: cleanYear,
+          description: cleanDescription,
+          status: 'pending',
+        })
+        .select()
+        .maybeSingle();
+
+      if (error) {
+        if (error.code === '23505') {
+          if (error.message.includes('idx_discrepancies_unique_active_uid')) {
+            throw new Error(`A discrepancy query with the University ID ${cleanUid} is already pending review.`);
+          }
+          if (error.message.includes('idx_discrepancies_unique_active_email')) {
+            throw new Error(`A discrepancy query with the Email ID ${cleanEmail} is already pending review.`);
+          }
+          if (error.message.includes('idx_discrepancies_unique_active_phone')) {
+            throw new Error(`A discrepancy query with the Phone number ${cleanPhone} is already pending review.`);
+          }
+          throw new Error('A discrepancy query with these credentials is already pending review.');
+        }
+        console.warn('Supabase discrepancy insert warning:', error);
+      } else if (data) {
+        try {
+          const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+          const cached: Discrepancy[] = raw ? JSON.parse(raw) : [];
+          cached.unshift(data as Discrepancy);
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cached));
+        } catch {}
+        notifyDiscrepancyUpdated();
+        return data as Discrepancy;
+      }
+    } catch (err: any) {
+      if (err.message && err.message.includes('already pending review')) {
+        throw err;
+      }
+      console.warn('Supabase discrepancy insert error:', err);
     }
   }
 
@@ -192,37 +350,6 @@ export const submitDiscrepancy = async (
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cached));
   } catch (err) {
     console.warn('Failed to update local discrepancies cache:', err);
-  }
-
-  // Persist to Supabase if configured
-  if (isSupabaseConfigured()) {
-    try {
-      const { data, error } = await supabase
-        .from('discrepancies')
-        .insert({
-          id: newId,
-          ticket_number: newTicketNumber,
-          name: formattedName,
-          email: cleanEmail,
-          phone: cleanPhone,
-          uid: cleanUid,
-          department: cleanDepartment,
-          year_of_study: cleanYear,
-          description: cleanDescription,
-          status: 'pending',
-        })
-        .select()
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Supabase discrepancy insert warning:', error);
-      } else if (data) {
-        notifyDiscrepancyUpdated();
-        return data as Discrepancy;
-      }
-    } catch (err) {
-      console.warn('Supabase discrepancy insert error:', err);
-    }
   }
 
   notifyDiscrepancyUpdated();

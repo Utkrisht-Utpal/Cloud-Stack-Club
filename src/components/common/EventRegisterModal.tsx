@@ -193,6 +193,15 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
         triggerErrorWithCooldown('Please enter a Team Name.');
         return;
       }
+
+      const leaderUid = formData.uid.trim().toUpperCase();
+      const leaderEmail = formData.email.trim().toLowerCase();
+      const leaderPhone = formData.phone.trim().replace(/\D/g, '').slice(-10);
+
+      const seenUids = new Set([leaderUid]);
+      const seenEmails = new Set([leaderEmail]);
+      const seenPhones = new Set([leaderPhone]);
+
       for (let i = 0; i < teamMembers.length; i++) {
         const m = teamMembers[i];
         if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim()) {
@@ -203,10 +212,44 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           triggerErrorWithCooldown(`University ID (UID) for Teammate #${i + 2} must be exactly 10 alphanumeric characters.`);
           return;
         }
-        if (!/^\d{10}$/.test(m.phone.trim())) {
+        if (!/^\d{10}$/.test(m.phone.trim().replace(/\D/g, '').slice(-10))) {
           triggerErrorWithCooldown(`Phone number for Teammate #${i + 2} must be exactly 10 digits.`);
           return;
         }
+
+        const tmUid = m.uid.trim().toUpperCase();
+        const tmEmail = m.email.trim().toLowerCase();
+        const tmPhone = m.phone.trim().replace(/\D/g, '').slice(-10);
+
+        if (tmUid === leaderUid) {
+          triggerErrorWithCooldown(`Teammate #${i + 2} ${m.name.trim()} cannot have the same University ID as the team leader.`);
+          return;
+        }
+        if (tmEmail === leaderEmail) {
+          triggerErrorWithCooldown(`Teammate #${i + 2} ${m.name.trim()} cannot have the same Email ID as the team leader.`);
+          return;
+        }
+        if (tmPhone === leaderPhone) {
+          triggerErrorWithCooldown(`Teammate #${i + 2} ${m.name.trim()} cannot have the same Phone number as the team leader.`);
+          return;
+        }
+
+        if (seenUids.has(tmUid)) {
+          triggerErrorWithCooldown(`Duplicate University ID ${tmUid} entered for Teammate #${i + 2}.`);
+          return;
+        }
+        if (seenEmails.has(tmEmail)) {
+          triggerErrorWithCooldown(`Duplicate Email ID ${tmEmail} entered for Teammate #${i + 2}.`);
+          return;
+        }
+        if (seenPhones.has(tmPhone)) {
+          triggerErrorWithCooldown(`Duplicate Phone number ${tmPhone} entered for Teammate #${i + 2}.`);
+          return;
+        }
+
+        seenUids.add(tmUid);
+        seenEmails.add(tmEmail);
+        seenPhones.add(tmPhone);
       }
     }
 
@@ -544,7 +587,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Student Email <span className="text-red-500">*</span>
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
