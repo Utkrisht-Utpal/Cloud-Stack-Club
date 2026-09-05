@@ -322,10 +322,8 @@ export function renderEmailHtmlPreview(
     bannerHtml = `
       <tr>
         <td style="background: ${gradient}; padding: 36px 32px 30px 32px; text-align: center;">
-          <div style="display: inline-block; width: 46px; height: 46px; padding: 2px; border-radius: 12px; background: ${logoBg}; border: 1px solid ${logoBorder}; text-align: center; margin-bottom: 12px;">
-            <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="Cloud Stack Club" width="40" height="40" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
-          </div>
-          <div style="font-size: 11px; letter-spacing: 3px; color: ${subtextColor}; text-transform: uppercase; font-weight: 800; margin-bottom: 6px;">
+          <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="Cloud Stack Club" width="52" height="52" style="display: block; width: 52px; height: 52px; object-fit: contain; margin: 0 auto 10px auto; border: 0;" />
+          <div style="font-size: 11px; letter-spacing: 3px; color: ${subtextColor}; text-transform: uppercase; font-weight: 800; margin-bottom: 8px;">
             ─── ❖ OFFICIAL DISPATCH ❖ ───
           </div>
           <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;">

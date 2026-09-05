@@ -482,13 +482,15 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                   {/* Style 5: executive_crest */}
                   {selectedStyle === 'executive_crest' && (
                     <div className="p-7 text-center space-y-2">
-                      <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl border shadow-sm backdrop-blur-md p-1 ${logoHousingClass}`}>
-                        <img src={clubLogoImg} alt="CSC" className="w-full h-full object-contain" />
-                      </div>
-                      <div style={{ color: subtextColor }} className="text-[10px] font-black uppercase tracking-widest">
+                      <img
+                        src={clubLogoImg}
+                        alt="CSC"
+                        className="w-13 h-13 sm:w-14 sm:h-14 object-contain mx-auto filter drop-shadow-md mb-1"
+                      />
+                      <div style={{ color: subtextColor }} className="text-[10px] font-black uppercase tracking-widest pt-1">
                         ─── ❖ OFFICIAL DISPATCH ❖ ───
                       </div>
-                      <h1 style={{ color: titleColor }} className="text-xl font-black tracking-tight">
+                      <h1 style={{ color: titleColor }} className="text-xl sm:text-2xl font-black tracking-tight">
                         {previewTitle}
                       </h1>
                       <p style={{ color: subtextColor }} className="text-xs font-semibold uppercase tracking-widest">
