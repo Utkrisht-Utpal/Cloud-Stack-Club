@@ -1,6 +1,15 @@
 import type { EmailCategory } from './email';
 
-export type BannerStyle = 'modern_badge' | 'official_strip' | 'minimal' | 'classic';
+export type BannerStyle =
+  | 'modern_badge'
+  | 'official_strip'
+  | 'minimal'
+  | 'classic'
+  | 'floating_pill'
+  | 'tech_grid'
+  | 'executive_crest'
+  | 'split_hero'
+  | 'compact_bar';
 export type BannerTextColor = 'white' | 'dark';
 export type BannerTheme =
   | 'classic_blue'

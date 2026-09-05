@@ -10,7 +10,19 @@ import {
   Check,
   Eye,
   Sliders,
+  Compass,
+  Terminal,
+  Crown,
+  Columns,
+  Minus,
+  Globe,
+  UserCheck,
+  UserX,
+  MessageSquare,
+  Radio,
+  ArrowRight,
 } from 'lucide-react';
+import type { EmailCategory } from '../../types/email';
 import {
   BANNER_THEME_GRADIENTS,
   type BannerStyle,
@@ -19,7 +31,7 @@ import {
 } from '../../types/emailTemplate';
 import {
   getAllEmailTemplates,
-  applyGlobalBannerDesign,
+  applyBannerDesignToCategories,
 } from '../../services/emailTemplates';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
 
@@ -51,6 +63,41 @@ const STYLE_OPTIONS: StyleOption[] = [
     tag: 'Verified',
     description: 'Top security verification strip with bold institutional typography.',
     icon: ShieldCheck,
+  },
+  {
+    id: 'floating_pill',
+    name: 'Floating Pill & Emblem',
+    tag: 'Popular',
+    description: 'Floating capsule badge with embedded club avatar and verification pill.',
+    icon: Compass,
+  },
+  {
+    id: 'tech_grid',
+    name: 'Cyber Tech Grid',
+    tag: 'Futuristic',
+    description: 'Monospace terminal code tag [CSC::SYSTEM] with status indicators.',
+    icon: Terminal,
+  },
+  {
+    id: 'executive_crest',
+    name: 'Executive Crest & Divider',
+    tag: 'Formal',
+    description: 'Ornamental divider lines with centered emblem and formal typography.',
+    icon: Crown,
+  },
+  {
+    id: 'split_hero',
+    name: 'Split Horizontal Hero',
+    tag: 'Balanced',
+    description: 'Side-by-side layout with logo on the left and institutional badge on the right.',
+    icon: Columns,
+  },
+  {
+    id: 'compact_bar',
+    name: 'Compact Low-Profile Bar',
+    tag: 'Minimal',
+    description: 'Sleek, low-height accent bar with inline branding for quick notices.',
+    icon: Minus,
   },
   {
     id: 'minimal',
@@ -87,6 +134,46 @@ const THEME_OPTIONS: Array<{
   { id: 'obsidian_mono', name: 'Obsidian Monolith', gradientClass: 'from-black via-zinc-800 to-zinc-700' },
 ];
 
+interface CategoryScopeOption {
+  id: EmailCategory;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const CATEGORY_SCOPE_OPTIONS: CategoryScopeOption[] = [
+  {
+    id: 'approval',
+    name: 'Member Approval',
+    description: 'Welcome & Acceptance emails sent to newly approved club applicants',
+    icon: UserCheck,
+  },
+  {
+    id: 'rejection',
+    name: 'Member Rejection',
+    description: 'Status update & feedback emails sent to non-selected applicants',
+    icon: UserX,
+  },
+  {
+    id: 'contact_us',
+    name: 'Contact Inquiries',
+    description: 'Official response & ticket updates for student and partner inquiries',
+    icon: MessageSquare,
+  },
+  {
+    id: 'event_feedback',
+    name: 'Event Feedback Review',
+    description: 'Coordinator responses and remarks on attendee event reviews',
+    icon: Sparkles,
+  },
+  {
+    id: 'event_broadcast',
+    name: 'Event Broadcasts & Management',
+    description: 'Mass notifications, announcements, and registrations for events',
+    icon: Radio,
+  },
+];
+
 export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   isOpen,
   onClose,
@@ -100,6 +187,18 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const [previewSubtitle, setPreviewSubtitle] = useState('Chandigarh University');
   const [isApplying, setIsApplying] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
+  const [appliedCount, setAppliedCount] = useState(0);
+
+  // Scope selection dialog state
+  const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  const [scopeMode, setScopeMode] = useState<'global' | 'custom'>('global');
+  const [selectedCategories, setSelectedCategories] = useState<EmailCategory[]>([
+    'approval',
+    'rejection',
+    'contact_us',
+    'event_feedback',
+    'event_broadcast',
+  ]);
 
   useEffect(() => {
     setMounted(true);
@@ -140,24 +239,61 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   // Handle ESC key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
+      if (e.key === 'Escape') {
+        if (isScopeModalOpen) {
+          setIsScopeModalOpen(false);
+        } else if (isOpen) {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isScopeModalOpen, onClose]);
 
-  const handleApply = async () => {
+  // Toggle individual category in custom scope
+  const handleToggleCategory = (cat: EmailCategory) => {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+    );
+  };
+
+  const handleSelectAllCategories = () => {
+    setSelectedCategories(['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast']);
+  };
+
+  const handleDeselectAllCategories = () => {
+    setSelectedCategories([]);
+  };
+
+  const handleOpenScopeModal = () => {
+    setIsScopeModalOpen(true);
+  };
+
+  const handleConfirmApply = async () => {
+    const targets =
+      scopeMode === 'global'
+        ? ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast']
+        : selectedCategories;
+
+    if (targets.length === 0) return;
+
     setIsApplying(true);
     try {
-      await applyGlobalBannerDesign(selectedStyle, selectedTheme, selectedTextColor);
+      await applyBannerDesignToCategories(
+        targets as EmailCategory[],
+        selectedStyle,
+        selectedTheme,
+        selectedTextColor
+      );
+      setAppliedCount(targets.length);
       setApplySuccess(true);
+      setIsScopeModalOpen(false);
       if (onApplied) onApplied();
       setTimeout(() => {
         setApplySuccess(false);
         onClose();
-      }, 1200);
+      }, 1500);
     } catch (err) {
       console.error('Failed to apply banner design:', err);
     } finally {
@@ -185,7 +321,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   return createPortal(
     <div
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget && !isScopeModalOpen) onClose();
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md overflow-hidden"
     >
@@ -200,11 +336,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
               <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                 Email Header Design Studio
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
-                  Visual Layouts
+                  9 Visual Layouts
                 </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Choose visual layouts, color themes, and contrast to apply across all club email templates.
+                Choose visual layouts, color themes, and contrast. Apply as global default or to specific email categories.
               </p>
             </div>
           </div>
@@ -239,6 +375,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                   style={{ background: currentThemeConfig.gradient }}
                   className="transition-all duration-300"
                 >
+                  {/* Style 1: modern_badge */}
                   {selectedStyle === 'modern_badge' && (
                     <div className="p-7 sm:p-8 text-center">
                       <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl border shadow-lg mb-3 backdrop-blur-md p-1 ${logoHousingClass}`}>
@@ -262,6 +399,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     </div>
                   )}
 
+                  {/* Style 2: official_strip */}
                   {selectedStyle === 'official_strip' && (
                     <div>
                       <div className={`py-2 px-4 text-center border-b ${stripTopClass}`}>
@@ -289,6 +427,112 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     </div>
                   )}
 
+                  {/* Style 3: floating_pill */}
+                  {selectedStyle === 'floating_pill' && (
+                    <div className="p-7 text-center">
+                      <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full border shadow-lg backdrop-blur-md bg-white/15 dark:bg-slate-900/20 border-white/30">
+                        <div className="w-8 h-8 rounded-full bg-white/20 p-1 flex items-center justify-center shrink-0">
+                          <img src={clubLogoImg} alt="CSC" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="text-left">
+                          <span style={{ color: titleColor }} className="text-xs font-black block leading-tight">
+                            {previewTitle}
+                          </span>
+                          <span style={{ color: subtextColor }} className="text-[10px] font-bold uppercase tracking-wider block">
+                            {previewSubtitle}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <span className={`inline-block px-3 py-1 rounded-md text-[10px] font-extrabold tracking-widest uppercase border ${badgeClass}`}>
+                          ✨ VERIFIED CLUB NOTIFICATION
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Style 4: tech_grid */}
+                  {selectedStyle === 'tech_grid' && (
+                    <div className="p-6 text-left space-y-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <span
+                          style={{ color: currentThemeConfig.borderAccent, borderColor: currentThemeConfig.borderAccent }}
+                          className="font-mono text-[10px] font-extrabold px-2.5 py-0.5 rounded border bg-black/20"
+                        >
+                          [CSC::SYSTEM_SECURE]
+                        </span>
+                        <span style={{ color: subtextColor }} className="font-mono text-[10px] font-bold flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                          LIVE NOTIFICATION
+                        </span>
+                      </div>
+                      <div className="pt-1">
+                        <h1 style={{ color: titleColor }} className="text-xl font-black tracking-tight font-sans">
+                          {previewTitle}
+                        </h1>
+                        <p style={{ color: subtextColor }} className="font-mono text-[11px] font-bold uppercase tracking-wider mt-0.5">
+                          // {previewSubtitle}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Style 5: executive_crest */}
+                  {selectedStyle === 'executive_crest' && (
+                    <div className="p-7 text-center space-y-2">
+                      <div className={`inline-flex items-center justify-center w-11 h-11 rounded-xl border shadow-sm backdrop-blur-md p-1 ${logoHousingClass}`}>
+                        <img src={clubLogoImg} alt="CSC" className="w-full h-full object-contain" />
+                      </div>
+                      <div style={{ color: subtextColor }} className="text-[10px] font-black uppercase tracking-widest">
+                        ─── ❖ OFFICIAL DISPATCH ❖ ───
+                      </div>
+                      <h1 style={{ color: titleColor }} className="text-xl font-black tracking-tight">
+                        {previewTitle}
+                      </h1>
+                      <p style={{ color: subtextColor }} className="text-xs font-semibold uppercase tracking-widest">
+                        {previewSubtitle}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Style 6: split_hero */}
+                  {selectedStyle === 'split_hero' && (
+                    <div className="p-6 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3.5">
+                        <div className={`w-12 h-12 rounded-2xl border shadow-md flex items-center justify-center p-1.5 shrink-0 ${logoHousingClass}`}>
+                          <img src={clubLogoImg} alt="CSC" className="w-full h-full object-contain" />
+                        </div>
+                        <div className="text-left">
+                          <h1 style={{ color: titleColor }} className="text-lg font-black tracking-tight leading-tight">
+                            {previewTitle}
+                          </h1>
+                          <p style={{ color: subtextColor }} className="text-[11px] font-bold uppercase tracking-wider mt-0.5">
+                            {previewSubtitle}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 ${badgeClass}`}>
+                        🏛️ OFFICIAL
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Style 7: compact_bar */}
+                  {selectedStyle === 'compact_bar' && (
+                    <div
+                      style={{ borderBottomColor: currentThemeConfig.borderAccent }}
+                      className="px-6 py-4 border-b-2 flex items-center justify-between"
+                    >
+                      <span style={{ color: titleColor }} className="text-sm font-black flex items-center gap-1.5">
+                        ⚡ {previewTitle}
+                      </span>
+                      <span style={{ color: subtextColor }} className="text-[11px] font-bold uppercase tracking-wider">
+                        {previewSubtitle}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Style 8: minimal */}
                   {selectedStyle === 'minimal' && (
                     <div className="p-7 text-center">
                       <div
@@ -310,6 +554,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     </div>
                   )}
 
+                  {/* Style 9: classic */}
                   {selectedStyle === 'classic' && (
                     <div className="p-8 text-center">
                       <h1
@@ -344,7 +589,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                         color: currentThemeConfig.buttonTextColor,
                         boxShadow: `0 10px 25px -5px ${currentThemeConfig.buttonShadow}`,
                       }}
-                      className="inline-block px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 select-none cursor-default"
+                      className="inline-block px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 select-none cursor-default"
                     >
                       Visit Club Portal
                     </div>
@@ -354,14 +599,19 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Choose Design Layout Style */}
+          {/* 2. Choose Design Layout Style (9 Options) */}
           <div className="space-y-2.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-indigo-500" />
-              1. Choose Header Layout Style
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                1. Choose Header Layout Style ({STYLE_OPTIONS.length} Styles)
+              </label>
+              <span className="text-[11px] text-slate-400">
+                Responsive & email-client tested
+              </span>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {STYLE_OPTIONS.map((style) => {
                 const Icon = style.icon;
                 const isSelected = selectedStyle === style.id;
@@ -370,7 +620,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     key={style.id}
                     type="button"
                     onClick={() => setSelectedStyle(style.id)}
-                    className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                    className={`p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer group ${
                       isSelected
                         ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
                         : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
@@ -380,10 +630,10 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
                           <div
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
                               isSelected
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                ? 'bg-indigo-600 text-white shadow-sm'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
                             }`}
                           >
                             <Icon className="w-4 h-4" />
@@ -402,15 +652,15 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                           {style.tag}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
                         {style.description}
                       </p>
                     </div>
 
                     {isSelected && (
-                      <div className="mt-3 pt-2 border-t border-indigo-200 dark:border-indigo-900/50 flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                      <div className="mt-2.5 pt-2 border-t border-indigo-200 dark:border-indigo-900/50 flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
                         <Check className="w-3.5 h-3.5" />
-                        <span>Active Layout</span>
+                        <span>Active Selection</span>
                       </div>
                     )}
                   </button>
@@ -426,7 +676,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
               2. Choose Color Gradient Theme
             </label>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
               {THEME_OPTIONS.map((theme) => {
                 const isSelected = selectedTheme === theme.id;
                 return (
@@ -434,18 +684,18 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     key={theme.id}
                     type="button"
                     onClick={() => setSelectedTheme(theme.id)}
-                    className={`p-3 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-2 ${
+                    className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                       isSelected
                         ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
                         : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <div
-                      className={`w-full h-8 rounded-xl bg-gradient-to-r ${theme.gradientClass} shadow-inner flex items-center justify-center`}
+                      className={`w-full h-7 rounded-xl bg-gradient-to-r ${theme.gradientClass} shadow-inner flex items-center justify-center`}
                     >
-                      {isSelected && <Check className="w-4 h-4 text-white drop-shadow-md" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
                     </div>
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate w-full">
+                    <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate w-full">
                       {theme.name}
                     </span>
                   </button>
@@ -540,33 +790,258 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
 
           <button
             type="button"
-            onClick={handleApply}
+            onClick={handleOpenScopeModal}
             disabled={isApplying}
             className={`px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 ${
               applySuccess
                 ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25'
             }`}
           >
             {applySuccess ? (
               <>
                 <Check className="w-4 h-4" />
-                <span>Applied Across All Templates!</span>
+                <span>Applied to {appliedCount} Email {appliedCount === 1 ? 'Template' : 'Templates'}!</span>
               </>
             ) : isApplying ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Applying Design...</span>
+                <span>Saving Design...</span>
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                <span>Apply Design to All Emails</span>
+                <span>Save & Apply Header Design</span>
+                <ArrowRight className="w-3.5 h-3.5 opacity-75" />
               </>
             )}
           </button>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 5. INTERACTIVE SAVE SCOPE POP-UP DIALOG */}
+      {/* ========================================================================= */}
+      {isScopeModalOpen && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isApplying) setIsScopeModalOpen(false);
+          }}
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in duration-150"
+        >
+          <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+            {/* Scope Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                    Apply Design Scope
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Choose where to apply this header & theme layout
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsScopeModalOpen(false)}
+                disabled={isApplying}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scope Modal Options Body */}
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              {/* Option A: Global Default */}
+              <button
+                type="button"
+                onClick={() => setScopeMode('global')}
+                className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3.5 ${
+                  scopeMode === 'global'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                    scopeMode === 'global'
+                      ? 'border-indigo-600 bg-indigo-600 text-white'
+                      : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                  }`}
+                >
+                  {scopeMode === 'global' && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">
+                      Set as Default for ALL Emails
+                    </span>
+                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
+                      Global (5 Templates)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    Applies this design uniformly across all email communications (Approvals, Rejections, Contact replies, Feedback, and Broadcasts).
+                  </p>
+                </div>
+              </button>
+
+              {/* Option B: Specific / Individual Categories */}
+              <button
+                type="button"
+                onClick={() => setScopeMode('custom')}
+                className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3.5 ${
+                  scopeMode === 'custom'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                    scopeMode === 'custom'
+                      ? 'border-indigo-600 bg-indigo-600 text-white'
+                      : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                  }`}
+                >
+                  {scopeMode === 'custom' && <div className="w-2 h-2 rounded-full bg-white" />}
+                </div>
+
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-900 dark:text-white">
+                      Apply to Specific Email Types
+                    </span>
+                    <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                      Individual Selection
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    Give different email categories their own unique look (e.g., Event Broadcasts get Cyber Tech, Member Approvals get Glassmorphic).
+                  </p>
+                </div>
+              </button>
+
+              {/* Multi-Select Category Checklist (Shown when 'custom' is active) */}
+              {scopeMode === 'custom' && (
+                <div className="pl-4 pr-1 py-3 border-l-2 border-indigo-500/30 space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                      Select target email types ({selectedCategories.length}/5 selected):
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllCategories}
+                        className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-slate-400 text-xs">•</span>
+                      <button
+                        type="button"
+                        onClick={handleDeselectAllCategories}
+                        className="text-[10px] font-bold text-slate-500 dark:text-slate-400 hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {CATEGORY_SCOPE_OPTIONS.map((cat) => {
+                      const isChecked = selectedCategories.includes(cat.id);
+                      const Icon = cat.icon;
+                      return (
+                        <div
+                          key={cat.id}
+                          onClick={() => handleToggleCategory(cat.id)}
+                          className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                            isChecked
+                              ? 'border-indigo-500/60 bg-indigo-50/40 dark:bg-indigo-950/20'
+                              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-60 hover:opacity-100'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                                isChecked
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
+                              }`}
+                            >
+                              <Icon className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                                {cat.name}
+                              </span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 block line-clamp-1">
+                                {cat.description}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ml-2 transition-colors ${
+                              isChecked
+                                ? 'bg-indigo-600 border-indigo-600 text-white'
+                                : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                            }`}
+                          >
+                            {isChecked && <Check className="w-3.5 h-3.5" />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Scope Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 bg-slate-50/80 dark:bg-slate-900/80">
+              <button
+                type="button"
+                onClick={() => setIsScopeModalOpen(false)}
+                disabled={isApplying}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
+              >
+                Back to Studio
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmApply}
+                disabled={isApplying || (scopeMode === 'custom' && selectedCategories.length === 0)}
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-500/25 transition-all flex items-center gap-2 cursor-pointer"
+              >
+                {isApplying ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Applying...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>
+                      {scopeMode === 'global'
+                        ? 'Confirm & Set as Global Default'
+                        : `Apply to ${selectedCategories.length} Selected Types`}
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>,
     document.body
   );

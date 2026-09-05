@@ -146,16 +146,16 @@ export async function saveEmailTemplate(
 }
 
 /**
- * Applies a banner style, color theme, and text color across all email templates.
+ * Applies a banner style, color theme, and text color to a specific set of email categories.
  */
-export async function applyGlobalBannerDesign(
+export async function applyBannerDesignToCategories(
+  categories: EmailCategory[],
   style: BannerStyle,
   theme: BannerTheme,
   textColor?: BannerTextColor
 ): Promise<Record<EmailCategory, EmailTemplateConfig>> {
   const allTemplates = await getAllEmailTemplates();
-  const categories: EmailCategory[] = ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast'];
-  
+
   for (const cat of categories) {
     if (allTemplates[cat]) {
       allTemplates[cat] = {
@@ -169,6 +169,18 @@ export async function applyGlobalBannerDesign(
   }
 
   return allTemplates;
+}
+
+/**
+ * Applies a banner style, color theme, and text color across all email templates (Global Default).
+ */
+export async function applyGlobalBannerDesign(
+  style: BannerStyle,
+  theme: BannerTheme,
+  textColor?: BannerTextColor
+): Promise<Record<EmailCategory, EmailTemplateConfig>> {
+  const categories: EmailCategory[] = ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast'];
+  return applyBannerDesignToCategories(categories, style, theme, textColor);
 }
 
 /**
@@ -249,6 +261,131 @@ export function renderEmailHtmlPreview(
             <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
             <p style="margin: 6px 0 0 0; color: ${subtextColor}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
           </div>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'floating_pill') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 34px 28px; text-align: center;">
+          <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto; background: ${badgeBg}; border: 1px solid ${badgeBorder}; border-radius: 9999px; padding: 6px 18px; box-shadow: 0 8px 24px -4px rgba(0,0,0,0.2);">
+            <tr>
+              <td style="vertical-align: middle; padding-right: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 9999px; background: ${logoBg}; border: 1px solid ${logoBorder}; padding: 2px; box-sizing: border-box;">
+                  <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="CSC" width="26" height="26" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
+                </div>
+              </td>
+              <td style="vertical-align: middle; text-align: left;">
+                <span style="color: ${titleColor}; font-size: 14px; font-weight: 900; letter-spacing: 0.5px; display: block; line-height: 1.2;">${bannerTitle}</span>
+                <span style="color: ${subtextColor}; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: block;">${bannerSubtitle}</span>
+              </td>
+            </tr>
+          </table>
+          <div style="margin-top: 14px;">
+            <span style="display: inline-block; background: ${stripBg}; border: 1px solid ${stripBorder}; padding: 3px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: ${subtextColor}; text-transform: uppercase;">
+              ✨ VERIFIED CLUB NOTIFICATION
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'tech_grid') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 28px 30px; text-align: left; position: relative;">
+          <table width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <span style="display: inline-block; font-family: monospace, Consolas, Courier; font-size: 10px; font-weight: 800; color: ${borderAccent}; background: ${stripBg}; border: 1px solid ${borderAccent}; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px;">
+                  [CSC::SYSTEM_SECURE]
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <span style="color: ${subtextColor}; font-size: 10px; font-weight: 700; font-family: monospace; letter-spacing: 1px;">
+                  ● LIVE NOTIFICATION
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 14px;">
+                <h1 style="margin: 0; color: ${titleColor}; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                  ${bannerTitle}
+                </h1>
+                <p style="margin: 4px 0 0 0; color: ${subtextColor}; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; font-family: monospace;">
+                  // ${bannerSubtitle}
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'executive_crest') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 36px 32px 30px 32px; text-align: center;">
+          <div style="display: inline-block; width: 46px; height: 46px; padding: 2px; border-radius: 12px; background: ${logoBg}; border: 1px solid ${logoBorder}; text-align: center; margin-bottom: 12px;">
+            <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="Cloud Stack Club" width="40" height="40" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
+          </div>
+          <div style="font-size: 11px; letter-spacing: 3px; color: ${subtextColor}; text-transform: uppercase; font-weight: 800; margin-bottom: 6px;">
+            ─── ❖ OFFICIAL DISPATCH ❖ ───
+          </div>
+          <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: 0.5px;">
+            ${bannerTitle}
+          </h1>
+          <p style="margin: 8px 0 0 0; color: ${subtextColor}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.8px;">
+            ${bannerSubtitle}
+          </p>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'split_hero') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 28px 30px;">
+          <table width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align: middle; width: 48px; padding-right: 14px;">
+                <div style="width: 46px; height: 46px; border-radius: 14px; background: ${logoBg}; border: 1.5px solid ${logoBorder}; text-align: center; padding: 2px; box-sizing: border-box;">
+                  <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="Cloud Stack Club" width="40" height="40" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
+                </div>
+              </td>
+              <td style="vertical-align: middle; text-align: left;">
+                <h1 style="margin: 0; color: ${titleColor}; font-size: 20px; font-weight: 900; letter-spacing: -0.3px; line-height: 1.2;">
+                  ${bannerTitle}
+                </h1>
+                <p style="margin: 3px 0 0 0; color: ${subtextColor}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;">
+                  ${bannerSubtitle}
+                </p>
+              </td>
+              <td style="vertical-align: middle; text-align: right;">
+                <span style="display: inline-block; background: ${badgeBg}; border: 1px solid ${badgeBorder}; padding: 4px 10px; border-radius: 9999px; font-size: 10px; font-weight: 800; letter-spacing: 1px; color: ${badgeText}; text-transform: uppercase;">
+                  🏛️ OFFICIAL
+                </span>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'compact_bar') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 18px 26px; border-bottom: 3px solid ${borderAccent};">
+          <table width="100%" border="0" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align: middle; text-align: left;">
+                <span style="color: ${titleColor}; font-size: 16px; font-weight: 900; letter-spacing: -0.3px; vertical-align: middle;">
+                  ⚡ ${bannerTitle}
+                </span>
+              </td>
+              <td style="vertical-align: middle; text-align: right;">
+                <span style="color: ${subtextColor}; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;">
+                  ${bannerSubtitle}
+                </span>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     `;
