@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Toast } from '../ui/Toast';
 import {
   Users,
   Search,
@@ -11,9 +11,6 @@ import {
   GraduationCap,
   Building2,
   FileText,
-  AlertCircle,
-  CheckCircle2,
-  X,
   Upload,
   Maximize2,
   ImageIcon,
@@ -74,7 +71,7 @@ export const TeamMediaManagement: React.FC = () => {
 
   const showToast = (text: string, type: 'success' | 'error' = 'success') => {
     setStatusNotice({ type, text });
-    setTimeout(() => setStatusNotice(null), 3500);
+    setTimeout(() => setStatusNotice(null), 3000);
   };
 
   // Synchronize Left Box height strictly to Right Preview Box height on desktop (same baseline)
@@ -273,36 +270,14 @@ export const TeamMediaManagement: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Top Banner Notice */}
-      <AnimatePresence>
-        {statusNotice && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className={`p-3 rounded-2xl flex items-center justify-between text-xs font-bold border shadow-md ${
-              statusNotice.type === 'success'
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                : 'bg-rose-500/10 border-rose-500/30 text-rose-600 dark:text-rose-400'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              {statusNotice.type === 'success' ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-              ) : (
-                <AlertCircle className="w-4 h-4 shrink-0" />
-              )}
-              <span>{statusNotice.text}</span>
-            </div>
-            <button
-              onClick={() => setStatusNotice(null)}
-              className="p-1 hover:opacity-80 cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Floating Status Toast Notification */}
+      <Toast
+        isVisible={!!statusNotice}
+        message={statusNotice?.text || ''}
+        type={statusNotice?.type || 'success'}
+        onClose={() => setStatusNotice(null)}
+        duration={3000}
+      />
 
       {/* Main Split-Pane Card */}
       <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-4 sm:p-6 shadow-xl space-y-4">

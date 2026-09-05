@@ -37,6 +37,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
+import { Toast } from '../ui/Toast';
 import { VerificationDocModal } from './VerificationDocModal';
 import { ManageRoleModal } from './ManageRoleModal';
 import { RolesManagementModal } from './RolesManagementModal';
@@ -198,8 +199,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const [pendingApplications, setPendingApplications] = useState<Member[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(true);
   const [selectedDocFile, setSelectedDocFile] = useState<{ path: string; name: string } | null>(null);
-  const [, setActionSuccess] = useState<string | null>(null);
-  const [, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // Helper to get the calendar date immediately before a given YYYY-MM-DD
   const getDayBefore = (dateStr: string): string => {
@@ -447,15 +448,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       ]);
       setContactFeedbacksList(freshContact);
       setEventFeedbacksList(freshEvent);
-      setActionSuccess(
-        `Synced from Database: ${freshContact.length} contact & ${freshEvent.length} event feedback(s)!`
-      );
-      setTimeout(() => setActionSuccess(null), 3000);
     } catch (err) {
       console.error('Error syncing feedbacks from database:', err);
       await loadAllFeedbacks();
-      setActionSuccess('Feedbacks synced successfully!');
-      setTimeout(() => setActionSuccess(null), 2000);
     } finally {
       setIsSyncingFeedbacks(false);
     }
@@ -477,7 +472,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       const success = await updateEventFeedbackStatus(id, newStatus);
       if (success) {
         setActionSuccess(`Event feedback status updated to "${newStatus.toUpperCase()}"`);
-        setTimeout(() => setActionSuccess(null), 2000);
+        setTimeout(() => setActionSuccess(null), 3000);
 
         if (shouldSendEmail && targetFeedback.email) {
           sendEventFeedbackEmail(
@@ -493,7 +488,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       const success = await updateFeedbackStatus(id, newStatus);
       if (success) {
         setActionSuccess(`Contact inquiry status updated to "${newStatus.toUpperCase()}"`);
-        setTimeout(() => setActionSuccess(null), 2000);
+        setTimeout(() => setActionSuccess(null), 3000);
 
         if (shouldSendEmail && targetFeedback.email) {
           sendContactUsStatusEmail(
@@ -513,7 +508,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       exportFeedbacksToPdf(filteredContactFeedbacks as any, feedbackFilter, feedbackSearch);
     }
     setActionSuccess('Feedbacks PDF downloaded successfully!');
-    setTimeout(() => setActionSuccess(null), 2000);
+    setTimeout(() => setActionSuccess(null), 3000);
   };
 
   const handleDeleteEventPoster = async (eventId: string) => {
@@ -528,7 +523,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
     await deleteEventPosterAdmin(eventId, currentImageUrl);
     setActionSuccess('Event poster deleted from storage and database!');
-    setTimeout(() => setActionSuccess(null), 2000);
+    setTimeout(() => setActionSuccess(null), 3000);
   };
 
   useEffect(() => {
@@ -577,13 +572,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       setActionSuccess(`Approved ${member.name} (${member.registration_id}). Verification document deleted.`);
       loadPendingApps();
       loadAllMembers();
-      setTimeout(() => setActionSuccess(null), 2000);
+      setTimeout(() => setActionSuccess(null), 3000);
 
       // Asynchronously dispatch official welcome email via Outlook
       sendMemberApprovalEmail(member).catch((e) => console.warn('Could not dispatch approval email:', e));
     } catch (err: any) {
       setActionSuccess(`Approval failed: ${err?.message || 'Unknown error'}`);
-      setTimeout(() => setActionSuccess(null), 2000);
+      setTimeout(() => setActionSuccess(null), 3000);
     }
   };
 
@@ -594,7 +589,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const handleConfirmReject = async (member: Member, reason: string) => {
     setPendingApplications((prev) => prev.filter((app) => app.id !== member.id));
     setActionSuccess(`Rejected application for ${member.name}. Member status set to inactive.`);
-    setTimeout(() => setActionSuccess(null), 2000);
+    setTimeout(() => setActionSuccess(null), 3000);
 
     try {
       await rejectMemberApplicationService(member.id, member.verification_file_url, reason);
@@ -615,7 +610,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       onConfirm: async () => {
         setMembersList((prev) => prev.filter((m) => m.id !== memberId));
         setActionSuccess(`Member ${name} marked as inactive and removed from admin list.`);
-        setTimeout(() => setActionSuccess(null), 2000);
+        setTimeout(() => setActionSuccess(null), 3000);
 
         try {
           await deleteMemberAdmin(memberId);
@@ -705,7 +700,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         max_team_size: 1,
         max_registrations: '',
       });
-      setTimeout(() => setActionSuccess(null), 2000);
+      setTimeout(() => setActionSuccess(null), 3000);
 
       // Async DB Persistence & instant refresh
       await createEvent(newEventObj);
@@ -812,7 +807,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       setActionSuccess(`Successfully updated event "${editEventData.title}"!`);
       setEditingEvent(null);
       setEditPosterFile(null);
-      setTimeout(() => setActionSuccess(null), 2000);
+      setTimeout(() => setActionSuccess(null), 3000);
 
       // Async DB Persistence & instant refresh
       await updateEventAdmin(editingEvent.id, updatedPayload);
@@ -834,7 +829,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       onConfirm: async () => {
         setEventsList((prev) => prev.filter((e) => e.id !== eventPayload.id));
         setActionSuccess(`Deleted event "${eventPayload.title}"`);
-        setTimeout(() => setActionSuccess(null), 2000);
+        setTimeout(() => setActionSuccess(null), 3000);
 
         try {
           await deleteEventAdmin(eventPayload.id, eventPayload.pdf_url, eventPayload.image_url);
@@ -854,8 +849,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         checkDiscrepancies(),
       ]);
       window.dispatchEvent(new CustomEvent('csc-discrepancy-updated'));
-      setActionSuccess('Member, Core & Discrepancy records synced successfully!');
-      setTimeout(() => setActionSuccess(null), 2000);
     } catch (err) {
       console.error('Error syncing records:', err);
     } finally {
@@ -929,7 +922,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       memberSearch
     );
     setActionSuccess('Downloaded members list as Excel spreadsheet!');
-    setTimeout(() => setActionSuccess(null), 2000);
+    setTimeout(() => setActionSuccess(null), 3000);
   };
 
   const handleExportMembersPdf = () => {
@@ -943,7 +936,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       memberSearch
     );
     setActionSuccess('Downloaded members list as PDF document!');
-    setTimeout(() => setActionSuccess(null), 2000);
+    setTimeout(() => setActionSuccess(null), 3000);
   };
 
   return (
@@ -3237,6 +3230,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             </div>
           </Modal>
         )}
+
+        {/* Global Action Feedback Toasts */}
+        <Toast
+          isVisible={!!actionSuccess}
+          message={actionSuccess || ''}
+          type="success"
+          onClose={() => setActionSuccess(null)}
+          duration={3000}
+        />
+        <Toast
+          isVisible={!!actionError}
+          message={actionError || ''}
+          type="error"
+          onClose={() => setActionError(null)}
+          duration={3000}
+        />
       </div>
     </div>
   );

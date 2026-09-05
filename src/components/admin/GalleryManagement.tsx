@@ -15,6 +15,7 @@ import {
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
 import { CustomSelect, type SelectOption } from '../ui/CustomSelect';
 import {
   getGalleryPhotos,
@@ -86,7 +87,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Status Alerts
-  const [, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -863,6 +864,15 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
         confirmText="Delete Photo"
         variant="danger"
         isLoading={isDeleting}
+      />
+
+      {/* Status Toast */}
+      <Toast
+        isVisible={!!statusMsg}
+        message={statusMsg?.text || ''}
+        type={statusMsg?.type || 'success'}
+        onClose={() => setStatusMsg(null)}
+        duration={3000}
       />
     </div>
   );
