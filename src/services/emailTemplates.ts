@@ -115,6 +115,8 @@ export async function saveEmailTemplate(
           category: template.category,
           name: template.name,
           subject: template.subject,
+          banner_title: template.banner_title || null,
+          banner_subtitle: template.banner_subtitle || null,
           headline: template.headline,
           body_text: template.body_text,
           button_text: template.button_text || null,
@@ -153,6 +155,8 @@ export function renderEmailHtmlPreview(
   template: EmailTemplateConfig,
   data: Record<string, any>
 ): string {
+  const bannerTitle = replaceTemplatePlaceholders(template.banner_title || 'Cloud Stack Club', data);
+  const bannerSubtitle = replaceTemplatePlaceholders(template.banner_subtitle || 'Chandigarh University', data);
   const subject = replaceTemplatePlaceholders(template.subject, data);
   const headline = replaceTemplatePlaceholders(template.headline, data);
   const rawBody = replaceTemplatePlaceholders(template.body_text, data);
@@ -266,8 +270,8 @@ export function renderEmailHtmlPreview(
             <!-- Header Banner -->
             <tr>
               <td style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%); padding: 36px 32px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">Cloud Stack Club</h1>
-                <p style="margin: 6px 0 0 0; color: #93c5fd; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">Chandigarh University</p>
+                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+                <p style="margin: 6px 0 0 0; color: #93c5fd; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
               </td>
             </tr>
             <!-- Content Area -->

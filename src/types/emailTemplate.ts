@@ -6,6 +6,8 @@ export interface EmailTemplateConfig {
   name: string;
   description: string;
   subject: string;
+  banner_title?: string;
+  banner_subtitle?: string;
   headline: string;
   body_text: string;
   button_text?: string;
@@ -63,6 +65,8 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<EmailCategory, EmailTemplateConfig>
     name: 'Member Application Approved',
     description: 'Sent automatically when an applicant is approved into the club.',
     subject: 'Congratulations! Your Cloud Stack Club Application has been Approved',
+    banner_title: 'Cloud Stack Club',
+    banner_subtitle: 'Chandigarh University',
     headline: 'Welcome to the Club, {{name}}! 🎉',
     body_text: `We are thrilled to inform you that your membership application for Cloud Stack Club has been officially approved by the core council!
 
@@ -77,6 +81,8 @@ Your profile is now active in our member directory. Stay tuned for upcoming orie
     name: 'Application Status Update',
     description: 'Sent when an application cannot be accepted for the intake cycle.',
     subject: 'Update Regarding Your Cloud Stack Club Membership Application',
+    banner_title: 'Cloud Stack Club',
+    banner_subtitle: 'Chandigarh University',
     headline: 'Application Status Update',
     body_text: `Dear {{name}},
 
@@ -87,7 +93,7 @@ After thorough consideration, we regret to inform you that we are unable to appr
 We encourage you to continue participating in our public tech events and reapply during the next recruitment window!`,
     button_text: 'Explore Public Events',
     button_url: 'https://cloudstackclub.vercel.app/events',
-    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University.',
+    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University. Please do not reply directly to this automated email.',
     is_active: true,
   },
   contact_us: {
@@ -95,6 +101,8 @@ We encourage you to continue participating in our public tech events and reapply
     name: 'Contact Inquiry Update',
     description: 'Sent when a coordinator updates or responds to a contact inquiry.',
     subject: 'Update Regarding Your Inquiry: {{subject_topic}}',
+    banner_title: 'Cloud Stack Club',
+    banner_subtitle: 'Chandigarh University',
     headline: 'Inquiry Status Update',
     body_text: `Dear {{name}},
 
@@ -103,7 +111,7 @@ We have reviewed your inquiry regarding "{{subject_topic}}" and updated its stat
 If you have further questions or need additional assistance, feel free to reach out to us again through the portal.`,
     button_text: 'Contact Us / Support',
     button_url: 'https://cloudstackclub.vercel.app/contact-us',
-    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University.',
+    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University. Please do not reply directly to this automated email.',
     is_active: true,
   },
   event_feedback: {
@@ -111,6 +119,8 @@ If you have further questions or need additional assistance, feel free to reach 
     name: 'Event Feedback Response',
     description: 'Sent to attendees when coordinator reviews their event feedback.',
     subject: 'Thank you for your feedback on: {{event_title}}',
+    banner_title: 'Cloud Stack Club',
+    banner_subtitle: 'Chandigarh University',
     headline: 'Thank You for Your Feedback!',
     body_text: `Dear {{name}},
 
@@ -119,7 +129,7 @@ We have reviewed your feedback for {{event_title}}. Your thoughts help us contin
 We look forward to seeing you at our upcoming sessions!`,
     button_text: 'View More Events',
     button_url: 'https://cloudstackclub.vercel.app/events',
-    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University.',
+    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University. Please do not reply directly to this automated email.',
     is_active: true,
   },
   event_broadcast: {
@@ -127,13 +137,15 @@ We look forward to seeing you at our upcoming sessions!`,
     name: 'Event Announcement Broadcast',
     description: 'Sent to all active members when broadcasting an upcoming event.',
     subject: '🚀 New Event Announcement: {{event_title}}',
+    banner_title: 'Cloud Stack Club',
+    banner_subtitle: 'Chandigarh University',
     headline: '{{event_title}}',
     body_text: `We are excited to announce a new technical event organized by Cloud Stack Club!
 
 Join us for an immersive session designed to enhance your practical cloud skills, network with peers, and learn directly from industry mentors. Check out the event logistics below and reserve your seat early!`,
     button_text: 'Register Now',
     button_url: 'https://cloudstackclub.vercel.app/events',
-    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University.',
+    footer_text: 'This is an official communication from Cloud Stack Club, Chandigarh University. Please do not reply directly to this automated email.',
     is_active: true,
   },
 };

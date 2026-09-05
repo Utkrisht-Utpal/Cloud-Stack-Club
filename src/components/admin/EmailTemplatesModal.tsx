@@ -14,6 +14,7 @@ import {
   Edit3,
   Check,
   Info,
+  ChevronDown,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
@@ -60,10 +61,19 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
 
   // Focus ref for variable insertion
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const initialLoadedRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Reset initialLoadedRef when category changes or modal reopens
+  useEffect(() => {
+    if (isOpen) {
+      initialLoadedRef.current = false;
+    }
+  }, [isOpen, activeCategory]);
 
   // Lock background scrolling completely when modal is open
   useEffect(() => {
@@ -182,8 +192,6 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     }
   };
 
-  if (!mounted || !isOpen) return null;
-
   const sampleData = getSampleCategoryData(activeCategory);
   const previewHtml = renderEmailHtmlPreview(
     {
@@ -193,6 +201,33 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     },
     sampleData
   );
+
+  // Smooth live iframe update without white flicker
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) return;
+
+      if (!initialLoadedRef.current || !doc.body) {
+        doc.open();
+        doc.write(previewHtml);
+        doc.close();
+        initialLoadedRef.current = true;
+      } else {
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(previewHtml, 'text/html');
+        doc.title = newDoc.title;
+        doc.body.innerHTML = newDoc.body.innerHTML;
+      }
+    } catch {
+      iframe.srcdoc = previewHtml;
+    }
+  }, [previewHtml]);
+
+  if (!mounted || !isOpen) return null;
 
   const variables = CATEGORY_VARIABLES[activeCategory] || [];
 
@@ -291,6 +326,44 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
               activeTabMobile === 'preview' ? 'hidden sm:block' : 'block'
             }`}
           >
+            {/* Header Banner Configuration */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/50 to-sky-50/50 dark:from-slate-800/60 dark:to-slate-800/40 border border-blue-100 dark:border-slate-700/70 space-y-3">
+              <div>
+                <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                  Header Banner (Top Gradient)
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Customize the club headline and branding displayed on top of the email
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Banner Title
+                  </label>
+                  <input
+                    type="text"
+                    value={currentEdit.banner_title || ''}
+                    onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_title: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Cloud Stack Club"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Banner Subtitle
+                  </label>
+                  <input
+                    type="text"
+                    value={currentEdit.banner_subtitle || ''}
+                    onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_subtitle: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Chandigarh University"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Subject Line */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -410,6 +483,20 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
               )}
             </div>
 
+            {/* Footer Notice / Text */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Footer Disclaimer / Notice
+              </label>
+              <textarea
+                rows={2}
+                value={currentEdit.footer_text || ''}
+                onChange={(e) => setCurrentEdit((prev) => ({ ...prev, footer_text: e.target.value }))}
+                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar leading-relaxed resize-y"
+                placeholder="This is an official communication from Cloud Stack Club..."
+              />
+            </div>
+
             {/* Bottom Actions */}
             <div className="pt-3 flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-800">
               <button
@@ -494,8 +581,8 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
             <div className="flex-1 p-3 overflow-hidden">
               <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-slate-900">
                 <iframe
+                  ref={iframeRef}
                   title="Email Live Preview"
-                  srcDoc={previewHtml}
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
                   sandbox="allow-same-origin"
                 />
