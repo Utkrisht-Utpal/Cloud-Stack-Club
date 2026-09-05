@@ -15,6 +15,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
 import {
   getAllNotices,
   createNotice,
@@ -87,6 +88,7 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
 
@@ -164,6 +166,7 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
           );
         }
         onNoticeUpdated?.();
+        setToastMsg({ text: 'Notice status updated!', type: 'success' });
       } else {
         // Rollback on failure
         setNotices((prev) =>
@@ -181,6 +184,7 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
 
   const handleConfirmDelete = async () => {
     if (!deletingNotice) return;
+    const deletedTitle = deletingNotice.title;
     setIsDeleting(true);
     try {
       const res = await deleteNotice(deletingNotice.id);
@@ -188,6 +192,7 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
         setNotices((prev) => prev.filter((n) => n.id !== deletingNotice.id));
         setDeletingNotice(null);
         onNoticeUpdated?.();
+        setToastMsg({ text: `Notice "${deletedTitle}" deleted.`, type: 'success' });
       } else {
         setError(res.error || 'Failed to delete notice.');
       }
@@ -225,6 +230,7 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
           );
           resetForm();
           onNoticeUpdated?.();
+          setToastMsg({ text: 'Notice updated successfully!', type: 'success' });
         } else {
           setError(res.error || 'Failed to update notice.');
         }
@@ -242,6 +248,7 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
           setNotices((prev) => [res.data!, ...prev]);
           resetForm();
           onNoticeUpdated?.();
+          setToastMsg({ text: 'Notice created successfully!', type: 'success' });
         } else {
           setError(res.error || 'Failed to create notice.');
         }
@@ -549,6 +556,15 @@ export const NoticeManagementModal: React.FC<NoticeManagementModalProps> = ({
         confirmText="Delete Notice"
         variant="danger"
         isLoading={isDeleting}
+      />
+
+      {/* Floating Status Toast */}
+      <Toast
+        isVisible={!!toastMsg}
+        message={toastMsg?.text || ''}
+        type={toastMsg?.type || 'success'}
+        onClose={() => setToastMsg(null)}
+        duration={3000}
       />
     </>
   );

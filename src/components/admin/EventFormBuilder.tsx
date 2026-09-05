@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { CustomSelect } from '../ui/CustomSelect';
 import { Modal } from '../ui/Modal';
+import { Toast } from '../ui/Toast';
 import { getFormForEvent, saveFormForEvent } from '../../services/registrationForms';
 import type { Event, EventFormField, FieldType } from '../../types/database';
 
@@ -76,7 +77,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   );
   const [fields, setFields] = useState<Partial<EventFormField>[]>([]);
   const [loading, setLoading] = useState(false);
-  const [, setSaveSuccess] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
   // Field Edit/Add Modal State
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
@@ -231,8 +232,12 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
 
     try {
       await saveFormForEvent(selectedEventId, fields, formTitle);
-      setSaveSuccess(`Successfully saved ${fields.length} dynamic form field(s) for event!`);
-      setTimeout(() => setSaveSuccess(null), 2000);
+      setSaveSuccess(
+        fields.length === 1
+          ? 'Dynamic form field saved successfully!'
+          : `Saved ${fields.length} dynamic form fields successfully!`
+      );
+      setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err: any) {
       console.error('Error saving form:', err);
     }
@@ -643,6 +648,15 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
           ))}
         </div>
       </Modal>
+
+      {/* Save Success Toast */}
+      <Toast
+        isVisible={!!saveSuccess}
+        message={saveSuccess || ''}
+        type="success"
+        onClose={() => setSaveSuccess(null)}
+        duration={3000}
+      />
     </div>
   );
 };

@@ -357,4 +357,17 @@ html.horizontal-scroll-active body {
   input:not([type='checkbox']):not([type='radio']), textarea, select {
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500;
   }
+
+  /* Hide spin buttons on number inputs globally */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
+

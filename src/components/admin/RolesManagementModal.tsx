@@ -19,6 +19,7 @@ import {
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
 import { getRoles, createRole, updateRole, deleteRole } from '../../services/roles';
 import type { Role, Member } from '../../types/database';
 
@@ -228,12 +229,12 @@ export const RolesManagementModal: React.FC<RolesManagementModalProps> = ({
             </div>
           )}
 
-          {successMsg && (
-            <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
-              <Check className="w-4 h-4 shrink-0" />
-              <span>{successMsg}</span>
-            </div>
-          )}
+          <Toast
+            isVisible={!!successMsg}
+            message={successMsg || ''}
+            onClose={() => setSuccessMsg(null)}
+            duration={3000}
+          />
 
           {/* Roles List */}
           <div className="space-y-3">

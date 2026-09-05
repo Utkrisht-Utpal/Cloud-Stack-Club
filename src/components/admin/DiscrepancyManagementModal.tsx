@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
 import { CustomSelect } from '../ui/CustomSelect';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -77,6 +78,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingTicket, setDeletingTicket] = useState<Discrepancy | null>(null);
   const [adminNotesDraft, setAdminNotesDraft] = useState<Record<string, string>>({});
+  const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const loadSubmissions = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -114,8 +116,10 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
     );
     try {
       await updateDiscrepancyStatus(id, newStatus, notes);
+      setToastMsg({ text: `Ticket status updated to "${newStatus.toUpperCase()}"!`, type: 'success' });
     } catch (err) {
       console.error('Failed to update status:', err);
+      setToastMsg({ text: 'Failed to update ticket status.', type: 'error' });
     }
   };
 
@@ -127,6 +131,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
       setSubmissions((prev) =>
         prev.map((item) => (item.id === id ? { ...item, admin_notes: notes } : item))
       );
+      setToastMsg({ text: 'Internal notes saved successfully!', type: 'success' });
     }
   };
 
@@ -136,6 +141,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
     setSubmissions((prev) => prev.filter((item) => item.id !== targetId));
     setDeletingTicket(null);
     await deleteDiscrepancy(targetId);
+    setToastMsg({ text: 'Discrepancy record deleted.', type: 'success' });
   };
 
   // Search & Status Filtering
@@ -527,6 +533,15 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
         confirmText="Delete Record"
         cancelText="Cancel"
         variant="danger"
+      />
+
+      {/* Floating Status Toast */}
+      <Toast
+        isVisible={!!toastMsg}
+        message={toastMsg?.text || ''}
+        type={toastMsg?.type || 'success'}
+        onClose={() => setToastMsg(null)}
+        duration={3000}
       />
     </>
   );
