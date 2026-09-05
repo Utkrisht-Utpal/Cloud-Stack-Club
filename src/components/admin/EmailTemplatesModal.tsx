@@ -412,8 +412,8 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
                     </div>
                   </div>
 
-                  {/* Layout Style & Color Theme Selectors */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                  {/* Layout Style, Color Theme, & Text Color Selectors */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100 dark:border-slate-700/60">
                     <div className="space-y-1">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                         Layout Style
@@ -450,6 +450,19 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
                         <option value="aurora_green">🌌 Aurora Borealis</option>
                         <option value="solar_flare">☀️ Solar Flare</option>
                         <option value="obsidian_mono">⬛ Obsidian Monolith</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Header Text Color
+                      </label>
+                      <select
+                        value={currentEdit.banner_text_color || 'white'}
+                        onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_text_color: e.target.value as any }))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                      >
+                        <option value="white">⚪ Crisp White</option>
+                        <option value="dark">⚫ Dark Slate (High Contrast)</option>
                       </select>
                     </div>
                   </div>

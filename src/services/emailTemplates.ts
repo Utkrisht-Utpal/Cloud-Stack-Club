@@ -7,6 +7,7 @@ import {
   type EmailTemplateConfig,
   type BannerStyle,
   type BannerTheme,
+  type BannerTextColor,
 } from '../types/emailTemplate';
 
 const LOCAL_STORAGE_KEY = 'csc_email_templates_cache';
@@ -120,6 +121,7 @@ export async function saveEmailTemplate(
           subject: template.subject,
           banner_style: template.banner_style || 'modern_badge',
           banner_theme: template.banner_theme || 'classic_blue',
+          banner_text_color: template.banner_text_color || 'white',
           banner_title: template.banner_title || null,
           banner_subtitle: template.banner_subtitle || null,
           headline: template.headline,
@@ -144,11 +146,12 @@ export async function saveEmailTemplate(
 }
 
 /**
- * Applies a banner style and color theme across all email templates.
+ * Applies a banner style, color theme, and text color across all email templates.
  */
 export async function applyGlobalBannerDesign(
   style: BannerStyle,
-  theme: BannerTheme
+  theme: BannerTheme,
+  textColor?: BannerTextColor
 ): Promise<Record<EmailCategory, EmailTemplateConfig>> {
   const allTemplates = await getAllEmailTemplates();
   const categories: EmailCategory[] = ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast'];
@@ -159,6 +162,7 @@ export async function applyGlobalBannerDesign(
         ...allTemplates[cat],
         banner_style: style,
         banner_theme: theme,
+        ...(textColor ? { banner_text_color: textColor } : {}),
       };
       await saveEmailTemplate(allTemplates[cat]);
     }
@@ -202,18 +206,30 @@ export function renderEmailHtmlPreview(
   const textAccent = theme.textAccent;
   const borderAccent = theme.borderAccent;
   const style = template.banner_style || 'modern_badge';
+  const isDark = template.banner_text_color === 'dark';
+
+  const titleColor = isDark ? '#0f172a' : '#ffffff';
+  const subtextColor = isDark ? '#1e293b' : textAccent;
+  const badgeBg = isDark ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.14)';
+  const badgeBorder = isDark ? 'rgba(15, 23, 42, 0.25)' : 'rgba(255, 255, 255, 0.25)';
+  const badgeText = isDark ? '#0f172a' : '#ffffff';
+  const logoBg = isDark ? 'rgba(15, 23, 42, 0.12)' : 'rgba(255, 255, 255, 0.2)';
+  const logoBorder = isDark ? 'rgba(15, 23, 42, 0.25)' : 'rgba(255, 255, 255, 0.4)';
+  const stripBg = isDark ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.22)';
+  const stripBorder = isDark ? 'rgba(15, 23, 42, 0.15)' : 'rgba(255, 255, 255, 0.12)';
+  const stripText = isDark ? '#0f172a' : textAccent;
 
   let bannerHtml = '';
   if (style === 'modern_badge') {
     bannerHtml = `
       <tr>
         <td style="background: ${gradient}; padding: 36px 32px 30px 32px; text-align: center;">
-          <div style="display: inline-block; width: 50px; height: 50px; padding: 2px; border-radius: 16px; background: rgba(255, 255, 255, 0.2); border: 1.5px solid rgba(255, 255, 255, 0.4); text-align: center; margin-bottom: 12px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25); box-sizing: border-box; vertical-align: middle;">
+          <div style="display: inline-block; width: 50px; height: 50px; padding: 2px; border-radius: 16px; background: ${logoBg}; border: 1.5px solid ${logoBorder}; text-align: center; margin-bottom: 12px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25); box-sizing: border-box; vertical-align: middle;">
             <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="Cloud Stack Club" width="44" height="44" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
           </div>
-          <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+          <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
           <div style="margin-top: 10px;">
-            <span style="display: inline-block; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.25); padding: 4px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #ffffff; text-transform: uppercase;">
+            <span style="display: inline-block; background: ${badgeBg}; border: 1px solid ${badgeBorder}; padding: 4px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: ${badgeText}; text-transform: uppercase;">
               🎓 ${bannerSubtitle}
             </span>
           </div>
@@ -224,14 +240,14 @@ export function renderEmailHtmlPreview(
     bannerHtml = `
       <tr>
         <td style="background: ${gradient}; padding: 0; text-align: center;">
-          <div style="background: rgba(0, 0, 0, 0.22); padding: 8px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.12);">
-            <span style="color: ${textAccent}; font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;">
+          <div style="background: ${stripBg}; padding: 8px 16px; border-bottom: 1px solid ${stripBorder};">
+            <span style="color: ${stripText}; font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;">
               🔒 OFFICIAL COMMUNICATION • CSC CHANDIGARH UNIVERSITY
             </span>
           </div>
           <div style="padding: 28px 32px 32px 32px;">
-            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
-            <p style="margin: 6px 0 0 0; color: ${textAccent}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
+            <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+            <p style="margin: 6px 0 0 0; color: ${subtextColor}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
           </div>
         </td>
       </tr>
@@ -241,8 +257,8 @@ export function renderEmailHtmlPreview(
       <tr>
         <td style="background: ${gradient}; padding: 32px 32px; text-align: center;">
           <div style="width: 32px; height: 3px; background: ${borderAccent}; border-radius: 2px; margin: 0 auto 12px auto;"></div>
-          <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">${bannerTitle}</h1>
-          <p style="margin: 6px 0 0 0; color: ${textAccent}; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">${bannerSubtitle}</p>
+          <h1 style="margin: 0; color: ${titleColor}; font-size: 22px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">${bannerTitle}</h1>
+          <p style="margin: 6px 0 0 0; color: ${subtextColor}; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">${bannerSubtitle}</p>
         </td>
       </tr>
     `;
@@ -251,8 +267,8 @@ export function renderEmailHtmlPreview(
     bannerHtml = `
       <tr>
         <td style="background: ${gradient}; padding: 36px 32px; text-align: center;">
-          <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
-          <p style="margin: 6px 0 0 0; color: ${textAccent}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
+          <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+          <p style="margin: 6px 0 0 0; color: ${subtextColor}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
         </td>
       </tr>
     `;

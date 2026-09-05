@@ -15,6 +15,7 @@ import {
   BANNER_THEME_GRADIENTS,
   type BannerStyle,
   type BannerTheme,
+  type BannerTextColor,
 } from '../../types/emailTemplate';
 import {
   getAllEmailTemplates,
@@ -94,6 +95,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const [mounted, setMounted] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState<BannerStyle>('modern_badge');
   const [selectedTheme, setSelectedTheme] = useState<BannerTheme>('classic_blue');
+  const [selectedTextColor, setSelectedTextColor] = useState<BannerTextColor>('white');
   const [previewTitle, setPreviewTitle] = useState('Cloud Stack Club');
   const [previewSubtitle, setPreviewSubtitle] = useState('Chandigarh University');
   const [isApplying, setIsApplying] = useState(false);
@@ -118,6 +120,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
         if (tpls.approval) {
           if (tpls.approval.banner_style) setSelectedStyle(tpls.approval.banner_style);
           if (tpls.approval.banner_theme) setSelectedTheme(tpls.approval.banner_theme);
+          if (tpls.approval.banner_text_color) setSelectedTextColor(tpls.approval.banner_text_color);
           if (tpls.approval.banner_title) setPreviewTitle(tpls.approval.banner_title);
           if (tpls.approval.banner_subtitle) setPreviewSubtitle(tpls.approval.banner_subtitle);
         }
@@ -148,7 +151,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const handleApply = async () => {
     setIsApplying(true);
     try {
-      await applyGlobalBannerDesign(selectedStyle, selectedTheme);
+      await applyGlobalBannerDesign(selectedStyle, selectedTheme, selectedTextColor);
       setApplySuccess(true);
       if (onApplied) onApplied();
       setTimeout(() => {
@@ -165,6 +168,19 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   if (!mounted || !isOpen) return null;
 
   const currentThemeConfig = BANNER_THEME_GRADIENTS[selectedTheme] || BANNER_THEME_GRADIENTS.classic_blue;
+  const isDark = selectedTextColor === 'dark';
+  const titleColor = isDark ? '#0f172a' : '#ffffff';
+  const subtextColor = isDark ? '#1e293b' : currentThemeConfig.textAccent;
+  const badgeClass = isDark
+    ? 'bg-slate-900/15 border-slate-900/30 text-slate-900'
+    : 'bg-white/15 border-white/25 text-white';
+  const logoHousingClass = isDark
+    ? 'bg-slate-900/15 border-slate-900/30'
+    : 'bg-white/20 border-white/35';
+  const stripTopClass = isDark
+    ? 'bg-white/35 border-slate-900/15'
+    : 'bg-black/25 border-white/10';
+  const stripTopColor = isDark ? '#0f172a' : currentThemeConfig.textAccent;
 
   return createPortal(
     <div
@@ -188,7 +204,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Choose visual layouts and color schemes to apply across all club email templates.
+                Choose visual layouts, color themes, and contrast to apply across all club email templates.
               </p>
             </div>
           </div>
@@ -212,7 +228,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 Live Header & Button Preview
               </span>
               <span className="text-[11px] text-slate-400 font-mono">
-                {currentThemeConfig.name} • {STYLE_OPTIONS.find((s) => s.id === selectedStyle)?.name}
+                {currentThemeConfig.name} • {STYLE_OPTIONS.find((s) => s.id === selectedStyle)?.name} • {selectedTextColor === 'dark' ? 'Dark Text' : 'White Text'}
               </span>
             </div>
 
@@ -225,18 +241,21 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 >
                   {selectedStyle === 'modern_badge' && (
                     <div className="p-7 sm:p-8 text-center">
-                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 border border-white/35 shadow-lg mb-3 backdrop-blur-md p-1">
+                      <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl border shadow-lg mb-3 backdrop-blur-md p-1 ${logoHousingClass}`}>
                         <img
                           src={clubLogoImg}
                           alt="Cloud Stack Club"
                           className="w-full h-full object-contain filter drop-shadow-md"
                         />
                       </div>
-                      <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                      <h1
+                        style={{ color: titleColor }}
+                        className="text-xl sm:text-2xl font-black tracking-tight"
+                      >
                         {previewTitle}
                       </h1>
                       <div className="mt-2.5">
-                        <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wider text-white uppercase bg-white/15 border border-white/25 shadow-xs">
+                        <span className={`inline-block px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-xs ${badgeClass}`}>
                           🎓 {previewSubtitle}
                         </span>
                       </div>
@@ -245,20 +264,23 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
 
                   {selectedStyle === 'official_strip' && (
                     <div>
-                      <div className="bg-black/25 py-2 px-4 text-center border-b border-white/10">
+                      <div className={`py-2 px-4 text-center border-b ${stripTopClass}`}>
                         <span
-                          style={{ color: currentThemeConfig.textAccent }}
+                          style={{ color: stripTopColor }}
                           className="text-[10px] font-extrabold uppercase tracking-widest"
                         >
                           🔒 OFFICIAL COMMUNICATION • CSC CHANDIGARH UNIVERSITY
                         </span>
                       </div>
                       <div className="p-7 text-center">
-                        <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                        <h1
+                          style={{ color: titleColor }}
+                          className="text-xl sm:text-2xl font-black tracking-tight"
+                        >
                           {previewTitle}
                         </h1>
                         <p
-                          style={{ color: currentThemeConfig.textAccent }}
+                          style={{ color: subtextColor }}
                           className="text-xs font-bold uppercase tracking-widest mt-1.5"
                         >
                           {previewSubtitle}
@@ -273,11 +295,14 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                         style={{ background: currentThemeConfig.borderAccent }}
                         className="w-8 h-1 rounded-full mx-auto mb-3"
                       />
-                      <h1 className="text-lg sm:text-xl font-black text-white uppercase tracking-wider">
+                      <h1
+                        style={{ color: titleColor }}
+                        className="text-lg sm:text-xl font-black uppercase tracking-wider"
+                      >
                         {previewTitle}
                       </h1>
                       <p
-                        style={{ color: currentThemeConfig.textAccent }}
+                        style={{ color: subtextColor }}
                         className="text-[11px] font-bold uppercase tracking-widest mt-1.5"
                       >
                         {previewSubtitle}
@@ -287,11 +312,14 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
 
                   {selectedStyle === 'classic' && (
                     <div className="p-8 text-center">
-                      <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                      <h1
+                        style={{ color: titleColor }}
+                        className="text-xl sm:text-2xl font-black tracking-tight"
+                      >
                         {previewTitle}
                       </h1>
                       <p
-                        style={{ color: currentThemeConfig.textAccent }}
+                        style={{ color: subtextColor }}
                         className="text-xs font-bold uppercase tracking-widest mt-1.5"
                       >
                         {previewSubtitle}
@@ -423,6 +451,79 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* 4. Choose Header Text & Badge Contrast */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                3. Header Text & Badge Contrast
+              </label>
+              <span className="text-[11px] text-slate-400">
+                Optimize readability for light vs dark gradients
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedTextColor('white')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  selectedTextColor === 'white'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center border border-slate-700 shadow-sm shrink-0">
+                    <span className="text-white text-sm font-black">Aa</span>
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      Crisp White Text
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight block mt-0.5">
+                      Best for Royal Blue, Crimson, Midnight Slate & deep gradients
+                    </span>
+                  </div>
+                </div>
+                {selectedTextColor === 'white' && (
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-2">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedTextColor('dark')}
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  selectedTextColor === 'dark'
+                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-300 shadow-sm shrink-0">
+                    <span className="text-slate-900 text-sm font-black">Aa</span>
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-900 dark:text-white block">
+                      Dark Slate Text
+                    </span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight block mt-0.5">
+                      Best for Oceanic Teal, Gold Luxury, Aurora Green & bright gradients
+                    </span>
+                  </div>
+                </div>
+                {selectedTextColor === 'dark' && (
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-2">
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                )}
+              </button>
             </div>
           </div>
         </div>

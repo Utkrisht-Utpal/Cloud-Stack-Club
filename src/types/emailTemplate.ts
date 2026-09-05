@@ -1,6 +1,7 @@
 import type { EmailCategory } from './email';
 
 export type BannerStyle = 'modern_badge' | 'official_strip' | 'minimal' | 'classic';
+export type BannerTextColor = 'white' | 'dark';
 export type BannerTheme =
   | 'classic_blue'
   | 'emerald_tech'
@@ -23,6 +24,7 @@ export interface EmailTemplateConfig {
   subject: string;
   banner_style?: BannerStyle;
   banner_theme?: BannerTheme;
+  banner_text_color?: BannerTextColor;
   banner_title?: string;
   banner_subtitle?: string;
   headline: string;
