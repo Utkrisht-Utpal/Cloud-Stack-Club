@@ -395,7 +395,7 @@ export const EmailLogsManagement: React.FC = () => {
             placeholder="Search email, name, subject..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-blue-500 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all"
+            className="search-input w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-slate-300 dark:focus:border-slate-600 focus:outline-none focus:ring-0 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all"
           />
         </form>
       </div>

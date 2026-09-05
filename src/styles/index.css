@@ -354,8 +354,30 @@ html.horizontal-scroll-active body {
   animation: float 9s ease-in-out infinite;
 }
 @layer base {
-  input:not([type='checkbox']):not([type='radio']), textarea, select {
+  input:not([type='checkbox']):not([type='radio']):not([type='search']):not([placeholder*='Search']):not([placeholder*='search']):not(.search-input), textarea, select {
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500;
+  }
+
+  /* Global removal of blue focus ring and outline for all search inputs */
+  input[type='search'],
+  input[placeholder*='Search'],
+  input[placeholder*='search'],
+  .search-input {
+    outline: none !important;
+    box-shadow: none !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-color: transparent !important;
+  }
+  input[type='search']:focus,
+  input[placeholder*='Search']:focus,
+  input[placeholder*='search']:focus,
+  .search-input:focus {
+    outline: none !important;
+    box-shadow: none !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-color: transparent !important;
   }
 
   /* Hide spin buttons on number inputs globally */

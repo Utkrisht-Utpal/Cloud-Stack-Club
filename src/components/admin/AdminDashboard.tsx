@@ -1342,7 +1342,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
                   placeholder="Search name, UID, email, Reg ID..."
-                  className="w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium text-slate-900 dark:text-white placeholder:text-slate-400"
+                  className="search-input w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600 font-medium text-slate-900 dark:text-white placeholder:text-slate-400 transition-colors"
                 />
               </div>
 
@@ -2112,7 +2112,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     placeholder={feedbackViewTab === 'event' ? "Search sender, UID, Reg ID..." : "Search sender, email, query..."}
                     value={feedbackSearch}
                     onChange={(e) => setFeedbackSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500/50 font-medium text-slate-900 dark:text-white placeholder:text-slate-400"
+                    className="search-input w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600 font-medium text-slate-900 dark:text-white placeholder:text-slate-400 transition-colors"
                   />
                 </div>
 
