@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import type { Theme } from '../types';
 
 interface ThemeContextType {
@@ -11,20 +11,32 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const THEME_KEY = 'cloud_stack_theme_preference';
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // On first visit (nothing stored), default to light mode.
+/**
+ * Resolves the initial theme:
+ * 1. Checks localStorage for previously loaded/chosen theme ('dark' | 'light').
+ * 2. If none exists, falls back to the user's OS/system theme preference (prefers-color-scheme).
+ * 3. Defaults to 'light' if media queries are unsupported.
+ */
+const getInitialTheme = (): Theme => {
+  try {
     const stored = localStorage.getItem(THEME_KEY);
     if (stored === 'light' || stored === 'dark') {
       return stored;
     }
-    return 'light'; // First-time default → light mode
-  });
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+  } catch (err) {
+    console.warn('Could not read stored theme preference:', err);
+  }
+  return 'light';
+};
 
-  // Apply the class to <html> and persist ONLY if this is a user-initiated change.
-  // The `userChose` ref tracks whether we should write to localStorage.
-  const userChoseRef = React.useRef(false);
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setThemeState] = useState<Theme>(getInitialTheme);
+  const userChoseRef = useRef(false);
 
+  // Apply classes to documentElement and persist theme
   useEffect(() => {
     const root = document.documentElement;
     if (theme === 'dark') {
@@ -35,11 +47,30 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       root.classList.remove('dark');
     }
 
-    // Persist only after the user has explicitly toggled
-    if (userChoseRef.current) {
+    try {
+      // Store loaded/chosen theme preference
       localStorage.setItem(THEME_KEY, theme);
+    } catch (err) {
+      console.warn('Could not save theme preference:', err);
     }
   }, [theme]);
+
+  // Dynamically respond to OS/system theme changes if user hasn't explicitly set a preference in this session
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (e: MediaQueryListEvent) => {
+      // If user hasn't explicitly chosen a theme during this session and no stored preference exists
+      const stored = localStorage.getItem(THEME_KEY);
+      if (!stored && !userChoseRef.current) {
+        setThemeState(e.matches ? 'dark' : 'light');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleSystemThemeChange);
+    return () => mediaQuery.removeEventListener('change', handleSystemThemeChange);
+  }, []);
 
   const setTheme = (newTheme: Theme) => {
     userChoseRef.current = true;
@@ -65,3 +96,4 @@ export const useTheme = () => {
   }
   return context;
 };
+
