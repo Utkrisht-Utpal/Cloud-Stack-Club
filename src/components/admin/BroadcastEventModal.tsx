@@ -116,7 +116,17 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
     return Array.from(emailMap.entries()).map(([email, name]) => ({ email, name }));
   }, [audienceType, allMembers, customSelectedIds]);
 
-  if (!event) return null;
+  const filteredMembersForCustom = useMemo(() => {
+    const q = customSearchQuery.trim().toLowerCase();
+    if (!q) return allMembers;
+    return allMembers.filter(
+      (m) =>
+        (m.name && m.name.toLowerCase().includes(q)) ||
+        (m.uid && m.uid.toLowerCase().includes(q)) ||
+        (m.email && m.email.toLowerCase().includes(q)) ||
+        (m.department && m.department.toLowerCase().includes(q))
+    );
+  }, [allMembers, customSearchQuery]);
 
   const handleAudienceChange = (newAudience: BroadcastAudienceType) => {
     setAudienceType(newAudience);
@@ -154,19 +164,8 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
     setCustomSelectedIds(new Set(allMembers.filter((m) => !m.is_core_member).map((m) => m.id)));
   };
 
-  const filteredMembersForCustom = useMemo(() => {
-    const q = customSearchQuery.trim().toLowerCase();
-    if (!q) return allMembers;
-    return allMembers.filter(
-      (m) =>
-        (m.name && m.name.toLowerCase().includes(q)) ||
-        (m.uid && m.uid.toLowerCase().includes(q)) ||
-        (m.email && m.email.toLowerCase().includes(q)) ||
-        (m.department && m.department.toLowerCase().includes(q))
-    );
-  }, [allMembers, customSearchQuery]);
-
   const handleBroadcast = async () => {
+    if (!event) return;
     if (activeRecipients.length === 0) {
       setError('No valid email recipients selected.');
       return;
@@ -249,6 +248,8 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
 
   const currentOption = audienceOptions.find((o) => o.id === audienceType) || audienceOptions[0];
   const CurrentIcon = currentOption.icon;
+
+  if (!isOpen || !event) return null;
 
   return (
     <>
