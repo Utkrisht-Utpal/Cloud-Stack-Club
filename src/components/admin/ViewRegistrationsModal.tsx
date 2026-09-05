@@ -6,7 +6,8 @@ import {
   FileText, 
   ChevronDown, 
   ChevronUp, 
-  Users2
+  Users2,
+  ArrowUp
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { 
@@ -46,6 +47,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRegId, setExpandedRegId] = useState<string | null>(null);
   const [selectedAnswersRegId, setSelectedAnswersRegId] = useState<string | null>(null);
+
+  const [filterRecent, setFilterRecent] = useState(false);
 
   // Team details cache: reg.id -> team info
   const [teamMap, setTeamMap] = useState<
@@ -123,6 +126,15 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     );
   });
 
+  const sortedAndFiltered = [...filtered].sort((a, b) => {
+    const timeA = new Date(a.submitted_at || (a as any).created_at || 0).getTime();
+    const timeB = new Date(b.submitted_at || (b as any).created_at || 0).getTime();
+    if (filterRecent) {
+      return timeB - timeA; // Most recent added first
+    }
+    return timeA - timeB; // Oldest first
+  });
+
   const toggleExpand = (regId: string) => {
     setExpandedRegId((prev) => (prev === regId ? null : regId));
   };
@@ -131,7 +143,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     const exportRows: any[] = [];
     let serialNo = 1;
 
-    filtered.forEach((r) => {
+    sortedAndFiltered.forEach((r) => {
       const teamInfo = teamMap[r.id];
       const regAnswers = answersMap[r.id] || {};
 
@@ -236,7 +248,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Total Registrations: ${filtered.length}  •  Export Date: ${new Date().toLocaleDateString('en-GB')}`, 14, 22);
+    doc.text(`Total Registrations: ${sortedAndFiltered.length}  •  Export Date: ${new Date().toLocaleDateString('en-GB')}`, 14, 22);
 
     const pdfHeaders = ['#', 'Reg Number', 'Team Name', 'Role', 'Member Name', 'Email', 'Phone', 'UID'];
     formFields.forEach((field) => {
@@ -247,7 +259,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     const tableRows: string[][] = [];
     let serialNo = 1;
 
-    filtered.forEach((r) => {
+    sortedAndFiltered.forEach((r) => {
       const teamInfo = teamMap[r.id];
       const regAnswers = answersMap[r.id] || {};
 
@@ -328,9 +340,9 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Event Registrations — ${event.title}`}
-      maxWidth="max-w-5xl"
+      maxWidth="max-w-[92vw] 2xl:max-w-6xl"
     >
-      <div className="space-y-5 max-h-[78vh] overflow-y-auto pr-1">
+      <div className="space-y-4 max-h-[72vh] overflow-y-auto pr-1">
         {/* Controls Header */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div className="relative flex-1">
@@ -340,7 +352,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by registrant name, email, reg no, team name..."
-              className="w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs font-semibold border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white"
+              className="search-input w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs font-semibold border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600 transition-colors"
             />
           </div>
 
@@ -348,7 +360,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
             <button
               type="button"
               onClick={handleExportExcel}
-              disabled={filtered.length === 0}
+              disabled={sortedAndFiltered.length === 0}
               className="h-11 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
             >
               <FileSpreadsheet className="w-4 h-4" />
@@ -357,7 +369,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
             <button
               type="button"
               onClick={handleExportPdf}
-              disabled={filtered.length === 0}
+              disabled={sortedAndFiltered.length === 0}
               className="h-11 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
             >
               <FileText className="w-4 h-4" />
@@ -371,7 +383,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           <div className="py-16 text-center text-xs text-slate-500 font-semibold">
             Loading registrations and team details...
           </div>
-        ) : filtered.length === 0 ? (
+        ) : sortedAndFiltered.length === 0 ? (
           <div className="p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl space-y-2">
             <Users className="w-10 h-10 text-slate-400 mx-auto opacity-60" />
             <div className="text-sm font-bold text-slate-900 dark:text-white">No Registrations Found</div>
@@ -381,70 +393,91 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           </div>
         ) : (
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <div className={`overflow-x-auto ${filtered.length > 5 ? 'max-h-[360px] overflow-y-auto custom-scrollbar' : ''}`}>
+            <div className={`overflow-x-auto ${sortedAndFiltered.length > 5 ? 'max-h-[390px] overflow-y-auto custom-scrollbar' : ''}`}>
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] shadow-sm">
                   <tr>
-                    <th className="py-3.5 px-4 font-black">#</th>
-                    <th className="py-3.5 px-4 font-black">Registration No</th>
-                    <th className="py-3.5 px-4 font-black">Student Name</th>
-                    <th className="py-3.5 px-4 font-black">Contact Details</th>
-                    <th className="py-3.5 px-4 font-black">Type / Team Details</th>
-                    <th className="py-3.5 px-4 font-black">Date & Time</th>
-                    {formFields.length > 0 && <th className="py-3.5 px-4 font-black">Custom Form</th>}
-                    <th className="py-3.5 px-4 font-black text-right">Actions</th>
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap w-12 text-center">#</th>
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-44">Registration No</th>
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-48">Student Name</th>
+                    <th className="py-3.5 px-4 font-black whitespace-nowrap min-w-[200px]">Contact Details</th>
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap text-center w-40">Type / Team Details</th>
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-38">
+                      <div className="flex items-center gap-1.5">
+                        <span>Date & Time</span>
+                        <button
+                          type="button"
+                          onClick={() => setFilterRecent((prev) => !prev)}
+                          className={`p-1 rounded-lg transition-all duration-200 cursor-pointer border select-none inline-flex items-center justify-center ${
+                            filterRecent
+                              ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/25 ring-1 ring-blue-400/40'
+                              : 'bg-slate-200 dark:bg-slate-700/80 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-sky-400'
+                          }`}
+                          title={filterRecent ? 'Showing: Most Recent First (Click for Oldest First)' : 'Click to filter Most Recent First'}
+                          aria-label="Toggle recent added filter"
+                        >
+                          <ArrowUp
+                            className={`w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 ${
+                              filterRecent ? 'rotate-0' : 'rotate-180 opacity-60'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </th>
+                    {formFields.length > 0 && <th className="py-3.5 px-3 font-black whitespace-nowrap w-24 text-center">Custom Form</th>}
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap text-center w-32">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                  {filtered.map((r, idx) => {
+                  {sortedAndFiltered.map((r, idx) => {
                     const isExpanded = expandedRegId === r.id;
                     const teamInfo = teamMap[r.id];
 
                     return (
                       <React.Fragment key={r.id || idx}>
                         <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3.5 px-4 text-slate-400 font-bold">{idx + 1}</td>
-                          <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs">
+                          <td className="py-3 px-3 text-slate-400 font-bold whitespace-nowrap text-center w-12">{idx + 1}</td>
+                          <td className="py-3 px-3.5 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs whitespace-nowrap w-44">
                             {r.registration_number || 'N/A'}
                           </td>
-                          <td className="py-3.5 px-4 space-y-0.5">
-                            <div className="font-bold text-slate-900 dark:text-white leading-tight">{r.registrant_name}</div>
+                          <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-48">
+                            <div className="font-bold text-slate-900 dark:text-white leading-tight whitespace-nowrap">{r.registrant_name}</div>
                             {r.uid && (
                               <div className="text-[11px] font-mono text-slate-400 font-normal whitespace-nowrap">
                                 UID: {r.uid.toUpperCase()}
                               </div>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 space-y-0.5">
-                            <div className="text-slate-700 dark:text-slate-300 font-medium">{r.registrant_email}</div>
+                          <td className="py-3 px-4 space-y-0.5 whitespace-nowrap min-w-[200px]">
+                            <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">{r.registrant_email}</div>
                             {r.registrant_phone && (
-                              <div className="text-[11px] text-slate-400">{r.registrant_phone}</div>
+                              <div className="text-[11px] text-slate-400 whitespace-nowrap">{r.registrant_phone}</div>
                             )}
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3 px-3.5 whitespace-nowrap text-center w-40">
                             {teamInfo ? (
-                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
-                                <Users2 className="w-3.5 h-3.5" />
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold whitespace-nowrap">
+                                <Users2 className="w-3.5 h-3.5 shrink-0" />
                                 <span>Team: {teamInfo.team_name} ({teamInfo.members.length + 1} Members)</span>
                               </div>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-semibold">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-semibold whitespace-nowrap">
                                 Individual
                               </span>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 space-y-0.5">
-                            <div className="text-slate-700 dark:text-slate-300 font-medium">
+                          <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-38">
+                            <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
                               {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : 'N/A'}
                             </div>
                             {r.submitted_at && (
-                              <div className="text-[11px] text-slate-400 font-normal">
+                              <div className="text-[11px] text-slate-400 font-normal whitespace-nowrap">
                                 {new Date(r.submitted_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                               </div>
                             )}
                           </td>
                           {formFields.length > 0 && (
-                            <td className="py-3.5 px-4">
+                            <td className="py-3 px-3 whitespace-nowrap w-24 text-center">
                               <button 
                                 type="button" 
                                 onClick={() => setSelectedAnswersRegId(r.id)}
@@ -455,7 +488,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                               </button>
                             </td>
                           )}
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3 px-3 text-center whitespace-nowrap w-32">
                             <button
                               type="button"
                               onClick={() => toggleExpand(r.id)}
