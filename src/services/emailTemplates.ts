@@ -3,7 +3,10 @@ import type { EmailCategory } from '../types/email';
 import {
   DEFAULT_EMAIL_TEMPLATES,
   CATEGORY_VARIABLES,
+  BANNER_THEME_GRADIENTS,
   type EmailTemplateConfig,
+  type BannerStyle,
+  type BannerTheme,
 } from '../types/emailTemplate';
 
 const LOCAL_STORAGE_KEY = 'csc_email_templates_cache';
@@ -115,6 +118,8 @@ export async function saveEmailTemplate(
           category: template.category,
           name: template.name,
           subject: template.subject,
+          banner_style: template.banner_style || 'modern_badge',
+          banner_theme: template.banner_theme || 'classic_blue',
           banner_title: template.banner_title || null,
           banner_subtitle: template.banner_subtitle || null,
           headline: template.headline,
@@ -136,6 +141,30 @@ export async function saveEmailTemplate(
   }
 
   return updated;
+}
+
+/**
+ * Applies a banner style and color theme across all email templates.
+ */
+export async function applyGlobalBannerDesign(
+  style: BannerStyle,
+  theme: BannerTheme
+): Promise<Record<EmailCategory, EmailTemplateConfig>> {
+  const allTemplates = await getAllEmailTemplates();
+  const categories: EmailCategory[] = ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast'];
+  
+  for (const cat of categories) {
+    if (allTemplates[cat]) {
+      allTemplates[cat] = {
+        ...allTemplates[cat],
+        banner_style: style,
+        banner_theme: theme,
+      };
+      await saveEmailTemplate(allTemplates[cat]);
+    }
+  }
+
+  return allTemplates;
 }
 
 /**
@@ -165,6 +194,69 @@ export function renderEmailHtmlPreview(
   const footer = template.footer_text
     ? replaceTemplatePlaceholders(template.footer_text, data)
     : 'This is an official communication from Cloud Stack Club, Chandigarh University.';
+
+  // Theme & Banner Style
+  const themeKey = template.banner_theme || 'classic_blue';
+  const theme = BANNER_THEME_GRADIENTS[themeKey] || BANNER_THEME_GRADIENTS.classic_blue;
+  const gradient = theme.gradient;
+  const textAccent = theme.textAccent;
+  const borderAccent = theme.borderAccent;
+  const style = template.banner_style || 'modern_badge';
+
+  let bannerHtml = '';
+  if (style === 'modern_badge') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 36px 32px 30px 32px; text-align: center;">
+          <div style="display: inline-block; width: 50px; height: 50px; padding: 6px; border-radius: 16px; background: rgba(255, 255, 255, 0.2); border: 1.5px solid rgba(255, 255, 255, 0.4); text-align: center; margin-bottom: 12px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25); box-sizing: border-box; vertical-align: middle;">
+            <img src="https://cloudstackclub.vercel.app/club-logo-transparent.png" alt="Cloud Stack Club" width="36" height="36" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
+          </div>
+          <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+          <div style="margin-top: 10px;">
+            <span style="display: inline-block; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.25); padding: 4px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #ffffff; text-transform: uppercase;">
+              🎓 ${bannerSubtitle}
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'official_strip') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 0; text-align: center;">
+          <div style="background: rgba(0, 0, 0, 0.22); padding: 8px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.12);">
+            <span style="color: ${textAccent}; font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;">
+              🔒 OFFICIAL COMMUNICATION • CSC CHANDIGARH UNIVERSITY
+            </span>
+          </div>
+          <div style="padding: 28px 32px 32px 32px;">
+            <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+            <p style="margin: 6px 0 0 0; color: ${textAccent}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
+          </div>
+        </td>
+      </tr>
+    `;
+  } else if (style === 'minimal') {
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 32px 32px; text-align: center;">
+          <div style="width: 32px; height: 3px; background: ${borderAccent}; border-radius: 2px; margin: 0 auto 12px auto;"></div>
+          <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 900; letter-spacing: 0.5px; text-transform: uppercase;">${bannerTitle}</h1>
+          <p style="margin: 6px 0 0 0; color: ${textAccent}; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">${bannerSubtitle}</p>
+        </td>
+      </tr>
+    `;
+  } else {
+    // Classic
+    bannerHtml = `
+      <tr>
+        <td style="background: ${gradient}; padding: 36px 32px; text-align: center;">
+          <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
+          <p style="margin: 6px 0 0 0; color: ${textAccent}; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
+        </td>
+      </tr>
+    `;
+  }
 
   // Format paragraphs from line breaks
   const paragraphs = rawBody
@@ -222,11 +314,15 @@ export function renderEmailHtmlPreview(
     `;
   }
 
+  const buttonGradient = theme.buttonGradient;
+  const buttonTextColor = theme.buttonTextColor;
+  const buttonShadow = theme.buttonShadow;
+
   // Action Button
   const buttonHtml = buttonText
     ? `
       <div style="margin-top: 32px; text-align: center;">
-        <a href="${buttonUrl}" target="_blank" rel="noopener noreferrer" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 14px; font-weight: 700; font-size: 14px; display: inline-block;">
+        <a href="${buttonUrl}" target="_blank" rel="noopener noreferrer" style="background: ${buttonGradient}; color: ${buttonTextColor}; text-decoration: none; padding: 14px 28px; border-radius: 14px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px -5px ${buttonShadow};">
           ${buttonText}
         </a>
       </div>
@@ -268,12 +364,7 @@ export function renderEmailHtmlPreview(
         <td align="center">
           <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
             <!-- Header Banner -->
-            <tr>
-              <td style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0284c7 100%); padding: 36px 32px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
-                <p style="margin: 6px 0 0 0; color: #93c5fd; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px;">${bannerSubtitle}</p>
-              </td>
-            </tr>
+            ${bannerHtml}
             <!-- Content Area -->
             <tr>
               <td style="padding: 36px 32px;">

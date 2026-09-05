@@ -13,10 +13,12 @@ import {
   Sparkles,
   Radio,
   Sliders,
+  Palette,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { EmailTemplatesModal } from './EmailTemplatesModal';
+import { EmailDesignStudioModal } from './EmailDesignStudioModal';
 import type { EmailLog, EmailCategory } from '../../types/email';
 import { fetchEmailLogs, deleteEmailLog, fetchEmailStats, type EmailStats } from '../../services/email';
 import { supabase } from '../../services/supabase';
@@ -128,6 +130,7 @@ export const EmailLogsManagement: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [logToDelete, setLogToDelete] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState<boolean>(false);
+  const [isDesignStudioOpen, setIsDesignStudioOpen] = useState<boolean>(false);
   const [memberRoleMap, setMemberRoleMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -277,7 +280,17 @@ export const EmailLogsManagement: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsDesignStudioOpen(true)}
+            className="px-4 py-2 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 hover:border-indigo-400 dark:hover:border-indigo-700 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/60 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs whitespace-nowrap group"
+            title="Choose header design layouts and color gradients for emails"
+          >
+            <Palette className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span>Design Studio</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsTemplatesModalOpen(true)}
@@ -618,6 +631,12 @@ export const EmailLogsManagement: React.FC = () => {
       <EmailTemplatesModal
         isOpen={isTemplatesModalOpen}
         onClose={() => setIsTemplatesModalOpen(false)}
+      />
+
+      {/* Email Header Design Studio Modal */}
+      <EmailDesignStudioModal
+        isOpen={isDesignStudioOpen}
+        onClose={() => setIsDesignStudioOpen(false)}
       />
     </div>
   );
