@@ -1458,7 +1458,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                         <tr key={app.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                           <td className="py-3.5 px-4">
                             <div>
-                              <div className="font-bold text-slate-900 dark:text-white text-xs">{app.name}</div>
+                              <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 flex-wrap">
+                                <span>{app.name}</span>
+                                {app.is_renewal && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center gap-1 shadow-sm">
+                                    <RefreshCw className="w-2.5 h-2.5" />
+                                    <span>Renewal (Previously Inactive)</span>
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[11px] text-slate-500">{app.email}</div>
                               {app.phone && <div className="text-[10px] text-slate-400">{app.phone}</div>}
                             </div>

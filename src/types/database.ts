@@ -54,6 +54,7 @@ export interface Member {
   is_core_member: boolean;
   joined_at: string;
   status: MemberStatus;
+  is_renewal?: boolean;
   verification_file_url?: string | null;
   linkedin_url?: string | null;
   linkedin_text?: string | null;

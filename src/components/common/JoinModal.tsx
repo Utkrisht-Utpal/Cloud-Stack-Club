@@ -59,6 +59,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registeredNumber, setRegisteredNumber] = useState<string | null>(null);
+  const [isRenewalSubmission, setIsRenewalSubmission] = useState(false);
   const [showCuimsHelp, setShowCuimsHelp] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,8 +69,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       const validation = await validateFileSignature(file);
       if (!validation.isValid) {
         setError(validation.error || "Invalid file. Please upload a valid image (JPG, PNG, or WebP) under 1 MB.");
-        e.target.value = "";
         setVerificationFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
       setVerificationFile(file);
@@ -95,7 +96,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
       !formData.email.trim() ||
       !formData.uid.trim()
     ) {
-      triggerErrorWithCooldown("Please fill in your Name, Email, and University ID (UID).");
+      triggerErrorWithCooldown("Please fill in all required fields.");
       return;
     }
 
@@ -141,6 +142,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
         turnstileToken.trim(),
       );
 
+      setIsRenewalSubmission(!!newMember.is_renewal);
       setRegisteredNumber(newMember.registration_id);
       resetCooldown();
       if (onSuccessToast) onSuccessToast();
@@ -157,6 +159,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({
 
   const handleModalClose = () => {
     setRegisteredNumber(null);
+    setIsRenewalSubmission(false);
     setShowCuimsHelp(false);
     resetCooldown();
     setFormData({
@@ -187,11 +190,14 @@ export const JoinModal: React.FC<JoinModalProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                Membership Application Submitted!
+                {isRenewalSubmission
+                  ? "Membership Renewal Submitted!"
+                  : "Membership Application Submitted!"}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                We will let you know after successful verification of your
-                membership registration.
+                {isRenewalSubmission
+                  ? "Welcome back! Your membership renewal request has been submitted for coordinator review."
+                  : "We will let you know after successful verification of your membership registration."}
               </p>
             </div>
             <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-mono text-center">

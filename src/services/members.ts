@@ -130,7 +130,15 @@ export const submitMemberApplication = async (
 
   if (!response.ok) {
     const errorJson = await response.json().catch(() => ({ error: 'Membership application failed' }));
-    throw new Error((errorJson as any).error || `Membership application failed with status ${response.status}`);
+    let errorMsg = (errorJson as any).error || `Membership application failed with status ${response.status}`;
+    if (errorMsg.includes('members_email_key') || errorMsg.includes('idx_members_unique_active_email')) {
+      errorMsg = `The Email ID ${cleanEmail} is already registered to another member.`;
+    } else if (errorMsg.includes('members_uid_key') || errorMsg.includes('idx_members_unique_active_uid')) {
+      errorMsg = `The University ID ${cleanUid} is already registered to another member.`;
+    } else if (errorMsg.includes('members_phone_key') || errorMsg.includes('idx_members_unique_active_phone')) {
+      errorMsg = `The Phone number ${cleanPhone} is already registered to another member.`;
+    }
+    throw new Error(errorMsg);
   }
 
   const result = await response.json();
@@ -145,6 +153,7 @@ export const submitMemberApplication = async (
     department: department?.trim() || null,
     year: year || null,
     status: 'pending',
+    is_renewal: result?.is_renewal || false,
     is_core_member: false,
     role_id: null,
     verification_file_url: filePath,
@@ -166,15 +175,14 @@ export const getPendingMemberApplications = async (): Promise<Member[]> => {
       .from('members')
       .select('*, role:roles(*)')
       .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
 
     if (error) {
       console.warn('Notice fetching pending member applications:', error.message);
       return [];
     }
 
-    const inactiveIds = getInactiveMemberIds();
-    return ((data as Member[]) || []).filter((m) => !inactiveIds.includes(m.id));
+    return (data as Member[]) || [];
   } catch (err) {
     console.warn('Network error fetching pending apps:', err);
     return [];
