@@ -225,7 +225,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 >
                   {selectedStyle === 'modern_badge' && (
                     <div className="p-7 sm:p-8 text-center">
-                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 border border-white/35 shadow-lg mb-3 backdrop-blur-md p-2">
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white/20 border border-white/35 shadow-lg mb-3 backdrop-blur-md p-1">
                         <img
                           src={clubLogoImg}
                           alt="Cloud Stack Club"

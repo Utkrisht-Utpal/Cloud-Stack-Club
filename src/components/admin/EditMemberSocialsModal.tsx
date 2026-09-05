@@ -183,7 +183,7 @@ export const EditMemberSocialsModal: React.FC<EditMemberSocialsModalProps> = ({
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 border border-blue-200/60 dark:border-blue-500/30 text-xs sm:text-sm font-semibold text-blue-700 dark:text-sky-300 shadow-xs">
                 <LinkedinIcon className="w-4 h-4 shrink-0 text-[#0a66c2] dark:text-[#0077b5]" />
                 <span>{effectiveDisplayText}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 shrink-0 text-blue-500" />
+                <ArrowUpRight className="w-2.5 h-2.5 shrink-0 text-blue-500" />
               </div>
 
               {normalizedUrl && (

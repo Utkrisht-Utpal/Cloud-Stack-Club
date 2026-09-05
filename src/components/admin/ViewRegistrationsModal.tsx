@@ -48,7 +48,10 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   const [expandedRegId, setExpandedRegId] = useState<string | null>(null);
   const [selectedAnswersRegId, setSelectedAnswersRegId] = useState<string | null>(null);
 
-  const [filterRecent, setFilterRecent] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ field: 'date' | 'name'; order: 'asc' | 'desc' }>({
+    field: 'date',
+    order: 'asc',
+  });
 
   // Team details cache: reg.id -> team info
   const [teamMap, setTeamMap] = useState<
@@ -127,9 +130,16 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   });
 
   const sortedAndFiltered = [...filtered].sort((a, b) => {
+    if (sortConfig.field === 'name') {
+      const nameA = (a.registrant_name || '').trim().toLowerCase();
+      const nameB = (b.registrant_name || '').trim().toLowerCase();
+      const cmp = nameA.localeCompare(nameB);
+      return sortConfig.order === 'asc' ? cmp : -cmp;
+    }
+
     const timeA = new Date(a.submitted_at || (a as any).created_at || 0).getTime();
     const timeB = new Date(b.submitted_at || (b as any).created_at || 0).getTime();
-    if (filterRecent) {
+    if (sortConfig.order === 'desc') {
       return timeB - timeA; // Most recent added first
     }
     return timeA - timeB; // Oldest first
@@ -340,7 +350,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Event Registrations — ${event.title}`}
-      maxWidth="max-w-[92vw] 2xl:max-w-6xl"
+      maxWidth="max-w-[92vw] lg:max-w-6xl"
     >
       <div className="space-y-4 max-h-[72vh] overflow-y-auto pr-1">
         {/* Controls Header */}
@@ -397,28 +407,79 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               <table className="w-full text-left text-xs border-collapse">
                 <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] shadow-sm">
                   <tr>
-                    <th className="py-3.5 px-3 font-black whitespace-nowrap w-12 text-center">#</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-44">Registration No</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-48">Student Name</th>
-                    <th className="py-3.5 px-4 font-black whitespace-nowrap min-w-[200px]">Contact Details</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap text-center w-40">Type / Team Details</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-38">
+                    <th className="py-3.5 px-2.5 font-black whitespace-nowrap w-10 text-center">#</th>
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap w-40">Registration No</th>
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap w-48">
+                      <div className="flex items-center gap-1.5">
+                        <span>Student Name</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSortConfig((prev) => ({
+                              field: 'name',
+                              order: prev.field === 'name' && prev.order === 'asc' ? 'desc' : 'asc',
+                            }));
+                          }}
+                          className={`p-1 rounded-lg transition-all duration-200 cursor-pointer border select-none inline-flex items-center justify-center ${
+                            sortConfig.field === 'name'
+                              ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/25 ring-1 ring-blue-400/40'
+                              : 'bg-slate-200 dark:bg-slate-700/80 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-sky-400'
+                          }`}
+                          title={
+                            sortConfig.field === 'name'
+                              ? sortConfig.order === 'asc'
+                                ? 'Sorted: A to Z (Click for Z to A)'
+                                : 'Sorted: Z to A (Click for A to Z)'
+                              : 'Click to sort by Student Name (A to Z)'
+                          }
+                          aria-label="Sort by Student Name"
+                        >
+                          <ArrowUp
+                            className={`w-2.5 h-2.5 stroke-[2.5] transition-transform duration-200 ${
+                              sortConfig.field === 'name'
+                                ? sortConfig.order === 'asc'
+                                  ? 'rotate-0'
+                                  : 'rotate-180'
+                                : 'rotate-0 opacity-60'
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </th>
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap w-52">Contact Details</th>
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap text-center w-38">Type / Team Details</th>
+                    <th className="py-3.5 px-3 font-black whitespace-nowrap w-36">
                       <div className="flex items-center gap-1.5">
                         <span>Date & Time</span>
                         <button
                           type="button"
-                          onClick={() => setFilterRecent((prev) => !prev)}
+                          onClick={() => {
+                            setSortConfig((prev) => ({
+                              field: 'date',
+                              order: prev.field === 'date' && prev.order === 'desc' ? 'asc' : 'desc',
+                            }));
+                          }}
                           className={`p-1 rounded-lg transition-all duration-200 cursor-pointer border select-none inline-flex items-center justify-center ${
-                            filterRecent
+                            sortConfig.field === 'date'
                               ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/25 ring-1 ring-blue-400/40'
                               : 'bg-slate-200 dark:bg-slate-700/80 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-600 hover:border-blue-400 hover:text-blue-600 dark:hover:text-sky-400'
                           }`}
-                          title={filterRecent ? 'Showing: Most Recent First (Click for Oldest First)' : 'Click to filter Most Recent First'}
+                          title={
+                            sortConfig.field === 'date'
+                              ? sortConfig.order === 'desc'
+                                ? 'Showing: Most Recent First (Click for Oldest First)'
+                                : 'Showing: Oldest First (Click for Most Recent First)'
+                              : 'Click to sort by Date & Time (Most Recent First)'
+                          }
                           aria-label="Toggle recent added filter"
                         >
                           <ArrowUp
-                            className={`w-3.5 h-3.5 stroke-[2.5] transition-transform duration-200 ${
-                              filterRecent ? 'rotate-0' : 'rotate-180 opacity-60'
+                            className={`w-2.5 h-2.5 stroke-[2.5] transition-transform duration-200 ${
+                              sortConfig.field === 'date'
+                                ? sortConfig.order === 'desc'
+                                  ? 'rotate-0'
+                                  : 'rotate-180'
+                                : 'rotate-180 opacity-60'
                             }`}
                           />
                         </button>
@@ -436,11 +497,11 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                     return (
                       <React.Fragment key={r.id || idx}>
                         <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                          <td className="py-3 px-3 text-slate-400 font-bold whitespace-nowrap text-center w-12">{idx + 1}</td>
-                          <td className="py-3 px-3.5 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs whitespace-nowrap w-44">
+                          <td className="py-3 px-2.5 text-slate-400 font-bold whitespace-nowrap text-center w-10">{idx + 1}</td>
+                          <td className="py-3 px-3 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs whitespace-nowrap w-40">
                             {r.registration_number || 'N/A'}
                           </td>
-                          <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-48">
+                          <td className="py-3 px-3 space-y-0.5 whitespace-nowrap w-48">
                             <div className="font-bold text-slate-900 dark:text-white leading-tight whitespace-nowrap">{r.registrant_name}</div>
                             {r.uid && (
                               <div className="text-[11px] font-mono text-slate-400 font-normal whitespace-nowrap">
@@ -448,13 +509,13 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                               </div>
                             )}
                           </td>
-                          <td className="py-3 px-4 space-y-0.5 whitespace-nowrap min-w-[200px]">
+                          <td className="py-3 px-3 space-y-0.5 whitespace-nowrap w-52">
                             <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">{r.registrant_email}</div>
                             {r.registrant_phone && (
                               <div className="text-[11px] text-slate-400 whitespace-nowrap">{r.registrant_phone}</div>
                             )}
                           </td>
-                          <td className="py-3 px-3.5 whitespace-nowrap text-center w-40">
+                          <td className="py-3 px-3 whitespace-nowrap text-center w-38">
                             {teamInfo ? (
                               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold whitespace-nowrap">
                                 <Users2 className="w-3.5 h-3.5 shrink-0" />
@@ -466,7 +527,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-38">
+                          <td className="py-3 px-3 space-y-0.5 whitespace-nowrap w-36">
                             <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
                               {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : 'N/A'}
                             </div>

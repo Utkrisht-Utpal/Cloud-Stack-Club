@@ -208,8 +208,8 @@ export function renderEmailHtmlPreview(
     bannerHtml = `
       <tr>
         <td style="background: ${gradient}; padding: 36px 32px 30px 32px; text-align: center;">
-          <div style="display: inline-block; width: 50px; height: 50px; padding: 6px; border-radius: 16px; background: rgba(255, 255, 255, 0.2); border: 1.5px solid rgba(255, 255, 255, 0.4); text-align: center; margin-bottom: 12px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25); box-sizing: border-box; vertical-align: middle;">
-            <img src="https://cloudstackclub.vercel.app/club-logo-transparent.png" alt="Cloud Stack Club" width="36" height="36" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
+          <div style="display: inline-block; width: 50px; height: 50px; padding: 2px; border-radius: 16px; background: rgba(255, 255, 255, 0.2); border: 1.5px solid rgba(255, 255, 255, 0.4); text-align: center; margin-bottom: 12px; box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.25); box-sizing: border-box; vertical-align: middle;">
+            <img src="https://cloudstackclub.vercel.app/club-logo-transparent.png" alt="Cloud Stack Club" width="44" height="44" style="display: block; width: 100%; height: 100%; object-fit: contain; margin: 0 auto; border: 0;" />
           </div>
           <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
           <div style="margin-top: 10px;">
