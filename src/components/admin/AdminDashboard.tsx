@@ -871,7 +871,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         !query ||
         m.name.toLowerCase().includes(query) ||
         (m.uid || '').toLowerCase().includes(query) ||
-        (m.member_id || '').toLowerCase().includes(query) ||
+        ((m.member_id || (m as any).registration_id) || '').toLowerCase().includes(query) ||
         m.email.toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
@@ -900,7 +900,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         !query ||
         app.name.toLowerCase().includes(query) ||
         (app.uid || '').toLowerCase().includes(query) ||
-        (app.member_id || '').toLowerCase().includes(query) ||
+        ((app.member_id || (app as any).registration_id) || '').toLowerCase().includes(query) ||
         app.email.toLowerCase().includes(query);
 
       if (!matchesSearch) return false;
@@ -1481,7 +1481,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           </td>
                           <td className="py-3.5 px-4 font-mono">
                             <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
-                              {app.member_id}
+                              {app.member_id || (app as any).registration_id || 'N/A'}
                             </div>
                             <div className="text-slate-500 text-[11px] mt-0.5">
                               {app.uid ? `UID: ${app.uid}` : 'UID: N/A'}
@@ -1583,7 +1583,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           </td>
                           <td className="py-3.5 px-4 font-mono">
                             <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
-                              {member.member_id}
+                              {member.member_id || (member as any).registration_id || 'N/A'}
                             </div>
                             <div className="text-slate-500 text-[11px] mt-0.5">
                               {member.uid ? `UID: ${member.uid}` : 'UID: N/A'}

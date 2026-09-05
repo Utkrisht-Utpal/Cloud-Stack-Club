@@ -491,7 +491,7 @@ export const RolesManagementModal: React.FC<RolesManagementModalProps> = ({
                           )}
                         </div>
                         <div className="text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                          <span>{member.member_id}</span>
+                          <span>{member.member_id || (member as any).registration_id}</span>
                           {member.uid && <span>• UID: <strong className="text-slate-700 dark:text-slate-200">{member.uid}</strong></span>}
                         </div>
                       </div>

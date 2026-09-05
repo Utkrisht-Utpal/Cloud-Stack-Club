@@ -166,6 +166,16 @@ export const submitMemberApplication = async (
   return newMember;
 };
 
+export const normalizeMember = (m: any): Member => {
+  if (!m) return m;
+  const memId = m.member_id || m.registration_id || '';
+  return {
+    ...m,
+    member_id: memId,
+    registration_id: memId,
+  };
+};
+
 export const getPendingMemberApplications = async (): Promise<Member[]> => {
   if (!isSupabaseConfigured()) {
     return [];
@@ -183,7 +193,7 @@ export const getPendingMemberApplications = async (): Promise<Member[]> => {
       return [];
     }
 
-    return (data as Member[]) || [];
+    return (data || []).map(normalizeMember);
   } catch (err) {
     console.warn('Network error fetching pending apps:', err);
     return [];
@@ -338,7 +348,7 @@ export const getMembers = async (): Promise<Member[]> => {
       return [];
     }
     
-    return membersData as Member[];
+    return (membersData || []).map(normalizeMember);
   } catch (err) {
     console.warn('Exception fetching members:', err);
     return [];
@@ -420,7 +430,7 @@ export const getMemberByUid = async (uid: string): Promise<Member | null> => {
     return null;
   }
 
-  return data as Member | null;
+  return data ? normalizeMember(data) : null;
 };
 
 export const getMemberByMemberId = async (memberId: string): Promise<Member | null> => {
@@ -431,7 +441,7 @@ export const getMemberByMemberId = async (memberId: string): Promise<Member | nu
   const { data, error } = await supabase
     .from('members')
     .select('*, role:roles(*)')
-    .eq('member_id', memberId)
+    .or(`member_id.eq.${memberId},registration_id.eq.${memberId}`)
     .eq('status', 'active')
     .maybeSingle();
 
@@ -440,7 +450,7 @@ export const getMemberByMemberId = async (memberId: string): Promise<Member | nu
     return null;
   }
 
-  return data as Member | null;
+  return data ? normalizeMember(data) : null;
 };
 
 /**

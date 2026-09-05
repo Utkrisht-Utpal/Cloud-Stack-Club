@@ -28,7 +28,7 @@ export const exportMembersToExcel = (
     'Email': sanitizeFormulaValue(m.email || ''),
     'Mobile No': sanitizeFormulaValue(m.phone || 'N/A'),
     'University UID': sanitizeFormulaValue(m.uid || 'N/A'),
-    'Member ID': sanitizeFormulaValue(m.member_id || 'N/A'),
+    'Member ID': sanitizeFormulaValue(m.member_id || (m as any).registration_id || 'N/A'),
     'Department': sanitizeFormulaValue(m.department || 'N/A'),
     'Year': sanitizeFormulaValue(m.year || 'N/A'),
     'Role / Core Status': sanitizeFormulaValue(m.is_core_member ? (m.role?.name || 'Core Member') : 'General Member'),
