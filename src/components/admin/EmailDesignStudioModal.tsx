@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -21,19 +21,22 @@ import {
   MessageSquare,
   Radio,
   ArrowRight,
+  Edit3,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
-  BANNER_THEME_GRADIENTS,
+  DEFAULT_EMAIL_TEMPLATES,
   type BannerStyle,
   type BannerTheme,
   type BannerTextColor,
+  type EmailTemplateConfig,
 } from '../../types/emailTemplate';
 import {
   getAllEmailTemplates,
   applyBannerDesignToCategories,
+  getSampleCategoryData,
+  renderEmailHtmlPreview,
 } from '../../services/emailTemplates';
-import clubLogoImg from '../../assets/images/club-logo-transparent.png';
 
 interface EmailDesignStudioModalProps {
   isOpen: boolean;
@@ -185,9 +188,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const [selectedTextColor, setSelectedTextColor] = useState<BannerTextColor>('white');
   const [previewTitle, setPreviewTitle] = useState('Cloud Stack Club');
   const [previewSubtitle, setPreviewSubtitle] = useState('Chandigarh University');
+  const [previewCategory, setPreviewCategory] = useState<EmailCategory>('approval');
   const [isApplying, setIsApplying] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
   const [appliedCount, setAppliedCount] = useState(0);
+  const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
 
   // Scope selection dialog state
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
@@ -200,6 +205,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     'event_broadcast',
   ]);
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const initialLoadedRef = useRef(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -207,6 +215,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   // Lock background scrolling completely when modal is open
   useEffect(() => {
     if (isOpen) {
+      initialLoadedRef.current = false;
       const count = parseInt(document.body.dataset.modalCount || '0', 10) + 1;
       document.body.dataset.modalCount = count.toString();
       if (count === 1) {
@@ -250,6 +259,42 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isScopeModalOpen, onClose]);
+
+  // Generate live email preview HTML based on current configuration
+  const previewHtml = useMemo(() => {
+    const baseTemplate: EmailTemplateConfig = {
+      ...DEFAULT_EMAIL_TEMPLATES[previewCategory],
+      banner_style: selectedStyle,
+      banner_theme: selectedTheme,
+      banner_text_color: selectedTextColor,
+      banner_title: previewTitle,
+      banner_subtitle: previewSubtitle,
+    };
+    const sampleData = getSampleCategoryData(previewCategory);
+    return renderEmailHtmlPreview(baseTemplate, sampleData);
+  }, [previewCategory, selectedStyle, selectedTheme, selectedTextColor, previewTitle, previewSubtitle]);
+
+  // Update iframe with live rendered HTML
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        if (!initialLoadedRef.current || !doc.body || doc.body.innerHTML.trim() === '') {
+          iframe.srcdoc = previewHtml;
+          initialLoadedRef.current = true;
+          return;
+        }
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(previewHtml, 'text/html');
+        doc.body.innerHTML = newDoc.body.innerHTML;
+      }
+    } catch {
+      iframe.srcdoc = previewHtml;
+    }
+  }, [previewHtml]);
 
   // Toggle individual category in custom scope
   const handleToggleCategory = (cat: EmailCategory) => {
@@ -303,21 +348,6 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
 
   if (!mounted || !isOpen) return null;
 
-  const currentThemeConfig = BANNER_THEME_GRADIENTS[selectedTheme] || BANNER_THEME_GRADIENTS.classic_blue;
-  const isDark = selectedTextColor === 'dark';
-  const titleColor = isDark ? '#0f172a' : '#ffffff';
-  const subtextColor = isDark ? '#1e293b' : currentThemeConfig.textAccent;
-  const badgeClass = isDark
-    ? 'bg-slate-900/15 border-slate-900/30 text-slate-900'
-    : 'bg-white/15 border-white/25 text-white';
-  const logoHousingClass = isDark
-    ? 'bg-slate-900/15 border-slate-900/30'
-    : 'bg-white/20 border-white/35';
-  const stripTopClass = isDark
-    ? 'bg-white/35 border-slate-900/15'
-    : 'bg-black/25 border-white/10';
-  const stripTopColor = isDark ? '#0f172a' : currentThemeConfig.textAccent;
-
   return createPortal(
     <div
       onClick={(e) => {
@@ -325,7 +355,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
       }}
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-md overflow-hidden"
     >
-      <div className="w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-6xl h-[92vh] max-h-[920px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
           <div className="flex items-center gap-3">
@@ -336,7 +366,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
               <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                 Email Header Design Studio
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
-                  9 Visual Layouts
+                  Visual Layouts & Themes
                 </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -354,473 +384,364 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
           </button>
         </div>
 
-        {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-          {/* 1. Live Interactive Banner Preview */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Eye className="w-3.5 h-3.5 text-blue-500" />
-                Live Header & Button Preview
-              </span>
-              <span className="text-[11px] text-slate-400 font-mono">
-                {currentThemeConfig.name} • {STYLE_OPTIONS.find((s) => s.id === selectedStyle)?.name} • {selectedTextColor === 'dark' ? 'Dark Text' : 'White Text'}
-              </span>
-            </div>
+        {/* Mobile Sub-tabs: Config vs Preview */}
+        <div className="flex lg:hidden border-b border-slate-200 dark:border-slate-800 px-4 py-2 gap-2 shrink-0 bg-slate-50 dark:bg-slate-900">
+          <button
+            type="button"
+            onClick={() => setActiveTabMobile('editor')}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTabMobile === 'editor'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+            }`}
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Design Settings</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTabMobile('preview')}
+            className={`flex-1 py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTabMobile === 'preview'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Live Preview</span>
+          </button>
+        </div>
 
-            <div className="w-full rounded-2xl overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800 bg-slate-950 p-4 sm:p-6 flex justify-center">
-              <div className="w-full max-w-[520px] rounded-2xl overflow-hidden shadow-2xl transition-all duration-300">
-                {/* Dynamic Preview Header */}
-                <div
-                  style={{ background: currentThemeConfig.gradient }}
-                  className="transition-all duration-300"
-                >
-                  {/* Style 1: modern_badge */}
-                  {selectedStyle === 'modern_badge' && (
-                    <div className="p-7 sm:p-8 text-center">
-                      <div className={`inline-flex items-center justify-center w-14 h-14 rounded-2xl border shadow-lg mb-3 backdrop-blur-md p-1 ${logoHousingClass}`}>
-                        <img
-                          src={clubLogoImg}
-                          alt="Cloud Stack Club"
-                          className="w-full h-full object-contain filter drop-shadow-md"
-                        />
-                      </div>
-                      <h1
-                        style={{ color: titleColor }}
-                        className="text-xl sm:text-2xl font-black tracking-tight"
-                      >
-                        {previewTitle}
-                      </h1>
-                      <div className="mt-2.5">
-                        <span className={`inline-block px-3.5 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase border shadow-xs ${badgeClass}`}>
-                          🎓 {previewSubtitle}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Style 2: official_strip */}
-                  {selectedStyle === 'official_strip' && (
-                    <div>
-                      <div className={`py-2 px-4 text-center border-b ${stripTopClass}`}>
-                        <span
-                          style={{ color: stripTopColor }}
-                          className="text-[10px] font-extrabold uppercase tracking-widest"
-                        >
-                          🔒 OFFICIAL COMMUNICATION • CSC CHANDIGARH UNIVERSITY
-                        </span>
-                      </div>
-                      <div className="p-7 text-center">
-                        <h1
-                          style={{ color: titleColor }}
-                          className="text-xl sm:text-2xl font-black tracking-tight"
-                        >
-                          {previewTitle}
-                        </h1>
-                        <p
-                          style={{ color: subtextColor }}
-                          className="text-xs font-bold uppercase tracking-widest mt-1.5"
-                        >
-                          {previewSubtitle}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Style 3: floating_pill */}
-                  {selectedStyle === 'floating_pill' && (
-                    <div className="p-7 text-center">
-                      <div className="inline-flex items-center gap-3.5 px-6 py-2.5 rounded-full border shadow-lg backdrop-blur-md bg-white/15 dark:bg-slate-900/20 border-white/30">
-                        <img
-                          src={clubLogoImg}
-                          alt="CSC"
-                          className="w-9 h-9 sm:w-10 sm:h-10 object-contain shrink-0 filter drop-shadow-sm"
-                        />
-                        <div className="text-left">
-                          <span style={{ color: titleColor }} className="text-sm sm:text-base font-black block leading-tight">
-                            {previewTitle}
-                          </span>
-                          <span style={{ color: subtextColor }} className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider block mt-0.5">
-                            {previewSubtitle}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="mt-3">
-                        <span className={`inline-block px-3 py-1 rounded-md text-[10px] font-extrabold tracking-widest uppercase border ${badgeClass}`}>
-                          ✨ VERIFIED CLUB NOTIFICATION
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Style 4: tech_grid */}
-                  {selectedStyle === 'tech_grid' && (
-                    <div className="p-6 text-left space-y-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span
-                          style={{ color: currentThemeConfig.borderAccent, borderColor: currentThemeConfig.borderAccent }}
-                          className="font-mono text-[10px] font-extrabold px-2.5 py-0.5 rounded border bg-black/20"
-                        >
-                          [CSC::SYSTEM_SECURE]
-                        </span>
-                        <span style={{ color: subtextColor }} className="font-mono text-[10px] font-bold flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                          LIVE NOTIFICATION
-                        </span>
-                      </div>
-                      <div className="pt-1">
-                        <h1 style={{ color: titleColor }} className="text-xl font-black tracking-tight font-sans">
-                          {previewTitle}
-                        </h1>
-                        <p style={{ color: subtextColor }} className="font-mono text-[11px] font-bold uppercase tracking-wider mt-0.5">
-                          // {previewSubtitle}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Style 5: executive_crest */}
-                  {selectedStyle === 'executive_crest' && (
-                    <div className="p-7 text-center space-y-2">
-                      <img
-                        src={clubLogoImg}
-                        alt="CSC"
-                        className="w-13 h-13 sm:w-14 sm:h-14 object-contain mx-auto filter drop-shadow-md mb-1"
-                      />
-                      <div style={{ color: subtextColor }} className="text-[10px] font-black uppercase tracking-widest pt-1">
-                        ─── ❖ OFFICIAL DISPATCH ❖ ───
-                      </div>
-                      <h1 style={{ color: titleColor }} className="text-xl sm:text-2xl font-black tracking-tight">
-                        {previewTitle}
-                      </h1>
-                      <p style={{ color: subtextColor }} className="text-xs font-semibold uppercase tracking-widest">
-                        {previewSubtitle}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Style 6: split_hero */}
-                  {selectedStyle === 'split_hero' && (
-                    <div className="p-6 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className={`w-12 h-12 rounded-2xl border shadow-md flex items-center justify-center p-1.5 shrink-0 ${logoHousingClass}`}>
-                          <img src={clubLogoImg} alt="CSC" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="text-left">
-                          <h1 style={{ color: titleColor }} className="text-lg font-black tracking-tight leading-tight">
-                            {previewTitle}
-                          </h1>
-                          <p style={{ color: subtextColor }} className="text-[11px] font-bold uppercase tracking-wider mt-0.5">
-                            {previewSubtitle}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border shrink-0 ${badgeClass}`}>
-                        🏛️ OFFICIAL
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Style 7: compact_bar */}
-                  {selectedStyle === 'compact_bar' && (
-                    <div
-                      style={{ borderBottomColor: currentThemeConfig.borderAccent }}
-                      className="px-6 py-3.5 border-b-2 flex items-center justify-between"
-                    >
-                      <span style={{ color: titleColor }} className="text-sm font-black flex items-center gap-2">
-                        <img src={clubLogoImg} alt="CSC" className="w-5 h-5 object-contain shrink-0 filter drop-shadow-xs" />
-                        <span>{previewTitle}</span>
-                      </span>
-                      <span style={{ color: subtextColor }} className="text-[11px] font-bold uppercase tracking-wider">
-                        {previewSubtitle}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Style 8: minimal */}
-                  {selectedStyle === 'minimal' && (
-                    <div className="p-7 text-center">
-                      <div
-                        style={{ background: currentThemeConfig.borderAccent }}
-                        className="w-8 h-1 rounded-full mx-auto mb-3"
-                      />
-                      <h1
-                        style={{ color: titleColor }}
-                        className="text-lg sm:text-xl font-black uppercase tracking-wider"
-                      >
-                        {previewTitle}
-                      </h1>
-                      <p
-                        style={{ color: subtextColor }}
-                        className="text-[11px] font-bold uppercase tracking-widest mt-1.5"
-                      >
-                        {previewSubtitle}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Style 9: classic */}
-                  {selectedStyle === 'classic' && (
-                    <div className="p-8 text-center">
-                      <h1
-                        style={{ color: titleColor }}
-                        className="text-xl sm:text-2xl font-black tracking-tight"
-                      >
-                        {previewTitle}
-                      </h1>
-                      <p
-                        style={{ color: subtextColor }}
-                        className="text-xs font-bold uppercase tracking-widest mt-1.5"
-                      >
-                        {previewSubtitle}
-                      </p>
-                    </div>
-                  )}
+        {/* 2-Column Split Body */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-800 overflow-hidden">
+          {/* ========================================================================= */}
+          {/* LEFT: Configuration / Design Controls Panel */}
+          {/* ========================================================================= */}
+          <div
+            className={`h-full flex flex-col justify-between overflow-hidden bg-white dark:bg-slate-900 ${
+              activeTabMobile === 'preview' ? 'hidden lg:flex' : 'flex'
+            }`}
+          >
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+              {/* 1. Header Layout Style (9 Options) */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                    1. Header Layout Style ({STYLE_OPTIONS.length} Presets)
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Live client-tested layouts
+                  </span>
                 </div>
 
-                {/* Mock Card Content Below with Matching CTA Button */}
-                <div className="bg-white p-6 text-center border-t border-slate-100 space-y-4">
-                  <div className="space-y-2">
-                    <div className="h-3 w-48 bg-slate-200 rounded-full mx-auto" />
-                    <div className="h-2.5 w-72 bg-slate-100 rounded-full mx-auto" />
-                    <div className="h-2.5 w-60 bg-slate-100 rounded-full mx-auto" />
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {STYLE_OPTIONS.map((style) => {
+                    const Icon = style.icon;
+                    const isSelected = selectedStyle === style.id;
+                    return (
+                      <button
+                        key={style.id}
+                        type="button"
+                        onClick={() => setSelectedStyle(style.id)}
+                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer group ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                                  isSelected
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                                }`}
+                              >
+                                <Icon className="w-3.5 h-3.5" />
+                              </div>
+                              <span className="text-xs font-black text-slate-900 dark:text-white">
+                                {style.name}
+                              </span>
+                            </div>
+                            <span
+                              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
+                                isSelected
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                              }`}
+                            >
+                              {style.tag}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
+                            {style.description}
+                          </p>
+                        </div>
 
-                  {/* Matching Call to Action Button Preview */}
-                  <div className="pt-2">
-                    <div
-                      style={{
-                        background: currentThemeConfig.buttonGradient,
-                        color: currentThemeConfig.buttonTextColor,
-                        boxShadow: `0 10px 25px -5px ${currentThemeConfig.buttonShadow}`,
-                      }}
-                      className="inline-block px-6 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 select-none cursor-default"
-                    >
-                      Visit Club Portal
+                        {isSelected && (
+                          <div className="mt-2 pt-1.5 border-t border-indigo-200 dark:border-indigo-900/50 flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                            <Check className="w-3 h-3" />
+                            <span>Active Layout</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. Color Gradient Themes (12 Options) */}
+              <div className="space-y-2.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <Palette className="w-3.5 h-3.5 text-blue-500" />
+                  2. Color Gradient Theme
+                </label>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {THEME_OPTIONS.map((theme) => {
+                    const isSelected = selectedTheme === theme.id;
+                    return (
+                      <button
+                        key={theme.id}
+                        type="button"
+                        onClick={() => setSelectedTheme(theme.id)}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                          isSelected
+                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <div
+                          className={`w-full h-6 rounded-lg bg-gradient-to-r ${theme.gradientClass} shadow-inner flex items-center justify-center`}
+                        >
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
+                        </div>
+                        <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate w-full">
+                          {theme.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Header Text & Badge Contrast */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                    3. Header Text & Badge Contrast
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    Readability optimizer
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTextColor('white')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      selectedTextColor === 'white'
+                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-700 shadow-xs shrink-0">
+                        <span className="text-white text-xs font-black">Aa</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white block">
+                          Crisp White Text
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
+                          For Royal Blue, Crimson & dark gradients
+                        </span>
+                      </div>
                     </div>
+                    {selectedTextColor === 'white' && (
+                      <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTextColor('dark')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                      selectedTextColor === 'dark'
+                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-300 shadow-xs shrink-0">
+                        <span className="text-slate-900 text-xs font-black">Aa</span>
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-slate-900 dark:text-white block">
+                          Dark Slate Text
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
+                          For Teal, Gold & bright gradients
+                        </span>
+                      </div>
+                    </div>
+                    {selectedTextColor === 'dark' && (
+                      <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
+                        <Check className="w-3 h-3" />
+                      </div>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* 4. Banner Title & Subtitle overrides */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  4. Banner Branding Text
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      Club Title
+                    </label>
+                    <input
+                      type="text"
+                      value={previewTitle}
+                      onChange={(e) => setPreviewTitle(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      placeholder="Cloud Stack Club"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      University Subtitle
+                    </label>
+                    <input
+                      type="text"
+                      value={previewSubtitle}
+                      onChange={(e) => setPreviewSubtitle(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                      placeholder="Chandigarh University"
+                    />
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* 2. Choose Design Layout Style (9 Options) */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-indigo-500" />
-                1. Choose Header Layout Style ({STYLE_OPTIONS.length} Styles)
-              </label>
-              <span className="text-[11px] text-slate-400">
-                Responsive & email-client tested
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {STYLE_OPTIONS.map((style) => {
-                const Icon = style.icon;
-                const isSelected = selectedStyle === style.id;
-                return (
-                  <button
-                    key={style.id}
-                    type="button"
-                    onClick={() => setSelectedStyle(style.id)}
-                    className={`p-3.5 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer group ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
-                              isSelected
-                                ? 'bg-indigo-600 text-white shadow-sm'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <span className="text-xs font-black text-slate-900 dark:text-white">
-                            {style.name}
-                          </span>
-                        </div>
-                        <span
-                          className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                            isSelected
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          {style.tag}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
-                        {style.description}
-                      </p>
-                    </div>
-
-                    {isSelected && (
-                      <div className="mt-2.5 pt-2 border-t border-indigo-200 dark:border-indigo-900/50 flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Active Selection</span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 3. Choose Color Gradient Palette */}
-          <div className="space-y-2.5">
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Palette className="w-3.5 h-3.5 text-blue-500" />
-              2. Choose Color Gradient Theme
-            </label>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-              {THEME_OPTIONS.map((theme) => {
-                const isSelected = selectedTheme === theme.id;
-                return (
-                  <button
-                    key={theme.id}
-                    type="button"
-                    onClick={() => setSelectedTheme(theme.id)}
-                    className={`p-2.5 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                      isSelected
-                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div
-                      className={`w-full h-7 rounded-xl bg-gradient-to-r ${theme.gradientClass} shadow-inner flex items-center justify-center`}
-                    >
-                      {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate w-full">
-                      {theme.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4. Choose Header Text & Badge Contrast */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                3. Header Text & Badge Contrast
-              </label>
-              <span className="text-[11px] text-slate-400">
-                Optimize readability for light vs dark gradients
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Left Panel Footer Actions */}
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-slate-50/80 dark:bg-slate-900/80">
               <button
                 type="button"
-                onClick={() => setSelectedTextColor('white')}
-                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                  selectedTextColor === 'white'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center border border-slate-700 shadow-sm shrink-0">
-                    <span className="text-white text-sm font-black">Aa</span>
-                  </div>
-                  <div>
-                    <span className="text-xs font-black text-slate-900 dark:text-white block">
-                      Crisp White Text
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight block mt-0.5">
-                      Best for Royal Blue, Crimson, Midnight Slate & deep gradients
-                    </span>
-                  </div>
-                </div>
-                {selectedTextColor === 'white' && (
-                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-2">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                )}
+                Cancel
               </button>
 
               <button
                 type="button"
-                onClick={() => setSelectedTextColor('dark')}
-                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                  selectedTextColor === 'dark'
-                    ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-md'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                onClick={handleOpenScopeModal}
+                disabled={isApplying}
+                className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 ${
+                  applySuccess
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center border border-slate-300 shadow-sm shrink-0">
-                    <span className="text-slate-900 text-sm font-black">Aa</span>
-                  </div>
-                  <div>
-                    <span className="text-xs font-black text-slate-900 dark:text-white block">
-                      Dark Slate Text
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight block mt-0.5">
-                      Best for Oceanic Teal, Gold Luxury, Aurora Green & bright gradients
-                    </span>
-                  </div>
-                </div>
-                {selectedTextColor === 'dark' && (
-                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-2">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
+                {applySuccess ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Applied to {appliedCount} Email {appliedCount === 1 ? 'Template' : 'Templates'}!</span>
+                  </>
+                ) : isApplying ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Saving Design...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Save & Apply Header Design</span>
+                    <ArrowRight className="w-3.5 h-3.5 opacity-75" />
+                  </>
                 )}
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Modal Footer Actions */}
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0 bg-slate-50/80 dark:bg-slate-900/80">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenScopeModal}
-            disabled={isApplying}
-            className={`px-6 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 ${
-              applySuccess
-                ? 'bg-emerald-600 hover:bg-emerald-700'
-                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25'
+          {/* ========================================================================= */}
+          {/* RIGHT: Real-Time Live Preview Panel */}
+          {/* ========================================================================= */}
+          <div
+            className={`h-full flex flex-col bg-slate-100/70 dark:bg-slate-950/60 overflow-hidden ${
+              activeTabMobile === 'editor' ? 'hidden lg:flex' : 'flex'
             }`}
           >
-            {applySuccess ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Applied to {appliedCount} Email {appliedCount === 1 ? 'Template' : 'Templates'}!</span>
-              </>
-            ) : isApplying ? (
-              <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Saving Design...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Save & Apply Header Design</span>
-                <ArrowRight className="w-3.5 h-3.5 opacity-75" />
-              </>
-            )}
-          </button>
+            {/* Mock Email Client Toolbar */}
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 ml-2">
+                  Live Inbox Mockup
+                </span>
+              </div>
+
+              {/* Sample Template Switcher */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
+                  Preview Sample:
+                </span>
+                <select
+                  value={previewCategory}
+                  onChange={(e) => setPreviewCategory(e.target.value as EmailCategory)}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="approval">Member Approval</option>
+                  <option value="event_broadcast">Event Broadcast</option>
+                  <option value="contact_us">Contact Inquiry</option>
+                  <option value="event_feedback">Event Feedback</option>
+                  <option value="rejection">Member Rejection</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Email Metadata Header Preview */}
+            <div className="px-5 py-2.5 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs space-y-1 shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 font-bold w-14">From:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  Cloud Stack Club <span className="text-slate-400">&lt;cloudstackclub@cumail.in&gt;</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 font-bold w-14">Active:</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                  {STYLE_OPTIONS.find((s) => s.id === selectedStyle)?.name} • {THEME_OPTIONS.find((t) => t.id === selectedTheme)?.name}
+                </span>
+              </div>
+            </div>
+
+            {/* Embedded Real-Time Live HTML Iframe Preview */}
+            <div className="flex-1 p-3 overflow-hidden">
+              <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-slate-900">
+                <iframe
+                  ref={iframeRef}
+                  title="Email Live Preview"
+                  className="w-full h-full border-0 bg-transparent custom-scrollbar"
+                  sandbox="allow-same-origin"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1051,3 +972,4 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     document.body
   );
 };
+
