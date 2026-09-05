@@ -31,6 +31,7 @@ import {
   Radio,
   Bell,
   HelpCircle,
+  Phone,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clubLogoImg from '../../assets/images/club-logo-transparent.png';
@@ -1560,7 +1561,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                       <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                        <th className="py-3.5 px-4 font-bold">
+                        <th className="py-3.5 px-4 font-bold w-[26%] max-w-[210px]">
                           <div className="flex items-center gap-1.5">
                             <span>MEMBER INFO</span>
                             <button
@@ -1581,13 +1582,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                         <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
                         <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
                         <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
-                        <th className="py-3.5 px-4 text-right font-bold">ACTIONS</th>
+                        <th className="py-3.5 px-4 text-right font-bold min-w-[130px]">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {filteredMembers.map((member) => (
                         <tr key={member.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 max-w-[210px]">
                             <div>
                               <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 flex-wrap">
                                 <span>{member.name}</span>
@@ -1597,7 +1598,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                   </span>
                                 )}
                               </div>
-                              <div className="text-[11px] text-slate-500">{member.email}</div>
+                              <div className="text-[11px] text-slate-500 truncate" title={member.email}>{member.email}</div>
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-mono">
@@ -1632,14 +1633,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               )}
                             </button>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <button
-                              onClick={() => handleDeleteMember(member.id, member.name)}
-                              className="p-2 rounded-xl text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/15 transition-colors cursor-pointer inline-flex items-center justify-center"
-                              title="Delete Member"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {member.phone ? (
+                                <a
+                                  href={`https://wa.me/91${member.phone.replace(/\D/g, '').slice(-10)}?text=${encodeURIComponent(
+                                    `Hello ${member.name}, this is from CloudStack Club.`
+                                  )}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 rounded-xl text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  title={`WhatsApp ${member.name} (${member.phone})`}
+                                >
+                                  <Phone className="w-4 h-4" />
+                                </a>
+                              ) : null}
+                              {member.email ? (
+                                <a
+                                  href={`mailto:${member.email}?subject=${encodeURIComponent(
+                                    'CloudStack Club — Member Communication'
+                                  )}`}
+                                  className="p-1.5 rounded-xl text-blue-600 dark:text-sky-400 hover:bg-blue-500/15 transition-colors inline-flex items-center justify-center cursor-pointer"
+                                  title={`Email ${member.name} (${member.email})`}
+                                >
+                                  <Mail className="w-4 h-4" />
+                                </a>
+                              ) : null}
+                              <button
+                                onClick={() => handleDeleteMember(member.id, member.name)}
+                                className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-500/10 dark:hover:bg-red-500/15 transition-colors cursor-pointer inline-flex items-center justify-center"
+                                title="Delete Member"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
