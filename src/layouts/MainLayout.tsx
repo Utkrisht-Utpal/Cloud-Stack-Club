@@ -32,7 +32,6 @@ export const MainLayout: React.FC = () => {
   const [discrepancyModalOpen, setDiscrepancyModalOpen] = useState(false);
   const [discrepancyModalDismissed, setDiscrepancyModalDismissed] = useState(false);
   const [adminModalDismissed, setAdminModalDismissed] = useState(false);
-  const [isTeachersDayDismissed, setIsTeachersDayDismissed] = useState(false);
   const [selectedRegisterEvent, setSelectedRegisterEvent] = useState<Event | null>(null);
   const [selectedFeedbackEvent, setSelectedFeedbackEvent] = useState<Event | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -211,20 +210,13 @@ export const MainLayout: React.FC = () => {
       {/* Cloud & Particle Background */}
       <CloudBackground />
 
-      {/* Sticky Navbar (Includes Teacher's Day Ribbon at Top) */}
+      {/* Sticky Navbar */}
       <Navbar
         onOpenJoinModal={handleOpenJoinModal}
-        isTeachersDayDismissed={isTeachersDayDismissed}
-        onDismissTeachersDay={() => setIsTeachersDayDismissed(true)}
       />
 
-      {/* Main Content Area — dynamically adjusts top padding when celebration bar is closed */}
-      <main
-        className="flex-grow relative z-10 transition-all duration-300 ease-in-out"
-        style={{
-          paddingTop: !isTeachersDayDismissed ? '42px' : '0px',
-        }}
-      >
+      {/* Main Content Area */}
+      <main className="flex-grow relative z-10">
         <Outlet context={outletContextValue} />
       </main>
 

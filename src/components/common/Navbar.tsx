@@ -10,7 +10,6 @@ import { ClubLogo } from '../ui/ClubLogo';
 import { CULogo } from '../ui/CULogo';
 import { getActiveNotices } from '../../services/notices';
 import { NoticeDetailModal } from './NoticeDetailModal';
-import { TeachersDayCelebration } from '../teachers-day/TeachersDayCelebration';
 import type { Notice } from '../../types/database';
 
 interface NavbarProps {
@@ -19,8 +18,6 @@ interface NavbarProps {
   onAdminLogout?: () => void;
   mobileNavOpen?: boolean;
   onToggleMobileNav?: () => void;
-  isTeachersDayDismissed?: boolean;
-  onDismissTeachersDay?: () => void;
 }
 
 const getGreeting = (): string => {
@@ -37,8 +34,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   onAdminLogout,
   mobileNavOpen,
   onToggleMobileNav,
-  isTeachersDayDismissed,
-  onDismissTeachersDay,
 }) => {
   const { theme, toggleTheme } = useTheme();
   const { openAdminModal, isAdminLoggedIn, setShowDashboard, adminName } = useAdminAuth();
@@ -200,15 +195,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         isScrolled ? 'glass-nav shadow-xl shadow-blue-500/5' : 'bg-transparent'
       }`}
     >
-      {/* Teacher's Day Celebratory Ribbon at the very top of header (Public Site Only) */}
-      {!isAdminDashboard && (
-        <TeachersDayCelebration
-          isScrolled={isScrolled}
-          isDismissed={isTeachersDayDismissed}
-          onDismiss={onDismissTeachersDay}
-        />
-      )}
-
       <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-300 ${
         isScrolled ? 'py-2.5' : 'py-3.5'
       }`}>
