@@ -58,11 +58,13 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
   const [includeButton, setIncludeButton] = useState(true);
+  const [isBannerDropdownOpen, setIsBannerDropdownOpen] = useState(false);
 
   // Focus ref for variable insertion
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const initialLoadedRef = useRef(false);
+  const bannerDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -72,8 +74,22 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   useEffect(() => {
     if (isOpen) {
       initialLoadedRef.current = false;
+      setIsBannerDropdownOpen(false);
     }
   }, [isOpen, activeCategory]);
+
+  // Click outside to close banner dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (bannerDropdownRef.current && !bannerDropdownRef.current.contains(e.target as Node)) {
+        setIsBannerDropdownOpen(false);
+      }
+    };
+    if (isBannerDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isBannerDropdownOpen]);
 
   // Lock background scrolling completely when modal is open
   useEffect(() => {
@@ -125,6 +141,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     const tpl = templates[cat] || DEFAULT_EMAIL_TEMPLATES[cat];
     setCurrentEdit({ ...tpl });
     setIncludeButton(Boolean(tpl.button_text));
+    setIsBannerDropdownOpen(false);
     setSaveSuccess(false);
   };
 
@@ -327,41 +344,75 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
             }`}
           >
             {/* Header Banner Configuration */}
-            <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/50 to-sky-50/50 dark:from-slate-800/60 dark:to-slate-800/40 border border-blue-100 dark:border-slate-700/70 space-y-3">
-              <div>
-                <span className="text-xs font-bold text-slate-900 dark:text-white block">
-                  Header Banner (Top Gradient)
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  Customize the club headline and branding displayed on top of the email
-                </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Banner Title
-                  </label>
-                  <input
-                    type="text"
-                    value={currentEdit.banner_title || ''}
-                    onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_title: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Cloud Stack Club"
-                  />
+            <div ref={bannerDropdownRef} className="relative z-20">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-blue-50/50 to-sky-50/50 dark:from-slate-800/60 dark:to-slate-800/40 border border-blue-100 dark:border-slate-700/70 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                    Header Banner
+                  </span>
+                  <p className="text-[11px] text-slate-500">
+                    Customize the club headline and branding displayed on top of the email
+                  </p>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                    Banner Subtitle
-                  </label>
-                  <input
-                    type="text"
-                    value={currentEdit.banner_subtitle || ''}
-                    onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_subtitle: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Chandigarh University"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsBannerDropdownOpen((prev) => !prev)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                    isBannerDropdownOpen
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600'
+                  }`}
+                  aria-expanded={isBannerDropdownOpen}
+                  title="Customize Banner Title and Subtitle"
+                >
+                  <span>Edit</span>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isBannerDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
               </div>
+
+              {/* Floating Dropdown Overlay (opens on top of fields below without pushing them) */}
+              {isBannerDropdownOpen && (
+                <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-30 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl space-y-3 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-700/60">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Header Banner Settings
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsBannerDropdownOpen(false)}
+                      className="text-blue-600 dark:text-sky-400 hover:underline text-xs font-bold cursor-pointer"
+                    >
+                      Done
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Banner Title
+                      </label>
+                      <input
+                        type="text"
+                        value={currentEdit.banner_title || ''}
+                        onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_title: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Cloud Stack Club"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        Banner Subtitle
+                      </label>
+                      <input
+                        type="text"
+                        value={currentEdit.banner_subtitle || ''}
+                        onChange={(e) => setCurrentEdit((prev) => ({ ...prev, banner_subtitle: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Chandigarh University"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Subject Line */}
