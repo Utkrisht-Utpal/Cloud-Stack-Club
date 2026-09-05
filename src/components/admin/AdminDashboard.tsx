@@ -1876,8 +1876,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               {(() => {
                                 const cnt = (registrationCounts[(evt.id || '').toLowerCase()] || 0) + (registrationCounts[(evt.slug || '').toLowerCase()] || 0);
                                 return cnt > 0 ? (
-                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-500/20 shrink-0 whitespace-nowrap">
-                                    {cnt} registered
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-400/30 shadow-xs shrink-0 whitespace-nowrap">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>
+                                    <span>{cnt} {cnt === 1 ? 'Registration' : 'Registrations'}</span>
                                   </span>
                                 ) : null;
                               })()}
