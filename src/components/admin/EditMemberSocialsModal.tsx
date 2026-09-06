@@ -210,7 +210,7 @@ export const EditMemberSocialsModal: React.FC<EditMemberSocialsModalProps> = ({
                 type="button"
                 onClick={handleClear}
                 disabled={isSaving}
-                className="px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-2 rounded-xl bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-105 active:scale-95 text-xs font-bold flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Remove Link</span>
