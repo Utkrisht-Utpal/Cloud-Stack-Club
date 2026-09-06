@@ -459,7 +459,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
                   <button
                     type="button"
                     onClick={() => handleOpenEditField(index)}
-                    className="p-1.5 rounded-xl hover:bg-blue-500/10 text-blue-600 dark:text-sky-400 transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-xl bg-blue-500/15 dark:bg-blue-500/20 border border-blue-500/30 dark:border-blue-500/40 text-blue-600 dark:text-sky-400 shadow-[0_2px_8px_rgba(59,130,246,0.2)] hover:shadow-[0_4px_14px_rgba(59,130,246,0.35)] hover:bg-blue-500/25 hover:border-blue-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer"
                     title="Edit Field"
                   >
                     <Edit3 className="w-4 h-4" />
@@ -467,7 +467,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
                   <button
                     type="button"
                     onClick={() => handleDeleteField(index)}
-                    className="p-1.5 rounded-xl hover:bg-red-500/10 text-red-500 transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-xl bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer"
                     title="Delete Field"
                   >
                     <Trash2 className="w-4 h-4" />

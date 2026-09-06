@@ -1632,7 +1632,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                   href={`mailto:${member.email}?subject=${encodeURIComponent(
                                     'CloudStack Club — Member Communication'
                                   )}`}
-                                  className="w-8 h-8 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-blue-600 dark:text-sky-400 hover:bg-blue-500/25 transition-all inline-flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                                  className="w-8 h-8 rounded-xl bg-blue-500/15 dark:bg-blue-500/20 border border-blue-500/30 dark:border-blue-500/40 text-blue-600 dark:text-sky-400 shadow-[0_2px_8px_rgba(59,130,246,0.2)] hover:shadow-[0_4px_14px_rgba(59,130,246,0.35)] hover:bg-blue-500/25 hover:border-blue-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer"
                                   title={`Email ${member.name} (${member.email})`}
                                 >
                                   <Mail className="w-4 h-4" />
@@ -1640,7 +1640,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               ) : null}
                               <button
                                 onClick={() => handleDeleteMember(member.id, member.name)}
-                                className="w-8 h-8 rounded-xl bg-red-500/10 dark:bg-red-500/15 border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/25 transition-all inline-flex items-center justify-center cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                                className="w-8 h-8 rounded-xl bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer"
                                 title="Delete Member"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -1847,11 +1847,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                         </div>
 
                         {/* Edit & Delete Action Buttons Overlay */}
-                        <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5">
+                        <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
                           <button
                             type="button"
                             onClick={() => handleOpenEditEvent(evt)}
-                            className="p-2 rounded-full bg-slate-900/80 hover:bg-blue-600 text-white backdrop-blur-md transition-all shadow-md cursor-pointer border border-white/20"
+                            className="w-8 h-8 rounded-full bg-slate-950/75 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 hover:border-blue-400 backdrop-blur-md shadow-[0_0_12px_rgba(59,130,246,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
                             title="Edit Event"
                           >
                             <Pencil className="w-3.5 h-3.5" />
@@ -1859,7 +1859,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           <button
                             type="button"
                             onClick={() => handleDeleteEvent(evt)}
-                            className="p-2 rounded-full bg-slate-900/80 hover:bg-red-600 text-white backdrop-blur-md transition-all shadow-md cursor-pointer border border-white/20"
+                            className="w-8 h-8 rounded-full bg-slate-950/75 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 hover:border-red-400 backdrop-blur-md shadow-[0_0_12px_rgba(239,68,68,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
                             title="Delete Event"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -2425,7 +2425,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     <button
                       type="button"
                       onClick={() => setEventPosterFile(null)}
-                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                      className="w-7 h-7 rounded-lg bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer shrink-0"
                       title="Remove Poster"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -2734,7 +2734,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     <button
                       type="button"
                       onClick={() => setEditPosterFile(null)}
-                      className="p-1 rounded-lg text-red-500 hover:bg-red-500/10 transition-all cursor-pointer shrink-0"
+                      className="w-7 h-7 rounded-lg bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer shrink-0"
+                      title="Remove Poster"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
