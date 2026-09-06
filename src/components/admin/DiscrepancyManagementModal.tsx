@@ -331,15 +331,15 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                 }`}
               >
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] shadow-sm">
+                  <thead className="sticky top-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10.5px] font-black shadow-sm border-b border-slate-200/80 dark:border-slate-700/80">
                     <tr>
-                      <th className="py-3.5 px-4 font-black">#</th>
-                      <th className="py-3.5 px-4 font-black">Registration No</th>
-                      <th className="py-3.5 px-4 font-black">Student Name</th>
-                      <th className="py-3.5 px-4 font-black">Contact Details</th>
-                      <th className="py-3.5 px-4 font-black">Department / Year</th>
-                      <th className="py-3.5 px-4 font-black">Date & Time</th>
-                      <th className="py-3.5 px-4 font-black text-right">Actions</th>
+                      <th className="py-3.5 px-4 font-black text-center w-12">#</th>
+                      <th className="py-3.5 px-4 font-black text-center">Registration No</th>
+                      <th className="py-3.5 px-4 font-black text-left">Student Name</th>
+                      <th className="py-3.5 px-4 font-black text-left">Contact Details</th>
+                      <th className="py-3.5 px-4 font-black text-center">Department / Year</th>
+                      <th className="py-3.5 px-4 font-black text-center">Date & Time</th>
+                      <th className="py-3.5 px-4 font-black text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -350,8 +350,8 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                       return (
                         <React.Fragment key={r.id}>
                           <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="py-3.5 px-4 text-slate-400 font-bold">{idx + 1}</td>
-                            <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs">
+                            <td className="py-3.5 px-4 text-slate-400 font-bold text-center w-12">{idx + 1}</td>
+                            <td className="py-3.5 px-4 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs text-center">
                               {r.ticket_number}
                             </td>
                             <td className="py-3.5 px-4 space-y-0.5">
@@ -374,7 +374,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                                 {r.phone}
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 space-y-1">
+                            <td className="py-3.5 px-4 space-y-1 text-center">
                               <div className="font-bold text-slate-800 dark:text-slate-200">
                                 {r.department}
                               </div>
@@ -382,7 +382,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                                 {r.year_of_study}
                               </span>
                             </td>
-                            <td className="py-3.5 px-4 space-y-0.5">
+                            <td className="py-3.5 px-4 space-y-0.5 text-center">
                               <div className="text-slate-700 dark:text-slate-300 font-medium">
                                 {new Date(r.created_at).toLocaleDateString('en-GB')}
                               </div>
@@ -394,7 +394,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                                 })}
                               </div>
                             </td>
-                            <td className="py-3.5 px-4 text-right">
+                            <td className="py-3.5 px-4 text-center">
                               <button
                                 type="button"
                                 onClick={() => setExpandedId(isExpanded ? null : r.id)}

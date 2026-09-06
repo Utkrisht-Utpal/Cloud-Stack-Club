@@ -404,14 +404,14 @@ export const EmailLogsManagement: React.FC = () => {
       <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
         <div className={`overflow-x-auto ${logs.length > 5 ? 'max-h-[350px] overflow-y-auto custom-scrollbar' : ''}`}>
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur text-slate-500 dark:text-slate-400 uppercase font-black text-[10px] tracking-wider border-b border-slate-200 dark:border-slate-800 shadow-sm">
+            <thead className="sticky top-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-600 dark:text-slate-300 uppercase font-black text-[10.5px] tracking-wider border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm">
               <tr>
-                <th className="py-3 px-4">Recipient</th>
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Subject</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4">Dispatched At</th>
-                <th className="py-3 px-4 text-right">Actions</th>
+                <th className="py-3 px-4 text-left">Recipient</th>
+                <th className="py-3 px-4 text-center">Category</th>
+                <th className="py-3 px-4 text-left">Subject</th>
+                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 text-center">Dispatched At</th>
+                <th className="py-3 px-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -449,8 +449,10 @@ export const EmailLogsManagement: React.FC = () => {
                       {log.recipient_email}
                     </div>
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    {getCategoryBadge(log.category)}
+                  <td className="py-3 px-4 whitespace-nowrap text-center">
+                    <div className="inline-flex justify-center">
+                      {getCategoryBadge(log.category)}
+                    </div>
                   </td>
                   <td className="py-3 px-4">
                     <div
@@ -460,7 +462,7 @@ export const EmailLogsManagement: React.FC = () => {
                       {log.subject}
                     </div>
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
+                  <td className="py-3 px-4 whitespace-nowrap text-center">
                     {log.status === 'sent' ? (
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                         <CheckCircle2 className="w-3.5 h-3.5" />
@@ -473,7 +475,7 @@ export const EmailLogsManagement: React.FC = () => {
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px]">
+                  <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px] text-center">
                     {new Date(log.created_at).toLocaleString('en-IN', {
                       day: '2-digit',
                       month: 'short',
@@ -482,8 +484,8 @@ export const EmailLogsManagement: React.FC = () => {
                       minute: '2-digit',
                     })}
                   </td>
-                  <td className="py-3 px-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1.5">
+                  <td className="py-3 px-4 text-center whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setSelectedLog(log)}

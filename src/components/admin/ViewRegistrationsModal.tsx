@@ -395,15 +395,15 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           <div className="rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
             <div className={`overflow-x-auto ${sortedAndFiltered.length > 5 ? 'max-h-[390px] overflow-y-auto custom-scrollbar' : ''}`}>
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px] shadow-sm">
+                <thead className="sticky top-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10.5px] font-black shadow-sm border-b border-slate-200/80 dark:border-slate-700/80">
                   <tr>
                     <th className="py-3.5 px-3 font-black whitespace-nowrap w-12 text-center">#</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-44">Registration No</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-48">Student Name</th>
-                    <th className="py-3.5 px-4 font-black whitespace-nowrap min-w-[200px]">Contact Details</th>
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-44 text-center">Registration No</th>
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-48 text-left">Student Name</th>
+                    <th className="py-3.5 px-4 font-black whitespace-nowrap min-w-[200px] text-left">Contact Details</th>
                     <th className="py-3.5 px-3.5 font-black whitespace-nowrap text-center w-40">Type / Team Details</th>
-                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-38">
-                      <div className="flex items-center gap-1.5">
+                    <th className="py-3.5 px-3.5 font-black whitespace-nowrap w-38 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
                         <span>Date & Time</span>
                         <button
                           type="button"
@@ -437,7 +437,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                       <React.Fragment key={r.id || idx}>
                         <tr className="hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors">
                           <td className="py-3 px-3 text-slate-400 font-bold whitespace-nowrap text-center w-12">{idx + 1}</td>
-                          <td className="py-3 px-3.5 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs whitespace-nowrap w-44">
+                          <td className="py-3 px-3.5 font-mono font-bold text-blue-600 dark:text-sky-400 text-xs whitespace-nowrap w-44 text-center">
                             {r.registration_number || 'N/A'}
                           </td>
                           <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-48">
@@ -466,7 +466,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                               </span>
                             )}
                           </td>
-                          <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-38">
+                          <td className="py-3 px-3.5 space-y-0.5 whitespace-nowrap w-38 text-center">
                             <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
                               {r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : 'N/A'}
                             </div>

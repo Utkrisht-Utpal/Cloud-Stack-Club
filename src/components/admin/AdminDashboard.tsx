@@ -1436,17 +1436,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               ) : (
                 <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-2xl border border-slate-200/80 dark:border-slate-800 custom-scrollbar">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
-                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                        <th className="py-3.5 px-4 font-bold">
-                          <div className="flex items-center gap-1.5">
+                    <thead className="sticky top-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10.5px] font-black">
+                        <th className="py-3.5 px-4 font-bold text-left w-[32%] min-w-[240px]">
+                          <div className="flex items-center gap-2">
                             <span>MEMBER INFO</span>
                             <button
                               type="button"
                               onClick={() => setSortRecentMembers((prev) => !prev)}
-                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${sortRecentMembers
+                              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center ${sortRecentMembers
                                   ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
-                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }`}
                               title={sortRecentMembers ? 'Sorting: Most recent added first (click for A-Z)' : 'Click to sort by most recently added'}
                               aria-label="Toggle sort by most recent members"
@@ -1455,23 +1455,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             </button>
                           </div>
                         </th>
-                        <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
-                        <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
-                        <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
-                        <th className="py-3.5 px-4 text-right font-bold">ACTIONS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">IDS & CREDENTIALS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">ACADEMIC DETAILS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">ROLE STATUS</th>
+                        <th className="py-3.5 px-4 text-center font-bold">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {filteredApplications.map((app) => (
                         <tr key={app.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 w-[32%] min-w-[240px]">
                             <div>
                               <div className="font-bold text-slate-900 dark:text-white text-xs">{app.name}</div>
                               <div className="text-[11px] text-slate-500">{app.email}</div>
                               {app.phone && <div className="text-[10px] text-slate-400">{app.phone}</div>}
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 font-mono">
+                          <td className="py-3.5 px-4 font-mono text-center">
                             <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
                               {app.registration_id}
                             </div>
@@ -1479,35 +1479,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               {app.uid ? `UID: ${app.uid}` : 'UID: N/A'}
                             </div>
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 text-center">
                             <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{app.department || 'N/A'}</div>
                             <div className="text-[11px] text-slate-500">{app.year || 'N/A'}</div>
                           </td>
-                          <td className="py-3.5 px-4">
-                            {app.verification_file_url ? (
-                              <button
-                                onClick={() => setSelectedDocFile({ path: app.verification_file_url!, name: app.name })}
-                                className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer transition-colors"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>View Screenshot</span>
-                              </button>
-                            ) : (
-                              <span className="text-slate-400 italic text-[11px]">No File</span>
-                            )}
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="flex items-center justify-center">
+                              {app.verification_file_url ? (
+                                <button
+                                  onClick={() => setSelectedDocFile({ path: app.verification_file_url!, name: app.name })}
+                                  className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 font-bold text-[11px] inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>View Screenshot</span>
+                                </button>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">No File</span>
+                              )}
+                            </div>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => handleApprove(app)}
-                                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 font-extrabold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                                className="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 font-extrabold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors"
                               >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>Approve</span>
                               </button>
                               <button
                                 onClick={() => handleReject(app)}
-                                className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                                className="px-3 py-1.5 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer transition-colors"
                               >
                                 <X className="w-3.5 h-3.5" />
                                 <span>Reject</span>
@@ -1532,17 +1534,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               ) : (
                 <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-2xl border border-slate-200/80 dark:border-slate-800 custom-scrollbar">
                   <table className="w-full text-left text-xs border-collapse">
-                    <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
-                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                        <th className="py-3.5 px-4 font-bold w-[34%] min-w-[240px]">
-                          <div className="flex items-center gap-1.5">
+                    <thead className="sticky top-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                      <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10.5px] font-black">
+                        <th className="py-3.5 px-4 font-bold text-left w-[32%] min-w-[240px]">
+                          <div className="flex items-center gap-2">
                             <span>MEMBER INFO</span>
                             <button
                               type="button"
                               onClick={() => setSortRecentMembers((prev) => !prev)}
-                              className={`p-1 rounded-md transition-all cursor-pointer flex items-center justify-center ${sortRecentMembers
+                              className={`p-1.5 rounded-lg transition-all cursor-pointer flex items-center justify-center ${sortRecentMembers
                                   ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
-                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800'
+                                  : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
                                 }`}
                               title={sortRecentMembers ? 'Sorting: Most recent added first (click for A-Z)' : 'Click to sort by most recently added'}
                               aria-label="Toggle sort by most recent members"
@@ -1551,16 +1553,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             </button>
                           </div>
                         </th>
-                        <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
-                        <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
-                        <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">IDS & CREDENTIALS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">ACADEMIC DETAILS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">ROLE STATUS</th>
                         <th className="py-3.5 px-4 text-center font-bold min-w-[140px]">ACTIONS</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {filteredMembers.map((member) => (
                         <tr key={member.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                          <td className="py-3.5 px-4 w-[34%] min-w-[240px]">
+                          <td className="py-3.5 px-4 w-[32%] min-w-[240px]">
                             <div>
                               <div className="font-bold text-slate-900 dark:text-white text-xs flex items-center gap-1.5 flex-wrap">
                                 <span>{member.name}</span>
@@ -1573,7 +1575,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               <div className="text-[11px] text-slate-500">{member.email}</div>
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 font-mono">
+                          <td className="py-3.5 px-4 font-mono text-center">
                             <div className="text-blue-600 dark:text-sky-400 font-bold text-xs">
                               {member.registration_id}
                             </div>
@@ -1581,28 +1583,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               {member.uid ? `UID: ${member.uid}` : 'UID: N/A'}
                             </div>
                           </td>
-                          <td className="py-3.5 px-4">
+                          <td className="py-3.5 px-4 text-center">
                             <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">{member.department || 'N/A'}</div>
                             <div className="text-[11px] text-slate-500">{member.year || 'N/A'}</div>
                           </td>
-                          <td className="py-3.5 px-4">
-                            <button
-                              onClick={() => setSelectedMemberForRole(member)}
-                              className={`px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5 shadow-sm ${member.is_core_member
-                                  ? 'bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/25'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                                }`}
-                              title="Click to manage core responsibility or convert to normal user"
-                            >
-                              {member.is_core_member ? (
-                                <>
-                                  <Shield className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                                  <span>★ Core Member</span>
-                                </>
-                              ) : (
-                                <span>Member</span>
-                              )}
-                            </button>
+                          <td className="py-3.5 px-4 text-center">
+                            <div className="flex items-center justify-center">
+                              <button
+                                onClick={() => setSelectedMemberForRole(member)}
+                                className={`px-3.5 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5 shadow-sm ${member.is_core_member
+                                    ? 'bg-amber-50 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/25'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                                  }`}
+                                title="Click to manage core responsibility or convert to normal user"
+                              >
+                                {member.is_core_member ? (
+                                  <>
+                                    <Shield className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
+                                    <span>★ Core Member</span>
+                                  </>
+                                ) : (
+                                  <span>Member</span>
+                                )}
+                              </button>
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-center whitespace-nowrap">
                             <div className="flex items-center justify-center gap-2">
@@ -2165,27 +2169,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
             ) : (
               <div className="overflow-x-auto overflow-y-auto max-h-[550px] rounded-2xl border border-slate-200/80 dark:border-slate-800 custom-scrollbar">
                 <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
-                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-3.5 px-4 font-bold">#</th>
-                      <th className="py-3.5 px-4 font-bold">
+                  <thead className="sticky top-0 z-10 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-700/80 shadow-sm">
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider text-[10.5px] font-black">
+                      <th className="py-3.5 px-4 font-bold text-center w-12">#</th>
+                      <th className="py-3.5 px-4 font-bold text-left">
                         {feedbackViewTab === 'event' ? 'ATTENDEE DETAILS' : 'SENDER DETAILS'}
                       </th>
                       {feedbackViewTab === 'event' && (
-                        <th className="py-3.5 px-4 font-bold">EVENT & RATINGS</th>
+                        <th className="py-3.5 px-4 font-bold text-center">EVENT & RATINGS</th>
                       )}
-                      <th className="py-3.5 px-4 font-bold">
+                      <th className="py-3.5 px-4 font-bold text-left">
                         {feedbackViewTab === 'event' ? 'DETAILED FEEDBACK' : 'SUBJECT'}
                       </th>
                       <th className="py-3.5 px-4 font-bold text-center">ACTION</th>
-                      <th className="py-3.5 px-4 font-bold">SUBMISSION DATE</th>
-                      <th className="py-3.5 px-4 text-right font-bold">STATUS</th>
+                      <th className="py-3.5 px-4 font-bold text-center">SUBMISSION DATE</th>
+                      <th className="py-3.5 px-4 font-bold text-center">STATUS</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                     {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).map((f: any, idx) => (
                       <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-400 text-center w-12">{idx + 1}</td>
                         <td className="py-3.5 px-4 min-w-[230px]">
                           <div className="space-y-1.5">
                             <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
@@ -2286,12 +2290,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             <Eye className="w-4 h-4" />
                           </button>
                         </td>
-                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
+                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium text-center">
                           {f.created_at
                             ? `${new Date(f.created_at).toLocaleDateString('en-GB')} • ${new Date(f.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
                             : 'N/A'}
                         </td>
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <div className="inline-block text-left">
                             <CustomSelect
                               value={
