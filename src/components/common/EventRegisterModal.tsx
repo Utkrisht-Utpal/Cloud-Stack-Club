@@ -445,14 +445,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
               <div className="text-xl font-mono font-black text-blue-600 dark:text-sky-400">
                 {registrationResult.team
                   ? (registrationResult.team.registration_number || 'REG-CONFIRMED')
-                  : (() => {
-                      const regId = registrationResult.registration_number || '';
-                      const parts = regId.split('-');
-                      if (parts.length === 3) {
-                        return `${parts[0]}-${parts[1]}-******`;
-                      }
-                      return 'REG-CONFIRMED';
-                    })()}
+                  : (registrationResult.registration_number || 'REG-CONFIRMED')}
               </div>
             </div>
 
@@ -496,70 +489,50 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
                 <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                   {/* 1. Team Leader Pass */}
-                  {(() => {
-                    const leaderReg = registrationResult.registration_number || '';
-                    const parts = leaderReg.split('-');
-                    const maskedLeaderPassId =
-                      parts.length === 3 && parts[2].length >= 2
-                        ? `${parts[0]}-${parts[1]}-${parts[2].slice(0, 2)}****`
-                        : 'REG-LEADER-****';
+                  <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
+                        Team Leader: {formData.name}
+                      </div>
+                      {formData.uid && (
+                        <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
+                          UID: <span className="font-semibold">{formData.uid}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right shrink-0 pl-2">
+                      <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
+                      <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
+                        {registrationResult.registration_number || 'REG-CONFIRMED'}
+                      </div>
+                    </div>
+                  </div>
 
-                    return (
-                      <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
+                  {/* 2. Teammate Passes */}
+                  {registrationResult.team.members &&
+                    registrationResult.team.members.map((m, mIdx) => (
+                      <div
+                        key={mIdx}
+                        className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2"
+                      >
                         <div className="min-w-0 flex-1">
                           <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
-                            Team Leader: {formData.name}
+                            Teammate #{mIdx + 2}: {m.name}
                           </div>
-                          {formData.uid && (
+                          {m.uid && (
                             <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
-                              UID: <span className="font-semibold">{formData.uid}</span>
+                              UID: <span className="font-semibold">{m.uid}</span>
                             </div>
                           )}
                         </div>
                         <div className="text-right shrink-0 pl-2">
                           <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
                           <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
-                            {maskedLeaderPassId}
+                            {m.registration_number || 'REG-CONFIRMED'}
                           </div>
                         </div>
                       </div>
-                    );
-                  })()}
-
-                  {/* 2. Teammate Passes */}
-                  {registrationResult.team.members &&
-                    registrationResult.team.members.map((m, mIdx) => {
-                      const mReg = m.registration_number || '';
-                      const parts = mReg.split('-');
-                      const maskedPassId =
-                        parts.length === 3 && parts[2].length >= 2
-                          ? `${parts[0]}-${parts[1]}-${parts[2].slice(0, 2)}****`
-                          : 'REG-MEMBER-****';
-
-                      return (
-                        <div
-                          key={mIdx}
-                          className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
-                              Teammate #{mIdx + 2}: {m.name}
-                            </div>
-                            {m.uid && (
-                              <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
-                                UID: <span className="font-semibold">{m.uid}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right shrink-0 pl-2">
-                            <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
-                            <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
-                              {maskedPassId}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                    ))}
                 </div>
               </div>
             )}
