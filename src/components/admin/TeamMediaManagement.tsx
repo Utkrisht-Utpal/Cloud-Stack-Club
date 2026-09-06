@@ -539,7 +539,7 @@ export const TeamMediaManagement: React.FC = () => {
 
                         {/* Top Action Overlay Button for Banner */}
                         {bannerData?.banner_url && (
-                          <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -624,7 +624,7 @@ export const TeamMediaManagement: React.FC = () => {
 
                       {/* Top Action Overlay Button */}
                       {selectedMember.photo_url && (
-                        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -716,7 +716,7 @@ export const TeamMediaManagement: React.FC = () => {
                           setBioModalMode('edit');
                           setIsBioModalOpen(true);
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-slate-750 border border-slate-200/60 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-blue-500/15 dark:bg-blue-500/20 border border-blue-500/30 dark:border-blue-500/40 text-blue-600 dark:text-sky-400 shadow-[0_2px_8px_rgba(59,130,246,0.2)] hover:shadow-[0_4px_14px_rgba(59,130,246,0.35)] hover:bg-blue-500/25 hover:border-blue-500/50 hover:scale-105 active:scale-95 text-xs font-bold flex items-center gap-1.5 transition-all duration-200 cursor-pointer"
                         title="Edit Description"
                       >
                         <Edit3 className="w-3.5 h-3.5" />

@@ -533,7 +533,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                             e.stopPropagation();
                             handleStartEdit(photo);
                           }}
-                          className="p-1.5 rounded-lg bg-blue-600/90 hover:bg-blue-600 text-white transition-all cursor-pointer shadow-md"
+                          className="w-7 h-7 rounded-lg bg-slate-950/75 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 hover:border-blue-400 backdrop-blur-md shadow-[0_0_10px_rgba(59,130,246,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
                           title="Edit Caption / Order"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -545,7 +545,7 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
                             e.stopPropagation();
                             setPhotoToDelete(photo);
                           }}
-                          className="p-1.5 rounded-lg bg-red-600/90 hover:bg-red-600 text-white transition-all cursor-pointer shadow-md"
+                          className="w-7 h-7 rounded-lg bg-slate-950/75 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 hover:border-red-400 backdrop-blur-md shadow-[0_0_10px_rgba(239,68,68,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
                           title="Delete Photo"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

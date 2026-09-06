@@ -466,7 +466,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
                                       <button
                                         type="button"
                                         onClick={() => setDeletingTicket(r)}
-                                        className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-500/10 transition-colors cursor-pointer ml-1"
+                                        className="w-8 h-8 rounded-xl bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 transition-all duration-200 inline-flex items-center justify-center cursor-pointer ml-1"
                                         title="Delete Submission"
                                       >
                                         <Trash2 className="w-4 h-4" />
