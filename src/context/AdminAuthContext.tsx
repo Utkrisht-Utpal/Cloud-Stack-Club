@@ -120,6 +120,10 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sessionStorage.removeItem('csc_show_dashboard');
     } catch {}
 
+    if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin')) {
+      window.history.replaceState(null, '', '/');
+    }
+
     if (isSupabaseConfigured()) {
       try {
         await supabase.auth.signOut();

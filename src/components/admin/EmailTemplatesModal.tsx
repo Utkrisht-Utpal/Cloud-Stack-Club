@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -218,7 +218,10 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     sampleData
   );
 
-  // Seamless real-time DOM update in iframe without reload flicker/blink on keystrokes
+  // Initial HTML baseline (only refreshed on category change or explicit refresh, preventing srcdoc reload flash)
+  const initialHtml = useMemo(() => previewHtml, [activeCategory, refreshKey]);
+
+  // Seamless real-time in-place DOM update without iframe reload flicker/blink on keystrokes
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
@@ -654,7 +657,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
                 <iframe
                   ref={iframeRef}
                   key={`template-preview-${activeCategory}-${refreshKey}`}
-                  srcDoc={previewHtml}
+                  srcDoc={initialHtml}
                   title="Email Live Preview"
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
                   sandbox="allow-same-origin allow-popups"

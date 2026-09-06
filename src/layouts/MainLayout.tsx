@@ -101,7 +101,10 @@ export const MainLayout: React.FC = () => {
     return () => window.removeEventListener('csc-open-discrepancy-modal', handleOpen);
   }, []);
 
+  const isLoggingOutRef = React.useRef(false);
+
   useEffect(() => {
+    if (isLoggingOutRef.current) return;
     if (isAdminUrl && !adminModalDismissed) {
       if (!isLoading) {
         if (isAdminLoggedIn) {
@@ -139,8 +142,16 @@ export const MainLayout: React.FC = () => {
   }, [location.pathname, navigate]);
 
   const handleAdminLogout = React.useCallback(async () => {
-    await logout();
+    isLoggingOutRef.current = true;
+    setAdminModalDismissed(true);
     navigate('/', { replace: true });
+    try {
+      await logout();
+    } finally {
+      setTimeout(() => {
+        isLoggingOutRef.current = false;
+      }, 500);
+    }
   }, [logout, navigate]);
 
   const handleRegisterEventClick = React.useCallback((evt: Event) => {

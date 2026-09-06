@@ -292,6 +292,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     return renderEmailHtmlPreview(baseTemplate, sampleData);
   }, [previewCategory, selectedStyle, selectedTheme, selectedTextColor, previewTitle, previewSubtitle]);
 
+  // Initial HTML baseline (only refreshed on category change or explicit refresh, preventing srcdoc reload flash)
+  const initialHtml = useMemo(() => previewHtml, [previewCategory, refreshKey]);
+
   // Seamless real-time DOM update in iframe without reload flicker/blink
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -823,7 +826,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 <iframe
                   ref={iframeRef}
                   key={`preview-${previewCategory}-${refreshKey}`}
-                  srcDoc={previewHtml}
+                  srcDoc={initialHtml}
                   title="Email Live Preview"
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
                   sandbox="allow-same-origin allow-popups"
