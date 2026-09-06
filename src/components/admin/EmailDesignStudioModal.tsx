@@ -41,6 +41,7 @@ import {
   getSampleCategoryData,
   renderEmailHtmlPreview,
 } from '../../services/emailTemplates';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface EmailDesignStudioModalProps {
   isOpen: boolean;
@@ -239,18 +240,12 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     setMounted(true);
   }, []);
 
-  // Click outside to close category sample dropdown
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
-        setIsCategoryDropdownOpen(false);
-      }
-    };
-    if (isCategoryDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isCategoryDropdownOpen]);
+  useClickOutside({
+    enabled: isCategoryDropdownOpen,
+    onClose: () => setIsCategoryDropdownOpen(false),
+    refs: [categoryDropdownRef],
+    closeOnEsc: true,
+  });
 
   // Lock background scrolling completely when modal is open
   useEffect(() => {

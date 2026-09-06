@@ -32,6 +32,7 @@ import {
   renderEmailHtmlPreview,
   replaceTemplatePlaceholders,
 } from '../../services/emailTemplates';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface EmailTemplatesModalProps {
   isOpen: boolean;
@@ -64,6 +65,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
   const [includeButton, setIncludeButton] = useState(true);
   const [isBannerDropdownOpen, setIsBannerDropdownOpen] = useState(false);
+  const [showVariablesHelper, setShowVariablesHelper] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Focus ref for variable insertion
@@ -82,18 +84,12 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     }
   }, [isOpen, activeCategory]);
 
-  // Click outside to close banner dropdown
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (bannerDropdownRef.current && !bannerDropdownRef.current.contains(e.target as Node)) {
-        setIsBannerDropdownOpen(false);
-      }
-    };
-    if (isBannerDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isBannerDropdownOpen]);
+  useClickOutside({
+    enabled: isBannerDropdownOpen,
+    onClose: () => setIsBannerDropdownOpen(false),
+    refs: [bannerDropdownRef],
+    closeOnEsc: true,
+  });
 
   // Lock background scrolling completely when modal is open
   useEffect(() => {
@@ -455,28 +451,43 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
               />
             </div>
 
-            {/* Variable Placeholders Helper */}
-            <div className="p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 space-y-2">
-              <div className="flex items-center justify-between">
+            {/* Variable Placeholders Helper (Collapsible with Drop Arrow) */}
+            <div className="rounded-2xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/40 overflow-hidden transition-all duration-200">
+              <button
+                type="button"
+                onClick={() => setShowVariablesHelper((prev) => !prev)}
+                className="w-full p-3 flex items-center justify-between text-left cursor-pointer hover:bg-blue-100/40 dark:hover:bg-blue-900/30 transition-colors"
+                aria-expanded={showVariablesHelper}
+              >
                 <span className="text-[11px] font-bold text-blue-700 dark:text-sky-300 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5" />
+                  <Info className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
                   Click to insert placeholder tags:
                 </span>
-                <span className="text-[10px] text-blue-500/80">Auto-fills student data</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {variables.map((v) => (
-                  <button
-                    key={v.key}
-                    type="button"
-                    onClick={() => handleInsertVariable(v.key)}
-                    className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 text-[11px] font-bold text-blue-600 dark:text-sky-400 border border-blue-200 dark:border-blue-800/60 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all cursor-pointer shadow-xs"
-                    title={`${v.label} (e.g. "${v.sampleValue}")`}
-                  >
-                    + {v.key}
-                  </button>
-                ))}
-              </div>
+                <div className="p-1 rounded-lg text-blue-600 dark:text-sky-400 hover:bg-blue-200/50 dark:hover:bg-blue-800/50 transition-all shrink-0">
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      showVariablesHelper ? 'rotate-180' : 'rotate-0'
+                    }`}
+                  />
+                </div>
+              </button>
+              {showVariablesHelper && (
+                <div className="px-3.5 pb-3.5 pt-0.5 border-t border-blue-100/80 dark:border-blue-900/30">
+                  <div className="flex flex-wrap gap-1.5 pt-2">
+                    {variables.map((v) => (
+                      <button
+                        key={v.key}
+                        type="button"
+                        onClick={() => handleInsertVariable(v.key)}
+                        className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 text-[11px] font-bold text-blue-600 dark:text-sky-400 border border-blue-200 dark:border-blue-800/60 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 transition-all cursor-pointer shadow-xs"
+                        title={`${v.label} (e.g. "${v.sampleValue}")`}
+                      >
+                        + {v.key}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Main Message Body */}
@@ -486,7 +497,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
               </label>
               <textarea
                 ref={bodyTextareaRef}
-                rows={7}
+                rows={showVariablesHelper ? 7 : 9}
                 value={currentEdit.body_text}
                 onChange={(e) => setCurrentEdit((prev) => ({ ...prev, body_text: e.target.value }))}
                 className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar leading-relaxed resize-y"

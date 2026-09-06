@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, RotateCcw } from 'lucide-react';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface TimePickerProps {
   value: string; // "HH:mm" e.g. "10:00" or "14:30"
@@ -85,22 +86,12 @@ export const TimePicker: React.FC<TimePickerProps> = ({
     };
   }, [isOpen]);
 
-  // Click outside listener
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(target) &&
-        popoverRef.current &&
-        !popoverRef.current.contains(target)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside({
+    enabled: isOpen,
+    onClose: () => setIsOpen(false),
+    refs: [containerRef, popoverRef],
+    closeOnEsc: true,
+  });
 
   const convertTo24 = (h12: string, min: string, p: string) => {
     let h = parseInt(h12, 10);

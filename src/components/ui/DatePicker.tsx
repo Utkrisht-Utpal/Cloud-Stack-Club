@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 interface DatePickerProps {
   value: string; // YYYY-MM-DD
@@ -94,22 +95,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     };
   }, [isOpen]);
 
-  // Close on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(target) &&
-        popoverRef.current &&
-        !popoverRef.current.contains(target)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside({
+    enabled: isOpen,
+    onClose: () => setIsOpen(false),
+    refs: [containerRef, popoverRef],
+    closeOnEsc: true,
+  });
 
   const handlePrevMonth = () => {
     if (viewMonth === 0) {

@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Download, FileSpreadsheet, FileText, ChevronDown } from 'lucide-react';
 import { exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
+import { useClickOutside } from '../../hooks/useClickOutside';
 import type { Member } from '../../types/database';
 
 interface DownloadDropdownProps {
@@ -17,27 +18,12 @@ export const DownloadDropdown: React.FC<DownloadDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Close on Esc key press
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  useClickOutside({
+    enabled: isOpen,
+    onClose: () => setIsOpen(false),
+    refs: [dropdownRef],
+    closeOnEsc: true,
+  });
 
   const handleExportExcel = () => {
     setIsOpen(false);

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Menu, X, ArrowRight, LogOut, ShieldCheck, Bell, Flame, Sparkles, Info, ChevronRight } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useClickOutside } from '../../hooks/useClickOutside';
 import { siteConfig } from '../../constants/siteConfig';
 import { Button } from '../ui/Button';
 import { ClubLogo } from '../ui/ClubLogo';
@@ -40,8 +41,16 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
+  const headerRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useClickOutside({
+    enabled: mobileMenuOpen,
+    onClose: () => setMobileMenuOpen(false),
+    refs: [headerRef],
+    closeOnEsc: true,
+  });
 
   const [activeNotice, setActiveNotice] = useState<Notice | null>(() => {
     try {
@@ -196,6 +205,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header
+      ref={headerRef}
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         isScrolled ? 'glass-nav shadow-xl shadow-blue-500/5' : 'bg-transparent'
       }`}

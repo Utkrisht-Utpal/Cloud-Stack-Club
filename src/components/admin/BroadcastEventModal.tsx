@@ -23,6 +23,7 @@ import type { Member } from '../../types/database';
 import { getMembers } from '../../services/members';
 import { sendEventBroadcastEmail } from '../../services/email';
 import { formatEventDate, formatEventTime } from '../../utils/formatters';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 export type BroadcastAudienceType = 'all' | 'core' | 'members' | 'custom';
 
@@ -53,18 +54,12 @@ export const BroadcastEventModal: React.FC<BroadcastEventModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successResult, setSuccessResult] = useState<{ sent: number; total: number } | null>(null);
 
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (audienceDropdownRef.current && !audienceDropdownRef.current.contains(e.target as Node)) {
-        setIsAudienceDropdownOpen(false);
-      }
-    };
-    if (isAudienceDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isAudienceDropdownOpen]);
+  useClickOutside({
+    enabled: isAudienceDropdownOpen,
+    onClose: () => setIsAudienceDropdownOpen(false),
+    refs: [audienceDropdownRef],
+    closeOnEsc: true,
+  });
 
   useEffect(() => {
     if (isOpen && event) {
