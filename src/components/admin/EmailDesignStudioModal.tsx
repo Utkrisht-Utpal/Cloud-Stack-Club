@@ -24,6 +24,8 @@ import {
   Edit3,
   RotateCcw,
   ChevronDown,
+  Ticket,
+  Users2,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
@@ -177,6 +179,24 @@ const CATEGORY_SCOPE_OPTIONS: CategoryScopeOption[] = [
     description: 'Mass notifications, announcements, and registrations for events',
     icon: Radio,
   },
+  {
+    id: 'event_registration_individual',
+    name: 'Individual Registration',
+    description: 'Automated confirmation pass sent to individual event registrants',
+    icon: Ticket,
+  },
+  {
+    id: 'event_registration_team_leader',
+    name: 'Team Registration (Leader)',
+    description: 'Team summary & pass confirmation sent to the designated team leader',
+    icon: Users2,
+  },
+  {
+    id: 'event_registration_team_member',
+    name: 'Team Registration (Member)',
+    description: 'Teammate notification with leader details sent to registered team members',
+    icon: UserCheck,
+  },
 ];
 
 export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
@@ -210,6 +230,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     'contact_us',
     'event_feedback',
     'event_broadcast',
+    'event_registration_individual',
+    'event_registration_team_leader',
+    'event_registration_team_member',
   ]);
 
   useEffect(() => {
@@ -333,7 +356,16 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   };
 
   const handleSelectAllCategories = () => {
-    setSelectedCategories(['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast']);
+    setSelectedCategories([
+      'approval',
+      'rejection',
+      'contact_us',
+      'event_feedback',
+      'event_broadcast',
+      'event_registration_individual',
+      'event_registration_team_leader',
+      'event_registration_team_member',
+    ]);
   };
 
   const handleDeselectAllCategories = () => {
@@ -347,7 +379,16 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const handleConfirmApply = async () => {
     const targets =
       scopeMode === 'global'
-        ? ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast']
+        ? [
+            'approval',
+            'rejection',
+            'contact_us',
+            'event_feedback',
+            'event_broadcast',
+            'event_registration_individual',
+            'event_registration_team_leader',
+            'event_registration_team_member',
+          ]
         : selectedCategories;
 
     if (targets.length === 0) return;

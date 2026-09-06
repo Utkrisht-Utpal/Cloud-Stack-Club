@@ -14,6 +14,8 @@ import {
   Radio,
   Sliders,
   Palette,
+  Ticket,
+  Users2,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -30,6 +32,9 @@ const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; c
   { id: 'contact_us', label: 'Contact Us', icon: MessageSquare, color: 'text-blue-600 dark:text-sky-400' },
   { id: 'event_feedback', label: 'Event Feedback', icon: Sparkles, color: 'text-amber-600 dark:text-amber-400' },
   { id: 'event_broadcast', label: 'Event Broadcasts', icon: Radio, color: 'text-purple-600 dark:text-purple-400' },
+  { id: 'event_registration_individual', label: 'Individual Reg', icon: Ticket, color: 'text-cyan-600 dark:text-cyan-400' },
+  { id: 'event_registration_team_leader', label: 'Team Reg (Leader)', icon: Users2, color: 'text-indigo-600 dark:text-indigo-400' },
+  { id: 'event_registration_team_member', label: 'Team Reg (Member)', icon: UserCheck, color: 'text-sky-600 dark:text-sky-400' },
 ];
 
 export const getAdminDisplayName = (name?: string | null, email?: string | null): string => {
@@ -255,6 +260,27 @@ export const EmailLogsManagement: React.FC = () => {
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
             <Radio className="w-3 h-3" />
             Broadcast
+          </span>
+        );
+      case 'event_registration_individual':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+            <Ticket className="w-3 h-3" />
+            Individual Reg
+          </span>
+        );
+      case 'event_registration_team_leader':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+            <Users2 className="w-3 h-3" />
+            Team Leader Reg
+          </span>
+        );
+      case 'event_registration_team_member':
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+            <UserCheck className="w-3 h-3" />
+            Team Member Reg
           </span>
         );
       default:

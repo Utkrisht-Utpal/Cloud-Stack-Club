@@ -240,6 +240,207 @@ export interface EmailStats {
 }
 
 /**
+ * Dispatches an automated confirmation email to an individual event registrant.
+ */
+export async function sendIndividualRegistrationEmail(params: {
+  email: string;
+  name: string;
+  uid: string;
+  phone?: string | null;
+  department?: string | null;
+  year?: string | null;
+  event_title: string;
+  event_date: string;
+  event_time?: string | null;
+  event_venue?: string | null;
+  registration_number?: string | null;
+}): Promise<SendEmailResult> {
+  return invokeSendEmail('event_registration_individual', {
+    recipient_email: params.email,
+    recipient_name: params.name,
+    uid: params.uid,
+    department: params.department || undefined,
+    year: params.year || undefined,
+    event_title: params.event_title,
+    event_date: params.event_date,
+    event_time: params.event_time || undefined,
+    event_venue: params.event_venue || undefined,
+    registration_number: params.registration_number || undefined,
+  });
+}
+
+/**
+ * Dispatches an automated confirmation email to a Team Leader.
+ */
+export async function sendTeamLeaderRegistrationEmail(params: {
+  leader_email: string;
+  leader_name: string;
+  leader_uid: string;
+  leader_phone?: string | null;
+  leader_department?: string | null;
+  leader_year?: string | null;
+  leader_registration_number?: string | null;
+  team_name: string;
+  team_members: Array<{ name: string; email?: string | null; uid?: string | null; department?: string | null; year?: string | null; phone?: string | null; registration_number?: string | null }>;
+  event_title: string;
+  event_date: string;
+  event_time?: string | null;
+  event_venue?: string | null;
+  registration_number?: string | null;
+  team_registration_number?: string | null;
+}): Promise<SendEmailResult> {
+  const teamRegId = params.team_registration_number || params.registration_number || undefined;
+  const leaderRegId = params.leader_registration_number || undefined;
+
+  return invokeSendEmail('event_registration_team_leader', {
+    recipient_email: params.leader_email,
+    recipient_name: params.leader_name,
+    name: params.leader_name,
+    uid: params.leader_uid,
+    department: params.leader_department || undefined,
+    year: params.leader_year || undefined,
+    leader_registration_number: leaderRegId,
+    team_name: params.team_name,
+    team_members: params.team_members,
+    team_size: (params.team_members.length + 1).toString(),
+    event_title: params.event_title,
+    event_date: params.event_date,
+    event_time: params.event_time || undefined,
+    event_venue: params.event_venue || undefined,
+    registration_number: teamRegId,
+    team_registration_number: teamRegId,
+  });
+}
+
+/**
+ * Dispatches an automated notification email to a Team Member.
+ */
+export async function sendTeamMemberRegistrationEmail(params: {
+  member_email: string;
+  member_name: string;
+  member_uid?: string | null;
+  member_department?: string | null;
+  member_year?: string | null;
+  member_registration_number?: string | null;
+  leader_name: string;
+  leader_email?: string | null;
+  leader_uid: string;
+  leader_department?: string | null;
+  leader_year?: string | null;
+  leader_registration_number?: string | null;
+  team_name: string;
+  other_members: Array<{ name: string; department?: string | null; year?: string | null; uid?: string | null; registration_number?: string | null }>;
+  event_title: string;
+  event_date: string;
+  event_time?: string | null;
+  event_venue?: string | null;
+  registration_number?: string | null;
+  team_registration_number?: string | null;
+}): Promise<SendEmailResult> {
+  const teamRegId = params.team_registration_number || params.registration_number || undefined;
+
+  return invokeSendEmail('event_registration_team_member', {
+    recipient_email: params.member_email,
+    recipient_name: params.member_name,
+    name: params.member_name,
+    uid: params.member_uid || undefined,
+    department: params.member_department || undefined,
+    year: params.member_year || undefined,
+    member_registration_number: params.member_registration_number || undefined,
+    leader_name: params.leader_name,
+    leader_email: params.leader_email || undefined,
+    leader_uid: params.leader_uid,
+    leader_department: params.leader_department || undefined,
+    leader_year: params.leader_year || undefined,
+    leader_registration_number: params.leader_registration_number || undefined,
+    team_name: params.team_name,
+    other_members: params.other_members,
+    event_title: params.event_title,
+    event_date: params.event_date,
+    event_time: params.event_time || undefined,
+    event_venue: params.event_venue || undefined,
+    registration_number: teamRegId,
+    team_registration_number: teamRegId,
+  });
+}
+
+/**
+ * Dispatches registration emails to both the Team Leader and all Team Members concurrently.
+ */
+export async function sendTeamRegistrationEmails(params: {
+  event_title: string;
+  event_date: string;
+  event_time?: string | null;
+  event_venue?: string | null;
+  team_name: string;
+  team_registration_number?: string | null;
+  leader: { name: string; email: string; uid: string; department?: string | null; year?: string | null; phone?: string | null; registration_number?: string | null };
+  members: Array<{ name: string; email: string; uid?: string | null; department?: string | null; year?: string | null; phone?: string | null; registration_number?: string | null }>;
+  registration_number?: string | null;
+}): Promise<{ leaderResult: SendEmailResult; memberResults: SendEmailResult[] }> {
+  const teamRegId = params.team_registration_number || params.registration_number || null;
+  const leaderRegId = params.leader.registration_number || null;
+
+  const leaderPromise = sendTeamLeaderRegistrationEmail({
+    leader_email: params.leader.email,
+    leader_name: params.leader.name,
+    leader_uid: params.leader.uid,
+    leader_phone: params.leader.phone,
+    leader_department: params.leader.department,
+    leader_year: params.leader.year,
+    leader_registration_number: leaderRegId,
+    team_name: params.team_name,
+    team_members: params.members,
+    event_title: params.event_title,
+    event_date: params.event_date,
+    event_time: params.event_time,
+    event_venue: params.event_venue,
+    registration_number: teamRegId,
+    team_registration_number: teamRegId,
+  });
+
+  const memberPromises = params.members
+    .filter((m) => m.email && m.email.trim())
+    .map((m) => {
+      const otherMembers = params.members
+        .filter((other) => other.email !== m.email || other.name !== m.name)
+        .map((other) => ({
+          name: other.name,
+          department: other.department,
+          year: other.year,
+          uid: other.uid,
+          registration_number: other.registration_number,
+        }));
+
+      return sendTeamMemberRegistrationEmail({
+        member_email: m.email,
+        member_name: m.name,
+        member_uid: m.uid,
+        member_department: m.department,
+        member_year: m.year,
+        member_registration_number: m.registration_number || null,
+        leader_name: params.leader.name,
+        leader_email: params.leader.email,
+        leader_uid: params.leader.uid,
+        leader_department: params.leader.department,
+        leader_year: params.leader.year,
+        leader_registration_number: leaderRegId,
+        team_name: params.team_name,
+        other_members: otherMembers,
+        event_title: params.event_title,
+        event_date: params.event_date,
+        event_time: params.event_time,
+        event_venue: params.event_venue,
+        registration_number: teamRegId,
+        team_registration_number: teamRegId,
+      });
+    });
+
+  const [leaderResult, ...memberResults] = await Promise.all([leaderPromise, ...memberPromises]);
+  return { leaderResult, memberResults };
+}
+
+/**
  * Fetches universal email metrics directly from backend database across all logs.
  */
 export async function fetchEmailStats(): Promise<EmailStats> {

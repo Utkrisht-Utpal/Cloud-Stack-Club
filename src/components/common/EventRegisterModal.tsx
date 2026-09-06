@@ -23,6 +23,7 @@ import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 import { getFormForEvent, getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
+import { sendIndividualRegistrationEmail, sendTeamRegistrationEmails } from '../../services/email';
 import { formatEventTime } from '../../utils/formatters';
 import type { Event, EventFormField, EventRegistration } from '../../types/database';
 
@@ -304,6 +305,57 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       setRegistrationResult(result);
       resetCooldown();
       if (onSuccessToast) onSuccessToast();
+
+      // Trigger background automated confirmation emails
+      try {
+        if (isTeamRegistration) {
+          sendTeamRegistrationEmails({
+            event_title: event.title,
+            event_date: event.date || '',
+            event_time: event.start_time || undefined,
+            event_venue: event.location || undefined,
+            team_name: teamName.trim(),
+            team_registration_number: result?.team?.registration_number || result?.registration_number || undefined,
+            leader: {
+              name: formData.name.trim(),
+              email: formData.email.trim(),
+              uid: formData.uid.trim(),
+              department: formData.department.trim(),
+              year: formData.year,
+              phone: formData.phone.trim(),
+              registration_number: result?.registration_number || undefined,
+            },
+            members: teamMembers
+              .filter((m) => m.name.trim() && m.email.trim())
+              .map((m, idx) => ({
+                name: m.name.trim(),
+                email: m.email.trim(),
+                uid: m.uid.trim(),
+                phone: m.phone.trim(),
+                department: formData.department.trim(),
+                year: formData.year,
+                registration_number: result?.team?.members?.[idx]?.registration_number || undefined,
+              })),
+            registration_number: result?.team?.registration_number || result?.registration_number,
+          }).catch((emailErr) => console.warn('Background team registration email dispatch notice:', emailErr));
+        } else {
+          sendIndividualRegistrationEmail({
+            name: formData.name.trim(),
+            email: formData.email.trim(),
+            uid: formData.uid.trim(),
+            phone: formData.phone.trim(),
+            department: formData.department.trim(),
+            year: formData.year,
+            event_title: event.title,
+            event_date: event.date || '',
+            event_time: event.start_time || undefined,
+            event_venue: event.location || undefined,
+            registration_number: result?.registration_number,
+          }).catch((emailErr) => console.warn('Background individual registration email dispatch notice:', emailErr));
+        }
+      } catch (emailDispatchErr) {
+        console.warn('Non-blocking registration email trigger note:', emailDispatchErr);
+      }
     } catch (err: any) {
       console.error('Event registration error:', err);
       triggerErrorWithCooldown(err?.message || 'Failed to submit registration. Please try again.');

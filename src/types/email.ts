@@ -3,7 +3,10 @@ export type EmailCategory =
   | 'rejection'
   | 'contact_us'
   | 'event_feedback'
-  | 'event_broadcast';
+  | 'event_broadcast'
+  | 'event_registration_individual'
+  | 'event_registration_team_leader'
+  | 'event_registration_team_member';
 
 export type EmailStatus = 'sent' | 'failed';
 

@@ -61,18 +61,18 @@ function formatSingleTime(t: string): string {
 }
 
 /**
- * Formats time or time range into 12-hour format with AM/PM
+ * Formats time into 12-hour format with AM/PM (starting time only)
  */
 export function formatEventTime(timeStr?: string): string {
   if (!timeStr) return '';
   try {
-    if (timeStr.includes(' - ')) {
-      return timeStr.split(' - ').map(formatSingleTime).join(' - ');
+    let startPart = timeStr.trim();
+    if (startPart.includes(' - ')) {
+      startPart = startPart.split(' - ')[0].trim();
+    } else if (startPart.includes(' to ')) {
+      startPart = startPart.split(' to ')[0].trim();
     }
-    if (timeStr.includes(' to ')) {
-      return timeStr.split(' to ').map(formatSingleTime).join(' to ');
-    }
-    return formatSingleTime(timeStr);
+    return formatSingleTime(startPart);
   } catch {
     return timeStr;
   }
@@ -118,6 +118,9 @@ export async function getAllEmailTemplates(): Promise<Record<EmailCategory, Emai
     contact_us: { ...DEFAULT_EMAIL_TEMPLATES.contact_us },
     event_feedback: { ...DEFAULT_EMAIL_TEMPLATES.event_feedback },
     event_broadcast: { ...DEFAULT_EMAIL_TEMPLATES.event_broadcast },
+    event_registration_individual: { ...DEFAULT_EMAIL_TEMPLATES.event_registration_individual },
+    event_registration_team_leader: { ...DEFAULT_EMAIL_TEMPLATES.event_registration_team_leader },
+    event_registration_team_member: { ...DEFAULT_EMAIL_TEMPLATES.event_registration_team_member },
   };
 
   // Merge from localStorage cache first
@@ -245,7 +248,16 @@ export async function applyGlobalBannerDesign(
   theme: BannerTheme,
   textColor?: BannerTextColor
 ): Promise<Record<EmailCategory, EmailTemplateConfig>> {
-  const categories: EmailCategory[] = ['approval', 'rejection', 'contact_us', 'event_feedback', 'event_broadcast'];
+  const categories: EmailCategory[] = [
+    'approval',
+    'rejection',
+    'contact_us',
+    'event_feedback',
+    'event_broadcast',
+    'event_registration_individual',
+    'event_registration_team_leader',
+    'event_registration_team_member',
+  ];
   return applyBannerDesignToCategories(categories, style, theme, textColor);
 }
 
@@ -528,14 +540,233 @@ export function renderEmailHtmlPreview(
       </div>
     `;
   } else if (template.category === 'event_broadcast') {
-    const formattedDate = formatEventDate(data.event_date) || 'Tuesday, September 15, 2026';
-    const formattedTime = formatEventTime(data.event_time) || '10:00 AM - 04:00 PM';
+    const formattedDate = formatEventDate(data.event_date);
+    const formattedTime = formatEventTime(data.event_time);
     categoryDetailBox = `
       <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
         <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Event Logistics</p>
-        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📅 <strong>Date:</strong> ${formattedDate}</p>
+        ${formattedDate ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📅 <strong>Date:</strong> ${formattedDate}</p>` : ''}
         ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">⏰ <strong>Time:</strong> ${formattedTime}</p>` : ''}
-        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📍 <strong>Venue:</strong> ${data.event_venue || 'Block B, Audi 3, Chandigarh University'}</p>
+        ${data.event_venue ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📍 <strong>Venue:</strong> ${data.event_venue}</p>` : ''}
+      </div>
+    `;
+  } else if (template.category === 'event_registration_individual') {
+    const formattedDate = formatEventDate(data.event_date);
+    const formattedTime = formatEventTime(data.event_time);
+    const deptYear = [data.department, data.year].filter(Boolean).join(' - ');
+    const participantDisplay = deptYear ? `${data.name || 'Participant'} (${deptYear})` : (data.name || 'Participant');
+
+    categoryDetailBox = `
+      <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Registration & Event Details</p>
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #1e293b; line-height: 1.8;">
+          <tr>
+            <td style="padding: 3px 0; width: 140px; color: #64748b;"><strong>Event:</strong></td>
+            <td style="padding: 3px 0; font-weight: 700; color: #1e293b;">${data.event_title || ''}</td>
+          </tr>
+          ${formattedDate ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Date:</strong></td>
+            <td style="padding: 3px 0;">${formattedDate}</td>
+          </tr>` : ''}
+          ${formattedTime ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Time:</strong></td>
+            <td style="padding: 3px 0;">${formattedTime}</td>
+          </tr>` : ''}
+          ${data.event_venue ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Venue:</strong></td>
+            <td style="padding: 3px 0;">${data.event_venue}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Participant:</strong></td>
+            <td style="padding: 3px 0; font-weight: 600;">${participantDisplay}</td>
+          </tr>
+          ${data.uid ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>University ID:</strong></td>
+            <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #2563eb;">${data.uid}</td>
+          </tr>` : ''}
+          ${data.registration_number ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Registration ID:</strong></td>
+            <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #1e293b;">${data.registration_number}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Entry Pass:</strong></td>
+            <td style="padding: 3px 0;"><span style="display: inline-block; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 11px; padding: 2px 10px; border-radius: 9999px; border: 1px solid #86efac;">CONFIRMED</span></td>
+          </tr>
+        </table>
+      </div>
+    `;
+  } else if (template.category === 'event_registration_team_leader') {
+    const formattedDate = formatEventDate(data.event_date);
+    const formattedTime = formatEventTime(data.event_time);
+    const leaderDeptYear = [data.department || data.leader_department, data.year || data.leader_year].filter(Boolean).join(' - ');
+    const leaderDisplay = leaderDeptYear ? `${data.name || data.leader_name || 'Team Leader'} (${leaderDeptYear})` : (data.name || data.leader_name || 'Team Leader');
+    const leaderUid = data.uid || data.leader_uid || '';
+    const leaderRegId = data.leader_registration_number || data.leader_pass_id || '';
+    const teamRegId = data.team_registration_number || data.registration_number || '';
+
+    const membersList: Array<{ name: string; department?: string; year?: string; uid?: string; registration_number?: string }> =
+      data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0
+        ? data.team_members
+        : [
+            { name: 'Riya Patel', department: 'Computer Science & Engineering', year: '3rd Year', uid: '22BCS10892', registration_number: 'REG-26-8892' },
+            { name: 'Karan Singh', department: 'Information Technology', year: '3rd Year', uid: '22BCS10915', registration_number: 'REG-26-8893' },
+          ];
+
+    const membersHtml = membersList
+      .map((m) => {
+        const mDeptYear = [m.department, m.year].filter(Boolean).join(' - ');
+        return `
+          <li style="margin: 6px 0; color: #334155;">
+            <span><strong>${m.name}</strong>${mDeptYear ? ` (${mDeptYear})` : ''}</span>
+            ${m.registration_number ? `<span style="display: block; font-family: monospace; font-size: 12px; color: #334155; margin-top: 2px;">Registration ID: <strong>${m.registration_number}</strong></span>` : ''}
+            ${m.uid ? `<span style="display: block; font-family: monospace; font-size: 12px; color: #64748b; margin-top: 2px;">UID: <strong>${m.uid}</strong></span>` : ''}
+          </li>
+        `;
+      })
+      .join('');
+
+    categoryDetailBox = `
+      <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Team Registration Summary</p>
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #1e293b; line-height: 1.8;">
+          <tr>
+            <td style="padding: 3px 0; width: 140px; color: #64748b;"><strong>Event:</strong></td>
+            <td style="padding: 3px 0; font-weight: 700; color: #1e293b;">${data.event_title || ''}</td>
+          </tr>
+          ${formattedDate ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Date:</strong></td>
+            <td style="padding: 3px 0;">${formattedDate}</td>
+          </tr>` : ''}
+          ${formattedTime ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Time:</strong></td>
+            <td style="padding: 3px 0;">${formattedTime}</td>
+          </tr>` : ''}
+          ${data.event_venue ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Venue:</strong></td>
+            <td style="padding: 3px 0;">${data.event_venue}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Team Name:</strong></td>
+            <td style="padding: 3px 0; font-weight: 800; color: #1e293b; font-size: 15px;">${data.team_name || ''}</td>
+          </tr>
+          ${teamRegId ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Team Reg ID:</strong></td>
+            <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #1e293b;">${teamRegId}</td>
+          </tr>` : ''}
+        </table>
+
+        <div style="margin-top: 16px; padding: 14px; background-color: #ffffff; border-radius: 12px; border: 1px solid #cbd5e1;">
+          <p style="margin: 0 0 6px 0; font-size: 11px; color: #4338ca; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Team Leader</p>
+          <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1e293b;">${leaderDisplay}</p>
+          ${leaderUid ? `<p style="margin: 4px 0 0 0; font-size: 13px; font-family: monospace; color: #334155;">UID: <strong>${leaderUid}</strong></p>` : ''}
+          ${leaderRegId ? `<p style="margin: 4px 0 0 0; font-size: 13px; font-family: monospace; color: #334155;">Registration ID: <strong>${leaderRegId}</strong></p>` : ''}
+        </div>
+
+        ${membersList.length > 0 ? `
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase;">Registered Teammates (${membersList.length})</p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+            ${membersHtml}
+          </ul>
+        </div>` : ''}
+      </div>
+    `;
+  } else if (template.category === 'event_registration_team_member') {
+    const formattedDate = formatEventDate(data.event_date);
+    const formattedTime = formatEventTime(data.event_time);
+    const leaderDeptYear = [data.leader_department, data.leader_year].filter(Boolean).join(' - ');
+    const leaderDisplay = leaderDeptYear ? `${data.leader_name || 'Team Leader'} (${leaderDeptYear})` : (data.leader_name || 'Team Leader');
+    const leaderUid = data.leader_uid || '';
+    const leaderRegId = data.leader_registration_number || '';
+    const teamRegId = data.team_registration_number || data.registration_number || '';
+    const memberRegId = data.member_registration_number || '';
+
+    const otherMembersList: Array<{ name: string; department?: string; year?: string; registration_number?: string }> =
+      data.other_members && Array.isArray(data.other_members) && data.other_members.length > 0
+        ? data.other_members
+        : (data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0)
+        ? data.team_members
+        : [
+            { name: 'Karan Singh', department: 'Information Technology', year: '3rd Year' },
+            { name: 'Sneha Roy', department: 'Computer Science & Engineering', year: '3rd Year' },
+          ];
+
+    const otherMembersHtml = otherMembersList
+      .map((m) => {
+        const mDeptYear = [m.department, m.year].filter(Boolean).join(' - ');
+        return `
+          <li style="margin: 4px 0; color: #334155;">
+            <strong>${m.name}</strong>${mDeptYear ? ` (${mDeptYear})` : ''}
+          </li>
+        `;
+      })
+      .join('');
+
+    categoryDetailBox = `
+      <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 12px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Team Registration Details</p>
+        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #1e293b; line-height: 1.8;">
+          <tr>
+            <td style="padding: 3px 0; width: 140px; color: #64748b;"><strong>Event:</strong></td>
+            <td style="padding: 3px 0; font-weight: 700; color: #1e293b;">${data.event_title || ''}</td>
+          </tr>
+          ${formattedDate ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Date:</strong></td>
+            <td style="padding: 3px 0;">${formattedDate}</td>
+          </tr>` : ''}
+          ${formattedTime ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Time:</strong></td>
+            <td style="padding: 3px 0;">${formattedTime}</td>
+          </tr>` : ''}
+          ${data.event_venue ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Venue:</strong></td>
+            <td style="padding: 3px 0;">${data.event_venue}</td>
+          </tr>` : ''}
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Your Team:</strong></td>
+            <td style="padding: 3px 0; font-weight: 800; color: #1e293b; font-size: 15px;">${data.team_name || ''}</td>
+          </tr>
+          ${teamRegId ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Team Reg ID:</strong></td>
+            <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #1e293b;">${teamRegId}</td>
+          </tr>` : ''}
+          ${memberRegId ? `
+          <tr>
+            <td style="padding: 3px 0; color: #64748b;"><strong>Your Reg ID:</strong></td>
+            <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #1e293b;">${memberRegId}</td>
+          </tr>` : ''}
+        </table>
+
+        <!-- Team Leader Box: Name (Department - year) \n UID: <uid> -->
+        <div style="margin-top: 16px; padding: 14px; background-color: #ffffff; border-radius: 12px; border: 1px solid #cbd5e1;">
+          <p style="margin: 0 0 6px 0; font-size: 11px; color: #4338ca; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Team Leader</p>
+          <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1e293b;">${leaderDisplay}</p>
+          ${leaderUid ? `<p style="margin: 4px 0 0 0; font-size: 13px; font-family: monospace; color: #334155;">UID: <strong>${leaderUid}</strong></p>` : ''}
+          ${leaderRegId ? `<p style="margin: 4px 0 0 0; font-size: 13px; font-family: monospace; color: #334155;">Registration ID: <strong>${leaderRegId}</strong></p>` : ''}
+          ${data.leader_email ? `<p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Email: ${data.leader_email}</p>` : ''}
+        </div>
+
+        <!-- Other Team Members: name department and year -->
+        ${otherMembersList.length > 0 ? `
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;">
+          <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase;">Other Team Members</p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+            ${otherMembersHtml}
+          </ul>
+        </div>` : ''}
       </div>
     `;
   }

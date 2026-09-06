@@ -15,6 +15,8 @@ import {
   Check,
   Info,
   ChevronDown,
+  Ticket,
+  Users2,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
@@ -44,9 +46,12 @@ const CATEGORY_TABS: Array<{
 }> = [
   { id: 'approval', label: 'Member Approval', icon: UserCheck, color: 'text-emerald-500' },
   { id: 'rejection', label: 'Member Rejection', icon: UserX, color: 'text-rose-500' },
-  { id: 'contact_us', label: 'Contact Inquiry', icon: MessageSquare, color: 'text-blue-500' },
-  { id: 'event_feedback', label: 'Feedback Review', icon: Sparkles, color: 'text-amber-500' },
+  { id: 'contact_us', label: 'Contact', icon: MessageSquare, color: 'text-blue-500' },
+  { id: 'event_feedback', label: 'Feedback', icon: Sparkles, color: 'text-amber-500' },
   { id: 'event_broadcast', label: 'Event Broadcast', icon: Radio, color: 'text-purple-500' },
+  { id: 'event_registration_individual', label: 'Individual Reg', icon: Ticket, color: 'text-cyan-500' },
+  { id: 'event_registration_team_leader', label: 'Reg (Leader)', icon: Users2, color: 'text-indigo-500' },
+  { id: 'event_registration_team_member', label: 'Reg (Member)', icon: UserCheck, color: 'text-sky-500' },
 ];
 
 export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen, onClose }) => {
