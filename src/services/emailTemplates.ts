@@ -13,6 +13,72 @@ import {
 const LOCAL_STORAGE_KEY = 'csc_email_templates_cache';
 
 /**
+ * Formats date into readable string: e.g. "Tuesday, September 15, 2026"
+ */
+export function formatEventDate(dateStr?: string): string {
+  if (!dateStr) return '';
+  try {
+    const clean = dateStr.trim();
+    if (/^[A-Za-z]+,\s+[A-Za-z]+/.test(clean)) return clean;
+    const parts = clean.split('T')[0].split('-');
+    let d: Date;
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      d = new Date(year, month, day, 12, 0, 0);
+    } else {
+      d = new Date(clean);
+    }
+    if (isNaN(d.getTime())) return clean;
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Formats single time string into 12-hour format with AM/PM: e.g. "13:30:00" -> "01:30 PM"
+ */
+function formatSingleTime(t: string): string {
+  const clean = t.trim();
+  if (!clean) return '';
+  if (/am|pm/i.test(clean)) return clean;
+  const match = clean.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return clean;
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  const formattedHours = hours < 10 ? `0${hours}` : `${hours}`;
+  return `${formattedHours}:${minutes} ${ampm}`;
+}
+
+/**
+ * Formats time or time range into 12-hour format with AM/PM
+ */
+export function formatEventTime(timeStr?: string): string {
+  if (!timeStr) return '';
+  try {
+    if (timeStr.includes(' - ')) {
+      return timeStr.split(' - ').map(formatSingleTime).join(' - ');
+    }
+    if (timeStr.includes(' to ')) {
+      return timeStr.split(' to ').map(formatSingleTime).join(' to ');
+    }
+    return formatSingleTime(timeStr);
+  } catch {
+    return timeStr;
+  }
+}
+
+/**
  * Replaces {{placeholder}} tokens in text with values from data map.
  */
 export function replaceTemplatePlaceholders(
@@ -462,12 +528,14 @@ export function renderEmailHtmlPreview(
       </div>
     `;
   } else if (template.category === 'event_broadcast') {
+    const formattedDate = formatEventDate(data.event_date) || 'Tuesday, September 15, 2026';
+    const formattedTime = formatEventTime(data.event_time) || '10:00 AM - 04:00 PM';
     categoryDetailBox = `
       <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
         <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Event Logistics</p>
-        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📅 <strong>Date:</strong> ${data.event_date || 'September 15, 2026'}</p>
-        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">⏰ <strong>Time:</strong> ${data.event_time || '10:00 AM - 04:00 PM'}</p>
-        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📍 <strong>Venue:</strong> ${data.event_venue || 'Auditorium 3, Chandigarh University'}</p>
+        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📅 <strong>Date:</strong> ${formattedDate}</p>
+        ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">⏰ <strong>Time:</strong> ${formattedTime}</p>` : ''}
+        <p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📍 <strong>Venue:</strong> ${data.event_venue || 'Block B, Audi 3, Chandigarh University'}</p>
       </div>
     `;
   }
@@ -486,6 +554,15 @@ export function renderEmailHtmlPreview(
       </div>
     `
     : '';
+
+  // Format footer paragraphs & line breaks (centered)
+  const footerContent = (footer || '')
+    .split(/\n\n+/)
+    .map(
+      (p, idx, arr) =>
+        `<p style="margin: 0${idx < arr.length - 1 ? ' 0 8px 0' : ''}; font-size: 12px; color: #64748b; font-weight: 500; line-height: 1.6; text-align: center;">${p.replace(/\n/g, '<br/>')}</p>`
+    )
+    .join('');
 
   return `
   <!DOCTYPE html>
@@ -535,9 +612,7 @@ export function renderEmailHtmlPreview(
             <!-- Footer -->
             <tr>
               <td style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 24px 32px; text-align: center;">
-                <p style="margin: 0; font-size: 12px; color: #64748b; font-weight: 500; line-height: 1.5;">
-                  ${footer}
-                </p>
+                ${footerContent}
               </td>
             </tr>
           </table>

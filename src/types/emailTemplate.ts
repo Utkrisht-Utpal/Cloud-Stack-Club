@@ -215,7 +215,7 @@ export const CATEGORY_VARIABLES: Record<EmailCategory, TemplateVariable[]> = {
   ],
   event_broadcast: [
     { key: '{{event_title}}', label: 'Event Title', sampleValue: 'DevOps & Kubernetes Cloud Hackathon', description: 'Name of announced event' },
-    { key: '{{event_date}}', label: 'Event Date', sampleValue: 'September 15, 2026', description: 'Scheduled date' },
+    { key: '{{event_date}}', label: 'Event Date', sampleValue: 'Tuesday, September 15, 2026', description: 'Scheduled date' },
     { key: '{{event_time}}', label: 'Event Time', sampleValue: '10:00 AM - 04:00 PM', description: 'Scheduled time' },
     { key: '{{event_venue}}', label: 'Event Venue', sampleValue: 'Block B, Audi 3, Chandigarh University', description: 'Location / Hall' },
     { key: '{{event_url}}', label: 'Registration URL', sampleValue: 'https://cloudstackclub.vercel.app/events', description: 'Direct event link' },

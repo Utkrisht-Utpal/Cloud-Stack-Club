@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Edit3,
   RotateCcw,
+  ChevronDown,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
@@ -196,6 +197,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+
   // Scope selection dialog state
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [scopeMode, setScopeMode] = useState<'global' | 'custom'>('global');
@@ -210,6 +214,19 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Click outside to close category sample dropdown
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target as Node)) {
+        setIsCategoryDropdownOpen(false);
+      }
+    };
+    if (isCategoryDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isCategoryDropdownOpen]);
 
   // Lock background scrolling completely when modal is open
   useEffect(() => {
@@ -247,7 +264,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isScopeModalOpen) {
+        if (isCategoryDropdownOpen) {
+          setIsCategoryDropdownOpen(false);
+        } else if (isScopeModalOpen) {
           setIsScopeModalOpen(false);
         } else if (isOpen) {
           onClose();
@@ -256,7 +275,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isScopeModalOpen, onClose]);
+  }, [isOpen, isCategoryDropdownOpen, isScopeModalOpen, onClose]);
 
   // Generate live email preview HTML based on current configuration
   const previewHtml = useMemo(() => {
@@ -671,27 +690,80 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 </span>
               </div>
 
-              {/* Sample Template Switcher & Refresh */}
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">
+              {/* Themed Sample Template Switcher & Refresh */}
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
                   Preview Sample:
                 </span>
-                <select
-                  value={previewCategory}
-                  onChange={(e) => setPreviewCategory(e.target.value as EmailCategory)}
-                  className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-[11px] font-bold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-                >
-                  <option value="approval">Member Approval</option>
-                  <option value="event_broadcast">Event Broadcast</option>
-                  <option value="contact_us">Contact Inquiry</option>
-                  <option value="event_feedback">Event Feedback</option>
-                  <option value="rejection">Member Rejection</option>
-                </select>
+
+                <div className="relative w-44 sm:w-48" ref={categoryDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsCategoryDropdownOpen((prev) => !prev)}
+                    className={`w-full h-8 px-2.5 rounded-xl border text-[11px] font-bold transition-all flex items-center justify-between cursor-pointer shadow-xs ${
+                      isCategoryDropdownOpen
+                        ? 'border-indigo-500 bg-indigo-50/80 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 ring-2 ring-indigo-500/20'
+                        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {(() => {
+                        const activeCat = CATEGORY_SCOPE_OPTIONS.find((c) => c.id === previewCategory);
+                        const Icon = activeCat?.icon || Sparkles;
+                        return (
+                          <>
+                            <Icon className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                            <span className="truncate">
+                              {activeCat?.name || 'Member Approval'}
+                            </span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ml-1 ${
+                        isCategoryDropdownOpen ? 'rotate-180 text-indigo-500' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Floating Custom Dropdown Menu with Exact Matching Width */}
+                  {isCategoryDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 w-full rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-700 shadow-2xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
+                      {CATEGORY_SCOPE_OPTIONS.map((cat) => {
+                        const isSelected = cat.id === previewCategory;
+                        const Icon = cat.icon;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setPreviewCategory(cat.id);
+                              setIsCategoryDropdownOpen(false);
+                            }}
+                            className={`w-full px-2 py-1.5 rounded-xl text-left text-[11px] font-semibold transition-all flex items-center justify-between cursor-pointer ${
+                              isSelected
+                                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                                : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-indigo-600 dark:hover:text-indigo-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`} />
+                              <span className="truncate">{cat.name}</span>
+                            </div>
+                            {isSelected && <Check className="w-3 h-3 text-white shrink-0 ml-1" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setRefreshKey((k) => k + 1)}
                   title="Force Refresh Preview"
-                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 transition-colors cursor-pointer"
+                  className="h-8 w-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-xs"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>

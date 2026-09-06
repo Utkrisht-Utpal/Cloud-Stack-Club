@@ -509,16 +509,22 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
 
             {/* Footer Notice / Text */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Footer Disclaimer / Notice
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Footer Disclaimer / Notice
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">Auto-Centered</span>
+              </div>
               <textarea
-                rows={2}
+                rows={3}
                 value={currentEdit.footer_text || ''}
                 onChange={(e) => setCurrentEdit((prev) => ({ ...prev, footer_text: e.target.value }))}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 custom-scrollbar leading-relaxed resize-y"
                 placeholder="This is an official communication from Cloud Stack Club..."
               />
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                <span className="font-semibold text-slate-500 dark:text-slate-400">Tip:</span> Press <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-mono">Enter</kbd> for a new line, or press <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[9px] font-mono">Enter</kbd> twice for clean paragraph spacing. All lines are automatically centered.
+              </p>
             </div>
 
             {/* Bottom Actions */}
