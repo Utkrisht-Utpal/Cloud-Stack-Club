@@ -254,7 +254,7 @@ export function renderEmailHtmlPreview(
         <td style="background: ${gradient}; padding: 0; text-align: center;">
           <div style="background: ${stripBg}; padding: 8px 16px; border-bottom: 1px solid ${stripBorder};">
             <span style="color: ${stripText}; font-size: 10px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase;">
-              🔒 OFFICIAL COMMUNICATION • CSC CHANDIGARH UNIVERSITY
+              Learn • Build • Deploy • Scale
             </span>
           </div>
           <div style="padding: 28px 32px 32px 32px;">
@@ -280,7 +280,7 @@ export function renderEmailHtmlPreview(
             </tr>
           </table>
           <div style="margin-top: 14px;">
-            <span style="display: inline-block; background: ${stripBg}; border: 1px solid ${stripBorder}; padding: 3px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: ${subtextColor}; text-transform: uppercase;">
+            <span style="display: inline-block; background: ${stripBg}; border: 1px solid ${stripBorder}; padding: 3px 12px; border-radius: 12px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: ${subtextColor}; text-transform: uppercase;">
               ✨ VERIFIED CLUB NOTIFICATION
             </span>
           </div>
