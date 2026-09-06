@@ -114,6 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const handleAdminClick = () => {
     if (isAdminLoggedIn) {
       setShowDashboard(true);
+      navigate('/admin');
     } else {
       openAdminModal();
     }
@@ -163,8 +164,12 @@ export const Navbar: React.FC<NavbarProps> = ({
       };
 
       if (!scrollToSection()) {
-        const timer = setTimeout(scrollToSection, 100);
-        return () => clearTimeout(timer);
+        const timer1 = setTimeout(scrollToSection, 100);
+        const timer2 = setTimeout(scrollToSection, 300);
+        return () => {
+          clearTimeout(timer1);
+          clearTimeout(timer2);
+        };
       }
     }
   }, [location.pathname, location.hash]);
@@ -214,6 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Desktop admin: show the club logo */}
               <Link
                 to="/"
+                onClick={() => setShowDashboard(false)}
                 className="hidden md:flex items-center gap-3 focus:outline-none group cursor-pointer shrink-0"
                 aria-label="Cloud Stack Club Home"
               >

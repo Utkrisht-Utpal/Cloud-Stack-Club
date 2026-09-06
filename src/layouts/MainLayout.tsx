@@ -59,7 +59,10 @@ export const MainLayout: React.FC = () => {
 
   // Handle URL-based modal opening (/join, /apply, /admin, /admin/login, /discrepancy, /query)
   const isJoinUrl = location.pathname === '/join' || location.pathname === '/apply';
-  const isAdminUrl = location.pathname === '/admin' || location.pathname === '/admin/login';
+  const isAdminUrl =
+    location.pathname === '/admin' ||
+    location.pathname === '/admin/login' ||
+    location.pathname.startsWith('/admin');
   const isDiscrepancyUrl = location.pathname === '/discrepancy' || location.pathname === '/query';
 
   useEffect(() => {
@@ -135,6 +138,11 @@ export const MainLayout: React.FC = () => {
     }
   }, [location.pathname, navigate]);
 
+  const handleAdminLogout = React.useCallback(async () => {
+    await logout();
+    navigate('/', { replace: true });
+  }, [logout, navigate]);
+
   const handleRegisterEventClick = React.useCallback((evt: Event) => {
     setSelectedRegisterEvent(evt);
   }, []);
@@ -162,8 +170,8 @@ export const MainLayout: React.FC = () => {
   })();
 
   // While session is being verified on page reload:
-  // If the admin dashboard was active, render a clean loading screen to prevent flashing public UI & popup
-  if (isLoading && wasAdminDashboardActive) {
+  // If the admin dashboard was active AND current URL is an admin URL, render a clean loading screen
+  if (isLoading && wasAdminDashboardActive && isAdminUrl) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden select-none">
         <CloudBackground />
@@ -177,14 +185,14 @@ export const MainLayout: React.FC = () => {
     );
   }
 
-  if (!isLoading && showDashboard && isAdminLoggedIn) {
+  if (!isLoading && isAdminLoggedIn && (showDashboard || isAdminUrl) && isAdminUrl) {
     return (
       <div className="relative min-h-screen flex flex-col selection:bg-blue-500 selection:text-white">
         <ScrollToTop />
         <CloudBackground />
         <Navbar
           isAdminDashboard={true}
-          onAdminLogout={logout}
+          onAdminLogout={handleAdminLogout}
           mobileNavOpen={mobileNavOpen}
           onToggleMobileNav={() => setMobileNavOpen((prev) => !prev)}
         />

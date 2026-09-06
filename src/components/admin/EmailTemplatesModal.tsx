@@ -64,6 +64,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   // Focus ref for variable insertion
   const bodyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const bannerDropdownRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -216,6 +217,36 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     },
     sampleData
   );
+
+  // Seamless real-time DOM update in iframe without reload flicker/blink on keystrokes
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc && doc.body) {
+        const parser = new DOMParser();
+        const newDoc = parser.parseFromString(previewHtml, 'text/html');
+
+        if (doc.title !== newDoc.title) {
+          doc.title = newDoc.title;
+        }
+
+        // Smoothly update head styles/tags if changed
+        if (doc.head && newDoc.head && doc.head.innerHTML !== newDoc.head.innerHTML) {
+          doc.head.innerHTML = newDoc.head.innerHTML;
+        }
+
+        // Smoothly update body DOM in-place with zero iframe reload blinking
+        if (doc.body && newDoc.body && doc.body.innerHTML !== newDoc.body.innerHTML) {
+          doc.body.innerHTML = newDoc.body.innerHTML;
+        }
+      }
+    } catch (err) {
+      console.warn('Iframe seamless DOM update notice:', err);
+    }
+  }, [previewHtml]);
 
   if (!mounted || !isOpen) return null;
 
@@ -621,11 +652,27 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
             <div className="flex-1 p-3 overflow-hidden">
               <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-[#f8fafc] dark:bg-slate-900/50">
                 <iframe
+                  ref={iframeRef}
                   key={`template-preview-${activeCategory}-${refreshKey}`}
                   srcDoc={previewHtml}
                   title="Email Live Preview"
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
                   sandbox="allow-same-origin allow-popups"
+                  onLoad={() => {
+                    try {
+                      const iframe = iframeRef.current;
+                      if (iframe) {
+                        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                        if (doc && doc.body) {
+                          const parser = new DOMParser();
+                          const newDoc = parser.parseFromString(previewHtml, 'text/html');
+                          if (doc.body.innerHTML !== newDoc.body.innerHTML) {
+                            doc.body.innerHTML = newDoc.body.innerHTML;
+                          }
+                        }
+                      }
+                    } catch {}
+                  }}
                 />
               </div>
             </div>

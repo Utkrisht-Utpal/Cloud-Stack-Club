@@ -51,6 +51,7 @@ export const AdminLoginModal: React.FC = () => {
         setLockoutUntil(null);
         setEmailInput('');
         setPasswordInput('');
+        navigate('/admin');
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');
@@ -64,7 +65,11 @@ export const AdminLoginModal: React.FC = () => {
     setEmailInput('');
     setPasswordInput('');
     closeAdminModal();
-    if (location.pathname === '/admin' || location.pathname === '/admin/login') {
+    if (
+      location.pathname === '/admin' ||
+      location.pathname === '/admin/login' ||
+      location.pathname.startsWith('/admin')
+    ) {
       navigate('/', { replace: true });
     }
   };
