@@ -262,6 +262,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   // Studio sub-tab: 'standard' (Gmail/External) vs 'institutional' (CUCHD @cuchd.in)
   const [studioTab, setStudioTab] = useState<'standard' | 'institutional'>('standard');
 
+  // All Loaded Templates Cache
+  const [allTemplates, setAllTemplates] = useState<Record<EmailCategory, EmailTemplateConfig>>(
+    DEFAULT_EMAIL_TEMPLATES
+  );
+
   // Standard Banner State
   const [selectedStyle, setSelectedStyle] = useState<BannerStyle>('modern_badge');
   const [selectedTheme, setSelectedTheme] = useState<BannerTheme>('classic_blue');
@@ -301,6 +306,23 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     'event_registration_team_member',
   ]);
 
+  const loadCategoryIntoControls = (
+    cat: EmailCategory,
+    templatesMap: Record<EmailCategory, EmailTemplateConfig>
+  ) => {
+    const tpl = templatesMap[cat] || DEFAULT_EMAIL_TEMPLATES[cat];
+    if (tpl.banner_style) setSelectedStyle(tpl.banner_style);
+    if (tpl.banner_theme) setSelectedTheme(tpl.banner_theme);
+    if (tpl.banner_text_color) setSelectedTextColor(tpl.banner_text_color);
+    if (tpl.banner_title) setPreviewTitle(tpl.banner_title);
+    if (tpl.banner_subtitle) setPreviewSubtitle(tpl.banner_subtitle);
+    if (tpl.institutional_theme) {
+      setInstitutionalTheme(tpl.institutional_theme);
+    } else {
+      setInstitutionalTheme(DEFAULT_INSTITUTIONAL_THEME);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -322,18 +344,10 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
         document.documentElement.style.setProperty('overflow', 'hidden', 'important');
       }
 
-      // Load existing active banner style from approval template
+      // Load existing active banner style and institutional theme for current preview category
       getAllEmailTemplates().then((tpls) => {
-        if (tpls.approval) {
-          if (tpls.approval.banner_style) setSelectedStyle(tpls.approval.banner_style);
-          if (tpls.approval.banner_theme) setSelectedTheme(tpls.approval.banner_theme);
-          if (tpls.approval.banner_text_color) setSelectedTextColor(tpls.approval.banner_text_color);
-          if (tpls.approval.banner_title) setPreviewTitle(tpls.approval.banner_title);
-          if (tpls.approval.banner_subtitle) setPreviewSubtitle(tpls.approval.banner_subtitle);
-          if (tpls.approval.institutional_theme) {
-            setInstitutionalTheme(tpls.approval.institutional_theme);
-          }
-        }
+        setAllTemplates(tpls);
+        loadCategoryIntoControls(previewCategory, tpls);
       });
 
       return () => {
@@ -364,10 +378,16 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, isCategoryDropdownOpen, isScopeModalOpen, onClose]);
 
+  const handleSelectPreviewCategory = (cat: EmailCategory) => {
+    setPreviewCategory(cat);
+    setIsCategoryDropdownOpen(false);
+    loadCategoryIntoControls(cat, allTemplates);
+  };
+
   // Generate live email preview HTML based on current configuration
   const previewHtml = useMemo(() => {
     const baseTemplate: EmailTemplateConfig = {
-      ...DEFAULT_EMAIL_TEMPLATES[previewCategory],
+      ...(allTemplates[previewCategory] || DEFAULT_EMAIL_TEMPLATES[previewCategory]),
       banner_style: selectedStyle,
       banner_theme: selectedTheme,
       banner_text_color: selectedTextColor,
@@ -378,6 +398,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     const sampleData = getSampleCategoryData(previewCategory);
     return renderEmailHtmlPreview(baseTemplate, sampleData, previewFormat);
   }, [
+    allTemplates,
     previewCategory,
     previewFormat,
     selectedStyle,
@@ -489,6 +510,16 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
           targets as EmailCategory[],
           institutionalTheme
         );
+        setAllTemplates((prev) => {
+          const updated = { ...prev };
+          (targets as EmailCategory[]).forEach((cat) => {
+            updated[cat] = {
+              ...(updated[cat] || DEFAULT_EMAIL_TEMPLATES[cat]),
+              institutional_theme: institutionalTheme,
+            };
+          });
+          return updated;
+        });
       } else {
         await applyBannerDesignToCategories(
           targets as EmailCategory[],
@@ -496,6 +527,18 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
           selectedTheme,
           selectedTextColor
         );
+        setAllTemplates((prev) => {
+          const updated = { ...prev };
+          (targets as EmailCategory[]).forEach((cat) => {
+            updated[cat] = {
+              ...(updated[cat] || DEFAULT_EMAIL_TEMPLATES[cat]),
+              banner_style: selectedStyle,
+              banner_theme: selectedTheme,
+              banner_text_color: selectedTextColor,
+            };
+          });
+          return updated;
+        });
       }
       setAppliedCount(targets.length);
       setApplySuccess(true);
@@ -1315,10 +1358,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                           <button
                             key={cat.id}
                             type="button"
-                            onClick={() => {
-                              setPreviewCategory(cat.id);
-                              setIsCategoryDropdownOpen(false);
-                            }}
+                            onClick={() => handleSelectPreviewCategory(cat.id)}
                             className={`w-full px-2 py-1.5 rounded-xl text-left text-[11px] font-semibold transition-all flex items-center justify-between cursor-pointer ${
                               isSelected
                                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
