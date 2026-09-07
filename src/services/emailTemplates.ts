@@ -125,10 +125,12 @@ export async function getAllEmailTemplates(): Promise<Record<EmailCategory, Emai
   };
 
   // Merge from localStorage cache first
+  const localCache: Record<string, EmailTemplateConfig> = {};
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (raw) {
       const cached = JSON.parse(raw);
+      Object.assign(localCache, cached);
       Object.assign(result, cached);
     }
   } catch {}
@@ -141,12 +143,26 @@ export async function getAllEmailTemplates(): Promise<Record<EmailCategory, Emai
         for (const row of data) {
           const cat = row.category as EmailCategory;
           if (result[cat]) {
-            result[cat] = {
-              ...result[cat],
-              ...row,
-              name: row.name || result[cat].name,
-              description: row.description || result[cat].description,
-            };
+            const localItem = localCache[cat];
+            const dbTime = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+            const localTime = localItem?.updated_at ? new Date(localItem.updated_at).getTime() : 0;
+
+            if (localTime > dbTime) {
+              result[cat] = {
+                ...row,
+                ...localItem,
+              };
+            } else {
+              result[cat] = {
+                ...result[cat],
+                ...row,
+                name: row.name || result[cat].name,
+                description: row.description || result[cat].description,
+                ...(localItem?.institutional_theme && !row.institutional_theme
+                  ? { institutional_theme: localItem.institutional_theme }
+                  : {}),
+              };
+            }
           }
         }
         try {
@@ -173,7 +189,7 @@ export async function saveEmailTemplate(
     updated_at: now,
   };
 
-  // Update local cache
+  // Update local cache immediately
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     const cached = raw ? JSON.parse(raw) : {};
@@ -204,10 +220,19 @@ export async function saveEmailTemplate(
       if (template.institutional_theme) {
         upsertObj.institutional_theme = template.institutional_theme;
       }
-      const { error } = await supabase.from('email_templates').upsert(
+      let { error } = await supabase.from('email_templates').upsert(
         upsertObj,
         { onConflict: 'category' }
       );
+      if (error && upsertObj.institutional_theme) {
+        // Fallback: If DB table schema doesn't have institutional_theme column yet, upsert remaining standard columns
+        delete upsertObj.institutional_theme;
+        const retry = await supabase.from('email_templates').upsert(
+          upsertObj,
+          { onConflict: 'category' }
+        );
+        error = retry.error;
+      }
       if (error) {
         console.warn('Failed to upsert email_template to Supabase:', error);
       }
