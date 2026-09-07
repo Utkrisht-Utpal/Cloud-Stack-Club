@@ -59,8 +59,18 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [isFeedbackWindow, setIsFeedbackWindow] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [regCountsMap, setRegCountsMap] = useState<Record<string, number>>({});
-  const { isAdminLoggedIn } = useAdminAuth();
+  const { isAdminLoggedIn, isAdminModalOpen } = useAdminAuth();
   const userDismissedRef = useRef(false);
+
+  // If user was an admin or is logging out / in admin modal, do not show event ad popup
+  useEffect(() => {
+    const handleAdminLogout = () => {
+      userDismissedRef.current = true;
+      setIsOpen(false);
+    };
+    window.addEventListener('csc-admin-logout', handleAdminLogout);
+    return () => window.removeEventListener('csc-admin-logout', handleAdminLogout);
+  }, []);
 
   // The ad pop up should only come when visiting the Home page or sections of that (e.g. /about, /domains, /contact)
   const isHomeOrSection =
@@ -170,7 +180,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     setIsOpen(false);
   };
 
-  if (!isHomeOrSection || !activeAdEvent || !isOpen) return null;
+  if (!isHomeOrSection || !activeAdEvent || !isOpen || isAdminModalOpen) return null;
 
   const diffDays = getDiffDays(activeAdEvent.date);
   const isFeedbackActive = isFeedbackWindow || diffDays === 0 || diffDays === -1 || activeAdEvent.status === 'live';
@@ -219,10 +229,10 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
           <button
             type="button"
             onClick={handleClose}
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 p-2.5 rounded-full bg-slate-950/80 hover:bg-slate-950 text-white backdrop-blur-md transition-all transform hover:scale-110 shadow-2xl cursor-pointer border border-white/20"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-30 p-2.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white backdrop-blur-md transition-all transform hover:scale-110 shadow-md dark:shadow-2xl cursor-pointer border border-slate-200 dark:border-white/10"
             aria-label="Close Announcement"
           >
-            <X className="w-5 h-5 text-white" />
+            <X className="w-5 h-5" />
           </button>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto">

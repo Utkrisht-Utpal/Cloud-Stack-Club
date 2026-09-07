@@ -154,6 +154,19 @@ export const MainLayout: React.FC = () => {
     }
   }, [logout, navigate]);
 
+  useEffect(() => {
+    const handleInactivityLogout = () => {
+      isLoggingOutRef.current = true;
+      setAdminModalDismissed(true);
+      navigate('/', { replace: true });
+      setTimeout(() => {
+        isLoggingOutRef.current = false;
+      }, 500);
+    };
+    window.addEventListener('csc-admin-logout', handleInactivityLogout);
+    return () => window.removeEventListener('csc-admin-logout', handleInactivityLogout);
+  }, [navigate]);
+
   const handleRegisterEventClick = React.useCallback((evt: Event) => {
     setSelectedRegisterEvent(evt);
   }, []);
