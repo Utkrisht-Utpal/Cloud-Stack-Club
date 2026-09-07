@@ -564,11 +564,11 @@ export const EmailLogsManagement: React.FC = () => {
               <div>{getCategoryBadge(selectedLog.category)}</div>
               <div>
                 {selectedLog.status === 'sent' ? (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    Delivered Successfully
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" title="Accepted by Gmail SMTP relay for delivery to recipient host">
+                    SMTP Accepted (Dispatched)
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                     Failed to Send
                   </span>
                 )}
@@ -600,6 +600,27 @@ export const EmailLogsManagement: React.FC = () => {
                 </span>
               </div>
             </div>
+
+            {/* SMTP Response & Technical Metadata */}
+            {selectedLog.metadata && (selectedLog.metadata.smtp_message_id || selectedLog.metadata.smtp_response) && (
+              <div className="space-y-1.5 pb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SMTP Relay Handshake (Gmail):</span>
+                <div className="p-3 rounded-2xl bg-slate-950 text-slate-200 border border-slate-800 space-y-1 font-mono text-[10px]">
+                  {selectedLog.metadata.smtp_message_id && (
+                    <div className="truncate">
+                      <span className="text-slate-400">Message-ID: </span>
+                      <span className="text-emerald-400">{selectedLog.metadata.smtp_message_id}</span>
+                    </div>
+                  )}
+                  {selectedLog.metadata.smtp_response && (
+                    <div className="truncate">
+                      <span className="text-slate-400">SMTP Response: </span>
+                      <span className="text-sky-400">{selectedLog.metadata.smtp_response}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Rejection reason or custom metadata */}
             {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
@@ -640,6 +661,12 @@ export const EmailLogsManagement: React.FC = () => {
                     <div>
                       <span className="font-bold text-blue-600 dark:text-sky-400">Department: </span>
                       <span className="text-slate-700 dark:text-slate-300">{selectedLog.metadata.department}</span>
+                    </div>
+                  )}
+                  {selectedLog.metadata.test_mode && (
+                    <div>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">Diagnostic Mode: </span>
+                      <span className="text-slate-700 dark:text-slate-300 uppercase font-mono">{selectedLog.metadata.test_mode}</span>
                     </div>
                   )}
                 </div>

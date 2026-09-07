@@ -105,6 +105,22 @@ export async function sendContactUsStatusEmail(
 }
 
 /**
+ * Dispatches a diagnostic test email to test recipient domain deliverability.
+ * Modes: 'plain_text' | 'minimal_html' | 'full_template'
+ */
+export async function sendDiagnosticTestEmail(
+  recipientEmail: string,
+  testMode: 'plain_text' | 'minimal_html' | 'full_template' = 'minimal_html',
+  recipientName?: string
+): Promise<SendEmailResult> {
+  return invokeSendEmail('test_diagnostic', {
+    recipient_email: recipientEmail,
+    test_mode: testMode,
+    recipient_name: recipientName || 'Diagnostic Tester',
+  });
+}
+
+/**
  * Dispatches an acknowledgment/status update email for an Event Feedback submission.
  */
 export async function sendEventFeedbackEmail(
