@@ -120,6 +120,9 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sessionStorage.removeItem('csc_show_dashboard');
     } catch {}
 
+    // Dispatch global logout event so React Router components can navigate without reload
+    window.dispatchEvent(new CustomEvent('csc-admin-logout'));
+
     if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin')) {
       window.history.replaceState(null, '', '/');
     }
