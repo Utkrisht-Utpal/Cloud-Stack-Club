@@ -262,6 +262,20 @@ export async function applyGlobalBannerDesign(
 }
 
 /**
+ * Check if recipient belongs to Chandigarh University institutional domains
+ */
+export function isInstitutionalRecipient(email?: string): boolean {
+  if (!email) return false;
+  const clean = email.trim().toLowerCase();
+  return (
+    clean.endsWith('@cuchd.in') ||
+    clean.endsWith('@cumail.in') ||
+    clean.includes('.cuchd.in') ||
+    clean.includes('.cumail.in')
+  );
+}
+
+/**
  * Resets a template category back to system default.
  */
 export async function resetEmailTemplate(
@@ -276,8 +290,11 @@ export async function resetEmailTemplate(
  */
 export function renderEmailHtmlPreview(
   template: EmailTemplateConfig,
-  data: Record<string, any>
+  data: Record<string, any>,
+  previewFormat: 'standard' | 'institutional' = 'standard'
 ): string {
+  const isInst = previewFormat === 'institutional' || (previewFormat !== 'standard' && isInstitutionalRecipient(data.email));
+
   const bannerTitle = replaceTemplatePlaceholders(template.banner_title || 'Cloud Stack Club', data);
   const bannerSubtitle = replaceTemplatePlaceholders(template.banner_subtitle || 'Chandigarh University', data);
   const subject = replaceTemplatePlaceholders(template.subject, data);
@@ -288,6 +305,179 @@ export function renderEmailHtmlPreview(
   const footer = template.footer_text
     ? replaceTemplatePlaceholders(template.footer_text, data)
     : 'This is an official communication from Cloud Stack Club, Chandigarh University.';
+
+  if (isInst) {
+    const paragraphs = rawBody
+      .split(/\n\n+/)
+      .map((p) => `<p style="margin: 0 0 16px 0; color: #e2e8f0; font-size: 14px; line-height: 1.65;">${p.replace(/\n/g, '<br/>')}</p>`)
+      .join('');
+
+    let detailBox = '';
+    if (template.category === 'approval') {
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid #383838;">
+          <p style="margin: 0 0 10px 0; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Membership Details</p>
+          <p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">Name:</strong> ${data.name || 'Member'}</p>
+          <p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">Member ID:</strong> ${data.member_id || 'CSC-26-4892'}</p>
+          <p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">Department:</strong> ${data.department || 'Computer Science & Engineering'}</p>
+          <p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">Status:</strong> <span style="color: #4ade80; font-weight: 800;">Active Member</span></p>
+        </div>
+      `;
+    } else if (template.category === 'rejection') {
+      detailBox = `
+        <div style="background-color: #382723; border-left: 4px solid #f97316; border-radius: 8px; padding: 14px 18px; margin: 24px 0; color: #fdba74; font-size: 13.5px; font-weight: 500; line-height: 1.5;">
+          <p style="margin: 0 0 6px 0; font-size: 11px; color: #fb923c; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Feedback from Review Committee</p>
+          <p style="margin: 0; font-style: italic;">"${data.rejection_reason || 'Application criteria were not met for the current intake cycle.'}"</p>
+        </div>
+      `;
+    } else if (template.category === 'contact_us') {
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid #383838;">
+          <p style="margin: 0 0 10px 0; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Inquiry Status: <span style="color: #38bdf8; font-weight: 800;">${(data.new_status || 'RESOLVED').toUpperCase()}</span></p>
+          <div style="margin-top: 10px; padding: 12px 14px; background-color: #252525; border-radius: 8px; border: 1px solid #333333;">
+            <p style="margin: 0 0 4px 0; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Administrator Response:</p>
+            <p style="margin: 0; font-size: 13.5px; color: #e2e8f0; line-height: 1.5;">${data.admin_reply || 'Your query has been acknowledged and processed.'}</p>
+          </div>
+        </div>
+      `;
+    } else if (template.category === 'event_feedback') {
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid #383838;">
+          <p style="margin: 0 0 8px 0; font-size: 11px; color: #4ade80; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Club Remarks</p>
+          <p style="margin: 0; font-size: 13.5px; color: #e2e8f0; line-height: 1.5;">${data.admin_note || 'Thank you for sharing your feedback with us.'}</p>
+        </div>
+      `;
+    } else if (template.category === 'event_broadcast') {
+      const formattedDate = formatEventDate(data.event_date);
+      const formattedTime = formatEventTime(data.event_time);
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid #383838;">
+          <p style="margin: 0 0 10px 0; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Event Logistics</p>
+          ${formattedDate ? `<p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">📅 Date:</strong> ${formattedDate}</p>` : ''}
+          ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">⏰ Time:</strong> ${formattedTime}</p>` : ''}
+          ${data.event_venue ? `<p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><strong style="color: #ffffff;">📍 Venue:</strong> ${data.event_venue}</p>` : ''}
+        </div>
+      `;
+    } else if (template.category === 'event_registration_individual') {
+      const formattedDate = formatEventDate(data.event_date);
+      const formattedTime = formatEventTime(data.event_time);
+      const deptYear = [data.department, data.year].filter(Boolean).join(' - ');
+      const participantDisplay = deptYear ? `${data.name || 'Participant'} (${deptYear})` : (data.name || 'Participant');
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid #383838;">
+          <p style="margin: 0 0 12px 0; font-size: 11px; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Registration & Event Details</p>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #e2e8f0; line-height: 1.8;">
+            <tr>
+              <td style="padding: 3px 0; width: 140px; color: #94a3b8;"><strong>Event:</strong></td>
+              <td style="padding: 3px 0; font-weight: 700; color: #ffffff;">${data.event_title || 'Club Event'}</td>
+            </tr>
+            ${formattedDate ? `
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>Date:</strong></td>
+              <td style="padding: 3px 0; color: #e2e8f0;">${formattedDate}</td>
+            </tr>` : ''}
+            ${formattedTime ? `
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>Time:</strong></td>
+              <td style="padding: 3px 0; color: #e2e8f0;">${formattedTime}</td>
+            </tr>` : ''}
+            ${data.event_venue ? `
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>Venue:</strong></td>
+              <td style="padding: 3px 0; color: #e2e8f0;">${data.event_venue}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>Participant:</strong></td>
+              <td style="padding: 3px 0; font-weight: 600; color: #ffffff;">${participantDisplay}</td>
+            </tr>
+            ${data.uid ? `
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>University ID:</strong></td>
+              <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #38bdf8;">${data.uid}</td>
+            </tr>` : ''}
+            ${data.registration_number ? `
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>Registration ID:</strong></td>
+              <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #ffffff;">${data.registration_number}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding: 3px 0; color: #94a3b8;"><strong>Pass Status:</strong></td>
+              <td style="padding: 3px 0;"><span style="display: inline-block; background-color: #14532d; color: #4ade80; font-weight: 800; font-size: 11px; padding: 2px 10px; border-radius: 9999px; border: 1px solid #22c55e;">CONFIRMED</span></td>
+            </tr>
+          </table>
+        </div>
+        <div style="background-color: #382723; border-left: 4px solid #f97316; border-radius: 8px; padding: 14px 18px; margin: 20px 0; color: #fdba74; font-size: 13.5px; font-weight: 500; line-height: 1.5;">
+          ⚠️ <strong>Important Notice:</strong> Please report to the venue 15 minutes before start time with your Student ID Card.
+        </div>
+      `;
+    }
+
+    const ctaHtml = buttonText
+      ? `
+        <div style="background-color: #1a261f; border: 1px solid #2d4d38; border-radius: 12px; padding: 22px 18px; text-align: center; margin: 24px 0;">
+          <div style="color: #86efac; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;">OFFICIAL ACTION LINK</div>
+          <a href="${buttonUrl}" style="background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
+            ${buttonText}
+          </a>
+          <div style="margin-top: 10px;">
+            <a href="${buttonUrl}" style="color: #4ade80; font-size: 11px; text-decoration: underline; word-break: break-all;">${buttonUrl}</a>
+          </div>
+        </div>
+      `
+      : '';
+
+    const footerInstContent = (footer || '')
+      .split(/\n\n+/)
+      .map(
+        (p, idx, arr) =>
+          `<p style="margin: 0${idx < arr.length - 1 ? ' 0 6px 0' : ' 0 10px 0'}; font-size: 11px; color: #94a3b8; font-weight: 500; line-height: 1.5; text-align: center;">${p.replace(/\n/g, '<br/>')}</p>`
+      )
+      .join('');
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #181818; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e2e8f0;">
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #181818; padding: 30px 10px;">
+    <tr>
+      <td align="center">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #252525; border-radius: 16px; overflow: hidden; border: 1px solid #383838;">
+          <tr>
+            <td style="padding: 28px 24px 20px 24px; text-align: center; border-bottom: 1px solid #383838;">
+              <img src="https://pub-02eede7e093249b58dcbb8311443a76d.r2.dev/assets/email_logo.png" alt="Cloud Stack Club" width="52" height="52" style="display: block; width: 52px; height: 52px; object-fit: contain; margin: 0 auto 12px auto; border: 0;" />
+              <div style="color: #38bdf8; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;">
+                ${bannerSubtitle.includes('•') ? bannerSubtitle : `CLOUD STACK CLUB • ${bannerSubtitle}`}
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 28px; text-align: left;">
+              <h2 style="color: #fa7c64; font-size: 22px; font-weight: 800; margin: 0 0 18px 0; letter-spacing: -0.3px; text-transform: uppercase;">${headline}</h2>
+              ${paragraphs}
+              ${detailBox}
+              ${ctaHtml}
+              <p style="color: #cbd5e1; font-size: 14px; margin-top: 24px; line-height: 1.6;">
+                Regards,<br/><strong style="color: #38bdf8;">Cloud Stack Club Organizing Team</strong>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #1f1f1f; border-top: 1px solid #383838; padding: 22px 24px; text-align: center;">
+              ${footerInstContent}
+              <p style="margin: 0; font-size: 12px;"><a href="https://cloudstackclub.vercel.app" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Visit Club Portal</a></p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+  }
 
   // Theme & Banner Style
   const themeKey = template.banner_theme || 'classic_blue';

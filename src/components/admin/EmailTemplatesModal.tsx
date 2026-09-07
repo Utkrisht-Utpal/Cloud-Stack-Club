@@ -66,6 +66,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   const [includeButton, setIncludeButton] = useState(true);
   const [isBannerDropdownOpen, setIsBannerDropdownOpen] = useState(false);
   const [showVariablesHelper, setShowVariablesHelper] = useState(true);
+  const [previewTarget, setPreviewTarget] = useState<'standard' | 'institutional'>('standard');
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Focus ref for variable insertion
@@ -216,7 +217,8 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
       button_text: includeButton ? currentEdit.button_text : undefined,
       button_url: includeButton ? currentEdit.button_url : undefined,
     },
-    sampleData
+    sampleData,
+    previewTarget
   );
 
   // Initial HTML baseline (only refreshed on category change or explicit refresh, preventing srcdoc reload flash)
@@ -627,19 +629,42 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
             }`}
           >
             {/* Mock Email Client Toolbar */}
-            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs flex items-center justify-between shrink-0">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs flex items-center justify-between shrink-0 flex-wrap gap-2">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-rose-500/80 inline-block" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80 inline-block" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 inline-block" />
-                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 ml-2">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 ml-2 hidden sm:inline">
                   Live Inbox Mockup
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-slate-400">
-                  Sample Student View
-                </span>
+                {/* Domain Format Toggle */}
+                <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700/60">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTarget('standard')}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                      previewTarget === 'standard'
+                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-sky-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    🎨 Gmail / External
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewTarget('institutional')}
+                    className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+                      previewTarget === 'institutional'
+                        ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-sky-400 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    🏛️ CUCHD (@cuchd.in)
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setRefreshKey((k) => k + 1)}
@@ -657,6 +682,18 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
                 <span className="text-slate-400 font-bold w-14">From:</span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   Cloud Stack Club <span className="text-slate-400">&lt;cloudstackclub@cumail.in&gt;</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 font-bold w-14">To:</span>
+                <span className="font-semibold text-slate-900 dark:text-white">
+                  {sampleData.name || 'Sample Student'}{' '}
+                  <span className="text-slate-400 font-mono text-[11px]">
+                    &lt;{previewTarget === 'institutional' ? '24bcf10003@cuchd.in' : (sampleData.email || 'student@gmail.com')}&gt;
+                  </span>
+                </span>
+                <span className="ml-auto px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wide bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                  {previewTarget === 'institutional' ? '🏢 SCL: 1 Clean Card' : '🎨 Branded Design Studio'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
