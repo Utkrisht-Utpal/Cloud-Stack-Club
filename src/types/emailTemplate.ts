@@ -222,6 +222,7 @@ export interface EmailTemplateConfig {
   banner_subtitle?: string;
   headline: string;
   body_text: string;
+  notice_text?: string;
   button_text?: string;
   button_url?: string;
   footer_text?: string;

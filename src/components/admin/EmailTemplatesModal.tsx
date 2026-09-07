@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Ticket,
   Users2,
+  AlertTriangle,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
@@ -64,6 +65,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [activeTabMobile, setActiveTabMobile] = useState<'editor' | 'preview'>('editor');
   const [includeButton, setIncludeButton] = useState(true);
+  const [includeNotice, setIncludeNotice] = useState(false);
   const [isBannerDropdownOpen, setIsBannerDropdownOpen] = useState(false);
   const [showVariablesHelper, setShowVariablesHelper] = useState(true);
   const [previewTarget, setPreviewTarget] = useState<'standard' | 'institutional'>('standard');
@@ -132,6 +134,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
         const tpl = loaded[activeCategory] || DEFAULT_EMAIL_TEMPLATES[activeCategory];
         setCurrentEdit(tpl);
         setIncludeButton(Boolean(tpl.button_text));
+        setIncludeNotice(Boolean(tpl.notice_text && tpl.notice_text.trim()));
       });
     }
   }, [isOpen]);
@@ -142,6 +145,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     const tpl = templates[cat] || DEFAULT_EMAIL_TEMPLATES[cat];
     setCurrentEdit({ ...tpl });
     setIncludeButton(Boolean(tpl.button_text));
+    setIncludeNotice(Boolean(tpl.notice_text && tpl.notice_text.trim()));
     setIsBannerDropdownOpen(false);
     setSaveSuccess(false);
   };
@@ -181,6 +185,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
         ...currentEdit,
         button_text: includeButton ? currentEdit.button_text : undefined,
         button_url: includeButton ? currentEdit.button_url : undefined,
+        notice_text: includeNotice ? (currentEdit.notice_text || '') : undefined,
       };
       const saved = await saveEmailTemplate(payload);
       setTemplates((prev) => ({ ...prev, [saved.category]: saved }));
@@ -202,6 +207,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
         setTemplates((prev) => ({ ...prev, [activeCategory]: reset }));
         setCurrentEdit({ ...reset });
         setIncludeButton(Boolean(reset.button_text));
+        setIncludeNotice(Boolean(reset.notice_text && reset.notice_text.trim()));
         setSaveSuccess(true);
         setTimeout(() => setSaveSuccess(false), 2500);
       } finally {
@@ -216,6 +222,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
       ...currentEdit,
       button_text: includeButton ? currentEdit.button_text : undefined,
       button_url: includeButton ? currentEdit.button_url : undefined,
+      notice_text: includeNotice ? currentEdit.notice_text : undefined,
     },
     sampleData,
     previewTarget
@@ -555,6 +562,55 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
                       placeholder="https://..."
                     />
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* Optional Notice / Alert Callout Section */}
+            <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-500/10 border border-amber-500/20 dark:border-amber-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                    <AlertTriangle className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                      Important Notice / Alert Callout (Optional)
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Highlight key instructions, timing, venue rules, or warnings
+                    </span>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={includeNotice}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setIncludeNotice(checked);
+                    if (checked && (!currentEdit.notice_text || !currentEdit.notice_text.trim())) {
+                      setCurrentEdit((prev) => ({
+                        ...prev,
+                        notice_text: '⚠️ Important Notice: Please report to the venue 15 minutes before start time with your Student ID Card.',
+                      }));
+                    }
+                  }}
+                  className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                />
+              </div>
+
+              {includeNotice && (
+                <div className="space-y-1.5 pt-2 border-t border-amber-500/20 dark:border-amber-500/30">
+                  <textarea
+                    rows={2}
+                    value={currentEdit.notice_text || ''}
+                    onChange={(e) => setCurrentEdit((prev) => ({ ...prev, notice_text: e.target.value }))}
+                    className="w-full p-3 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-white dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 custom-scrollbar leading-relaxed resize-y"
+                    placeholder="e.g. ⚠️ Important Notice: Please report to the venue 15 minutes before start time..."
+                  />
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                    Styling seamlessly adapts to your custom palette colors in Design Studio and institutional format.
+                  </p>
                 </div>
               )}
             </div>

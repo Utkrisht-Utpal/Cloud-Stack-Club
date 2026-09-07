@@ -211,6 +211,7 @@ export async function saveEmailTemplate(
         banner_subtitle: template.banner_subtitle || null,
         headline: template.headline,
         body_text: template.body_text,
+        notice_text: template.notice_text || null,
         button_text: template.button_text || null,
         button_url: template.button_url || null,
         footer_text: template.footer_text || null,
@@ -224,9 +225,10 @@ export async function saveEmailTemplate(
         upsertObj,
         { onConflict: 'category' }
       );
-      if (error && upsertObj.institutional_theme) {
-        // Fallback: If DB table schema doesn't have institutional_theme column yet, upsert remaining standard columns
+      if (error && (upsertObj.institutional_theme || upsertObj.notice_text)) {
+        // Fallback: If DB table schema doesn't have newest columns yet, upsert remaining standard columns
         delete upsertObj.institutional_theme;
+        delete upsertObj.notice_text;
         const retry = await supabase.from('email_templates').upsert(
           upsertObj,
           { onConflict: 'category' }
@@ -355,6 +357,7 @@ export function renderEmailHtmlPreview(
   const footer = template.footer_text
     ? replaceTemplatePlaceholders(template.footer_text, data)
     : 'This is an official communication from Cloud Stack Club, Chandigarh University.';
+  const rawNotice = template.notice_text ? replaceTemplatePlaceholders(template.notice_text, data) : '';
 
   if (isInst) {
     const instTheme = template.institutional_theme || {};
@@ -374,6 +377,21 @@ export function renderEmailHtmlPreview(
     const noticeTextColor = instTheme.noticeTextColor || '#fdba74';
     const footerTextColor = instTheme.footerTextColor || '#94a3b8';
     const footerLinkColor = instTheme.footerLinkColor || '#38bdf8';
+
+    let noticeInstHtml = '';
+    if (rawNotice && rawNotice.trim()) {
+      const noticeParagraphs = rawNotice
+        .split(/\n\n+/)
+        .map((p) => `<p style="margin: 0 0 8px 0; line-height: 1.5;">${p.replace(/\n/g, '<br/>')}</p>`)
+        .join('')
+        .replace(/<p style="margin: 0 0 8px 0; line-height: 1.5;">(.*?)<\/p>$/, '<p style="margin: 0; line-height: 1.5;">$1</p>');
+
+      noticeInstHtml = `
+        <div style="background-color: ${noticeBg}; border-left: 4px solid ${noticeBorder}; border-radius: 8px; padding: 14px 18px; margin: 20px 0; color: ${noticeTextColor}; font-size: 13.5px; font-weight: 500; line-height: 1.5;">
+          ${noticeParagraphs}
+        </div>
+      `;
+    }
 
     const paragraphs = rawBody
       .split(/\n\n+/)
@@ -474,9 +492,6 @@ export function renderEmailHtmlPreview(
             </tr>
           </table>
         </div>
-        <div style="background-color: ${noticeBg}; border-left: 4px solid ${noticeBorder}; border-radius: 8px; padding: 14px 18px; margin: 20px 0; color: ${noticeTextColor}; font-size: 13.5px; font-weight: 500; line-height: 1.5;">
-          ⚠️ <strong>Important Notice:</strong> Please report to the venue 15 minutes before start time with your Student ID Card.
-        </div>
       `;
     }
 
@@ -527,6 +542,7 @@ export function renderEmailHtmlPreview(
               <h2 style="color: ${titleColor}; font-size: 22px; font-weight: 800; margin: 0 0 18px 0; letter-spacing: -0.3px; text-transform: uppercase;">${headline}</h2>
               ${paragraphs}
               ${detailBox}
+              ${noticeInstHtml}
               ${ctaHtml}
             </td>
           </tr>
@@ -1030,6 +1046,22 @@ export function renderEmailHtmlPreview(
   const buttonTextColor = theme.buttonTextColor;
   const buttonShadow = theme.buttonShadow;
 
+  // Optional Notice Callout Box for Standard Format
+  let noticeStdHtml = '';
+  if (rawNotice && rawNotice.trim()) {
+    const noticeParagraphs = rawNotice
+      .split(/\n\n+/)
+      .map((p) => `<p style="margin: 0 0 8px 0; line-height: 1.5;">${p.replace(/\n/g, '<br/>')}</p>`)
+      .join('')
+      .replace(/<p style="margin: 0 0 8px 0; line-height: 1.5;">(.*?)<\/p>$/, '<p style="margin: 0; line-height: 1.5;">$1</p>');
+
+    noticeStdHtml = `
+      <div style="background-color: #f8fafc; border-left: 4px solid ${borderAccent}; border-radius: 12px; padding: 14px 18px; margin: 20px 0; color: #334155; font-size: 13.5px; font-weight: 500; line-height: 1.5; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+        ${noticeParagraphs}
+      </div>
+    `;
+  }
+
   // Action Button
   const buttonHtml = buttonText
     ? `
@@ -1092,6 +1124,7 @@ export function renderEmailHtmlPreview(
                 <h2 style="color: #1e293b; font-size: 20px; font-weight: 800; margin-top: 0; margin-bottom: 16px;">${headline}</h2>
                 ${paragraphs}
                 ${categoryDetailBox}
+                ${noticeStdHtml}
                 ${buttonHtml}
               </td>
             </tr>
