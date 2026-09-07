@@ -26,18 +26,25 @@ import {
   ChevronDown,
   Ticket,
   Users2,
+  Building2,
+  CheckCircle2,
+  SlidersHorizontal,
 } from 'lucide-react';
 import type { EmailCategory } from '../../types/email';
 import {
   DEFAULT_EMAIL_TEMPLATES,
+  DEFAULT_INSTITUTIONAL_THEME,
+  INSTITUTIONAL_PRESETS,
   type BannerStyle,
   type BannerTheme,
   type BannerTextColor,
   type EmailTemplateConfig,
+  type InstitutionalThemeConfig,
 } from '../../types/emailTemplate';
 import {
   getAllEmailTemplates,
   applyBannerDesignToCategories,
+  applyInstitutionalDesignToCategories,
   getSampleCategoryData,
   renderEmailHtmlPreview,
 } from '../../services/emailTemplates';
@@ -200,18 +207,76 @@ const CATEGORY_SCOPE_OPTIONS: CategoryScopeOption[] = [
   },
 ];
 
+interface ColorFieldProps {
+  label: string;
+  description?: string;
+  value?: string;
+  onChange: (val: string) => void;
+}
+
+const ColorField: React.FC<ColorFieldProps> = ({ label, description, value = '#181818', onChange }) => {
+  const safeValue = value || '#181818';
+  return (
+    <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40">
+      <div className="min-w-0 flex-1">
+        <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate">
+          {label}
+        </label>
+        {description && (
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 block truncate">
+            {description}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <input
+          type="text"
+          value={safeValue}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-20 px-2 py-1 text-[11px] font-mono font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 uppercase text-center focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          placeholder="#000000"
+        />
+        <div className="relative w-7 h-7 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-600 shadow-xs flex items-center justify-center shrink-0 cursor-pointer">
+          <input
+            type="color"
+            value={safeValue.startsWith('#') && (safeValue.length === 7 || safeValue.length === 4) ? safeValue : '#181818'}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute -inset-2 w-12 h-12 cursor-pointer opacity-0"
+          />
+          <div
+            className="w-full h-full rounded-md"
+            style={{ backgroundColor: safeValue }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
   isOpen,
   onClose,
   onApplied,
 }) => {
   const [mounted, setMounted] = useState(false);
+  // Studio sub-tab: 'standard' (Gmail/External) vs 'institutional' (CUCHD @cuchd.in)
+  const [studioTab, setStudioTab] = useState<'standard' | 'institutional'>('standard');
+
+  // Standard Banner State
   const [selectedStyle, setSelectedStyle] = useState<BannerStyle>('modern_badge');
   const [selectedTheme, setSelectedTheme] = useState<BannerTheme>('classic_blue');
   const [selectedTextColor, setSelectedTextColor] = useState<BannerTextColor>('white');
   const [previewTitle, setPreviewTitle] = useState('Cloud Stack Club');
   const [previewSubtitle, setPreviewSubtitle] = useState('Chandigarh University');
+
+  // Institutional Custom Theme State
+  const [institutionalTheme, setInstitutionalTheme] = useState<InstitutionalThemeConfig>(
+    DEFAULT_INSTITUTIONAL_THEME
+  );
+
+  // Live Preview Settings
   const [previewCategory, setPreviewCategory] = useState<EmailCategory>('approval');
+  const [previewFormat, setPreviewFormat] = useState<'standard' | 'institutional'>('standard');
   const [isApplying, setIsApplying] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
   const [appliedCount, setAppliedCount] = useState(0);
@@ -265,6 +330,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
           if (tpls.approval.banner_text_color) setSelectedTextColor(tpls.approval.banner_text_color);
           if (tpls.approval.banner_title) setPreviewTitle(tpls.approval.banner_title);
           if (tpls.approval.banner_subtitle) setPreviewSubtitle(tpls.approval.banner_subtitle);
+          if (tpls.approval.institutional_theme) {
+            setInstitutionalTheme(tpls.approval.institutional_theme);
+          }
         }
       });
 
@@ -305,13 +373,23 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
       banner_text_color: selectedTextColor,
       banner_title: previewTitle,
       banner_subtitle: previewSubtitle,
+      institutional_theme: institutionalTheme,
     };
     const sampleData = getSampleCategoryData(previewCategory);
-    return renderEmailHtmlPreview(baseTemplate, sampleData);
-  }, [previewCategory, selectedStyle, selectedTheme, selectedTextColor, previewTitle, previewSubtitle]);
+    return renderEmailHtmlPreview(baseTemplate, sampleData, previewFormat);
+  }, [
+    previewCategory,
+    previewFormat,
+    selectedStyle,
+    selectedTheme,
+    selectedTextColor,
+    previewTitle,
+    previewSubtitle,
+    institutionalTheme,
+  ]);
 
   // Initial HTML baseline (only refreshed on category change or explicit refresh, preventing srcdoc reload flash)
-  const initialHtml = useMemo(() => previewHtml, [previewCategory, refreshKey]);
+  const initialHtml = useMemo(() => previewHtml, [previewCategory, previewFormat, refreshKey]);
 
   // Seamless real-time DOM update in iframe without reload flicker/blink
   useEffect(() => {
@@ -371,6 +449,22 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     setIsScopeModalOpen(true);
   };
 
+  const handleApplyPreset = (presetId: string) => {
+    const preset = INSTITUTIONAL_PRESETS.find((p) => p.id === presetId);
+    if (preset) {
+      setInstitutionalTheme({ ...preset.colors });
+    }
+  };
+
+  const handleSwitchMode = (mode: 'standard' | 'institutional') => {
+    setStudioTab(mode);
+    setPreviewFormat(mode);
+  };
+
+  const handleResetInstitutionalTheme = () => {
+    setInstitutionalTheme(DEFAULT_INSTITUTIONAL_THEME);
+  };
+
   const handleConfirmApply = async () => {
     const targets =
       scopeMode === 'global'
@@ -390,12 +484,19 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
 
     setIsApplying(true);
     try {
-      await applyBannerDesignToCategories(
-        targets as EmailCategory[],
-        selectedStyle,
-        selectedTheme,
-        selectedTextColor
-      );
+      if (studioTab === 'institutional') {
+        await applyInstitutionalDesignToCategories(
+          targets as EmailCategory[],
+          institutionalTheme
+        );
+      } else {
+        await applyBannerDesignToCategories(
+          targets as EmailCategory[],
+          selectedStyle,
+          selectedTheme,
+          selectedTextColor
+        );
+      }
       setAppliedCount(targets.length);
       setApplySuccess(true);
       setIsScopeModalOpen(false);
@@ -405,7 +506,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
         onClose();
       }, 1500);
     } catch (err) {
-      console.error('Failed to apply banner design:', err);
+      console.error('Failed to apply design:', err);
     } finally {
       setIsApplying(false);
     }
@@ -429,13 +530,13 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
             </div>
             <div>
               <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
-                Email Header Design Studio
+                Email Design Studio
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
-                  Visual Layouts & Themes
+                  Universal Themes & Colors
                 </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Choose visual layouts, color themes, and contrast. Apply as global default or to specific email categories.
+                Customize branded visual layouts for Gmail and deliverability-safe solid palettes for CUCHD (@cuchd.in).
               </p>
             </div>
           </div>
@@ -487,217 +588,596 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
               activeTabMobile === 'preview' ? 'hidden lg:flex' : 'flex'
             }`}
           >
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-              {/* 1. Header Layout Style (9 Options) */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Sliders className="w-3.5 h-3.5 text-indigo-500" />
-                    1. Header Layout Style ({STYLE_OPTIONS.length} Presets)
-                  </label>
-                  <span className="text-[11px] text-slate-400">
-                    Live client-tested layouts
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {STYLE_OPTIONS.map((style) => {
-                    const Icon = style.icon;
-                    const isSelected = selectedStyle === style.id;
-                    return (
-                      <button
-                        key={style.id}
-                        type="button"
-                        onClick={() => setSelectedStyle(style.id)}
-                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer group ${
-                          isSelected
-                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
-                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                        }`}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
-                                  isSelected
-                                    ? 'bg-indigo-600 text-white shadow-xs'
-                                    : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
-                                }`}
-                              >
-                                <Icon className="w-3.5 h-3.5" />
-                              </div>
-                              <span className="text-xs font-black text-slate-900 dark:text-white">
-                                {style.name}
-                              </span>
-                            </div>
-                            <span
-                              className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
-                                isSelected
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                              }`}
-                            >
-                              {style.tag}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
-                            {style.description}
-                          </p>
-                        </div>
-
-                        {isSelected && (
-                          <div className="mt-2 pt-1.5 border-t border-indigo-200 dark:border-indigo-900/50 flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
-                            <Check className="w-3 h-3" />
-                            <span>Active Layout</span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+            {/* Top Studio Mode Selector (Standard Gmail vs CUCHD Institutional) */}
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 shrink-0">
+              <div className="grid grid-cols-2 gap-2 p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode('standard')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    studioTab === 'standard'
+                      ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">🎨 Standard (Gmail)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchMode('institutional')}
+                  className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    studioTab === 'institutional'
+                      ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Building2 className="w-3.5 h-3.5 shrink-0 text-sky-500" />
+                  <span className="truncate">🏛️ CUCHD (@cuchd.in)</span>
+                </button>
               </div>
+            </div>
 
-              {/* 2. Color Gradient Themes (12 Options) */}
-              <div className="space-y-2.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                  <Palette className="w-3.5 h-3.5 text-blue-500" />
-                  2. Color Gradient Theme
-                </label>
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+              {/* ================================================================= */}
+              {/* TAB 1: STANDARD BRANDED (GMAIL) */}
+              {/* ================================================================= */}
+              {studioTab === 'standard' && (
+                <>
+                  {/* 1. Header Layout Style (9 Options) */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-indigo-500" />
+                        1. Header Layout Style ({STYLE_OPTIONS.length} Presets)
+                      </label>
+                      <span className="text-[11px] text-slate-400">
+                        Live client-tested layouts
+                      </span>
+                    </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {THEME_OPTIONS.map((theme) => {
-                    const isSelected = selectedTheme === theme.id;
-                    return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {STYLE_OPTIONS.map((style) => {
+                        const Icon = style.icon;
+                        const isSelected = selectedStyle === style.id;
+                        return (
+                          <button
+                            key={style.id}
+                            type="button"
+                            onClick={() => setSelectedStyle(style.id)}
+                            className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer group ${
+                              isSelected
+                                ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                                : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${
+                                      isSelected
+                                        ? 'bg-indigo-600 text-white shadow-xs'
+                                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/40 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'
+                                    }`}
+                                  >
+                                    <Icon className="w-3.5 h-3.5" />
+                                  </div>
+                                  <span className="text-xs font-black text-slate-900 dark:text-white">
+                                    {style.name}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
+                                    isSelected
+                                      ? 'bg-indigo-600 text-white'
+                                      : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                                  }`}
+                                >
+                                  {style.tag}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-2">
+                                {style.description}
+                              </p>
+                            </div>
+
+                            {isSelected && (
+                              <div className="mt-2 pt-1.5 border-t border-indigo-200 dark:border-indigo-900/50 flex items-center gap-1 text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+                                <Check className="w-3 h-3" />
+                                <span>Active Layout</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Color Gradient Themes (12 Options) */}
+                  <div className="space-y-2.5">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                      <Palette className="w-3.5 h-3.5 text-blue-500" />
+                      2. Color Gradient Theme
+                    </label>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {THEME_OPTIONS.map((theme) => {
+                        const isSelected = selectedTheme === theme.id;
+                        return (
+                          <button
+                            key={theme.id}
+                            type="button"
+                            onClick={() => setSelectedTheme(theme.id)}
+                            className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                              isSelected
+                                ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                                : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <div
+                              className={`w-full h-6 rounded-lg bg-gradient-to-r ${theme.gradientClass} shadow-inner flex items-center justify-center`}
+                            >
+                              {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate w-full">
+                              {theme.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. Header Text & Badge Contrast */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                        3. Header Text & Badge Contrast
+                      </label>
+                      <span className="text-[11px] text-slate-400">
+                        Readability optimizer
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <button
-                        key={theme.id}
                         type="button"
-                        onClick={() => setSelectedTheme(theme.id)}
-                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
-                          isSelected
+                        onClick={() => setSelectedTextColor('white')}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                          selectedTextColor === 'white'
                             ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
                             : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <div
-                          className={`w-full h-6 rounded-lg bg-gradient-to-r ${theme.gradientClass} shadow-inner flex items-center justify-center`}
-                        >
-                          {isSelected && <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />}
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-700 shadow-xs shrink-0">
+                            <span className="text-white text-xs font-black">Aa</span>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-slate-900 dark:text-white block">
+                              Crisp White Text
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
+                              For Royal Blue, Crimson & dark gradients
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate w-full">
-                          {theme.name}
-                        </span>
+                        {selectedTextColor === 'white' && (
+                          <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        )}
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
 
-              {/* 3. Header Text & Badge Contrast */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    3. Header Text & Badge Contrast
-                  </label>
-                  <span className="text-[11px] text-slate-400">
-                    Readability optimizer
-                  </span>
-                </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTextColor('dark')}
+                        className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                          selectedTextColor === 'dark'
+                            ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-300 shadow-xs shrink-0">
+                            <span className="text-slate-900 text-xs font-black">Aa</span>
+                          </div>
+                          <div>
+                            <span className="text-xs font-black text-slate-900 dark:text-white block">
+                              Dark Slate Text
+                            </span>
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
+                              For Teal, Gold & bright gradients
+                            </span>
+                          </div>
+                        </div>
+                        {selectedTextColor === 'dark' && (
+                          <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
+                            <Check className="w-3 h-3" />
+                          </div>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTextColor('white')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      selectedTextColor === 'white'
-                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center border border-slate-700 shadow-xs shrink-0">
-                        <span className="text-white text-xs font-black">Aa</span>
+                  {/* 4. Banner Title & Subtitle overrides */}
+                  <div className="space-y-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      4. Banner Branding Text
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          Club Title
+                        </label>
+                        <input
+                          type="text"
+                          value={previewTitle}
+                          onChange={(e) => setPreviewTitle(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                          placeholder="Cloud Stack Club"
+                        />
                       </div>
-                      <div>
-                        <span className="text-xs font-black text-slate-900 dark:text-white block">
-                          Crisp White Text
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
-                          For Royal Blue, Crimson & dark gradients
-                        </span>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          University Subtitle
+                        </label>
+                        <input
+                          type="text"
+                          value={previewSubtitle}
+                          onChange={(e) => setPreviewSubtitle(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                          placeholder="Chandigarh University"
+                        />
                       </div>
                     </div>
-                    {selectedTextColor === 'white' && (
-                      <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                  </button>
+                  </div>
+                </>
+              )}
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTextColor('dark')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      selectedTextColor === 'dark'
-                        ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/30 ring-2 ring-indigo-500/20 shadow-sm'
-                        : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-slate-300 shadow-xs shrink-0">
-                        <span className="text-slate-900 text-xs font-black">Aa</span>
-                      </div>
-                      <div>
-                        <span className="text-xs font-black text-slate-900 dark:text-white block">
-                          Dark Slate Text
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
-                          For Teal, Gold & bright gradients
-                        </span>
+              {/* ================================================================= */}
+              {/* TAB 2: CUCHD INSTITUTIONAL STUDIO (@cuchd.in) */}
+              {/* ================================================================= */}
+              {studioTab === 'institutional' && (
+                <div className="space-y-6">
+                  {/* Notice: Deliverability Guarantee */}
+                  <div className="p-3.5 rounded-2xl bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800/50 flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
+                    <div className="text-xs text-sky-900 dark:text-sky-200">
+                      <p className="font-bold">Deliverability Safe Solid Color Engine</p>
+                      <p className="text-[11px] text-sky-700 dark:text-sky-300 mt-0.5 leading-relaxed">
+                        These solid colors are rendered with clean inline CSS without gradients to guarantee flawless inbox landing in Microsoft Exchange Online (CUCHD &amp; CUMAIL).
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 1. Curated 1-Click Institutional Presets */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-3.5 h-3.5 text-sky-500" />
+                        1. One-Click Color Presets ({INSTITUTIONAL_PRESETS.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleResetInstitutionalTheme}
+                        className="text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 flex items-center gap-1 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Reset Default</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                      {INSTITUTIONAL_PRESETS.map((preset) => {
+                        const isSelected = institutionalTheme.preset_id === preset.id;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => handleApplyPreset(preset.id)}
+                            className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between group ${
+                              isSelected
+                                ? 'border-sky-500 bg-sky-50/50 dark:bg-sky-950/30 ring-2 ring-sky-500/20 shadow-sm'
+                                : 'border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                                  {preset.name}
+                                </span>
+                                {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-sky-500 shrink-0 ml-1" />}
+                              </div>
+                              {/* Swatches */}
+                              <div className="flex items-center gap-1.5 my-2">
+                                <span
+                                  className="w-4 h-4 rounded-full border border-black/20 shadow-xs"
+                                  style={{ backgroundColor: preset.colors.cardBg }}
+                                  title="Card Background"
+                                />
+                                <span
+                                  className="w-4 h-4 rounded-full border border-black/20 shadow-xs"
+                                  style={{ backgroundColor: preset.colors.headlineColor }}
+                                  title="Headline Color"
+                                />
+                                <span
+                                  className="w-4 h-4 rounded-full border border-black/20 shadow-xs"
+                                  style={{ backgroundColor: preset.colors.headerSubtitleColor }}
+                                  title="Accent Color"
+                                />
+                                <span
+                                  className="w-4 h-4 rounded-full border border-black/20 shadow-xs"
+                                  style={{ backgroundColor: preset.colors.buttonBg }}
+                                  title="Button Color"
+                                />
+                              </div>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 leading-tight">
+                                {preset.description}
+                              </p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Custom Color Pickers */}
+                  <div className="space-y-4 pt-2 border-t border-slate-200 dark:border-slate-800">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      2. Custom Palette Color Controls
+                    </label>
+
+                    {/* Section: Header & Title */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                        Header &amp; Title Accents
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <ColorField
+                          label="Header Subtitle Accent"
+                          description="Institution sub-header badge"
+                          value={institutionalTheme.headerSubtitleColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              headerSubtitleColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Headline / Title Color"
+                          description="Main email title heading"
+                          value={institutionalTheme.headlineColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              headlineColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
                       </div>
                     </div>
-                    {selectedTextColor === 'dark' && (
-                      <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 ml-1">
-                        <Check className="w-3 h-3" />
-                      </div>
-                    )}
-                  </button>
-                </div>
-              </div>
 
-              {/* 4. Banner Title & Subtitle overrides */}
-              <div className="space-y-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  4. Banner Branding Text
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      Club Title
-                    </label>
-                    <input
-                      type="text"
-                      value={previewTitle}
-                      onChange={(e) => setPreviewTitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                      placeholder="Cloud Stack Club"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      University Subtitle
-                    </label>
-                    <input
-                      type="text"
-                      value={previewSubtitle}
-                      onChange={(e) => setPreviewSubtitle(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
-                      placeholder="Chandigarh University"
-                    />
+                    {/* Section: Card & Canvas Backgrounds */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                        Backgrounds &amp; Outlines
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <ColorField
+                          label="Canvas Background"
+                          description="Outer container"
+                          value={institutionalTheme.canvasBg}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              canvasBg: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Card Background"
+                          description="Inner mail card"
+                          value={institutionalTheme.cardBg}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              cardBg: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Card Border"
+                          description="Card outline"
+                          value={institutionalTheme.cardBorder}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              cardBorder: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Section: Body Text */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                        Body Typography
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <ColorField
+                          label="Body / Paragraph Text"
+                          description="Main content readability"
+                          value={institutionalTheme.bodyTextColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              bodyTextColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Hyperlink Accent"
+                          description="Text links & URL accents"
+                          value={institutionalTheme.linkColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              linkColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Section: Action CTA Button */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                        Action CTA Button &amp; Container
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <ColorField
+                          label="Button Background"
+                          description="Primary action button"
+                          value={institutionalTheme.buttonBg}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              buttonBg: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Button Text"
+                          description="Button typography"
+                          value={institutionalTheme.buttonTextColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              buttonTextColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Button Box Background"
+                          description="Action panel background"
+                          value={institutionalTheme.buttonContainerBg}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              buttonContainerBg: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Button Box Border"
+                          description="Action panel border"
+                          value={institutionalTheme.buttonContainerBorder}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              buttonContainerBorder: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Section: Notice / Alert Box */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                        Notice &amp; Feedback Callout Box
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <ColorField
+                          label="Notice Background"
+                          description="Alert box background"
+                          value={institutionalTheme.noticeBg}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              noticeBg: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Notice Border Accent"
+                          description="Left accent border"
+                          value={institutionalTheme.noticeBorder}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              noticeBorder: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Notice Text Color"
+                          description="Alert box typography"
+                          value={institutionalTheme.noticeTextColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              noticeTextColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    {/* Section: Footer */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+                        Footer Signature
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <ColorField
+                          label="Footer Text Color"
+                          description="Committee signature line"
+                          value={institutionalTheme.footerTextColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              footerTextColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Footer Link Color"
+                          description="Portal link accent"
+                          value={institutionalTheme.footerLinkColor}
+                          onChange={(val) =>
+                            setInstitutionalTheme((prev) => ({
+                              ...prev,
+                              footerLinkColor: val,
+                              preset_id: undefined,
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Left Panel Footer Actions */}
@@ -717,6 +1197,8 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 className={`px-5 py-2.5 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-2 cursor-pointer shadow-md disabled:opacity-50 ${
                   applySuccess
                     ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : studioTab === 'institutional'
+                    ? 'bg-sky-600 hover:bg-sky-700 shadow-sky-500/25'
                     : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25'
                 }`}
               >
@@ -733,7 +1215,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>Save & Apply Header Design</span>
+                    <span>
+                      {studioTab === 'institutional'
+                        ? 'Save & Apply CUCHD Palette'
+                        : 'Save & Apply Header Design'}
+                    </span>
                     <ArrowRight className="w-3.5 h-3.5 opacity-75" />
                   </>
                 )}
@@ -760,11 +1246,33 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 </span>
               </div>
 
-              {/* Themed Sample Template Switcher & Refresh */}
+              {/* Format Toggle + Themed Sample Template Switcher */}
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">
-                  Preview Sample:
-                </span>
+                {/* Format Preview Toggle */}
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchMode('standard')}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                      previewFormat === 'standard'
+                        ? 'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    🎨 Gmail
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchMode('institutional')}
+                    className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
+                      previewFormat === 'institutional'
+                        ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    🏛️ CUCHD
+                  </button>
+                </div>
 
                 <div className="relative w-44 sm:w-48" ref={categoryDropdownRef}>
                   <button
@@ -849,10 +1357,16 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-slate-400 font-bold w-14">Active:</span>
-                <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                  {STYLE_OPTIONS.find((s) => s.id === selectedStyle)?.name} • {THEME_OPTIONS.find((t) => t.id === selectedTheme)?.name}
-                </span>
+                <span className="text-slate-400 font-bold w-14">Format:</span>
+                {previewFormat === 'institutional' ? (
+                  <span className="font-bold text-sky-600 dark:text-sky-400 flex items-center gap-1.5">
+                    🏛️ CUCHD Institutional ({institutionalTheme.preset_id ? INSTITUTIONAL_PRESETS.find(p => p.id === institutionalTheme.preset_id)?.name || 'Custom Theme' : 'Custom Theme'})
+                  </span>
+                ) : (
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400">
+                    {STYLE_OPTIONS.find((s) => s.id === selectedStyle)?.name} • {THEME_OPTIONS.find((t) => t.id === selectedTheme)?.name}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -861,7 +1375,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
               <div className="w-full h-full rounded-2xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden shadow-inner bg-[#f8fafc] dark:bg-slate-900/50">
                 <iframe
                   ref={iframeRef}
-                  key={`preview-${previewCategory}-${refreshKey}`}
+                  key={`preview-${previewCategory}-${previewFormat}-${refreshKey}`}
                   srcDoc={initialHtml}
                   title="Email Live Preview"
                   className="w-full h-full border-0 bg-transparent custom-scrollbar"
@@ -902,7 +1416,9 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
             {/* Scope Modal Header */}
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/80">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold shadow-sm">
+                <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center font-bold shadow-sm ${
+                  studioTab === 'institutional' ? 'bg-sky-600' : 'bg-indigo-600'
+                }`}>
                   <Globe className="w-4 h-4" />
                 </div>
                 <div>
@@ -910,7 +1426,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     Apply Design Scope
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Choose where to apply this header & theme layout
+                    Choose which email categories receive this {studioTab === 'institutional' ? 'CUCHD institutional theme' : 'banner header design'}
                   </p>
                 </div>
               </div>
@@ -953,11 +1469,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                       Set as Default for ALL Emails
                     </span>
                     <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400">
-                      Global (5 Templates)
+                      Global (8 Templates)
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    Applies this design uniformly across all email communications (Approvals, Rejections, Contact replies, Feedback, and Broadcasts).
+                    Applies this design uniformly across all email communications (Approvals, Rejections, Inquiries, Feedback, Broadcasts, and Registrations).
                   </p>
                 </div>
               </button>
@@ -992,7 +1508,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    Give different email categories their own unique look (e.g., Event Broadcasts get Cyber Tech, Member Approvals get Glassmorphic).
+                    Choose specific email categories to receive this theme layout.
                   </p>
                 </div>
               </button>
@@ -1002,7 +1518,7 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 <div className="pl-4 pr-1 py-3 border-l-2 border-indigo-500/30 space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-center justify-between pb-1">
                     <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                      Select target email types ({selectedCategories.length}/5 selected):
+                      Select target email types ({selectedCategories.length}/8 selected):
                     </span>
                     <div className="flex items-center gap-2">
                       <button
@@ -1089,7 +1605,11 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
                 type="button"
                 onClick={handleConfirmApply}
                 disabled={isApplying || (scopeMode === 'custom' && selectedCategories.length === 0)}
-                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold shadow-md shadow-indigo-500/25 transition-all flex items-center gap-2 cursor-pointer"
+                className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 ${
+                  studioTab === 'institutional'
+                    ? 'bg-sky-600 hover:bg-sky-700 shadow-sky-500/25'
+                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-500/25'
+                }`}
               >
                 {isApplying ? (
                   <>
@@ -1115,4 +1635,3 @@ export const EmailDesignStudioModal: React.FC<EmailDesignStudioModalProps> = ({
     document.body
   );
 };
-

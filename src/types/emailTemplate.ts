@@ -25,6 +25,189 @@ export type BannerTheme =
   | 'solar_flare'
   | 'obsidian_mono';
 
+export interface InstitutionalThemeConfig {
+  preset_id?: string;
+  canvasBg?: string;
+  cardBg?: string;
+  cardBorder?: string;
+  headerSubtitleColor?: string;
+  headlineColor?: string;
+  bodyTextColor?: string;
+  buttonBg?: string;
+  buttonTextColor?: string;
+  buttonContainerBg?: string;
+  buttonContainerBorder?: string;
+  linkColor?: string;
+  noticeBg?: string;
+  noticeBorder?: string;
+  noticeTextColor?: string;
+  footerTextColor?: string;
+  footerLinkColor?: string;
+}
+
+export const DEFAULT_INSTITUTIONAL_THEME: InstitutionalThemeConfig = {
+  preset_id: 'tekathon_coral',
+  canvasBg: '#181818',
+  cardBg: '#252525',
+  cardBorder: '#383838',
+  headerSubtitleColor: '#38bdf8',
+  headlineColor: '#fa7c64',
+  bodyTextColor: '#e2e8f0',
+  buttonBg: '#16a34a',
+  buttonTextColor: '#ffffff',
+  buttonContainerBg: '#1a261f',
+  buttonContainerBorder: '#2d4d38',
+  linkColor: '#4ade80',
+  noticeBg: '#382723',
+  noticeBorder: '#f97316',
+  noticeTextColor: '#fdba74',
+  footerTextColor: '#94a3b8',
+  footerLinkColor: '#38bdf8',
+};
+
+export interface InstitutionalPreset {
+  id: string;
+  name: string;
+  tag: string;
+  description: string;
+  colors: InstitutionalThemeConfig;
+}
+
+export const INSTITUTIONAL_PRESETS: InstitutionalPreset[] = [
+  {
+    id: 'tekathon_coral',
+    name: 'Tekathon Coral (Default)',
+    tag: 'Verified SCL: 1',
+    description: 'Clean charcoal card with vibrant coral headline, cyan subtitle, and WhatsApp green CTA button.',
+    colors: { ...DEFAULT_INSTITUTIONAL_THEME, preset_id: 'tekathon_coral' },
+  },
+  {
+    id: 'royal_cyan',
+    name: 'Royal Cyan & Cobalt',
+    tag: 'Executive',
+    description: 'High-contrast cyan headline with deep cobalt action button and midnight card theme.',
+    colors: {
+      preset_id: 'royal_cyan',
+      canvasBg: '#0f172a',
+      cardBg: '#1e293b',
+      cardBorder: '#334155',
+      headerSubtitleColor: '#38bdf8',
+      headlineColor: '#38bdf8',
+      bodyTextColor: '#e2e8f0',
+      buttonBg: '#2563eb',
+      buttonTextColor: '#ffffff',
+      buttonContainerBg: '#172554',
+      buttonContainerBorder: '#1e40af',
+      linkColor: '#60a5fa',
+      noticeBg: '#1e293b',
+      noticeBorder: '#38bdf8',
+      noticeTextColor: '#93c5fd',
+      footerTextColor: '#94a3b8',
+      footerLinkColor: '#38bdf8',
+    },
+  },
+  {
+    id: 'cu_crimson',
+    name: 'CU Crimson & Rose',
+    tag: 'Academic',
+    description: 'Official university crimson and rose theme with ruby callout accents on dark slate.',
+    colors: {
+      preset_id: 'cu_crimson',
+      canvasBg: '#141416',
+      cardBg: '#1f1f23',
+      cardBorder: '#3f3f46',
+      headerSubtitleColor: '#fb7185',
+      headlineColor: '#f43f5e',
+      bodyTextColor: '#f4f4f5',
+      buttonBg: '#e11d48',
+      buttonTextColor: '#ffffff',
+      buttonContainerBg: '#4c0519',
+      buttonContainerBorder: '#9f1239',
+      linkColor: '#fda4af',
+      noticeBg: '#4c0519',
+      noticeBorder: '#f43f5e',
+      noticeTextColor: '#fecdd3',
+      footerTextColor: '#a1a1aa',
+      footerLinkColor: '#fb7185',
+    },
+  },
+  {
+    id: 'emerald_matrix',
+    name: 'Emerald Tech Matrix',
+    tag: 'Developer',
+    description: 'Vibrant emerald headline, terminal green link highlights, and dark forest accents.',
+    colors: {
+      preset_id: 'emerald_matrix',
+      canvasBg: '#111816',
+      cardBg: '#1a2421',
+      cardBorder: '#273832',
+      headerSubtitleColor: '#34d399',
+      headlineColor: '#34d399',
+      bodyTextColor: '#e2e8f0',
+      buttonBg: '#059669',
+      buttonTextColor: '#ffffff',
+      buttonContainerBg: '#064e3b',
+      buttonContainerBorder: '#047857',
+      linkColor: '#4ade80',
+      noticeBg: '#064e3b',
+      noticeBorder: '#10b981',
+      noticeTextColor: '#a7f3d0',
+      footerTextColor: '#86efac',
+      footerLinkColor: '#34d399',
+    },
+  },
+  {
+    id: 'sunset_gold',
+    name: 'Sunset Amber & Gold',
+    tag: 'Warm Luxe',
+    description: 'Lustrous gold headline with warm amber action container and high-contrast charcoal card.',
+    colors: {
+      preset_id: 'sunset_gold',
+      canvasBg: '#171310',
+      cardBg: '#241e1a',
+      cardBorder: '#3d322b',
+      headerSubtitleColor: '#fbbf24',
+      headlineColor: '#fbbf24',
+      bodyTextColor: '#fef3c7',
+      buttonBg: '#d97706',
+      buttonTextColor: '#ffffff',
+      buttonContainerBg: '#451a03',
+      buttonContainerBorder: '#92400e',
+      linkColor: '#fde047',
+      noticeBg: '#451a03',
+      noticeBorder: '#f59e0b',
+      noticeTextColor: '#fde68a',
+      footerTextColor: '#d97706',
+      footerLinkColor: '#fbbf24',
+    },
+  },
+  {
+    id: 'obsidian_monolith',
+    name: 'Obsidian & Pure White',
+    tag: 'Ultra Minimal',
+    description: 'Deep obsidian black card with crisp white typography, neutral silver badges, and sleek button.',
+    colors: {
+      preset_id: 'obsidian_monolith',
+      canvasBg: '#09090b',
+      cardBg: '#18181b',
+      cardBorder: '#27272a',
+      headerSubtitleColor: '#e4e4e7',
+      headlineColor: '#ffffff',
+      bodyTextColor: '#f4f4f5',
+      buttonBg: '#27272a',
+      buttonTextColor: '#ffffff',
+      buttonContainerBg: '#18181b',
+      buttonContainerBorder: '#3f3f46',
+      linkColor: '#38bdf8',
+      noticeBg: '#27272a',
+      noticeBorder: '#71717a',
+      noticeTextColor: '#e4e4e7',
+      footerTextColor: '#71717a',
+      footerLinkColor: '#e4e4e7',
+    },
+  },
+];
+
 export interface EmailTemplateConfig {
   id?: string;
   category: EmailCategory;
@@ -34,6 +217,7 @@ export interface EmailTemplateConfig {
   banner_style?: BannerStyle;
   banner_theme?: BannerTheme;
   banner_text_color?: BannerTextColor;
+  institutional_theme?: InstitutionalThemeConfig;
   banner_title?: string;
   banner_subtitle?: string;
   headline: string;
