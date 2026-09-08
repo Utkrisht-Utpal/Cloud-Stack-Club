@@ -465,7 +465,7 @@ export const DEFAULT_EMAIL_TEMPLATES: Record<EmailCategory, EmailTemplateConfig>
     banner_theme: 'classic_blue',
     banner_title: 'Cloud Stack Club',
     banner_subtitle: 'Chandigarh University',
-    headline: 'Welcome to the Club, {{name}}! 🎉',
+    headline: 'Welcome to the Club, {{name}}!',
     body_text: `We are thrilled to inform you that your membership application for Cloud Stack Club has been officially approved by the core council!
 
 Your profile is now active in our member directory. Stay tuned for upcoming orientation sessions, workshops, and hands-on cloud computing hackathons.`,
@@ -540,7 +540,7 @@ We look forward to seeing you at our upcoming sessions!`,
     category: 'event_broadcast',
     name: 'Event Announcement Broadcast',
     description: 'Sent to all active members when broadcasting an upcoming event.',
-    subject: '🚀 New Event Announcement: {{event_title}}',
+    subject: 'New Event Announcement: {{event_title}}',
     banner_style: 'modern_badge',
     banner_theme: 'classic_blue',
     banner_title: 'Cloud Stack Club',
@@ -558,12 +558,12 @@ Join us for an immersive session designed to enhance your practical cloud skills
     category: 'event_registration_individual',
     name: 'Individual Registration Pass',
     description: 'Sent automatically to students who register individually for an event.',
-    subject: '🎟️ Registration Confirmed: {{event_title}}',
+    subject: 'Registration Confirmed: {{event_title}}',
     banner_style: 'modern_badge',
     banner_theme: 'classic_blue',
     banner_title: 'Cloud Stack Club',
     banner_subtitle: 'Chandigarh University',
-    headline: "You're Registered for {{event_title}}! 🎉",
+    headline: "You're Registered for {{event_title}}!",
     body_text: `Dear {{name}},
 
 Thank you for registering for {{event_title}}! We are thrilled to have you join us for this upcoming technical session.
@@ -578,12 +578,12 @@ Your event pass is confirmed. Please keep this email confirmation handy on your 
     category: 'event_registration_team_leader',
     name: 'Team Registration (Captain Master Pass)',
     description: 'Sent to the Team Leader upon registering a team with the full roster breakdown.',
-    subject: '🎟️ Team Registration Confirmed: {{team_name}} for {{event_title}}',
+    subject: 'Team Registration Confirmed: {{team_name}} for {{event_title}}',
     banner_style: 'modern_badge',
     banner_theme: 'classic_blue',
     banner_title: 'Cloud Stack Club',
     banner_subtitle: 'Chandigarh University',
-    headline: 'Team {{team_name}} is Registered! 🚀',
+    headline: 'Team {{team_name}} is Registered!',
     body_text: `Dear {{name}},
 
 Congratulations! Your team {{team_name}} has been officially registered for {{event_title}}.
@@ -598,12 +598,12 @@ As the Team Leader, please review your registered team details below and ensure 
     category: 'event_registration_team_member',
     name: 'Team Registration (Member Confirmation)',
     description: 'Sent to individual team members confirming their team registration and leader details.',
-    subject: "🎟️ You've Been Registered for {{event_title}} (Team {{team_name}})",
+    subject: "You've Been Registered for {{event_title}} (Team {{team_name}})",
     banner_style: 'modern_badge',
     banner_theme: 'classic_blue',
     banner_title: 'Cloud Stack Club',
     banner_subtitle: 'Chandigarh University',
-    headline: 'Welcome to Team {{team_name}}! 🚀',
+    headline: 'Welcome to Team {{team_name}}!',
     body_text: `Dear {{name}},
 
 You have been successfully registered as a team member of {{team_name}} for {{event_title}} by your team leader!

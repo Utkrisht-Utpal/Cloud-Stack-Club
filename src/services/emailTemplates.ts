@@ -439,9 +439,9 @@ export function renderEmailHtmlPreview(
       detailBox = `
         <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid ${cardBorder};">
           <p style="margin: 0 0 10px 0; font-size: 11px; color: ${footerTextColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Event Logistics</p>
-          ${formattedDate ? `<p style="margin: 4px 0; font-size: 14px; color: ${bodyColor};"><strong style="color: #ffffff;">📅 Date:</strong> ${formattedDate}</p>` : ''}
-          ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: ${bodyColor};"><strong style="color: #ffffff;">⏰ Time:</strong> ${formattedTime}</p>` : ''}
-          ${data.event_venue ? `<p style="margin: 4px 0; font-size: 14px; color: ${bodyColor};"><strong style="color: #ffffff;">📍 Venue:</strong> ${data.event_venue}</p>` : ''}
+          ${formattedDate ? `<p style="margin: 4px 0; font-size: 14px; color: ${bodyColor};"><strong style="color: #ffffff;">Date:</strong> ${formattedDate}</p>` : ''}
+          ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: ${bodyColor};"><strong style="color: #ffffff;">Time:</strong> ${formattedTime}</p>` : ''}
+          ${data.event_venue ? `<p style="margin: 4px 0; font-size: 14px; color: ${bodyColor};"><strong style="color: #ffffff;">Venue:</strong> ${data.event_venue}</p>` : ''}
         </div>
       `;
     } else if (template.category === 'event_registration_individual') {
@@ -591,7 +591,7 @@ export function renderEmailHtmlPreview(
           <h1 style="margin: 0; color: ${titleColor}; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">${bannerTitle}</h1>
           <div style="margin-top: 10px;">
             <span style="display: inline-block; background: ${badgeBg}; border: 1px solid ${badgeBorder}; padding: 4px 14px; border-radius: 9999px; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: ${badgeText}; text-transform: uppercase;">
-              🎓 ${bannerSubtitle}
+              ${bannerSubtitle}
             </span>
           </div>
         </td>
@@ -630,7 +630,7 @@ export function renderEmailHtmlPreview(
           </table>
           <div style="margin-top: 14px;">
             <span style="display: inline-block; background: ${stripBg}; border: 1px solid ${stripBorder}; padding: 3px 12px; border-radius: 12px; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: ${subtextColor}; text-transform: uppercase;">
-              ✨ VERIFIED CLUB NOTIFICATION
+              VERIFIED CLUB NOTIFICATION
             </span>
           </div>
         </td>
@@ -816,9 +816,9 @@ export function renderEmailHtmlPreview(
     categoryDetailBox = `
       <div style="background-color: #f1f5f9; border-radius: 16px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0;">
         <p style="margin: 0 0 8px 0; font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Event Logistics</p>
-        ${formattedDate ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📅 <strong>Date:</strong> ${formattedDate}</p>` : ''}
-        ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">⏰ <strong>Time:</strong> ${formattedTime}</p>` : ''}
-        ${data.event_venue ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;">📍 <strong>Venue:</strong> ${data.event_venue}</p>` : ''}
+        ${formattedDate ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Date:</strong> ${formattedDate}</p>` : ''}
+        ${formattedTime ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Time:</strong> ${formattedTime}</p>` : ''}
+        ${data.event_venue ? `<p style="margin: 4px 0; font-size: 14px; color: #1e293b;"><strong>Venue:</strong> ${data.event_venue}</p>` : ''}
       </div>
     `;
   } else if (template.category === 'event_registration_individual') {
