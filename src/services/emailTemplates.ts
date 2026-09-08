@@ -493,6 +493,173 @@ export function renderEmailHtmlPreview(
           </table>
         </div>
       `;
+    } else if (template.category === 'event_registration_team_leader') {
+      const formattedDate = formatEventDate(data.event_date);
+      const formattedTime = formatEventTime(data.event_time);
+      const leaderDeptYear = [data.department || data.leader_department, data.year || data.leader_year].filter(Boolean).join(' - ');
+      const leaderDisplay = leaderDeptYear ? `${data.name || data.leader_name || 'Team Leader'} (${leaderDeptYear})` : (data.name || data.leader_name || 'Team Leader');
+      const leaderUid = data.uid || data.leader_uid || '';
+      const leaderRegId = data.leader_registration_number || data.leader_pass_id || '';
+      const teamRegId = data.team_registration_number || data.registration_number || '';
+
+      const membersList: Array<{ name: string; department?: string; year?: string; uid?: string; registration_number?: string }> =
+        data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0
+          ? data.team_members
+          : [
+              { name: 'Riya Patel', department: 'Computer Science & Engineering', year: '3rd Year', uid: '22BCS10892', registration_number: 'REG-26-8892' },
+              { name: 'Karan Singh', department: 'Information Technology', year: '3rd Year', uid: '22BCS10915', registration_number: 'REG-26-8893' },
+            ];
+
+      const membersHtml = membersList
+        .map((m) => {
+          const mDeptYear = [m.department, m.year].filter(Boolean).join(' - ');
+          return `
+            <li style="margin: 6px 0; color: ${bodyColor};">
+              <span><strong style="color: #ffffff;">${m.name}</strong>${mDeptYear ? ` <span style="color: ${footerTextColor};">(${mDeptYear})</span>` : ''}</span>
+              ${m.registration_number ? `<span style="display: block; font-family: monospace; font-size: 12px; color: ${bodyColor}; margin-top: 2px;">Registration ID: <strong>${m.registration_number}</strong></span>` : ''}
+              ${m.uid ? `<span style="display: block; font-family: monospace; font-size: 12px; color: ${footerTextColor}; margin-top: 2px;">UID: <strong style="color: ${headerSubColor};">${m.uid}</strong></span>` : ''}
+            </li>
+          `;
+        })
+        .join('');
+
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid ${cardBorder};">
+          <p style="margin: 0 0 12px 0; font-size: 11px; color: ${footerTextColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Team Registration Summary</p>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: ${bodyColor}; line-height: 1.8;">
+            <tr>
+              <td style="padding: 3px 0; width: 140px; color: ${footerTextColor};"><strong>Event:</strong></td>
+              <td style="padding: 3px 0; font-weight: 700; color: #ffffff;">${data.event_title || 'Club Event'}</td>
+            </tr>
+            ${formattedDate ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Date:</strong></td>
+              <td style="padding: 3px 0; color: ${bodyColor};">${formattedDate}</td>
+            </tr>` : ''}
+            ${formattedTime ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Time:</strong></td>
+              <td style="padding: 3px 0; color: ${bodyColor};">${formattedTime}</td>
+            </tr>` : ''}
+            ${data.event_venue ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Venue:</strong></td>
+              <td style="padding: 3px 0; color: ${bodyColor};">${data.event_venue}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Team Name:</strong></td>
+              <td style="padding: 3px 0; font-weight: 800; color: ${headerSubColor}; font-size: 15px;">${data.team_name || 'Club Team'}</td>
+            </tr>
+            ${teamRegId ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Team Reg ID:</strong></td>
+              <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #ffffff;">${teamRegId}</td>
+            </tr>` : ''}
+          </table>
+
+          <div style="margin-top: 14px; padding: 12px 14px; background-color: #252525; border-radius: 8px; border: 1px solid ${cardBorder};">
+            <p style="margin: 0 0 4px 0; font-size: 11px; color: ${headerSubColor}; font-weight: 800; text-transform: uppercase;">Team Leader</p>
+            <p style="margin: 0; font-size: 14px; font-weight: 700; color: #ffffff;">${leaderDisplay}</p>
+            ${leaderUid ? `<p style="margin: 3px 0 0 0; font-size: 12px; font-family: monospace; color: ${footerTextColor};">UID: <strong style="color: ${headerSubColor};">${leaderUid}</strong></p>` : ''}
+            ${leaderRegId ? `<p style="margin: 3px 0 0 0; font-size: 12px; color: ${footerTextColor};">Registration ID: <strong style="color: #ffffff;">${leaderRegId}</strong></p>` : ''}
+          </div>
+
+          ${membersList.length > 0 ? `
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed ${cardBorder};">
+            <p style="margin: 0 0 8px 0; font-size: 11px; color: ${footerTextColor}; font-weight: 700; text-transform: uppercase;">Registered Teammates (${membersList.length})</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+              ${membersHtml}
+            </ul>
+          </div>` : ''}
+        </div>
+      `;
+    } else if (template.category === 'event_registration_team_member') {
+      const formattedDate = formatEventDate(data.event_date);
+      const formattedTime = formatEventTime(data.event_time);
+      const leaderDeptYear = [data.leader_department, data.leader_year].filter(Boolean).join(' - ');
+      const leaderDisplay = leaderDeptYear ? `${data.leader_name || 'Team Leader'} (${leaderDeptYear})` : (data.leader_name || 'Team Leader');
+      const leaderUid = data.leader_uid || '';
+      const leaderRegId = data.leader_registration_number || '';
+      const teamRegId = data.team_registration_number || data.registration_number || '';
+      const memberRegId = data.member_registration_number || '';
+
+      const otherMembersList: Array<{ name: string; department?: string; year?: string; registration_number?: string }> =
+        data.other_members && Array.isArray(data.other_members) && data.other_members.length > 0
+          ? data.other_members
+          : (data.team_members && Array.isArray(data.team_members) && data.team_members.length > 0)
+          ? data.team_members
+          : [
+              { name: 'Karan Singh', department: 'Information Technology', year: '3rd Year' },
+              { name: 'Sneha Roy', department: 'Computer Science & Engineering', year: '3rd Year' },
+            ];
+
+      const otherMembersHtml = otherMembersList
+        .map((m) => {
+          const mDeptYear = [m.department, m.year].filter(Boolean).join(' - ');
+          return `
+            <li style="margin: 4px 0; color: ${bodyColor};">
+              <strong style="color: #ffffff;">${m.name}</strong>${mDeptYear ? ` <span style="color: ${footerTextColor};">(${mDeptYear})</span>` : ''}
+            </li>
+          `;
+        })
+        .join('');
+
+      detailBox = `
+        <div style="background-color: #1e1e1e; border-radius: 12px; padding: 18px 20px; margin: 24px 0; border: 1px solid ${cardBorder};">
+          <p style="margin: 0 0 12px 0; font-size: 11px; color: ${footerTextColor}; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Team Registration Details</p>
+          <table width="100%" border="0" cellpadding="0" cellspacing="0" style="font-size: 14px; color: ${bodyColor}; line-height: 1.8;">
+            <tr>
+              <td style="padding: 3px 0; width: 140px; color: ${footerTextColor};"><strong>Event:</strong></td>
+              <td style="padding: 3px 0; font-weight: 700; color: #ffffff;">${data.event_title || 'Club Event'}</td>
+            </tr>
+            ${formattedDate ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Date:</strong></td>
+              <td style="padding: 3px 0; color: ${bodyColor};">${formattedDate}</td>
+            </tr>` : ''}
+            ${formattedTime ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Time:</strong></td>
+              <td style="padding: 3px 0; color: ${bodyColor};">${formattedTime}</td>
+            </tr>` : ''}
+            ${data.event_venue ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Venue:</strong></td>
+              <td style="padding: 3px 0; color: ${bodyColor};">${data.event_venue}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Your Team:</strong></td>
+              <td style="padding: 3px 0; font-weight: 800; color: ${headerSubColor}; font-size: 15px;">${data.team_name || 'Club Team'}</td>
+            </tr>
+            ${teamRegId ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Team Reg ID:</strong></td>
+              <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #ffffff;">${teamRegId}</td>
+            </tr>` : ''}
+            ${memberRegId ? `
+            <tr>
+              <td style="padding: 3px 0; color: ${footerTextColor};"><strong>Your Reg ID:</strong></td>
+              <td style="padding: 3px 0; font-family: monospace; font-weight: 700; color: #ffffff;">${memberRegId}</td>
+            </tr>` : ''}
+          </table>
+
+          <div style="margin-top: 14px; padding: 12px 14px; background-color: #252525; border-radius: 8px; border: 1px solid ${cardBorder};">
+            <p style="margin: 0 0 4px 0; font-size: 11px; color: ${headerSubColor}; font-weight: 800; text-transform: uppercase;">Team Leader</p>
+            <p style="margin: 0; font-size: 14px; font-weight: 700; color: #ffffff;">${leaderDisplay}</p>
+            ${leaderUid ? `<p style="margin: 3px 0 0 0; font-size: 12px; font-family: monospace; color: ${footerTextColor};">UID: <strong style="color: ${headerSubColor};">${leaderUid}</strong></p>` : ''}
+            ${leaderRegId ? `<p style="margin: 3px 0 0 0; font-size: 12px; color: ${footerTextColor};">Registration ID: <strong style="color: #ffffff;">${leaderRegId}</strong></p>` : ''}
+            ${data.leader_email ? `<p style="margin: 2px 0 0 0; font-size: 12px; color: ${footerTextColor};">Email: ${data.leader_email}</p>` : ''}
+          </div>
+
+          ${otherMembersList.length > 0 ? `
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed ${cardBorder};">
+            <p style="margin: 0 0 8px 0; font-size: 11px; color: ${footerTextColor}; font-weight: 700; text-transform: uppercase;">Other Team Members</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+              ${otherMembersHtml}
+            </ul>
+          </div>` : ''}
+        </div>
+      `;
     }
 
     const ctaHtml = buttonText
