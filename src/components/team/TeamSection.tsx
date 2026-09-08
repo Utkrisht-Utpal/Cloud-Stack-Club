@@ -15,8 +15,16 @@ import { getCoreMembers, getTeamPageBanner, type CoreMember, type TeamPageBanner
 
 export const TeamSection: React.FC = () => {
   const [members, setMembers] = useState<CoreMember[]>([]);
-  const [bannerData, setBannerData] = useState<TeamPageBannerData | null>(null);
+  const [bannerData, setBannerData] = useState<TeamPageBannerData | null>(() => {
+    try {
+      const cached = typeof window !== 'undefined' ? localStorage.getItem('csc_team_page_banner_cache') : null;
+      return cached ? { banner_url: cached } : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState<boolean>(true);
+  const [bannerImageLoaded, setBannerImageLoaded] = useState<boolean>(false);
   const [selectedMemberModal, setSelectedMemberModal] = useState<CoreMember | null>(null);
 
   useEffect(() => {
@@ -67,29 +75,65 @@ export const TeamSection: React.FC = () => {
       </div>
 
       {/* Top Banner (Full Width above the cards grid) */}
-      {bannerData?.banner_url && (
+      {bannerData?.banner_url ? (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
           className="w-full overflow-hidden rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl bg-slate-950 group"
         >
-          <div className="relative w-full overflow-hidden">
+          <div className="relative w-full overflow-hidden min-h-[200px] sm:min-h-[280px] md:min-h-[360px] lg:min-h-[420px] bg-slate-950">
+            {!bannerImageLoaded && (
+              <div className="absolute inset-0 bg-slate-200 dark:bg-slate-800/80 animate-pulse z-10" />
+            )}
             <img
               src={bannerData.banner_url}
               alt="Meet Our Team Banner"
-              className="w-full max-h-[420px] sm:max-h-[500px] object-cover object-center group-hover:scale-101 transition-transform duration-500"
+              onLoad={() => setBannerImageLoaded(true)}
+              className={`w-full max-h-[420px] sm:max-h-[500px] object-cover object-center group-hover:scale-101 transition-all duration-500 ${
+                bannerImageLoaded ? 'opacity-100' : 'opacity-0'
+              }`}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none z-20" />
           </div>
         </motion.div>
-      )}
+      ) : loading ? (
+        <div className="w-full h-44 sm:h-64 md:h-72 lg:h-80 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 p-2 animate-pulse overflow-hidden shadow-sm">
+          <div className="w-full h-full rounded-2xl bg-slate-200 dark:bg-slate-800/70" />
+        </div>
+      ) : null}
 
       {/* Grid of Core Member Cards */}
       {loading ? (
-        <div className="py-24 text-center space-y-3">
-          <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-bold text-slate-500">Loading team members...</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-7">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <div
+              key={n}
+              className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800/80 shadow-md flex flex-col justify-between animate-pulse"
+            >
+              {/* 4:5 Photo Skeleton */}
+              <div className="relative w-full aspect-[4/5] bg-slate-200 dark:bg-slate-800/70 flex flex-col justify-end p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="h-6 w-24 rounded-xl bg-slate-300 dark:bg-slate-700/80" />
+                  <div className="h-5 w-12 rounded-xl bg-slate-300 dark:bg-slate-700/80" />
+                </div>
+              </div>
+
+              {/* Card Meta Content Skeleton */}
+              <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-2">
+                  <div className="h-5 w-3/4 rounded-lg bg-slate-200 dark:bg-slate-800" />
+                  <div className="h-4 w-1/2 rounded-md bg-slate-200 dark:bg-slate-800" />
+                  <div className="h-3.5 w-2/3 rounded-md bg-slate-200 dark:bg-slate-800" />
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-1.5">
+                  <div className="h-3 w-full rounded bg-slate-200 dark:bg-slate-800/80" />
+                  <div className="h-3 w-4/5 rounded bg-slate-200 dark:bg-slate-800/80" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : members.length === 0 ? (
         <div className="py-20 text-center space-y-4 max-w-md mx-auto">
