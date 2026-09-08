@@ -16,15 +16,13 @@ import {
   Palette,
   Ticket,
   Users2,
-  FlaskConical,
-  Send,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { EmailTemplatesModal } from './EmailTemplatesModal';
 import { EmailDesignStudioModal } from './EmailDesignStudioModal';
 import type { EmailLog, EmailCategory } from '../../types/email';
-import { fetchEmailLogs, deleteEmailLog, fetchEmailStats, sendDiagnosticTestEmail, type EmailStats } from '../../services/email';
+import { fetchEmailLogs, deleteEmailLog, fetchEmailStats, type EmailStats } from '../../services/email';
 import { supabase } from '../../services/supabase';
 
 const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; color: string }> = [
@@ -138,11 +136,6 @@ export const EmailLogsManagement: React.FC = () => {
   const [logToDelete, setLogToDelete] = useState<string | null>(null);
   const [isTemplatesModalOpen, setIsTemplatesModalOpen] = useState<boolean>(false);
   const [isDesignStudioOpen, setIsDesignStudioOpen] = useState<boolean>(false);
-  const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState<boolean>(false);
-  const [diagnosticEmail, setDiagnosticEmail] = useState<string>('');
-  const [diagnosticMode, setDiagnosticMode] = useState<'plain_text' | 'minimal_html' | 'full_template'>('minimal_html');
-  const [isSendingDiagnostic, setIsSendingDiagnostic] = useState<boolean>(false);
-  const [diagnosticResult, setDiagnosticResult] = useState<{ success: boolean; msg: string } | null>(null);
   const [memberRoleMap, setMemberRoleMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -314,18 +307,6 @@ export const EmailLogsManagement: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
-          <button
-            type="button"
-            onClick={() => {
-              setDiagnosticResult(null);
-              setIsDiagnosticModalOpen(true);
-            }}
-            className="px-4 py-2 rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:text-amber-800 dark:hover:text-amber-200 hover:border-amber-400 dark:hover:border-amber-700 hover:bg-amber-100/70 dark:hover:bg-amber-900/60 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs whitespace-nowrap group"
-            title="Send test emails (plain text, simple HTML, full template) to verify deliverability"
-          >
-            <FlaskConical className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span>Test Delivery</span>
-          </button>
 
           <button
             type="button"
@@ -705,143 +686,7 @@ export const EmailLogsManagement: React.FC = () => {
         </Modal>
       )}
 
-      {/* Diagnostic Deliverability Test Modal */}
-      {isDiagnosticModalOpen && (
-        <Modal
-          isOpen={isDiagnosticModalOpen}
-          onClose={() => {
-            setIsDiagnosticModalOpen(false);
-            setDiagnosticResult(null);
-          }}
-          title="Diagnostic Deliverability Tester"
-          maxWidth="max-w-md"
-        >
-          <div className="space-y-4 text-xs pb-2">
-            <p className="text-slate-600 dark:text-slate-300">
-              Send a calibrated test email from <span className="font-mono font-bold text-blue-600 dark:text-sky-400">cloudstackclub@cumail.in</span> to determine whether your recipient host (e.g. <span className="font-bold">@cuchd.in</span>) filters by message format.
-            </p>
 
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
-                Recipient Email Address *
-              </label>
-              <input
-                type="email"
-                required
-                value={diagnosticEmail}
-                onChange={(e) => setDiagnosticEmail(e.target.value)}
-                placeholder="e.g. faculty@cuchd.in or personal@gmail.com"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/40"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                Payload Format Mode
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setDiagnosticMode('plain_text')}
-                  className={`p-2.5 rounded-xl border text-center transition-all ${
-                    diagnosticMode === 'plain_text'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-sky-300 font-bold shadow-xs'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-[11px] font-bold">1. Plain Text</div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">Zero HTML / No links</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDiagnosticMode('minimal_html')}
-                  className={`p-2.5 rounded-xl border text-center transition-all ${
-                    diagnosticMode === 'minimal_html'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-sky-300 font-bold shadow-xs'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-[11px] font-bold">2. Simple HTML</div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">Inline / No CDN assets</div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDiagnosticMode('full_template')}
-                  className={`p-2.5 rounded-xl border text-center transition-all ${
-                    diagnosticMode === 'full_template'
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-sky-300 font-bold shadow-xs'
-                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="text-[11px] font-bold">3. Full Template</div>
-                  <div className="text-[9px] text-slate-400 mt-0.5">Auto CUCHD / Gmail</div>
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
-                💡 <span className="font-semibold text-slate-700 dark:text-slate-300">Dual Delivery Routing:</span> When using Full Template, recipients with <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">@cuchd.in</code> / <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">@cumail.in</code> receive the clean institutional format (Exchange Online SCL: 1), while <code className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">@gmail.com</code> receives the rich Design Studio format.
-              </p>
-            </div>
-
-            {diagnosticResult && (
-              <div
-                className={`p-3 rounded-xl border text-[11px] ${
-                  diagnosticResult.success
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                    : 'bg-rose-500/10 border-rose-500/20 text-rose-700 dark:text-rose-300'
-                }`}
-              >
-                {diagnosticResult.msg}
-              </div>
-            )}
-
-            <div className="pt-2 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsDiagnosticModalOpen(false)}
-                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={isSendingDiagnostic || !diagnosticEmail.includes('@')}
-                onClick={async () => {
-                  setIsSendingDiagnostic(true);
-                  setDiagnosticResult(null);
-                  try {
-                    const res = await sendDiagnosticTestEmail(diagnosticEmail.trim(), diagnosticMode);
-                    if (res.success) {
-                      setDiagnosticResult({
-                        success: true,
-                        msg: `✅ SMTP Relay accepted the test message (${diagnosticMode}). Check the destination inbox (${diagnosticEmail}).`,
-                      });
-                      handleRefresh();
-                    } else {
-                      setDiagnosticResult({
-                        success: false,
-                        msg: `❌ Error: ${res.error || 'Failed to dispatch test message.'}`,
-                      });
-                    }
-                  } catch (err: any) {
-                    setDiagnosticResult({
-                      success: false,
-                      msg: `❌ Error: ${err?.message || 'Unexpected failure.'}`,
-                    });
-                  } finally {
-                    setIsSendingDiagnostic(false);
-                  }
-                }}
-                className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20 disabled:opacity-50"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>{isSendingDiagnostic ? 'Dispatching...' : 'Send Diagnostic Test'}</span>
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal
