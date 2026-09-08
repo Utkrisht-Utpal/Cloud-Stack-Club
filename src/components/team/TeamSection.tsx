@@ -44,7 +44,7 @@ export const TeamSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="pt-28 sm:pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
+    <section className="pt-28 sm:pt-24 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 sm:space-y-10">
       {/* Header */}
       <div className="text-center space-y-2 max-w-3xl mx-auto">
         <motion.h1

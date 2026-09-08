@@ -262,10 +262,11 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="hidden lg:flex flex-col items-center relative">
               <nav className="relative z-20 flex items-center gap-1 bg-[#e6ecf5] dark:bg-slate-900/90 shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-none dark:border dark:border-slate-800 px-3.5 py-1.5 rounded-full">
                 {siteConfig.navLinks.map((link) => {
-                  const sectionId = link.href.replace('/#', '');
+                  const sectionId = link.href.replace('/#', '').replace('/', '');
                   const isActive =
                     link.isExternalPage
-                      ? location.pathname === link.href || (link.href !== '/' && location.pathname.startsWith(link.href))
+                      ? (location.pathname === link.href || (link.href !== '/' && location.pathname.startsWith(link.href))) ||
+                        (location.pathname === '/' && activeSection === sectionId)
                       : location.pathname === '/' && activeSection === sectionId;
 
                   return (
@@ -561,16 +562,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 )}
 
-                {siteConfig.navLinks.map((link) => (
-                  <button
-                    key={link.name}
-                    onClick={() => handleNavClick(link.href, link.isExternalPage)}
-                    className="w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-[#dce3f0] dark:hover:bg-slate-800/60 transition-colors flex items-center justify-between cursor-pointer"
-                  >
-                    <span>{link.name}</span>
-                    <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400 opacity-70" />
-                  </button>
-                ))}
+                {siteConfig.navLinks.map((link) => {
+                  const sectionId = link.href.replace('/#', '').replace('/', '');
+                  const isActive =
+                    link.isExternalPage
+                      ? (location.pathname === link.href || (link.href !== '/' && location.pathname.startsWith(link.href))) ||
+                        (location.pathname === '/' && activeSection === sectionId)
+                      : location.pathname === '/' && activeSection === sectionId;
+
+                  return (
+                    <button
+                      key={link.name}
+                      onClick={() => handleNavClick(link.href, link.isExternalPage)}
+                      className={`w-full text-left px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-between cursor-pointer ${
+                        isActive
+                          ? 'text-blue-700 dark:text-sky-400 bg-[#dce3f0] dark:bg-slate-800/80 font-bold'
+                          : 'text-slate-800 dark:text-slate-200 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-[#dce3f0] dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <span>{link.name}</span>
+                      <ArrowRight className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-sky-400' : 'text-slate-500 dark:text-slate-400 opacity-70'}`} />
+                    </button>
+                  );
+                })}
 
                 {!isAdminDashboard && (
                   <button
