@@ -67,7 +67,7 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
   const [includeButton, setIncludeButton] = useState(true);
   const [includeNotice, setIncludeNotice] = useState(false);
   const [isBannerDropdownOpen, setIsBannerDropdownOpen] = useState(false);
-  const [showVariablesHelper, setShowVariablesHelper] = useState(true);
+  const [showVariablesHelper, setShowVariablesHelper] = useState(false);
   const [previewTarget, setPreviewTarget] = useState<'standard' | 'institutional'>('standard');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -80,10 +80,11 @@ export const EmailTemplatesModal: React.FC<EmailTemplatesModalProps> = ({ isOpen
     setMounted(true);
   }, []);
 
-  // Reset dropdown when category changes or modal reopens
+  // Reset dropdown and collapse placeholder helper when category changes or modal reopens
   useEffect(() => {
     if (isOpen) {
       setIsBannerDropdownOpen(false);
+      setShowVariablesHelper(false);
     }
   }, [isOpen, activeCategory]);
 
