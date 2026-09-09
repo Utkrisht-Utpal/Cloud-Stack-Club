@@ -1883,19 +1883,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                 ) : null;
                               })()}
                             </h3>
-                            <button
-                              type="button"
-                              onClick={() => setBroadcastingEvent(evt)}
-                              className="group/bcast shrink-0 h-7 px-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/15 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-500/20 text-xs font-bold transition-all duration-300 ease-out flex items-center cursor-pointer shadow-xs hover:shadow-sm"
-                              title="Broadcast event announcement to all registered users via email"
-                            >
-                              <div className="flex items-center overflow-hidden">
-                                <Radio className="w-3.5 h-3.5 shrink-0 transition-transform duration-300 group-hover/bcast:scale-110" />
-                                <span className="max-w-0 opacity-0 group-hover/bcast:max-w-[80px] group-hover/bcast:opacity-100 group-hover/bcast:ml-1.5 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-[11px] font-black">
-                                  Broadcast
-                                </span>
-                              </div>
-                            </button>
+                            {(() => {
+                              const isCompleted = evt.status === 'completed' || getEventStatusInfo(evt.date).type === 'completed';
+                              if (isCompleted) return null;
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => setBroadcastingEvent(evt)}
+                                  className="group/bcast shrink-0 h-7 px-2 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-500/15 dark:hover:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-500/20 text-xs font-bold transition-all duration-300 ease-out flex items-center cursor-pointer shadow-xs hover:shadow-sm"
+                                  title="Broadcast event announcement to all registered users via email"
+                                >
+                                  <div className="flex items-center overflow-hidden">
+                                    <Radio className="w-3.5 h-3.5 shrink-0 transition-transform duration-300 group-hover/bcast:scale-110" />
+                                    <span className="max-w-0 opacity-0 group-hover/bcast:max-w-[80px] group-hover/bcast:opacity-100 group-hover/bcast:ml-1.5 transition-all duration-300 ease-out whitespace-nowrap overflow-hidden text-[11px] font-black">
+                                      Broadcast
+                                    </span>
+                                  </div>
+                                </button>
+                              );
+                            })()}
                           </div>
                           <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-medium">
                             {evt.description || 'No description provided for this event.'}
