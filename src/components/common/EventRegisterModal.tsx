@@ -96,7 +96,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       if (event.max_registrations) {
         getEventRegistrationCountsMap()
           .then((counts) => {
-            const current = counts[event.id.toLowerCase()] ?? 0;
+            const current =
+              counts[event.id] ??
+              counts[event.id.toLowerCase()] ??
+              (event.slug ? counts[event.slug.toLowerCase()] : undefined) ??
+              0;
             if (current >= event.max_registrations!) {
               setIsCapacityFull(true);
             }
@@ -157,7 +161,11 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     if (event.max_registrations) {
       try {
         const counts = await getEventRegistrationCountsMap();
-        const current = counts[event.id.toLowerCase()] ?? 0;
+        const current =
+          counts[event.id] ??
+          counts[event.id.toLowerCase()] ??
+          (event.slug ? counts[event.slug.toLowerCase()] : undefined) ??
+          0;
         if (current >= event.max_registrations) {
           setIsCapacityFull(true);
           triggerErrorWithCooldown('Registration for this event has reached full capacity.');

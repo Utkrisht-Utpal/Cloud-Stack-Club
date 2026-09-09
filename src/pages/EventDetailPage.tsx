@@ -161,7 +161,11 @@ export const EventDetailPage: React.FC = () => {
     );
   }
 
-  const currentCount = registrationCounts[event.id] || 0;
+  const currentCount =
+    registrationCounts[event.id] ??
+    registrationCounts[event.id.toLowerCase()] ??
+    (event.slug ? registrationCounts[event.slug.toLowerCase()] : undefined) ??
+    0;
   const isFull = isRegistrationFull(event, currentCount);
   const isRegActive = isRegistrationActive(event, currentCount);
   const isFeedback = isFeedbackActive(event);

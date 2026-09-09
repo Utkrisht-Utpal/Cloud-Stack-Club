@@ -428,7 +428,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const hasEventRegistrations = (evt: Event): boolean => {
     const evtIdKey = (evt.id || '').toLowerCase();
     const evtSlugKey = (evt.slug || '').toLowerCase();
-    const count = (registrationCounts[evtIdKey] || 0) + (registrationCounts[evtSlugKey] || 0);
+    const count = registrationCounts[evtIdKey] ?? registrationCounts[evtSlugKey] ?? 0;
     return count > 0;
   };
 
@@ -1874,7 +1874,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-snug flex-1 flex items-center gap-2 flex-wrap">
                               <span>{evt.title}</span>
                               {(() => {
-                                const cnt = (registrationCounts[(evt.id || '').toLowerCase()] || 0) + (registrationCounts[(evt.slug || '').toLowerCase()] || 0);
+                                const cnt = registrationCounts[(evt.id || '').toLowerCase()] ?? registrationCounts[(evt.slug || '').toLowerCase()] ?? 0;
                                 return cnt > 0 ? (
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-gradient-to-r from-emerald-500/15 to-teal-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 dark:border-emerald-400/30 shadow-xs shrink-0 whitespace-nowrap">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"></span>

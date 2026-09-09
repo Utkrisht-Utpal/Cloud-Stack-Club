@@ -320,14 +320,15 @@ export const getEventRegistrationsService = async (
     }
   }
 
-  // 3. Supplement with local storage candidates
-  const localKeys = [
-    `csc_event_regs_${targetId}`,
-    targetSlug ? `csc_event_regs_${targetSlug}` : null,
-    'csc_all_event_regs',
-  ].filter(Boolean) as string[];
+  // 3. Supplement with local storage candidates ONLY if offline or no remote records found
+  if (!isSupabaseConfigured() || candidateMap.size === 0) {
+    const localKeys = [
+      `csc_event_regs_${targetId}`,
+      targetSlug ? `csc_event_regs_${targetSlug}` : null,
+      'csc_all_event_regs',
+    ].filter(Boolean) as string[];
 
-  for (const key of localKeys) {
+    for (const key of localKeys) {
     const cached = localStorage.getItem(key);
     if (cached) {
       try {
@@ -347,6 +348,7 @@ export const getEventRegistrationsService = async (
         }
       } catch (e) {}
     }
+  }
   }
 
   // 4. Sort registrations chronologically (oldest first: 1, 2, 3...)
@@ -495,21 +497,24 @@ export const getEventRegistrationCountsMap = async (): Promise<Record<string, nu
     }
   }
 
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && (k.startsWith('csc_event_regs_') || k.startsWith('csc_regs_'))) {
-        const val = localStorage.getItem(k);
-        if (val) {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const eventKey = k.replace('csc_event_regs_', '').replace('csc_regs_', '').toLowerCase();
-            countsMap[eventKey] = Math.max(countsMap[eventKey] || 0, parsed.length);
+  // 3. Fallback to localStorage ONLY if completely offline / both Supabase and Worker failed
+  if (Object.keys(countsMap).length === 0) {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith('csc_event_regs_') || k.startsWith('csc_regs_'))) {
+          const val = localStorage.getItem(k);
+          if (val) {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const eventKey = k.replace('csc_event_regs_', '').replace('csc_regs_', '').toLowerCase();
+              countsMap[eventKey] = Math.max(countsMap[eventKey] || 0, parsed.length);
+            }
           }
         }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   return countsMap;
 };

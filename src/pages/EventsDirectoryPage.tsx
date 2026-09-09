@@ -273,7 +273,11 @@ export const EventsDirectoryPage: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           <AnimatePresence>
             {filteredEvents.map((evt, index) => {
-              const currentCount = registrationCounts[evt.id] || 0;
+              const currentCount =
+                registrationCounts[evt.id] ??
+                registrationCounts[evt.id.toLowerCase()] ??
+                (evt.slug ? registrationCounts[evt.slug.toLowerCase()] : undefined) ??
+                0;
               const isFull = isRegistrationFull(evt, currentCount);
               const remainingSeats =
                 evt.max_registrations !== null && evt.max_registrations !== undefined
