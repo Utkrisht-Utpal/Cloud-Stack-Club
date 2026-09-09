@@ -401,7 +401,7 @@ export async function sendTeamRegistrationEmails(params: {
 
   const memberPromises = params.members
     .filter((m) => m.email && m.email.trim())
-    .map((m) => {
+    .map(async (m) => {
       const otherMembers = params.members
         .filter((other) => other.email !== m.email || other.name !== m.name)
         .map((other) => ({
@@ -412,31 +412,38 @@ export async function sendTeamRegistrationEmails(params: {
           registration_number: other.registration_number,
         }));
 
-      return sendTeamMemberRegistrationEmail({
-        member_email: m.email,
-        member_name: m.name,
-        member_uid: m.uid,
-        member_department: m.department,
-        member_year: m.year,
-        member_registration_number: m.registration_number || null,
-        leader_name: params.leader.name,
-        leader_email: params.leader.email,
-        leader_uid: params.leader.uid,
-        leader_department: params.leader.department,
-        leader_year: params.leader.year,
-        leader_registration_number: leaderRegId,
-        team_name: params.team_name,
-        other_members: otherMembers,
-        event_title: params.event_title,
-        event_date: params.event_date,
-        event_time: params.event_time,
-        event_venue: params.event_venue,
-        registration_number: teamRegId,
-        team_registration_number: teamRegId,
-      });
+      try {
+        return await sendTeamMemberRegistrationEmail({
+          member_email: m.email.trim(),
+          member_name: m.name.trim(),
+          member_uid: m.uid ? m.uid.trim() : null,
+          member_department: m.department || params.leader.department || null,
+          member_year: m.year || params.leader.year || null,
+          member_registration_number: m.registration_number || null,
+          leader_name: params.leader.name,
+          leader_email: params.leader.email,
+          leader_uid: params.leader.uid,
+          leader_department: params.leader.department,
+          leader_year: params.leader.year,
+          leader_registration_number: leaderRegId,
+          team_name: params.team_name,
+          other_members: otherMembers,
+          event_title: params.event_title,
+          event_date: params.event_date,
+          event_time: params.event_time,
+          event_venue: params.event_venue,
+          registration_number: teamRegId,
+          team_registration_number: teamRegId,
+        });
+      } catch (memberEmailErr) {
+        console.warn(`Failed to dispatch registration email to teammate ${m.name} (${m.email}):`, memberEmailErr);
+        return { success: false, sentCount: 0, total: 1 };
+      }
     });
 
-  const [leaderResult, ...memberResults] = await Promise.all([leaderPromise, ...memberPromises]);
+  const [leaderSettled, ...membersSettled] = await Promise.allSettled([leaderPromise, ...memberPromises]);
+  const leaderResult = leaderSettled.status === 'fulfilled' ? leaderSettled.value : { success: false, sentCount: 0, total: 1 };
+  const memberResults = membersSettled.map((s) => (s.status === 'fulfilled' ? s.value : { success: false, sentCount: 0, total: 1 }));
   return { leaderResult, memberResults };
 }
 
