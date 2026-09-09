@@ -666,11 +666,11 @@ export function renderEmailHtmlPreview(
       ? `
         <div style="background-color: ${btnBoxBg}; border: 1px solid ${btnBoxBorder}; border-radius: 12px; padding: 22px 18px; text-align: center; margin: 24px 0;">
           <div style="color: ${linkColor}; font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 14px;">OFFICIAL ACTION LINK</div>
-          <a href="${buttonUrl}" style="background-color: ${btnBg}; color: ${btnTextColor}; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
+          <a href="${buttonUrl}" target="_blank" rel="noopener noreferrer" style="background-color: ${btnBg}; color: ${btnTextColor}; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block;">
             ${buttonText}
           </a>
           <div style="margin-top: 10px;">
-            <a href="${buttonUrl}" style="color: ${linkColor}; font-size: 11px; text-decoration: underline; word-break: break-all;">${buttonUrl}</a>
+            <a href="${buttonUrl}" target="_blank" rel="noopener noreferrer" style="color: ${linkColor}; font-size: 11px; text-decoration: underline; word-break: break-all;">${buttonUrl}</a>
           </div>
         </div>
       `
@@ -716,7 +716,7 @@ export function renderEmailHtmlPreview(
           <tr>
             <td style="background-color: #1f1f1f; border-top: 1px solid ${cardBorder}; padding: 22px 24px; text-align: center;">
               ${footerInstContent}
-              <p style="margin: 0; font-size: 12px;"><a href="https://cloudstackclub.vercel.app" style="color: ${footerLinkColor}; text-decoration: none; font-weight: 600;">Visit Club Portal</a></p>
+              <p style="margin: 0; font-size: 12px;"><a href="https://cloudstackclub.vercel.app" target="_blank" rel="noopener noreferrer" style="color: ${footerLinkColor}; text-decoration: none; font-weight: 600;">Visit Club Portal</a></p>
             </td>
           </tr>
         </table>
