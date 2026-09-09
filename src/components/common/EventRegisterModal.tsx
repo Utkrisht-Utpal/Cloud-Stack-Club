@@ -325,30 +325,39 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
               phone: formData.phone.trim(),
               registration_number: result?.registration_number || undefined,
             },
-            members: teamMembers
-              .filter((m) => m.name.trim() && m.email.trim())
+            members: (teamMembers || [])
+              .filter((m) => m && m.name && m.name.trim() && m.email && m.email.trim())
               .map((m, idx) => {
+                const cleanEmail = m.email.trim().toLowerCase();
+                const cleanUid = m.uid ? m.uid.trim().toUpperCase() : '';
+                const cleanName = m.name.trim().toLowerCase();
+
                 const found = result?.team?.members?.find((dbM: any) => {
                   const mEmail = dbM.email ? String(dbM.email).trim().toLowerCase() : '';
                   const mUid = dbM.uid ? String(dbM.uid).trim().toUpperCase() : '';
                   const mName = dbM.name ? String(dbM.name).trim().toLowerCase() : '';
-                  if (m.email && mEmail && m.email.trim().toLowerCase() === mEmail) return true;
-                  if (m.uid && mUid && m.uid.trim().toUpperCase() === mUid) return true;
-                  if (m.name && mName && m.name.trim().toLowerCase() === mName) return true;
+                  if (cleanEmail && mEmail && cleanEmail === mEmail) return true;
+                  if (cleanUid && mUid && cleanUid === mUid) return true;
+                  if (cleanName && mName && cleanName === mName) return true;
                   return false;
                 });
+
                 return {
                   name: m.name.trim(),
                   email: m.email.trim(),
-                  uid: m.uid.trim(),
-                  phone: m.phone.trim(),
+                  uid: m.uid ? m.uid.trim() : null,
+                  phone: m.phone ? m.phone.trim() : null,
                   department: formData.department.trim(),
                   year: formData.year,
                   registration_number: found?.registration_number || result?.team?.members?.[idx]?.registration_number || undefined,
                 };
               }),
             registration_number: result?.team?.registration_number || result?.registration_number,
-          }).catch((emailErr) => console.warn('Background team registration email dispatch notice:', emailErr));
+          }).then((res) => {
+            console.log('Automated team registration emails successfully sent:', res);
+          }).catch((emailErr) => {
+            console.error('Background team registration email dispatch notice:', emailErr);
+          });
         } else {
           sendIndividualRegistrationEmail({
             name: formData.name.trim(),
