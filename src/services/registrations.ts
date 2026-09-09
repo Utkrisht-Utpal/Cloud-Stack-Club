@@ -110,6 +110,25 @@ export const registerForEvent = async (
   };
 
   if (parsed.team_id && isTeamRegistration) {
+    let dbTeamMembers: any[] = [];
+    if (parsed.members && Array.isArray(parsed.members) && parsed.members.length > 0) {
+      dbTeamMembers = parsed.members;
+    } else if (parsed.team_members && Array.isArray(parsed.team_members) && parsed.team_members.length > 0) {
+      dbTeamMembers = parsed.team_members;
+    } else if (isSupabaseConfigured()) {
+      try {
+        const { data: fetchedMembers } = await supabase
+          .from('event_team_members')
+          .select('*')
+          .eq('team_id', parsed.team_id);
+        if (fetchedMembers && fetchedMembers.length > 0) {
+          dbTeamMembers = fetchedMembers;
+        }
+      } catch (fetchErr) {
+        console.warn('Failed to query event_team_members after registration:', fetchErr);
+      }
+    }
+
     createdRegistration.team = {
       id: parsed.team_id,
       event_id: targetEventId,
@@ -117,17 +136,34 @@ export const registerForEvent = async (
       registration_number: parsed.team_registration_number,
       created_by_registration_id: parsed.id,
       created_at: new Date().toISOString(),
-      members: (team_members || []).map((m, idx) => ({
-        id: `tm-${idx}`,
-        team_id: parsed.team_id,
-        name: m.name.trim(),
-        email: m.email.trim(),
-        phone: m.phone ? m.phone.trim() : null,
-        uid: m.uid ? m.uid.trim().toUpperCase() : null,
-        registration_number: parsed.team_registration_number,
-        member_id: null,
-        created_at: new Date().toISOString(),
-      })),
+      members: (team_members || []).map((m, idx) => {
+        const cleanEmail = m.email ? m.email.trim().toLowerCase() : '';
+        const cleanUid = m.uid ? m.uid.trim().toUpperCase() : '';
+        const cleanName = m.name ? m.name.trim().toLowerCase() : '';
+
+        const match = dbTeamMembers.find((dbM: any) => {
+          const mEmail = dbM.email ? String(dbM.email).trim().toLowerCase() : '';
+          const mUid = dbM.uid ? String(dbM.uid).trim().toUpperCase() : '';
+          const mName = dbM.name ? String(dbM.name).trim().toLowerCase() : '';
+
+          if (cleanEmail && mEmail && cleanEmail === mEmail) return true;
+          if (cleanUid && mUid && cleanUid === mUid) return true;
+          if (cleanName && mName && cleanName === mName) return true;
+          return false;
+        }) || dbTeamMembers[idx];
+
+        return {
+          id: match?.id || `tm-${idx}`,
+          team_id: parsed.team_id,
+          name: m.name.trim(),
+          email: m.email.trim(),
+          phone: m.phone ? m.phone.trim() : null,
+          uid: m.uid ? m.uid.trim().toUpperCase() : null,
+          registration_number: match?.registration_number || null,
+          member_id: match?.member_id || null,
+          created_at: match?.created_at || new Date().toISOString(),
+        };
+      }),
     };
   }
 

@@ -327,15 +327,26 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             },
             members: teamMembers
               .filter((m) => m.name.trim() && m.email.trim())
-              .map((m, idx) => ({
-                name: m.name.trim(),
-                email: m.email.trim(),
-                uid: m.uid.trim(),
-                phone: m.phone.trim(),
-                department: formData.department.trim(),
-                year: formData.year,
-                registration_number: result?.team?.members?.[idx]?.registration_number || undefined,
-              })),
+              .map((m, idx) => {
+                const found = result?.team?.members?.find((dbM: any) => {
+                  const mEmail = dbM.email ? String(dbM.email).trim().toLowerCase() : '';
+                  const mUid = dbM.uid ? String(dbM.uid).trim().toUpperCase() : '';
+                  const mName = dbM.name ? String(dbM.name).trim().toLowerCase() : '';
+                  if (m.email && mEmail && m.email.trim().toLowerCase() === mEmail) return true;
+                  if (m.uid && mUid && m.uid.trim().toUpperCase() === mUid) return true;
+                  if (m.name && mName && m.name.trim().toLowerCase() === mName) return true;
+                  return false;
+                });
+                return {
+                  name: m.name.trim(),
+                  email: m.email.trim(),
+                  uid: m.uid.trim(),
+                  phone: m.phone.trim(),
+                  department: formData.department.trim(),
+                  year: formData.year,
+                  registration_number: found?.registration_number || result?.team?.members?.[idx]?.registration_number || undefined,
+                };
+              }),
             registration_number: result?.team?.registration_number || result?.registration_number,
           }).catch((emailErr) => console.warn('Background team registration email dispatch notice:', emailErr));
         } else {
