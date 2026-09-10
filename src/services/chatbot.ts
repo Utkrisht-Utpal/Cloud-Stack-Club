@@ -631,64 +631,7 @@ export const resolveMemberQuery = (
     };
   }
 
-  // B. Specific Role Match (Highest priority)
-  let bestRoleMatch: { member: CoreMember; score: number } | null = null;
-
-  for (const m of members) {
-    const roleName = m.role?.name || '';
-    const cleanRole = normalizeText(roleName);
-    const roleTokens = cleanRole.split(' ').filter((t) => !STOP_WORDS.has(t));
-
-    let score = 0;
-
-    // Exact role match
-    if (cleanQuery.includes(cleanRole) && cleanRole.length > 3) {
-      score += 100;
-    } else {
-      const matchedTokens = tokens.filter((t) => roleTokens.includes(t));
-      if (matchedTokens.length > 0) {
-        score += (matchedTokens.length / roleTokens.length) * 80;
-        // Extra boost if key unique role words match
-        if (tokens.includes('designer') && roleTokens.includes('designer')) score += 40;
-        if (tokens.includes('graphic') && roleTokens.includes('graphic')) score += 40;
-        if (tokens.includes('editor') && roleTokens.includes('editor')) score += 40;
-        if (tokens.includes('video') && roleTokens.includes('video')) score += 40;
-        if (tokens.includes('photographer') && roleTokens.includes('photographer')) score += 40;
-        if (tokens.includes('treasurer') && roleTokens.includes('treasurer')) score += 50;
-        if (tokens.includes('logistics') && roleTokens.includes('logistics')) score += 50;
-        if (tokens.includes('volunteer') && roleTokens.includes('volunteer')) score += 50;
-        if (tokens.includes('discipline') && roleTokens.includes('discipline')) score += 50;
-        if (tokens.includes('hospitality') && roleTokens.includes('hospitality')) score += 50;
-        if (tokens.includes('writer') && roleTokens.includes('writer')) score += 50;
-        if (tokens.includes('marketing') && roleTokens.includes('marketing')) score += 50;
-        if (tokens.includes('media') && roleTokens.includes('media')) score += 40;
-        if (tokens.includes('outreach') && roleTokens.includes('outreach')) score += 40;
-      }
-    }
-
-    // Role aliases
-    if ((cleanQuery.includes('tech lead') || cleanQuery.includes('technical lead')) && cleanRole.includes('technical')) {
-      score += 90;
-    }
-    if ((cleanQuery.includes('joint sec') || cleanQuery.includes('joint secretary')) && cleanRole.includes('joint')) {
-      score += 90;
-    } else if (cleanQuery.includes('secretary') && !cleanQuery.includes('joint') && cleanRole === 'secretary') {
-      score += 90;
-    }
-    if ((cleanQuery.includes('faculty') || cleanQuery.includes('advisor') || cleanQuery.includes('mentor')) && cleanRole.includes('faculty')) {
-      score += 70;
-    }
-
-    if (score >= 40 && (!bestRoleMatch || score > bestRoleMatch.score)) {
-      bestRoleMatch = { member: m, score };
-    }
-  }
-
-  if (bestRoleMatch && bestRoleMatch.score >= 40) {
-    return formatMemberResponse(bestRoleMatch.member);
-  }
-
-  // C. Specific Member Name Match
+  // B. Specific Member Name Match (Highest priority)
   for (const m of members) {
     const cleanName = normalizeText(m.name || '');
     const nameTokens = cleanName.split(' ').filter((t) => t.length > 2);
@@ -697,6 +640,100 @@ export const resolveMemberQuery = (
     if (matchesName) {
       return formatMemberResponse(m);
     }
+  }
+
+  // C. Specific Role Match
+  // STRICT RULE: Only match a role if the user explicitly asks about a person / leadership role,
+  // OR the user query contains the full role name. Generic domain words (like "event", "tech", "design")
+  // must NEVER trigger a member role match on their own!
+  const hasPersonIntent =
+    cleanQuery.includes('who') ||
+    cleanQuery.includes('lead') ||
+    cleanQuery.includes('head') ||
+    cleanQuery.includes('coordinator') ||
+    cleanQuery.includes('incharge') ||
+    cleanQuery.includes('in charge') ||
+    cleanQuery.includes('manager') ||
+    cleanQuery.includes('president') ||
+    cleanQuery.includes('secretary') ||
+    cleanQuery.includes('treasurer') ||
+    cleanQuery.includes('designer') ||
+    cleanQuery.includes('editor') ||
+    cleanQuery.includes('writer') ||
+    cleanQuery.includes('photographer') ||
+    cleanQuery.includes('videographer') ||
+    cleanQuery.includes('advisor') ||
+    cleanQuery.includes('mentor') ||
+    cleanQuery.includes('handles') ||
+    cleanQuery.includes('managed by') ||
+    cleanQuery.includes('team member') ||
+    cleanQuery.includes('core member') ||
+    cleanQuery.includes('contact person') ||
+    cleanQuery.includes('person');
+
+  // Bare topic nouns that should NEVER trigger a member role match on their own
+  const TOPIC_NOUNS = new Set([
+    'event', 'events', 'certificate', 'certificates', 'cert', 'certification',
+    'workshop', 'hackathon', 'competition', 'tech', 'technology', 'design',
+    'media', 'content', 'social', 'operations', 'logistics', 'discipline',
+    'hospitality', 'resource', 'public', 'outreach', 'documentation', 'volunteer'
+  ]);
+
+  let bestRoleMatch: { member: CoreMember; score: number } | null = null;
+
+  for (const m of members) {
+    const roleName = m.role?.name || '';
+    const cleanRole = normalizeText(roleName);
+    if (!cleanRole || cleanRole.length < 3) continue;
+    const roleTokens = cleanRole.split(' ').filter((t) => !STOP_WORDS.has(t));
+
+    let score = 0;
+
+    // 1. Full exact role name present in query (e.g. "event coordinator", "technical lead", "joint secretary")
+    if (cleanQuery.includes(cleanRole)) {
+      score += 100;
+    } else if (hasPersonIntent) {
+      // 2. Only allow token matching if the user is explicitly asking about people / roles
+      const nonTopicRoleTokens = roleTokens.filter((t) => !TOPIC_NOUNS.has(t));
+      const nonTopicQueryTokens = tokens.filter((t) => !TOPIC_NOUNS.has(t));
+
+      // Role aliases
+      if ((cleanQuery.includes('tech lead') || cleanQuery.includes('technical lead')) && cleanRole.includes('technical')) {
+        score += 90;
+      } else if ((cleanQuery.includes('joint sec') || cleanQuery.includes('joint secretary')) && cleanRole.includes('joint')) {
+        score += 90;
+      } else if (cleanQuery.includes('secretary') && !cleanQuery.includes('joint') && cleanRole === 'secretary') {
+        score += 90;
+      } else if ((cleanQuery.includes('faculty') || cleanQuery.includes('advisor') || cleanQuery.includes('mentor')) && cleanRole.includes('faculty')) {
+        score += 85;
+      } else if (cleanQuery.includes('treasurer') && cleanRole.includes('treasurer')) {
+        score += 85;
+      } else if (cleanQuery.includes('designer') && cleanRole.includes('designer')) {
+        score += 80;
+      } else if (cleanQuery.includes('editor') && cleanRole.includes('editor')) {
+        score += 80;
+      } else if (cleanQuery.includes('photographer') && cleanRole.includes('photographer')) {
+        score += 80;
+      } else if (cleanQuery.includes('writer') && cleanRole.includes('writer')) {
+        score += 80;
+      } else {
+        const matchedTokens = tokens.filter((t) => roleTokens.includes(t));
+        const matchedNonTopic = nonTopicQueryTokens.filter((t) => nonTopicRoleTokens.includes(t));
+
+        // Must match at least the title token (e.g. "coordinator", "manager", "lead") and require at least 2 tokens
+        if (matchedNonTopic.length > 0 && matchedTokens.length >= Math.min(2, roleTokens.length)) {
+          score += (matchedTokens.length / roleTokens.length) * 80;
+        }
+      }
+    }
+
+    if (score >= 70 && (!bestRoleMatch || score > bestRoleMatch.score)) {
+      bestRoleMatch = { member: m, score };
+    }
+  }
+
+  if (bestRoleMatch && bestRoleMatch.score >= 70) {
+    return formatMemberResponse(bestRoleMatch.member);
   }
 
   // D. Domain-based Team Queries
@@ -766,9 +803,16 @@ export const resolveDynamicEventQuery = (
 
   // B. Distinctive keywords match (e.g. "aws", "ideathon", "industry visit")
   if (!matchedEvent) {
+    const GENERIC_EVENT_WORDS = new Set([
+      'event', 'events', 'workshop', 'workshops', 'session', 'sessions',
+      'bootcamp', 'bootcamps', 'webinar', 'webinars', 'competition', 'competitions',
+      'hackathon', 'hackathons', 'club', 'cloud', 'stack'
+    ]);
+
     for (const evt of validEvents) {
       const cleanTitle = normalizeText(evt.title);
       const titleTokens = cleanTitle.split(' ').filter((t) => !STOP_WORDS.has(t) && t.length > 2);
+      const distinctTitleTokens = titleTokens.filter((t) => !GENERIC_EVENT_WORDS.has(t));
 
       // High-confidence match: "aws" is unique to AWS Certification
       if (titleTokens.includes('aws') && (tokens.includes('aws') || cleanQuery.includes('aws'))) {
@@ -776,11 +820,19 @@ export const resolveDynamicEventQuery = (
         break;
       }
 
-      // Check token overlap
-      const matchCount = titleTokens.filter((tt) => tokens.includes(tt) || cleanQuery.includes(tt)).length;
-      if (matchCount > 0 && matchCount >= Math.min(titleTokens.length, 2)) {
-        matchedEvent = evt;
-        break;
+      // Check distinctive token overlap (do not latch onto generic words like "workshop" or "event")
+      if (distinctTitleTokens.length > 0) {
+        const distinctMatches = distinctTitleTokens.filter((tt) => tokens.includes(tt) || cleanQuery.includes(tt));
+        if (distinctMatches.length >= Math.min(distinctTitleTokens.length, 2)) {
+          matchedEvent = evt;
+          break;
+        }
+      } else {
+        const matchCount = titleTokens.filter((tt) => tokens.includes(tt) || cleanQuery.includes(tt)).length;
+        if (matchCount > 0 && matchCount >= Math.min(titleTokens.length, 2)) {
+          matchedEvent = evt;
+          break;
+        }
       }
     }
   }
@@ -1859,6 +1911,20 @@ export const resolveBotQuery = async (
     };
   }
 
+  // 1.5. EXACT FAQ MATCH (Highest priority for suggestion pills and exact FAQ questions)
+  const exactFaq = faqs.find((f) => {
+    const cleanFaqQ = normalizeText(f.question);
+    return cleanFaqQ === cleanQ || cleanFaqQ.replace(/\s+/g, '') === cleanQ.replace(/\s+/g, '');
+  });
+
+  if (exactFaq) {
+    return {
+      text: exactFaq.answer,
+      suggestions: faqs.filter((f) => f.id !== exactFaq.id).slice(0, 3),
+      actionLinks: getActionLinksForFaq(exactFaq),
+    };
+  }
+
   // 2. DYNAMIC REAL MEMBER & LEADERSHIP ENGINE (Live DB)
   try {
     const coreMembers = await getCoreMembers();
@@ -2158,7 +2224,7 @@ export const resolveBotQuery = async (
 
   if (isCertIntent) {
     return {
-      text: `Official participation & merit certificates are digitally verified and emailed to attendees within **3 to 7 working days** after an event.\n\n• **Spelling error or missing certificate?** You can submit an official discrepancy ticket, and our administrative team will review your attendance logs and re-issue your certificate.`,
+      text: `Official participation & merit certificates will be distributed to the attendees within **3 to 7 working days** after an event.\n\n• **Any error or missing data?** You can submit an official discrepancy ticket, and our administrative team will review your attendance logs and re-issue your certificate.`,
       suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'Contact').slice(0, 3),
       actionLinks: [
         { label: '🎫 Submit Discrepancy Ticket', url: '/contact' },
