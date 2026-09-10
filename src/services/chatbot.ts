@@ -68,56 +68,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     is_active: true,
     display_order: 6,
   },
-  {
-    id: 'faq-secretary',
-    question: 'Who is the Secretary of Cloud Stack Club?',
-    answer:
-      'The Secretary of Cloud Stack Club is **Lakshay Gosai** (3rd Year, AIT-CSE / FSD). He oversees club operations, administration, and team leadership.',
-    category: 'Leadership',
-    keywords: ['secretary', 'gen sec', 'general secretary', 'lakshay', 'gosai', 'who is secretary', 'lead', 'head'],
-    is_active: true,
-    display_order: 7,
-  },
-  {
-    id: 'faq-tech-lead',
-    question: 'Who is the Technical Lead of Cloud Stack Club?',
-    answer:
-      'The Technical Lead of Cloud Stack Club is **Utkrisht Utpal**. He spearheads technical architecture, system development, student coding projects, and platform infrastructure.',
-    category: 'Leadership',
-    keywords: ['technical lead', 'tech lead', 'utkrisht', 'utpal', 'who is tech lead', 'developer lead', 'coding head'],
-    is_active: true,
-    display_order: 8,
-  },
-  {
-    id: 'faq-joint-sec',
-    question: 'Who is the Joint Secretary?',
-    answer:
-      'The Joint Secretary of Cloud Stack Club is **Bani Kaur**. She works alongside the Secretary to coordinate team activities, event logistics, and member engagement.',
-    category: 'Leadership',
-    keywords: ['joint secretary', 'bani', 'kaur', 'who is joint secretary', 'vice lead'],
-    is_active: true,
-    display_order: 9,
-  },
-  {
-    id: 'faq-faculty',
-    question: 'Who are the Faculty Advisors for Cloud Stack Club?',
-    answer:
-      'Cloud Stack Club is mentored and guided by **Dr. Deepti Sharma** (Faculty Advisor) and **Dr. Navjot Singh** (Co - Faculty Advisor) at Chandigarh University.',
-    category: 'Leadership',
-    keywords: ['faculty', 'advisor', 'faculty advisor', 'deepti', 'navjot', 'mentor', 'professors', 'teachers', 'sir', 'maam'],
-    is_active: true,
-    display_order: 10,
-  },
-  {
-    id: 'faq-events',
-    question: 'What events or workshops are happening?',
-    answer:
-      'We organize workshops, certification challenges, and flagship hackathons like Elevate-X. You can view live upcoming events, active seat availability, and 1-click registration below.',
-    category: 'Events',
-    keywords: ['events', 'upcoming events', 'workshops', 'hackathons', 'elevate-x', 'stack sprint', 'register event', 'competitions'],
-    is_active: true,
-    display_order: 11,
-  },
+
   {
     id: 'faq-non-members',
     question: 'Can non-members attend club workshops and hackathons?',
@@ -126,7 +77,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Events',
     keywords: ['non member', 'not member', 'outside', 'anyone attend', 'can i attend', 'public event'],
     is_active: true,
-    display_order: 12,
+    display_order: 7,
   },
   {
     id: 'faq-team-registration',
@@ -136,7 +87,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Events',
     keywords: ['team registration', 'team code', 'register as team', 'team size', 'solo or team'],
     is_active: true,
-    display_order: 13,
+    display_order: 8,
   },
   {
     id: 'faq-certificates',
@@ -146,7 +97,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Events',
     keywords: ['certificate', 'cert', 'participation certificate', 'verify certificate', 'attendance', 'merit'],
     is_active: true,
-    display_order: 14,
+    display_order: 9,
   },
   {
     id: 'faq-certificate-correction',
@@ -156,7 +107,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Contact',
     keywords: ['wrong name', 'spelling mistake', 'attendance issue', 'certificate mistake', 'name error', 'correction'],
     is_active: true,
-    display_order: 15,
+    display_order: 10,
   },
   {
     id: 'faq-timings-location',
@@ -166,7 +117,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'About Club',
     keywords: ['location', 'where is club', 'timing', 'timings', 'venue', 'offline', 'campus', 'where meet'],
     is_active: true,
-    display_order: 16,
+    display_order: 11,
   },
   {
     id: 'faq-gallery',
@@ -176,7 +127,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'About Club',
     keywords: ['gallery', 'photos', 'pictures', 'videos', 'memories', 'past events', 'highlights'],
     is_active: true,
-    display_order: 17,
+    display_order: 12,
   },
   {
     id: 'faq-contact',
@@ -186,7 +137,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Contact',
     keywords: ['contact', 'email', 'help', 'support', 'issue', 'query', 'discrepancy', 'feedback', 'phone'],
     is_active: true,
-    display_order: 18,
+    display_order: 13,
   },
 ];
 
