@@ -23,6 +23,7 @@ import { DiscrepancyModal } from '../components/common/DiscrepancyModal';
 import { EventRegisterModal } from '../components/common/EventRegisterModal';
 import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
+import { ChatbotWidget } from '../components/chatbot/ChatbotWidget';
 
 export const MainLayout: React.FC = () => {
   const location = useLocation();
@@ -254,6 +255,9 @@ export const MainLayout: React.FC = () => {
 
       {/* Floating CTA on Mobile */}
       <FloatingMobileCTA onJoinClick={handleOpenJoinModal} />
+
+      {/* Floating Chatbot Assistant Widget (User-facing) */}
+      {!showDashboard && <ChatbotWidget />}
 
       {/* Footer */}
       <Footer />

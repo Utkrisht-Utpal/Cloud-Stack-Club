@@ -244,6 +244,27 @@ export interface MemberApplicationPayload {
   verification_file_url?: string;
 }
 
+export interface ChatbotFaq {
+  id: string;
+  question: string;
+  answer: string;
+  category: string;
+  keywords: string[];
+  is_active: boolean;
+  display_order: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ChatbotFaqPayload {
+  question: string;
+  answer: string;
+  category?: string;
+  keywords?: string[];
+  is_active?: boolean;
+  display_order?: number;
+}
+
 export interface Database {
   public: {
     Tables: {
