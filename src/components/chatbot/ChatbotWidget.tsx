@@ -327,12 +327,12 @@ export const ChatbotWidget: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-none">
-                      CSC Assistant
+                      Claudyi
                     </h3>
                     <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                   </div>
                   <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                    Instant Answers • Pre-Fed Bot
+                    Chat Bot • Instant Answers
                   </p>
                 </div>
               </div>

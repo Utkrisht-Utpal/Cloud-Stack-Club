@@ -974,8 +974,10 @@ export const resolveDynamicEventQuery = (
           `• 🗓️ **Date & Time:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}\n` +
           (evt.registration_end ? `• ⏳ **Registration Deadline:** ${formatEventDate(evt.registration_end)}\n` : '') +
           (remaining !== null ? `• 💺 **Available Capacity:** ${remaining} seats remaining (${maxReg} total)\n\n` : '\n') +
-          `You can open the official registration form directly by clicking the button below:\n` +
-          `👉 [Open ${evt.title} Registration Form](${registerUrl})`;
+          `You can open the official registration form directly by clicking the button below:\n` 
+          // Add registration link just below the text and i commented it because i want to show the registration link in the action buttons 
+          // + `👉 [Open ${evt.title} Registration Form](${registerUrl})`
+          ;
 
         return {
           text: scrubPii(text),
