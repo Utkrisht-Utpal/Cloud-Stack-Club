@@ -127,15 +127,20 @@ export const ChatbotWidget: React.FC = () => {
 
   // Markdown-lite link & bold parser
   const renderFormattedText = (content: string) => {
+    // Clean up any orphaned hand emojis immediately before links or text lines
+    const sanitizedContent = content
+      .replace(/(?:👉|👈|•\s*👉)\s*(\[[^\]]+\]\([^)]+\))/g, '$1')
+      .replace(/(?:👉|👈)\s*/g, '');
+
     // Split by markdown links [label](url)
     const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
     const parts = [];
     let lastIndex = 0;
     let match;
 
-    while ((match = linkRegex.exec(content)) !== null) {
+    while ((match = linkRegex.exec(sanitizedContent)) !== null) {
       if (match.index > lastIndex) {
-        parts.push(renderBoldText(content.substring(lastIndex, match.index)));
+        parts.push(renderBoldText(sanitizedContent.substring(lastIndex, match.index)));
       }
       const label = match[1];
       const url = match[2];
@@ -143,15 +148,15 @@ export const ChatbotWidget: React.FC = () => {
       if (url.startsWith('/')) {
         parts.push(
           <button
+            type="button"
             key={`link-${match.index}`}
             onClick={() => {
               navigate(url);
               setIsOpen(false);
             }}
-            className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
+            className="inline font-bold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer p-0 m-0 bg-transparent border-none text-left align-baseline"
           >
-            <span>{label}</span>
-            <ArrowRight className="w-3 h-3 inline" />
+            {label}
           </button>
         );
       } else {
@@ -161,18 +166,17 @@ export const ChatbotWidget: React.FC = () => {
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-bold text-blue-600 dark:text-sky-400 hover:underline"
+            className="inline font-bold text-blue-600 dark:text-sky-400 hover:underline"
           >
-            <span>{label}</span>
-            <ArrowRight className="w-3 h-3 inline" />
+            {label}
           </a>
         );
       }
       lastIndex = linkRegex.lastIndex;
     }
 
-    if (lastIndex < content.length) {
-      parts.push(renderBoldText(content.substring(lastIndex)));
+    if (lastIndex < sanitizedContent.length) {
+      parts.push(renderBoldText(sanitizedContent.substring(lastIndex)));
     }
 
     return parts;
@@ -200,15 +204,15 @@ export const ChatbotWidget: React.FC = () => {
                 const rawRoute = sub.slice(1, -1);
                 return (
                   <button
+                    type="button"
                     key={`sub-${i}-${sIdx}`}
                     onClick={() => {
                       navigate(rawRoute);
                       setIsOpen(false);
                     }}
-                    className="inline-flex items-center gap-0.5 font-bold text-blue-600 dark:text-sky-400 hover:underline mx-0.5 cursor-pointer"
+                    className="inline font-bold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer p-0 m-0 bg-transparent border-none text-left align-baseline"
                   >
-                    <span>{rawRoute}</span>
-                    <ArrowRight className="w-3 h-3 inline" />
+                    {rawRoute}
                   </button>
                 );
               }
@@ -419,31 +423,47 @@ export const ChatbotWidget: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Bar */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAskQuestion(inputText);
-              }}
-              className="p-3 bg-slate-50/90 dark:bg-slate-900/90 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center gap-2 shrink-0"
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ask about CSC, leads, events..."
-                className="flex-1 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-              />
-              <button
-                type="submit"
-                disabled={!inputText.trim() || isTyping}
-                className="w-10 h-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md shadow-blue-500/20 transition-all shrink-0 cursor-pointer"
-                title="Send message"
+            {/* Input Bar & Support Footer */}
+            <div className="p-3 bg-slate-50/95 dark:bg-slate-900/95 border-t border-slate-200/80 dark:border-slate-800/80 shrink-0">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAskQuestion(inputText);
+                }}
+                className="flex items-center gap-2"
               >
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Ask about CSC, leads, events..."
+                  className="flex-1 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                />
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() || isTyping}
+                  className="w-10 h-10 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center shadow-md shadow-blue-500/20 transition-all shrink-0 cursor-pointer"
+                  title="Send message"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+
+              <div className="mt-2 text-center text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Not satisfied with bot answers? Kindly{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/contact');
+                    setIsOpen(false);
+                  }}
+                  className="inline font-bold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer bg-transparent border-none p-0 align-baseline"
+                >
+                  contact us
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

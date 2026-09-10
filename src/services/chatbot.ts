@@ -1,18 +1,18 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { getEvents } from './events';
-import { getCoreMembers } from './members';
+import { getCoreMembers, type CoreMember } from './members';
 import { getActiveNotices } from './notices';
 import { formatEventDate, formatEventTime } from '../utils/formatters';
-import type { ChatbotFaq, ChatbotFaqPayload } from '../types/database';
+import type { ChatbotFaq, ChatbotFaqPayload, Event } from '../types/database';
 
-const CHATBOT_LOCAL_FAQS_KEY = 'csc_chatbot_faqs_cache';
+const CHATBOT_LOCAL_FAQS_KEY = 'csc_chatbot_faqs_cache_v2';
 
 export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
   {
     id: 'faq-about-csc',
     question: 'What does Cloud Stack Club do?',
     answer:
-      'Cloud Stack Club at Chandigarh University is dedicated to hands-on learning in Cloud Computing (AWS, GCP, Azure), DevOps, Full Stack Web Development, AI/ML, and Open Source. We host high-impact workshops, hackathons like Stack Sprint, ideathons like Elevate-X, and industrial certification bootcamps.\n\nReady to get involved?\n• 👉 [Apply to Join the Club](/join)\n• 📅 [Browse Upcoming Events](/events)',
+      'Cloud Stack Club at Chandigarh University is dedicated to hands-on learning in Cloud Computing (AWS, GCP, Azure), DevOps, Full Stack Web Development, AI/ML, and Open Source. We host high-impact workshops, hackathons like Stack Sprint, ideathons like Elevate-X, and industrial certification bootcamps.',
     category: 'About Club',
     keywords: ['what is csc', 'about', 'about club', 'domains', 'cloud', 'devops', 'tech stack', 'purpose', 'aim', 'vision'],
     is_active: true,
@@ -22,7 +22,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-join-csc',
     question: 'How can I join Cloud Stack Club?',
     answer:
-      'You can apply directly through our official membership portal! Click here: [👉 Apply to Join Club](/join) to select your preferred technical or non-technical domain and submit your university UID.\n\nRecruitment drives open during official campus recruitment cycles. Have questions? Reach our team at [💬 Contact Page](/contact).',
+      'You can apply directly through our official membership portal to select your preferred technical or non-technical domain and submit your university UID.\n\nRecruitment drives open during official campus recruitment cycles. Have questions? Reach our leadership team anytime.',
     category: 'Membership',
     keywords: ['join', 'how to join', 'membership', 'apply', 'recruit', 'recruitment', 'member application', 'eligibility', 'form'],
     is_active: true,
@@ -32,7 +32,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-free-fees',
     question: 'Is joining Cloud Stack Club free or is there a membership fee?',
     answer:
-      'Joining Cloud Stack Club is **100% Free**! 🎉 There are no membership fees, hidden charges, or subscription costs to join the community or attend regular workshops.\n\n👉 [Click here to Apply to Join for Free](/join)',
+      'Joining Cloud Stack Club is **100% Free**! 🎉 There are no membership fees, hidden charges, or subscription costs to join the community or attend regular workshops.',
     category: 'Membership',
     keywords: ['fee', 'fees', 'free', 'cost', 'charges', 'paid', 'price', 'paise', 'how much'],
     is_active: true,
@@ -42,7 +42,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-eligibility',
     question: 'Who is eligible to join? Can 1st year / freshers apply?',
     answer:
-      '**Yes, absolutely!** Cloud Stack Club is open to students from **all years** (1st, 2nd, 3rd, and 4th year) and **all branches** (CSE, AIT, IT, ECE, Mechanical, etc.) at Chandigarh University. Both beginners and experienced coders are welcome!\n\n👉 [Submit Your Membership Application](/join)',
+      '**Yes, absolutely!** Cloud Stack Club is open to students from **all years** (1st, 2nd, 3rd, and 4th year) and **all branches** (CSE, AIT, IT, ECE, Mechanical, etc.) at Chandigarh University. Both beginners and experienced coders are welcome!',
     category: 'Membership',
     keywords: ['eligible', 'eligibility', 'who can join', '1st year', 'first year', 'freshers', 'which branch', 'non cse'],
     is_active: true,
@@ -52,7 +52,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-selection-process',
     question: 'What is the selection process after applying for membership?',
     answer:
-      'After you submit your application at [/join](/join), the core committee reviews your interests and technical domain preference. Shortlisted candidates may have a brief interaction or interview round, followed by an official acceptance email and invite to internal club channels.\n\n👉 [Apply to Join the Club](/join)',
+      'After you submit your application, the core committee reviews your interests and technical domain preference. Shortlisted candidates may have a brief interaction or interview round, followed by an official acceptance email and invite to internal club channels.',
     category: 'Membership',
     keywords: ['selection', 'interview', 'process', 'how selected', 'after apply', 'shortlist', 'results'],
     is_active: true,
@@ -62,7 +62,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-domains',
     question: 'What domains can I work in as a member?',
     answer:
-      'Cloud Stack Club offers active domains in Cloud Infrastructure (AWS/Azure/GCP), DevOps & Automation, Full Stack Web & Mobile, AI/Machine Learning, Web3, UI/UX Design, Technical Content Writing, and Event Operations.\n\n👉 [Choose Your Domain & Apply](/join)',
+      'Cloud Stack Club offers active domains in Cloud Infrastructure (AWS/Azure/GCP), DevOps & Automation, Full Stack Web & Mobile, AI/Machine Learning, Web3, UI/UX Design, Technical Content Writing, and Event Operations.',
     category: 'About Club',
     keywords: ['domains', 'departments', 'sub divisions', 'ai', 'ml', 'web3', 'devops', 'cloud', 'design', 'content'],
     is_active: true,
@@ -72,7 +72,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-secretary',
     question: 'Who is the Secretary of Cloud Stack Club?',
     answer:
-      'The Secretary of Cloud Stack Club is **Lakshay Gosai** (3rd Year, AIT-CSE / FSD). He oversees club operations, administration, and team leadership. You can view his full profile and social links here: [👥 Meet Our Team](/team).',
+      'The Secretary of Cloud Stack Club is **Lakshay Gosai** (3rd Year, AIT-CSE / FSD). He oversees club operations, administration, and team leadership.',
     category: 'Leadership',
     keywords: ['secretary', 'gen sec', 'general secretary', 'lakshay', 'gosai', 'who is secretary', 'lead', 'head'],
     is_active: true,
@@ -82,7 +82,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-tech-lead',
     question: 'Who is the Technical Lead of Cloud Stack Club?',
     answer:
-      'The Technical Lead of Cloud Stack Club is **Utkrisht Utpal**. He spearheads technical architecture, system development, student coding projects, and platform infrastructure. Check out his profile and projects here: [👥 Meet Our Team](/team).',
+      'The Technical Lead of Cloud Stack Club is **Utkrisht Utpal**. He spearheads technical architecture, system development, student coding projects, and platform infrastructure.',
     category: 'Leadership',
     keywords: ['technical lead', 'tech lead', 'utkrisht', 'utpal', 'who is tech lead', 'developer lead', 'coding head'],
     is_active: true,
@@ -92,7 +92,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-joint-sec',
     question: 'Who is the Joint Secretary?',
     answer:
-      'The Joint Secretary of Cloud Stack Club is **Bani Kaur**. She works alongside the Secretary to coordinate team activities, event logistics, and member engagement: [👥 Meet Our Team](/team).',
+      'The Joint Secretary of Cloud Stack Club is **Bani Kaur**. She works alongside the Secretary to coordinate team activities, event logistics, and member engagement.',
     category: 'Leadership',
     keywords: ['joint secretary', 'bani', 'kaur', 'who is joint secretary', 'vice lead'],
     is_active: true,
@@ -102,7 +102,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-faculty',
     question: 'Who are the Faculty Advisors for Cloud Stack Club?',
     answer:
-      'Cloud Stack Club is mentored and guided by **Dr. Deepti Sharma** (Faculty Advisor) and **Dr. Navjot Singh** (Co - Faculty Advisor) at Chandigarh University. Learn more in our [👥 Meet Our Team](/team) section.',
+      'Cloud Stack Club is mentored and guided by **Dr. Deepti Sharma** (Faculty Advisor) and **Dr. Navjot Singh** (Co - Faculty Advisor) at Chandigarh University.',
     category: 'Leadership',
     keywords: ['faculty', 'advisor', 'faculty advisor', 'deepti', 'navjot', 'mentor', 'professors', 'teachers', 'sir', 'maam'],
     is_active: true,
@@ -112,7 +112,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-events',
     question: 'What events or workshops are happening?',
     answer:
-      'We organize workshops, certification challenges, and flagship hackathons like Elevate-X. You can view live upcoming events, active seat availability, and 1-click registration here: [📅 Browse Events Directory](/events).',
+      'We organize workshops, certification challenges, and flagship hackathons like Elevate-X. You can view live upcoming events, active seat availability, and 1-click registration below.',
     category: 'Events',
     keywords: ['events', 'upcoming events', 'workshops', 'hackathons', 'elevate-x', 'stack sprint', 'register event', 'competitions'],
     is_active: true,
@@ -122,7 +122,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-non-members',
     question: 'Can non-members attend club workshops and hackathons?',
     answer:
-      '**Yes!** All workshops, bootcamps, and hackathons hosted by Cloud Stack Club are open to **all university students**, even if you are not an official core member.\n\n👉 [Explore Active Events](/events)',
+      '**Yes!** All workshops, bootcamps, and hackathons hosted by Cloud Stack Club are open to **all university students**, even if you are not an official core member.',
     category: 'Events',
     keywords: ['non member', 'not member', 'outside', 'anyone attend', 'can i attend', 'public event'],
     is_active: true,
@@ -132,7 +132,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-team-registration',
     question: 'How does team registration work for hackathons?',
     answer:
-      'For team hackathons:\n1. The **Team Leader** registers first and receives a unique Team Code.\n2. **Team Members** register by selecting "Join Existing Team" and entering the Team Code.\n3. Once confirmed, all members receive automated entry passes via email.\n\n👉 [View Events & Register](/events)',
+      'For team hackathons:\n1. The **Team Leader** registers first and receives a unique Team Code.\n2. **Team Members** register by selecting "Join Existing Team" and entering the Team Code.\n3. Once confirmed, all members receive automated entry passes via email.',
     category: 'Events',
     keywords: ['team registration', 'team code', 'register as team', 'team size', 'solo or team'],
     is_active: true,
@@ -142,7 +142,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-certificates',
     question: 'How do I get an Event Certificate?',
     answer:
-      'Digital participation and merit certificates are automatically issued via email after you attend and complete an event. If you need any assistance with a certificate, you can raise an issue at: [🎫 Submit a Ticket](/contact).',
+      'Digital participation and merit certificates are automatically issued via email after you attend and complete an event. If you need any assistance with a certificate, you can raise an issue through our support portal.',
     category: 'Events',
     keywords: ['certificate', 'cert', 'participation certificate', 'verify certificate', 'attendance', 'merit'],
     is_active: true,
@@ -152,7 +152,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-certificate-correction',
     question: 'What should I do if my name on the certificate is wrong or attendance was missed?',
     answer:
-      'If you notice a typo in your name or your attendance was not recorded properly, submit a ticket through our official Discrepancy Portal immediately:\n\n👉 [Submit a Discrepancy Ticket](/contact)',
+      'If you notice a typo in your name or your attendance was not recorded properly, submit a ticket through our official Discrepancy Portal immediately.',
     category: 'Contact',
     keywords: ['wrong name', 'spelling mistake', 'attendance issue', 'certificate mistake', 'name error', 'correction'],
     is_active: true,
@@ -162,7 +162,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-timings-location',
     question: 'Where and when do club sessions and workshops take place?',
     answer:
-      'Cloud Stack Club is located at **Chandigarh University** (Department of CSE / AIT). Workshops and bootcamps take place on campus in dedicated computer labs or auditoriums, usually on weekday evenings or Saturday mornings.\n\n👉 [View Upcoming Events & Venues](/events)',
+      'Cloud Stack Club is located at **Chandigarh University** (Department of CSE / AIT). Workshops and bootcamps take place on campus in dedicated computer labs or auditoriums, usually on weekday evenings or Saturday mornings.',
     category: 'About Club',
     keywords: ['location', 'where is club', 'timing', 'timings', 'venue', 'offline', 'campus', 'where meet'],
     is_active: true,
@@ -172,7 +172,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-gallery',
     question: 'Where can I see photos and past event highlights?',
     answer:
-      'You can browse our official photo gallery to see memories, hackathon winners, and workshop highlights from past events!\n\n👉 [Visit Event Gallery](/gallery)',
+      'You can browse our official photo gallery to see memories, hackathon winners, and workshop highlights from past events!',
     category: 'About Club',
     keywords: ['gallery', 'photos', 'pictures', 'videos', 'memories', 'past events', 'highlights'],
     is_active: true,
@@ -182,7 +182,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-contact',
     question: 'How can I contact coordinators or report an issue?',
     answer:
-      'You can reach our leadership team via our [💬 Contact Us Page](/contact) for general inquiries, or submit a ticket through our query portal if you notice any registration or certificate discrepancies.',
+      'You can reach our leadership team for general inquiries, or submit a ticket through our query portal if you notice any registration or certificate discrepancies.',
     category: 'Contact',
     keywords: ['contact', 'email', 'help', 'support', 'issue', 'query', 'discrepancy', 'feedback', 'phone'],
     is_active: true,
@@ -391,13 +391,114 @@ export interface MatchResult {
 }
 
 /**
+ * Common English stop words & conversational filler words that should not
+ * falsely inflate intent or FAQ matching scores.
+ */
+export const STOP_WORDS = new Set([
+  'who', 'is', 'the', 'what', 'where', 'when', 'which', 'how', 'can', 'i', 'you',
+  'a', 'an', 'of', 'in', 'at', 'on', 'for', 'to', 'and', 'or', 'tell', 'me', 'about',
+  'do', 'does', 'are', 'any', 'some', 'please', 'with', 'by', 'from', 'this', 'that',
+  'there', 'their', 'club', 'csc', 'handles', 'charge', 'manages', 'leads', 'works',
+  'person', 'name'
+]);
+
+/**
+ * Scrub any accidental PII (phone numbers, personal emails, student UIDs) from bot outputs
+ */
+export const scrubPii = (text: string): string => {
+  return text
+    // Redact 10-digit Indian mobile numbers or standard phone formats
+    .replace(/(?:\+?91[-.\s]?)?[6-9]\d{9}\b/g, '[Contact Protected]')
+    .replace(/\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/g, '[Contact Protected]')
+    // Redact personal email addresses (preserving official club emails)
+    .replace(/\b[A-Za-z0-9._%+-]+@(?!cloudstack|chandigarh|cumail)[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/gi, '[Email Protected]')
+    // Redact student UIDs / roll numbers
+    .replace(/\b\d{2}[A-Z]{3,4}\d{4,6}\b/gi, '[UID Protected]');
+};
+
+/**
+ * Privacy & Security Guard: Intercepts queries seeking confidential PII,
+ * attendee rosters, student UIDs, phone numbers, or administrative secrets.
+ */
+export const checkSecurityPrivacyViolation = (cleanQuery: string): string | null => {
+  // 1. Phone numbers / WhatsApp numbers of individuals
+  if (
+    cleanQuery.includes('phone') ||
+    cleanQuery.includes('mobile') ||
+    cleanQuery.includes('whatsapp') ||
+    cleanQuery.includes('call number') ||
+    cleanQuery.includes('contact number') ||
+    cleanQuery.includes('ph no')
+  ) {
+    return 'For privacy and security reasons, personal phone numbers and WhatsApp contacts of club members, leads, and coordinators are strictly confidential and protected. You can connect with our team members via their official LinkedIn profiles in our [Meet Our Team](/team) section, or reach out through our official [Contact Page](/contact).';
+  }
+
+  // 2. Student UIDs / Roll Numbers / Academic IDs
+  if (
+    cleanQuery.includes('uid') ||
+    cleanQuery.includes('roll number') ||
+    cleanQuery.includes('roll no') ||
+    cleanQuery.includes('student id') ||
+    cleanQuery.includes('registration number') ||
+    cleanQuery.includes('reg id')
+  ) {
+    return 'University UIDs, roll numbers, and student academic identification codes are confidential personal data protected under student privacy policies. They are never shared or disclosed by the chatbot.';
+  }
+
+  // 3. Attendee lists / Participant data / Who registered
+  if (
+    cleanQuery.includes('who registered') ||
+    cleanQuery.includes('participant list') ||
+    cleanQuery.includes('attendee list') ||
+    cleanQuery.includes('list of participants') ||
+    cleanQuery.includes('list of attendees') ||
+    cleanQuery.includes('registered students') ||
+    cleanQuery.includes('who attended') ||
+    cleanQuery.includes('participant email') ||
+    cleanQuery.includes('participant phone') ||
+    cleanQuery.includes('team codes')
+  ) {
+    return 'Event participant rosters, attendee records, and personal registration details are strictly confidential to protect student privacy. If you are registered for an event, your individual entry pass and details were delivered directly to your registered email.';
+  }
+
+  // 4. Passwords / Secrets / Internal System / Injection
+  if (
+    cleanQuery.includes('password') ||
+    cleanQuery.includes('admin key') ||
+    cleanQuery.includes('secret key') ||
+    cleanQuery.includes('service role') ||
+    cleanQuery.includes('api key') ||
+    cleanQuery.includes('database table') ||
+    cleanQuery.includes('dump database') ||
+    cleanQuery.includes('system prompt') ||
+    cleanQuery.includes('bypass') ||
+    cleanQuery.includes('drop table') ||
+    cleanQuery.includes('select from')
+  ) {
+    return 'Access denied. Administrative credentials, security keys, and internal database configurations are protected and cannot be disclosed.';
+  }
+
+  // 5. Personal student email inquiries
+  if (
+    cleanQuery.includes('personal email') ||
+    cleanQuery.includes('private email') ||
+    cleanQuery.includes('personal mail')
+  ) {
+    return 'Personal email addresses of students and core members are confidential. For official club correspondence, please use our [Contact Us Page](/contact) or connect via public LinkedIn profiles on our [Team Page](/team).';
+  }
+
+  return null;
+};
+
+/**
  * Intelligent client-side scoring engine:
  * Evaluates token overlap, exact substrings, aliases, and keyword tags
- * with zero external API calls or latency.
+ * with stop-word filtering to prevent false positives.
  */
 export const findBestAnswer = (userQuery: string, faqs: ChatbotFaq[]): MatchResult => {
   const cleanQuery = normalizeText(userQuery);
   const queryTokens = cleanQuery.split(' ').filter((t) => t.length > 1);
+  const meaningfulTokens = queryTokens.filter((t) => !STOP_WORDS.has(t));
 
   if (queryTokens.length === 0) {
     return {
@@ -411,6 +512,7 @@ export const findBestAnswer = (userQuery: string, faqs: ChatbotFaq[]): MatchResu
     const cleanQ = normalizeText(faq.question);
     const cleanAns = normalizeText(faq.answer);
     const qTokens = cleanQ.split(' ');
+    const meaningfulQTokens = qTokens.filter((t) => !STOP_WORDS.has(t));
 
     // 1. Exact phrase match
     if (cleanQ === cleanQuery) {
@@ -419,7 +521,7 @@ export const findBestAnswer = (userQuery: string, faqs: ChatbotFaq[]): MatchResu
       score += 80;
     }
 
-    // 2. Keyword tag matching (Highest weight for intent)
+    // 2. Keyword tag matching (only non-stop words contribute)
     const keywords = (faq.keywords || []).map((k) => normalizeText(k));
     for (const kw of keywords) {
       if (kw === cleanQuery) {
@@ -427,26 +529,28 @@ export const findBestAnswer = (userQuery: string, faqs: ChatbotFaq[]): MatchResu
       } else if (cleanQuery.includes(kw) || kw.includes(cleanQuery)) {
         score += 50;
       } else {
-        const kwTokens = kw.split(' ');
-        for (const qt of queryTokens) {
-          if (kwTokens.includes(qt)) score += 25;
+        const kwTokens = kw.split(' ').filter((t) => !STOP_WORDS.has(t));
+        for (const qt of meaningfulTokens) {
+          if (kwTokens.includes(qt)) score += 30;
         }
       }
     }
 
-    // 3. Question title token overlap
-    for (const qt of queryTokens) {
-      if (qTokens.includes(qt)) {
-        score += 20;
-      } else if (qTokens.some((word) => word.startsWith(qt) || qt.startsWith(word))) {
-        score += 10;
+    // 3. Question title meaningful token overlap
+    for (const qt of meaningfulTokens) {
+      if (meaningfulQTokens.includes(qt)) {
+        score += 30;
+      } else if (meaningfulQTokens.some((word) => word.startsWith(qt) || qt.startsWith(word))) {
+        score += 15;
       }
     }
 
-    // 4. Answer body keyword match
-    for (const qt of queryTokens) {
-      if (cleanAns.includes(qt)) {
-        score += 4;
+    // 4. Answer body keyword match (only if some meaningful token matched)
+    if (score > 0) {
+      for (const qt of meaningfulTokens) {
+        if (cleanAns.includes(qt)) {
+          score += 4;
+        }
       }
     }
 
@@ -461,7 +565,7 @@ export const findBestAnswer = (userQuery: string, faqs: ChatbotFaq[]): MatchResu
   scoredFaqs.sort((a, b) => b.score - a.score);
 
   const best = scoredFaqs[0];
-  const CONFIDENCE_THRESHOLD = 25;
+  const CONFIDENCE_THRESHOLD = 30;
 
   if (best && best.score >= CONFIDENCE_THRESHOLD) {
     const suggestions = scoredFaqs
@@ -495,6 +599,391 @@ export interface BotResolvedResponse {
 }
 
 /**
+ * Safe public formatting for a core team member response
+ */
+export const formatMemberResponse = (m: CoreMember): BotResolvedResponse => {
+  const role = m.role?.name || 'Core Member';
+  const deptInfo = [m.year, m.department].filter(Boolean).join(', ');
+  const parenthetical = deptInfo ? ` (${deptInfo})` : '';
+
+  let text = `The **${role}** of Cloud Stack Club is **${m.name}**${parenthetical}.\n\n`;
+
+  if (m.description) {
+    const cleanDesc = m.description.split('\n')[0].replace(/\r/g, '').trim();
+    if (cleanDesc) {
+      text += `${cleanDesc.length > 220 ? cleanDesc.slice(0, 220) + '...' : cleanDesc}\n\n`;
+    }
+  }
+
+  text += `You can view verified achievements, projects, and professional links in our Meet Our Team section.`;
+
+  const firstName = m.name.split(' ')[0];
+  const actionLinks: BotActionLink[] = [
+    { label: `👥 View ${firstName}'s Profile`, url: '/team' },
+    { label: '👥 Meet Our Full Team', url: '/team' },
+  ];
+
+  if (m.linkedin_url && m.linkedin_url.startsWith('http')) {
+    actionLinks.push({ label: '💼 LinkedIn Profile', url: m.linkedin_url });
+  }
+
+  return {
+    text: scrubPii(text),
+    suggestions: [
+      { id: 'faq-lead-sec', question: 'Who is the Secretary of Cloud Stack Club?', answer: '', category: 'Leadership', keywords: [], is_active: true, display_order: 1 },
+      { id: 'faq-lead-tech', question: 'Who is the Technical Lead of Cloud Stack Club?', answer: '', category: 'Leadership', keywords: [], is_active: true, display_order: 2 },
+    ],
+    actionLinks,
+  };
+};
+
+/**
+ * Dynamically queries real database core members for matching roles, names, or domains
+ */
+export const resolveMemberQuery = (
+  cleanQuery: string,
+  members: CoreMember[]
+): BotResolvedResponse | null => {
+  if (!members || members.length === 0) return null;
+
+  const tokens = cleanQuery.split(' ').filter((t) => !STOP_WORDS.has(t) && t.length > 1);
+
+  // A. General team / core members query
+  const isAllTeamQuery =
+    (cleanQuery.includes('core team') ||
+      cleanQuery.includes('core member') ||
+      cleanQuery.includes('whole team') ||
+      cleanQuery.includes('all member') ||
+      cleanQuery.includes('list member') ||
+      cleanQuery.includes('who are in the team') ||
+      cleanQuery.includes('show team') ||
+      cleanQuery.includes('meet team')) &&
+    !tokens.some((t) =>
+      ['graphic', 'designer', 'video', 'editor', 'writer', 'treasurer', 'photographer', 'marketing', 'logistics', 'volunteer', 'discipline', 'hospitality', 'media', 'social', 'tech', 'technical', 'secretary', 'lead'].includes(t)
+    );
+
+  if (isAllTeamQuery) {
+    const council = members.slice(0, 8);
+    let text = `Cloud Stack Club is driven by an energetic student leadership council mentored by university faculty:\n\n`;
+    text += council
+      .map((m) => `• **${m.name}** — ${m.role?.name || 'Core Member'}${m.department ? ` (${m.department})` : ''}`)
+      .join('\n');
+    text += `\n\n...plus student coordinators across Design, Content, Logistics, and Operations. You can view all profiles, bios, and LinkedIn links in our Meet Our Team section.`;
+
+    return {
+      text: scrubPii(text),
+      suggestions: [
+        { id: 'faq-lead-sec', question: 'Who is the Secretary of Cloud Stack Club?', answer: '', category: 'Leadership', keywords: [], is_active: true, display_order: 1 },
+        { id: 'faq-lead-tech', question: 'Who is the Technical Lead of Cloud Stack Club?', answer: '', category: 'Leadership', keywords: [], is_active: true, display_order: 2 },
+      ],
+      actionLinks: [
+        { label: '👥 Meet Our Full Team', url: '/team' },
+        { label: '🚀 Apply to Join Club', url: '/join' },
+      ],
+    };
+  }
+
+  // B. Specific Role Match (Highest priority)
+  let bestRoleMatch: { member: CoreMember; score: number } | null = null;
+
+  for (const m of members) {
+    const roleName = m.role?.name || '';
+    const cleanRole = normalizeText(roleName);
+    const roleTokens = cleanRole.split(' ').filter((t) => !STOP_WORDS.has(t));
+
+    let score = 0;
+
+    // Exact role match
+    if (cleanQuery.includes(cleanRole) && cleanRole.length > 3) {
+      score += 100;
+    } else {
+      const matchedTokens = tokens.filter((t) => roleTokens.includes(t));
+      if (matchedTokens.length > 0) {
+        score += (matchedTokens.length / roleTokens.length) * 80;
+        // Extra boost if key unique role words match
+        if (tokens.includes('designer') && roleTokens.includes('designer')) score += 40;
+        if (tokens.includes('graphic') && roleTokens.includes('graphic')) score += 40;
+        if (tokens.includes('editor') && roleTokens.includes('editor')) score += 40;
+        if (tokens.includes('video') && roleTokens.includes('video')) score += 40;
+        if (tokens.includes('photographer') && roleTokens.includes('photographer')) score += 40;
+        if (tokens.includes('treasurer') && roleTokens.includes('treasurer')) score += 50;
+        if (tokens.includes('logistics') && roleTokens.includes('logistics')) score += 50;
+        if (tokens.includes('volunteer') && roleTokens.includes('volunteer')) score += 50;
+        if (tokens.includes('discipline') && roleTokens.includes('discipline')) score += 50;
+        if (tokens.includes('hospitality') && roleTokens.includes('hospitality')) score += 50;
+        if (tokens.includes('writer') && roleTokens.includes('writer')) score += 50;
+        if (tokens.includes('marketing') && roleTokens.includes('marketing')) score += 50;
+        if (tokens.includes('media') && roleTokens.includes('media')) score += 40;
+        if (tokens.includes('outreach') && roleTokens.includes('outreach')) score += 40;
+      }
+    }
+
+    // Role aliases
+    if ((cleanQuery.includes('tech lead') || cleanQuery.includes('technical lead')) && cleanRole.includes('technical')) {
+      score += 90;
+    }
+    if ((cleanQuery.includes('joint sec') || cleanQuery.includes('joint secretary')) && cleanRole.includes('joint')) {
+      score += 90;
+    } else if (cleanQuery.includes('secretary') && !cleanQuery.includes('joint') && cleanRole === 'secretary') {
+      score += 90;
+    }
+    if ((cleanQuery.includes('faculty') || cleanQuery.includes('advisor') || cleanQuery.includes('mentor')) && cleanRole.includes('faculty')) {
+      score += 70;
+    }
+
+    if (score >= 40 && (!bestRoleMatch || score > bestRoleMatch.score)) {
+      bestRoleMatch = { member: m, score };
+    }
+  }
+
+  if (bestRoleMatch && bestRoleMatch.score >= 40) {
+    return formatMemberResponse(bestRoleMatch.member);
+  }
+
+  // C. Specific Member Name Match
+  for (const m of members) {
+    const cleanName = normalizeText(m.name || '');
+    const nameTokens = cleanName.split(' ').filter((t) => t.length > 2);
+
+    const matchesName = nameTokens.some((nt) => tokens.includes(nt) || cleanQuery.includes(nt));
+    if (matchesName) {
+      return formatMemberResponse(m);
+    }
+  }
+
+  // D. Domain-based Team Queries
+  if (cleanQuery.includes('design team') || cleanQuery.includes('ui ux')) {
+    const designers = members.filter(
+      (m) =>
+        (m.role?.name || '').toLowerCase().includes('design') ||
+        (m.department || '').toLowerCase().includes('design')
+    );
+    if (designers.length > 0) {
+      const top = designers[0];
+      return {
+        text: `The design and creative UI/UX efforts at Cloud Stack Club are led by **${top.name}** (${top.role?.name || 'Graphic Designer'}).\n\nHe creates visual assets, digital branding, posters, and user interfaces for club events and web platforms.`,
+        suggestions: [],
+        actionLinks: [
+          { label: `👥 View ${top.name.split(' ')[0]}'s Profile`, url: '/team' },
+          { label: '👥 Meet Our Team', url: '/team' },
+        ],
+      };
+    }
+  }
+
+  if (cleanQuery.includes('media team') || cleanQuery.includes('content team')) {
+    const media = members.filter((m) => {
+      const r = (m.role?.name || '').toLowerCase();
+      return r.includes('media') || r.includes('content') || r.includes('video') || r.includes('photo');
+    });
+    if (media.length > 0) {
+      let text = `Cloud Stack Club's media, content, and public outreach team includes:\n\n`;
+      text += media.map((m) => `• **${m.name}** — ${m.role?.name}`).join('\n');
+      text += `\n\nThey produce technical blogs, event highlight reels, photography, and social media releases. Check out their full bios in our Meet Our Team section.`;
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks: [{ label: '👥 Meet Our Team', url: '/team' }],
+      };
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Dynamically queries real database events for specific titles, categories, or statuses
+ */
+export const resolveDynamicEventQuery = (
+  cleanQuery: string,
+  events: Event[]
+): BotResolvedResponse | null => {
+  if (!events || events.length === 0) return null;
+
+  const validEvents = events.filter((e) => e.status !== 'cancelled');
+  const tokens = cleanQuery.split(' ').filter((t) => !STOP_WORDS.has(t) && t.length > 1);
+
+  // A. Hackathons / Competitions query
+  if (
+    cleanQuery.includes('hackathon') ||
+    cleanQuery.includes('coding competition') ||
+    cleanQuery.includes('stack sprint') ||
+    cleanQuery.includes('elevate')
+  ) {
+    const hackathons = validEvents.filter(
+      (e) =>
+        (e.category && e.category.toLowerCase().includes('hackathon')) ||
+        e.supports_teams ||
+        e.title.toLowerCase().includes('hackathon') ||
+        e.title.toLowerCase().includes('sprint') ||
+        e.title.toLowerCase().includes('elevate')
+    );
+
+    if (hackathons.length > 0) {
+      let text = `Here are the premier hackathons and coding competitions organized by Cloud Stack Club:\n\n`;
+      text += hackathons
+        .map((h) => {
+          const statusBadge = h.status === 'live' ? '🟢 Live' : h.status === 'upcoming' ? '🗓️ Upcoming' : '🏁 Completed';
+          return `🏆 **${h.title}** (${statusBadge})\n• 🗓️ **Date:** ${formatEventDate(h.date)}\n• 👥 **Format:** ${h.supports_teams ? `Team Event (Up to ${h.max_team_size || 4} members)` : 'Individual / Open'}\n• 🎟️ **Registration:** ${h.registration_enabled ? 'Open Now' : 'Closed'}`;
+        })
+        .join('\n\n');
+
+      const topActive = hackathons.find((h) => h.status === 'live' || h.status === 'upcoming') || hackathons[0];
+      const actionLinks: BotActionLink[] = [
+        { label: `View ${topActive.title}`, url: `/events/${topActive.slug || topActive.id}` },
+        { label: '📅 Browse All Events', url: '/events' },
+      ];
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+  }
+
+  // B. Specific Event Name match (e.g. AWS Certification, Industry Visit, Orbit-X, Stack Sprint, Elevate-X)
+  for (const evt of validEvents) {
+    const cleanTitle = normalizeText(evt.title);
+    const titleTokens = cleanTitle.split(' ').filter((t) => !STOP_WORDS.has(t));
+
+    const matchesExact = cleanQuery.includes(cleanTitle) || cleanTitle.includes(cleanQuery);
+    const matchesTokens =
+      titleTokens.length > 0 &&
+      titleTokens.some((tt) => tt.length > 2 && tokens.includes(tt)) &&
+      (tokens.length === 1 || titleTokens.filter((tt) => tokens.includes(tt)).length >= Math.min(2, titleTokens.length));
+
+    if (matchesExact || matchesTokens) {
+      const dateFormatted = formatEventDate(evt.date);
+      const timeFormatted = evt.start_time ? formatEventTime(evt.start_time) : '';
+      const venueFormatted = evt.location ? `\n• 📍 **Venue:** ${evt.location}` : '';
+      const statusLabel =
+        evt.status === 'live'
+          ? '🟢 Currently Live & Ongoing'
+          : evt.status === 'upcoming'
+          ? '🗓️ Upcoming Event'
+          : '🏁 Event Completed';
+      const regStatus = evt.registration_enabled
+        ? evt.supports_teams
+          ? 'Open (Team & Solo Registrations)'
+          : 'Open (Individual Passes)'
+        : 'Registration Closed';
+
+      let text = `Here are the details for **${evt.title}**:\n\n• 📌 **Status:** ${statusLabel}\n• 🗓️ **Date:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}${venueFormatted}\n• 🎟️ **Registration:** ${regStatus}`;
+
+      if (evt.description) {
+        const cleanDesc = evt.description.replace(/\n+/g, ' ').trim();
+        text += `\n\n${cleanDesc.length > 200 ? cleanDesc.slice(0, 200) + '...' : cleanDesc}`;
+      }
+
+      const eventUrl = `/events/${evt.slug || evt.id}`;
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks: [
+          { label: `View ${evt.title}`, url: eventUrl },
+          { label: '📅 Browse Events', url: '/events' },
+        ],
+      };
+    }
+  }
+
+  // C. Upcoming / Live Events query
+  const isUpcomingQuery =
+    cleanQuery.includes('upcoming') ||
+    cleanQuery.includes('next event') ||
+    cleanQuery.includes('what is the next') ||
+    cleanQuery.includes('current event') ||
+    cleanQuery.includes('latest event') ||
+    cleanQuery.includes('when is event') ||
+    cleanQuery.includes('upcoming workshop') ||
+    (cleanQuery.includes('event') &&
+      (cleanQuery.includes('what') ||
+        cleanQuery.includes('when') ||
+        cleanQuery.includes('which') ||
+        cleanQuery.includes('any')));
+
+  if (isUpcomingQuery) {
+    const liveOrUpcoming = validEvents
+      .filter((e) => e.status === 'live' || e.status === 'upcoming')
+      .sort((a, b) => (new Date(a.date || '').getTime() || 0) - (new Date(b.date || '').getTime() || 0));
+
+    if (liveOrUpcoming.length > 0) {
+      const top = liveOrUpcoming[0];
+      const dateFormatted = formatEventDate(top.date);
+      const timeFormatted = top.start_time ? formatEventTime(top.start_time) : '';
+      const venueFormatted = top.location ? `\n• 📍 **Venue:** ${top.location}` : '';
+      const regStatus = top.registration_enabled
+        ? top.supports_teams
+          ? 'Open (Solo & Team Registration)'
+          : 'Open (Individual Passes)'
+        : 'Registration Closed';
+      const eventUrl = `/events/${top.slug || top.id}`;
+
+      let text = `Here is the upcoming event at Cloud Stack Club:\n\n🎉 **${top.title}**\n• 🗓️ **Date:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}${venueFormatted}\n• 🎟️ **Registration:** ${regStatus}`;
+
+      if (top.description) {
+        const cleanDesc = top.description.replace(/\n+/g, ' ').trim();
+        text += `\n\n${cleanDesc.length > 180 ? cleanDesc.slice(0, 180) + '...' : cleanDesc}`;
+      }
+
+      if (liveOrUpcoming.length > 1) {
+        const second = liveOrUpcoming[1];
+        text += `\n\n*Also upcoming:* **${second.title}** (${formatEventDate(second.date)}).`;
+      }
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks: [
+          { label: `View ${top.title}`, url: eventUrl },
+          { label: 'Browse All Events', url: '/events' },
+        ],
+      };
+    } else {
+      return {
+        text: `There are currently no active upcoming events scheduled right now. Our team is actively planning exciting hands-on workshops and hackathons! You can browse past events and gallery highlights below:`,
+        suggestions: [],
+        actionLinks: [
+          { label: '📅 Browse Events', url: '/events' },
+          { label: '📸 View Event Gallery', url: '/gallery' },
+          { label: '🚀 Apply to Join Club', url: '/join' },
+        ],
+      };
+    }
+  }
+
+  // D. Past / Completed Events query
+  if (
+    cleanQuery.includes('past event') ||
+    cleanQuery.includes('previous event') ||
+    cleanQuery.includes('completed event') ||
+    cleanQuery.includes('what events happened')
+  ) {
+    const past = validEvents.filter((e) => e.status === 'completed');
+    if (past.length > 0) {
+      let text = `Here are some of the flagship past events organized by Cloud Stack Club:\n\n`;
+      text += past
+        .slice(0, 4)
+        .map((p) => `• **${p.title}** (${formatEventDate(p.date)}) — ${p.location || 'Chandigarh University'}`)
+        .join('\n');
+      text += `\n\nYou can see event photos, project highlights, and memories in our Event Gallery!`;
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks: [
+          { label: '📸 View Event Gallery', url: '/gallery' },
+          { label: '📅 Browse Events', url: '/events' },
+        ],
+      };
+    }
+  }
+
+  return null;
+};
+
+/**
  * Extracts action buttons from markdown links and known routes in text
  */
 export const extractActionLinksFromText = (text: string): BotActionLink[] => {
@@ -522,10 +1011,59 @@ export const extractActionLinksFromText = (text: string): BotActionLink[] => {
 };
 
 /**
+ * Returns contextual action buttons for FAQs based on content and category
+ */
+export const getActionLinksForFaq = (faq: ChatbotFaq): BotActionLink[] => {
+  const explicit = extractActionLinksFromText(faq.answer);
+  if (explicit.length > 0) return explicit;
+
+  switch (faq.category) {
+    case 'Membership':
+      return [
+        { label: '🚀 Apply to Join Club', url: '/join' },
+        { label: '💬 Contact Us', url: '/contact' },
+      ];
+    case 'Events':
+      return [
+        { label: '📅 Browse Events', url: '/events' },
+        { label: '🚀 Join Club', url: '/join' },
+      ];
+    case 'Leadership':
+      return [
+        { label: '👥 Meet Our Team', url: '/team' },
+        { label: '🚀 Join Club', url: '/join' },
+      ];
+    case 'Contact':
+      return [
+        { label: '💬 Contact Us', url: '/contact' },
+        { label: '📅 Browse Events', url: '/events' },
+      ];
+    case 'About Club':
+    default:
+      if (
+        faq.id === 'faq-gallery' ||
+        faq.question.toLowerCase().includes('gallery') ||
+        faq.question.toLowerCase().includes('photo')
+      ) {
+        return [
+          { label: '📸 View Event Gallery', url: '/gallery' },
+          { label: '📅 Browse Events', url: '/events' },
+        ];
+      }
+      return [
+        { label: '🚀 Apply to Join Club', url: '/join' },
+        { label: '📅 Browse Events', url: '/events' },
+      ];
+  }
+};
+
+/**
  * High-Intelligence Hybrid Resolver:
- * 1. Checks real-time database endpoints (live upcoming events, core leadership, active notices)
- * 2. Matches custom Admin FAQs and keyword tags
- * 3. Guarantees clickable action buttons and live links for every response
+ * 1. Security & Privacy Guard (Zero PII leaks, protects contact details & rosters)
+ * 2. Real-Time Member Intelligence Engine (Dynamic database lookups for all core roles & members)
+ * 3. Real-Time Event Intelligence Engine (Dynamic database lookups for events & hackathons)
+ * 4. Club Policy & Membership Intents
+ * 5. Custom Admin FAQs & Keyword Tag Matching
  */
 export const resolveBotQuery = async (
   userQuery: string,
@@ -533,93 +1071,42 @@ export const resolveBotQuery = async (
 ): Promise<BotResolvedResponse> => {
   const cleanQ = normalizeText(userQuery);
 
-  // 1. LIVE EVENTS INTENT
-  const isEventIntent =
-    cleanQ.includes('upcoming event') ||
-    cleanQ.includes('next event') ||
-    cleanQ.includes('current event') ||
-    cleanQ.includes('latest event') ||
-    cleanQ.includes('when is event') ||
-    cleanQ.includes('when is the next') ||
-    cleanQ.includes('upcoming workshops') ||
-    cleanQ.includes('hackathon') ||
-    cleanQ.includes('elevate') ||
-    cleanQ.includes('stack sprint') ||
-    (cleanQ.includes('event') &&
-      (cleanQ.includes('what') ||
-        cleanQ.includes('when') ||
-        cleanQ.includes('which') ||
-        cleanQ.includes('any') ||
-        cleanQ.includes('upcoming') ||
-        cleanQ.includes('next')));
-
-  if (isEventIntent) {
-    try {
-      const allEvents = await getEvents();
-      const validEvents = (allEvents || []).filter((e) => e.status !== 'cancelled');
-      const liveOrUpcoming = validEvents.filter((e) => e.status === 'live' || e.status === 'upcoming');
-
-      if (liveOrUpcoming.length > 0) {
-        liveOrUpcoming.sort((a, b) => {
-          const dateA = new Date(a.date || '').getTime() || 0;
-          const dateB = new Date(b.date || '').getTime() || 0;
-          return dateA - dateB;
-        });
-
-        const top = liveOrUpcoming[0];
-        const dateFormatted = formatEventDate(top.date);
-        const timeFormatted = top.start_time ? formatEventTime(top.start_time) : '';
-        const venueFormatted = top.location ? `\n• 📍 **Venue:** ${top.location}` : '';
-        const regStatus = top.registration_enabled
-          ? top.supports_teams
-            ? 'Open (Solo & Team Registration)'
-            : 'Open (Individual Passes)'
-          : 'Registration Closed / Opening Soon';
-        const eventUrl = `/events/${top.slug || top.id}`;
-
-        let text = `Here is the upcoming event at Cloud Stack Club:\n\n🎉 **${top.title}**\n• 🗓️ **Date:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}${venueFormatted}\n• 🎟️ **Registration:** ${regStatus}`;
-
-        if (top.description) {
-          const cleanDesc = top.description.replace(/\n+/g, ' ').trim();
-          text += `\n\n${cleanDesc.length > 180 ? cleanDesc.slice(0, 180) + '...' : cleanDesc}`;
-        }
-
-        text += `\n\n👉 [Click here to View & Register for ${top.title}](${eventUrl})\n\nWant to see all activities? Explore our [📅 Events Directory](/events).`;
-
-        const actionLinks: BotActionLink[] = [
-          { label: `View ${top.title}`, url: eventUrl },
-          { label: 'Browse All Events', url: '/events' },
-        ];
-
-        if (liveOrUpcoming.length > 1) {
-          const second = liveOrUpcoming[1];
-          text += `\n\n*Also upcoming:* **${second.title}** (${formatEventDate(second.date)}).`;
-        }
-
-        return {
-          text,
-          suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'Membership').slice(0, 3),
-          actionLinks,
-        };
-      } else {
-        const text = `There are currently no active upcoming events scheduled right now. Our team is actively planning exciting hands-on workshops and hackathons!\n\nIn the meantime, feel free to explore our past events and photo highlights:\n• 📅 [Browse All Events](/events)\n• 📸 [View Event Gallery](/gallery)`;
-
-        return {
-          text,
-          suggestions: faqs.slice(0, 3),
-          actionLinks: [
-            { label: 'Browse Events', url: '/events' },
-            { label: 'View Event Gallery', url: '/gallery' },
-            { label: 'Apply to Join Club', url: '/join' },
-          ],
-        };
-      }
-    } catch (err) {
-      console.warn('Chatbot live events lookup error:', err);
-    }
+  // 1. SECURITY & PRIVACY GUARD (Strict, zero leaks)
+  const securityViolation = checkSecurityPrivacyViolation(cleanQ);
+  if (securityViolation) {
+    return {
+      text: securityViolation,
+      suggestions: faqs.slice(0, 3),
+      actionLinks: [
+        { label: '👥 Meet Our Team', url: '/team' },
+        { label: '💬 Official Contact', url: '/contact' },
+      ],
+    };
   }
 
-  // 2. JOIN / MEMBERSHIP INTENT
+  // 2. DYNAMIC REAL MEMBER & LEADERSHIP ENGINE (Live DB)
+  try {
+    const coreMembers = await getCoreMembers();
+    const memberMatch = resolveMemberQuery(cleanQ, coreMembers);
+    if (memberMatch) {
+      return memberMatch;
+    }
+  } catch (err) {
+    console.warn('Chatbot real member lookup error:', err);
+  }
+
+  // 3. DYNAMIC REAL EVENTS ENGINE (Live DB)
+  try {
+    const events = await getEvents();
+    const eventMatch = resolveDynamicEventQuery(cleanQ, events);
+    if (eventMatch) {
+      return eventMatch;
+    }
+  } catch (err) {
+    console.warn('Chatbot real event lookup error:', err);
+  }
+
+  // 4. JOIN / MEMBERSHIP INTENT
   const isJoinIntent =
     cleanQ.includes('how can i join') ||
     cleanQ.includes('how to join') ||
@@ -634,7 +1121,7 @@ export const resolveBotQuery = async (
       (cleanQ.includes('can') || cleanQ.includes('i') || cleanQ.includes('club') || cleanQ.includes('csc')));
 
   if (isJoinIntent) {
-    const text = `You can apply directly through our official membership portal! Click below to begin:\n\n👉 [Click here to Apply to Join Cloud Stack Club](/join)\n\n• **Who can apply?** Open to enthusiastic Chandigarh University students interested in Cloud Computing (AWS, GCP, Azure), DevOps, Full Stack Development, AI/ML, UI/UX, or Operations.\n• **Application Steps:** Fill out your university UID, contact details, domain of choice, and submit. You will receive email updates on your application status.\n\nHave questions? You can also reach our leadership at [💬 Contact Page](/contact).`;
+    const text = `You can apply directly through our official membership portal! We welcome enthusiastic Chandigarh University students across all years and branches.\n\n• **Who can apply?** Open to all students interested in Cloud Computing (AWS, GCP, Azure), DevOps, Full Stack Development, AI/ML, UI/UX Design, or Event Management.\n• **Application Steps:** Fill out your university UID, contact details, domain of choice, and submit. You will receive email updates on your application status.\n\nHave questions? You can also reach our leadership team anytime.`;
 
     return {
       text,
@@ -644,111 +1131,6 @@ export const resolveBotQuery = async (
         { label: '💬 Contact Us', url: '/contact' },
       ],
     };
-  }
-
-  // 3. LEADERSHIP & CORE TEAM INTENT
-  const isLeadershipIntent =
-    cleanQ.includes('tech lead') ||
-    cleanQ.includes('technical lead') ||
-    cleanQ.includes('secretary') ||
-    cleanQ.includes('joint sec') ||
-    cleanQ.includes('joint secretary') ||
-    cleanQ.includes('core team') ||
-    cleanQ.includes('leadership') ||
-    cleanQ.includes('who is in charge') ||
-    cleanQ.includes('who is secretary') ||
-    cleanQ.includes('who is tech') ||
-    cleanQ.includes('faculty') ||
-    cleanQ.includes('advisor') ||
-    cleanQ.includes('utkrisht') ||
-    cleanQ.includes('lakshay') ||
-    cleanQ.includes('bani') ||
-    cleanQ.includes('deepti') ||
-    cleanQ.includes('navjot');
-
-  if (isLeadershipIntent) {
-    try {
-      const coreMembers = await getCoreMembers();
-
-      if (cleanQ.includes('tech lead') || cleanQ.includes('technical lead') || cleanQ.includes('utkrisht')) {
-        const lead = coreMembers.find(
-          (m) =>
-            m.role?.name?.toLowerCase().includes('technical') ||
-            m.name.toLowerCase().includes('utkrisht')
-        );
-        const name = lead?.name || 'Utkrisht Utpal';
-        const role = lead?.role?.name || 'Technical Lead';
-        const dept = lead?.department ? ` (${lead.department})` : '';
-
-        return {
-          text: `The **${role}** of Cloud Stack Club is **${name}**${dept}. He spearheads platform infrastructure, systems engineering, software development, and technical workshops for the club.\n\n👉 [Click here to Meet Our Full Team](/team)`,
-          suggestions: faqs.filter((f) => f.category === 'Leadership').slice(0, 3),
-          actionLinks: [
-            { label: '👥 Meet Our Team', url: '/team' },
-            { label: '📅 View Events', url: '/events' },
-          ],
-        };
-      }
-
-      if ((cleanQ.includes('secretary') && !cleanQ.includes('joint')) || cleanQ.includes('lakshay')) {
-        const sec = coreMembers.find(
-          (m) =>
-            m.role?.name?.toLowerCase() === 'secretary' ||
-            m.name.toLowerCase().includes('lakshay')
-        );
-        const name = sec?.name || 'Lakshay Gosai';
-        const dept = sec?.department ? ` (${sec.department})` : '';
-
-        return {
-          text: `The **Secretary** of Cloud Stack Club is **${name}**${dept}. He leads operations, executive coordination, and administrative management.\n\n👉 [Click here to Meet Our Full Team](/team)`,
-          suggestions: faqs.filter((f) => f.category === 'Leadership').slice(0, 3),
-          actionLinks: [
-            { label: '👥 Meet Our Team', url: '/team' },
-            { label: '🚀 Join Club', url: '/join' },
-          ],
-        };
-      }
-
-      if (cleanQ.includes('joint secretary') || cleanQ.includes('bani')) {
-        const jsec = coreMembers.find(
-          (m) =>
-            m.role?.name?.toLowerCase().includes('joint') ||
-            m.name.toLowerCase().includes('bani')
-        );
-        const name = jsec?.name || 'Bani Kaur';
-
-        return {
-          text: `The **Joint Secretary** of Cloud Stack Club is **${name}**. She works alongside the Secretary on team initiatives and member engagement.\n\n👉 [Click here to Meet Our Full Team](/team)`,
-          suggestions: faqs.filter((f) => f.category === 'Leadership').slice(0, 3),
-          actionLinks: [{ label: '👥 Meet Our Team', url: '/team' }],
-        };
-      }
-
-      if (
-        cleanQ.includes('faculty') ||
-        cleanQ.includes('advisor') ||
-        cleanQ.includes('deepti') ||
-        cleanQ.includes('navjot') ||
-        cleanQ.includes('mentor')
-      ) {
-        return {
-          text: `Cloud Stack Club is mentored and guided by distinguished faculty at Chandigarh University:\n\n• **Faculty Advisor:** Dr. Deepti Sharma\n• **Co - Faculty Advisor:** Dr. Navjot Singh\n\n👉 [Learn more about our Advisors & Team](/team)`,
-          suggestions: faqs.filter((f) => f.category === 'Leadership').slice(0, 3),
-          actionLinks: [{ label: '👥 Meet Our Team', url: '/team' }],
-        };
-      }
-
-      return {
-        text: `Meet the executive council driving Cloud Stack Club:\n\n• **Secretary:** Lakshay Gosai\n• **Technical Lead:** Utkrisht Utpal\n• **Joint Secretary:** Bani Kaur\n• **Faculty Advisor:** Dr. Deepti Sharma\n• **Co - Faculty Advisor:** Dr. Navjot Singh\n\n👉 [Explore All Core Council & Team Members](/team)`,
-        suggestions: faqs.filter((f) => f.category === 'Leadership' || f.category === 'About Club').slice(0, 3),
-        actionLinks: [
-          { label: '👥 Meet Our Team', url: '/team' },
-          { label: '🚀 Join Club', url: '/join' },
-        ],
-      };
-    } catch (err) {
-      console.warn('Chatbot leadership lookup error:', err);
-    }
   }
 
   // 4. NOTICES & ANNOUNCEMENTS INTENT
@@ -767,7 +1149,7 @@ export const resolveBotQuery = async (
           .map(
             (n) =>
               `📢 **${n.title}**${n.content ? `\n${n.content}` : ''}${
-                n.link_url ? `\n👉 [${n.link_text || 'View Link'}](${n.link_url})` : ''
+                n.link_url ? `\n[${n.link_text || 'View Link'}](${n.link_url})` : ''
               }`
           )
           .join('\n\n');
@@ -779,11 +1161,11 @@ export const resolveBotQuery = async (
         };
       } else {
         return {
-          text: `There are currently no urgent announcements or notices. All club activities and workshops are operating normally!\n\n👉 [Browse Upcoming Events](/events)\n👉 [Apply to Join the Club](/join)`,
+          text: `There are currently no urgent announcements or notices. All club activities and workshops are operating normally!`,
           suggestions: faqs.slice(0, 3),
           actionLinks: [
-            { label: 'Browse Events', url: '/events' },
-            { label: 'Join Club', url: '/join' },
+            { label: '📅 Browse Events', url: '/events' },
+            { label: '🚀 Join Club', url: '/join' },
           ],
         };
       }
@@ -806,7 +1188,7 @@ export const resolveBotQuery = async (
 
   if (isContactIntent) {
     return {
-      text: `You can reach our coordinators or raise a formal support query:\n\n• For general inquiries & suggestions: [💬 Contact Us Page](/contact)\n• For attendance, certificate, or registration discrepancies: [🎫 Submit a Discrepancy Ticket](/contact)\n\nOur administrative team reviews every submission and gets in touch promptly.`,
+      text: `You can reach our coordinators or raise a formal support query:\n\n• **General Inquiries:** Reach out via our contact page for collaborations, questions, and partnerships.\n• **Discrepancies:** For attendance logs, certificate name corrections, or registration passes, submit an official support ticket.\n\nOur administrative team reviews every submission promptly.`,
       suggestions: faqs.slice(0, 3),
       actionLinks: [
         { label: '💬 Contact Coordinators', url: '/contact' },
@@ -828,7 +1210,7 @@ export const resolveBotQuery = async (
 
   if (isFreeFeesIntent) {
     return {
-      text: `Joining Cloud Stack Club is **100% Free**! 🎉\n\nThere are no membership charges, subscriptions, or hidden dues. Regular workshops, certification study jams, and community sessions are hosted free of cost for university students.\n\n👉 [Click here to Apply to Join for Free](/join)`,
+      text: `Joining Cloud Stack Club is **100% Free**! 🎉\n\nThere are no membership charges, subscriptions, or hidden dues. Regular workshops, certification study jams, and community sessions are hosted free of cost for university students.`,
       suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
       actionLinks: [
         { label: '🚀 Apply for Free', url: '/join' },
@@ -851,7 +1233,7 @@ export const resolveBotQuery = async (
 
   if (isEligibilityIntent) {
     return {
-      text: `**Yes, absolutely!** Cloud Stack Club is open to students across **all years** (1st, 2nd, 3rd, and 4th year) and **all branches** (CSE, AIT, IT, ECE, Mechanical, etc.) at Chandigarh University.\n\nWhether you are a fresher taking your first steps into coding or an experienced developer, our mentorship programs and bootcamps are tailored to help you build real-world skills.\n\n👉 [Submit Your Application at our Membership Portal](/join)`,
+      text: `**Yes, absolutely!** Cloud Stack Club is open to students across **all years** (1st, 2nd, 3rd, and 4th year) and **all branches** (CSE, AIT, IT, ECE, Mechanical, etc.) at Chandigarh University.\n\nWhether you are a fresher taking your first steps into coding or an experienced developer, our mentorship programs and bootcamps are tailored to help you build real-world skills.`,
       suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
       actionLinks: [
         { label: '🚀 Apply for Membership', url: '/join' },
@@ -872,7 +1254,7 @@ export const resolveBotQuery = async (
 
   if (isSelectionIntent) {
     return {
-      text: `Here is what happens after you apply to Cloud Stack Club:\n\n1. **Application Review:** The executive council reviews your application, preferred domain, and motivation.\n2. **Shortlisting & Interaction:** Shortlisted candidates may be invited for an informal technical or behavioral chat.\n3. **Onboarding Email:** Accepted members receive an official acceptance letter with credentials and private invite links to our WhatsApp & Discord communities.\n\n👉 [Apply to Join the Club](/join)`,
+      text: `Here is what happens after you apply to Cloud Stack Club:\n\n1. **Application Review:** The executive council reviews your application, preferred domain, and motivation.\n2. **Shortlisting & Interaction:** Shortlisted candidates may be invited for an informal technical or behavioral chat.\n3. **Onboarding Email:** Accepted members receive an official acceptance letter with credentials and private invite links to our WhatsApp & Discord communities.`,
       suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
       actionLinks: [
         { label: '🚀 Apply Now', url: '/join' },
@@ -891,7 +1273,7 @@ export const resolveBotQuery = async (
 
   if (isTeamRegIntent) {
     return {
-      text: `For hackathons and team-enabled events:\n\n• **Team Leader:** Registers first, chooses 'Team Registration', sets a team name, and receives a unique **Team Code**.\n• **Team Members:** Select 'Join Existing Team' on the registration modal and enter the Team Code.\n• **Passes:** Once confirmed, individual and team passes are generated and emailed to all members.\n\n👉 [Explore Active Hackathons & Events](/events)`,
+      text: `For hackathons and team-enabled events:\n\n• **Team Leader:** Registers first, chooses 'Team Registration', sets a team name, and receives a unique **Team Code**.\n• **Team Members:** Select 'Join Existing Team' on the registration modal and enter the Team Code.\n• **Passes:** Once confirmed, individual and team passes are generated and emailed to all members.`,
       suggestions: faqs.filter((f) => f.category === 'Events').slice(0, 3),
       actionLinks: [{ label: '📅 Browse Events', url: '/events' }],
     };
@@ -907,7 +1289,7 @@ export const resolveBotQuery = async (
 
   if (isNonMemberIntent) {
     return {
-      text: `**Yes, of course!** All workshops, bootcamps, and hackathons (including flagship events like Elevate-X and Stack Sprint) are **open to all university students**.\n\nYou do not have to be an official core member to attend events or earn participation certificates.\n\n👉 [Browse Active Events & Register](/events)`,
+      text: `**Yes, of course!** All workshops, bootcamps, and hackathons (including flagship events like Elevate-X and Stack Sprint) are **open to all university students**.\n\nYou do not have to be an official core member to attend events or earn participation certificates.`,
       suggestions: faqs.filter((f) => f.category === 'Events').slice(0, 3),
       actionLinks: [
         { label: '📅 Browse Events', url: '/events' },
@@ -929,7 +1311,7 @@ export const resolveBotQuery = async (
 
   if (isTimingLocationIntent) {
     return {
-      text: `Cloud Stack Club is based at **Chandigarh University** under the Department of Computer Science & Engineering / AIT.\n\n• **Venues:** On-campus computer labs, auditorium halls, or virtual rooms via Google Meet / Discord.\n• **Timings:** Sessions are typically scheduled after class hours (weekday evenings) or on Saturday mornings.\n\n👉 [Check Event Schedule & Venues](/events)`,
+      text: `Cloud Stack Club is based at **Chandigarh University** under the Department of Computer Science & Engineering / AIT.\n\n• **Venues:** On-campus computer labs, auditorium halls, or virtual rooms via Google Meet / Discord.\n• **Timings:** Sessions are typically scheduled after class hours (weekday evenings) or on Saturday mornings.`,
       suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'About Club').slice(0, 3),
       actionLinks: [
         { label: '📅 View Events & Venues', url: '/events' },
@@ -948,7 +1330,7 @@ export const resolveBotQuery = async (
 
   if (isCertIntent) {
     return {
-      text: `Official participation & merit certificates are digitally verified and emailed to attendees within **3 to 7 working days** after an event.\n\n• **Spelling error or missing certificate?** You can submit an official query ticket right away:\n👉 [Submit a Discrepancy Ticket](/contact)\n\nOur administrative team will review your attendance logs and re-issue the certificate.`,
+      text: `Official participation & merit certificates are digitally verified and emailed to attendees within **3 to 7 working days** after an event.\n\n• **Spelling error or missing certificate?** You can submit an official discrepancy ticket, and our administrative team will review your attendance logs and re-issue your certificate.`,
       suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'Contact').slice(0, 3),
       actionLinks: [
         { label: '🎫 Submit Discrepancy Ticket', url: '/contact' },
@@ -968,7 +1350,7 @@ export const resolveBotQuery = async (
 
   if (isDomainIntent) {
     return {
-      text: `Cloud Stack Club offers active tracks across 7 core domains:\n\n☁️ **Cloud Computing:** AWS, Google Cloud, Microsoft Azure architectures.\n⚙️ **DevOps & Linux:** CI/CD pipelines, Docker, Kubernetes, Terraform.\n💻 **Full Stack Development:** Modern React, Node.js, Next.js, Go, Python.\n🤖 **AI & Machine Learning:** Neural networks, LLMs, computer vision, data analysis.\n🎨 **UI/UX Design:** User flows, Figma prototyping, graphic design.\n✍️ **Technical Writing:** Blogs, newsletters, open-source documentation.\n🎯 **Event Operations:** Hackathon execution, sponsorships, social media.\n\n👉 [Choose Your Domain & Apply](/join)`,
+      text: `Cloud Stack Club offers active tracks across 7 core domains:\n\n☁️ **Cloud Computing:** AWS, Google Cloud, Microsoft Azure architectures.\n⚙️ **DevOps & Linux:** CI/CD pipelines, Docker, Kubernetes, Terraform.\n💻 **Full Stack Development:** Modern React, Node.js, Next.js, Go, Python.\n🤖 **AI & Machine Learning:** Neural networks, LLMs, computer vision, data analysis.\n🎨 **UI/UX Design:** User flows, Figma prototyping, graphic design.\n✍️ **Technical Writing:** Blogs, newsletters, open-source documentation.\n🎯 **Event Operations:** Hackathon execution, sponsorships, social media.`,
       suggestions: faqs.filter((f) => f.category === 'About Club' || f.category === 'Membership').slice(0, 3),
       actionLinks: [
         { label: '🚀 Apply to Join Club', url: '/join' },
@@ -989,7 +1371,7 @@ export const resolveBotQuery = async (
 
   if (isGalleryIntent) {
     return {
-      text: `Check out our official photo gallery to see memories, hackathon winners, coding bootcamps, and workshop highlights from past events!\n\n👉 [Click here to Browse Event Gallery](/gallery)`,
+      text: `Check out our official photo gallery to see memories, hackathon winners, coding bootcamps, and workshop highlights from past events!`,
       suggestions: faqs.filter((f) => f.category === 'About Club' || f.category === 'Events').slice(0, 3),
       actionLinks: [
         { label: '📸 View Event Gallery', url: '/gallery' },
@@ -998,28 +1380,29 @@ export const resolveBotQuery = async (
     };
   }
 
-  // 6. MATCH CUSTOM ADMIN FAQS (or default FAQs)
+  // 15. MATCH CUSTOM ADMIN FAQS (or default FAQs)
   const match = findBestAnswer(userQuery, faqs);
   if (match.faq && match.score >= 35) {
     const text = match.faq.answer;
-    const extractedLinks = extractActionLinksFromText(text);
+    const actionLinks = getActionLinksForFaq(match.faq);
 
     return {
       text,
       suggestions: match.suggestions,
-      actionLinks: extractedLinks,
+      actionLinks,
     };
   }
 
-  // 7. GENERAL / UNMATCHED FALLBACK
-  const fallbackText = `I don't have a direct answer for that in my knowledge base yet, but here are the fastest ways to find what you need:\n\n• 🚀 [Apply to Join Cloud Stack Club](/join)\n• 📅 [Browse Upcoming Workshops & Hackathons](/events)\n• 👥 [Meet the Core Council & Leadership](/team)\n• 💬 [Get in Touch with our Coordinators](/contact)\n\nYou can also click any suggested question below!`;
+  // 16. GENERAL / UNMATCHED FALLBACK
+  const fallbackText = `I don't have an exact answer for that yet, but here are the fastest ways to navigate Cloud Stack Club resources:`;
 
   return {
     text: fallbackText,
     suggestions: match.suggestions.length > 0 ? match.suggestions : faqs.slice(0, 4),
     actionLinks: [
-      { label: '🚀 Join Club', url: '/join' },
+      { label: '🚀 Apply to Join', url: '/join' },
       { label: '📅 Browse Events', url: '/events' },
+      { label: '👥 Meet Our Team', url: '/team' },
       { label: '💬 Contact Us', url: '/contact' },
     ],
   };
