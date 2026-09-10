@@ -1245,7 +1245,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               }`}
           >
             <Bot className="w-4 h-4 shrink-0" />
-            <span>Chatbot FAQs</span>
+            <span>Chatbot</span>
           </button>
         </div>
 

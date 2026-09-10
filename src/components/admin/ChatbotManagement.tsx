@@ -9,7 +9,6 @@ import {
   HelpCircle,
   Save,
   X,
-  Sparkles,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import {
@@ -17,7 +16,6 @@ import {
   createChatbotFaq,
   updateChatbotFaq,
   deleteChatbotFaq,
-  DEFAULT_CHATBOT_FAQS,
 } from '../../services/chatbot';
 import type { ChatbotFaq } from '../../types/database';
 
@@ -184,29 +182,6 @@ export const ChatbotManagement: React.FC = () => {
     }
   };
 
-  const handleSeedDefaults = async () => {
-    if (!confirm('Would you like to populate any missing standard Club questions?')) return;
-    try {
-      for (const defFaq of DEFAULT_CHATBOT_FAQS) {
-        const exists = faqs.some((f) => f.question.toLowerCase() === defFaq.question.toLowerCase());
-        if (!exists) {
-          await createChatbotFaq({
-            question: defFaq.question,
-            answer: defFaq.answer,
-            category: defFaq.category,
-            keywords: defFaq.keywords,
-            display_order: defFaq.display_order,
-            is_active: true,
-          });
-        }
-      }
-      await loadFaqs();
-      showToast('Default club questions seeded! ✨');
-    } catch (err) {
-      console.error('Failed to seed defaults:', err);
-    }
-  };
-
   const categories = Array.from(new Set(faqs.map((f) => f.category || 'General'))).filter(Boolean);
 
   const filteredFaqs = faqs.filter((faq) => {
@@ -250,13 +225,6 @@ export const ChatbotManagement: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <button
-            onClick={handleSeedDefaults}
-            className="px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all flex items-center gap-2 cursor-pointer shadow-xs"
-          >
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span>Seed Standard FAQs</span>
-          </button>
           <button
             onClick={handleOpenCreateModal}
             className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-blue-500/25 transition-all flex items-center gap-2 cursor-pointer"
@@ -323,7 +291,7 @@ export const ChatbotManagement: React.FC = () => {
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
             {searchQuery
               ? `No matching questions for "${searchQuery}". Try a different term or clear the search.`
-              : 'Add your first chatbot question or click "Seed Standard FAQs" to get started.'}
+              : 'Click "+ Add Question" to add your first chatbot question.'}
           </p>
         </div>
       ) : (

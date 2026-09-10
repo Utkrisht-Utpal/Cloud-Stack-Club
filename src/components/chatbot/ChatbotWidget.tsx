@@ -11,7 +11,7 @@ import {
   ChevronDown,
   HelpCircle,
 } from 'lucide-react';
-import { getChatbotFaqs, findBestAnswer } from '../../services/chatbot';
+import { getChatbotFaqs, resolveBotQuery, type BotActionLink } from '../../services/chatbot';
 import type { ChatbotFaq } from '../../types/database';
 
 interface ChatMessage {
@@ -19,6 +19,7 @@ interface ChatMessage {
   sender: 'bot' | 'user';
   text: string;
   suggestions?: ChatbotFaq[];
+  actionButtons?: BotActionLink[];
   timestamp: string;
 }
 
@@ -71,7 +72,7 @@ export const ChatbotWidget: React.FC = () => {
     }
   }, [isOpen]);
 
-  const handleAskQuestion = (questionText: string) => {
+  const handleAskQuestion = async (questionText: string) => {
     if (!questionText.trim()) return;
 
     const userMsg: ChatMessage = {
@@ -85,32 +86,27 @@ export const ChatbotWidget: React.FC = () => {
     setInputText('');
     setIsTyping(true);
 
-    // Micro-delay (200ms) for natural conversational feel
-    setTimeout(() => {
-      const match = findBestAnswer(questionText, faqs);
-      let replyText = '';
-      let replySuggestions: ChatbotFaq[] = [];
+    try {
+      // Live database + hybrid matching resolver
+      const res = await resolveBotQuery(questionText, faqs);
 
-      if (match.faq) {
-        replyText = match.faq.answer;
-        replySuggestions = match.suggestions;
-      } else {
-        replyText =
-          "I don't have an exact answer for that yet. Here are some common topics you might be interested in, or you can get in touch with our coordinators directly on our [Contact page](/contact)!";
-        replySuggestions = match.suggestions;
-      }
+      setTimeout(() => {
+        const botMsg: ChatMessage = {
+          id: `msg-${Date.now()}-bot`,
+          sender: 'bot',
+          text: res.text,
+          suggestions: res.suggestions,
+          actionButtons: res.actionLinks,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
 
-      const botMsg: ChatMessage = {
-        id: `msg-${Date.now()}-bot`,
-        sender: 'bot',
-        text: replyText,
-        suggestions: replySuggestions,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-
+        setIsTyping(false);
+        setMessages((prev) => [...prev, botMsg]);
+      }, 220);
+    } catch (err) {
+      console.error('Error resolving bot query:', err);
       setIsTyping(false);
-      setMessages((prev) => [...prev, botMsg]);
-    }, 220);
+    }
   };
 
   const handleClearChat = () => {
@@ -192,6 +188,36 @@ export const ChatbotWidget: React.FC = () => {
           </strong>
         );
       }
+
+      // Check for route patterns like (/events) or (/join) or (/team)
+      const routeRegex = /(\(\/(?:events(?:\/[a-zA-Z0-9\-]+)?|join|team|contact|gallery)\))/g;
+      if (routeRegex.test(part)) {
+        const subParts = part.split(routeRegex);
+        return (
+          <React.Fragment key={i}>
+            {subParts.map((sub, sIdx) => {
+              if (sub.startsWith('(/') && sub.endsWith(')')) {
+                const rawRoute = sub.slice(1, -1);
+                return (
+                  <button
+                    key={`sub-${i}-${sIdx}`}
+                    onClick={() => {
+                      navigate(rawRoute);
+                      setIsOpen(false);
+                    }}
+                    className="inline-flex items-center gap-0.5 font-bold text-blue-600 dark:text-sky-400 hover:underline mx-0.5 cursor-pointer"
+                  >
+                    <span>{rawRoute}</span>
+                    <ArrowRight className="w-3 h-3 inline" />
+                  </button>
+                );
+              }
+              return sub;
+            })}
+          </React.Fragment>
+        );
+      }
+
       return part;
     });
   };
@@ -307,13 +333,36 @@ export const ChatbotWidget: React.FC = () => {
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 leading-relaxed ${
+                    className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 leading-relaxed whitespace-pre-line ${
                       msg.sender === 'user'
                         ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/15'
-                        : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200/50 dark:border-slate-700/50'
+                        : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200/50 dark:border-slate-700/50 shadow-xs'
                     }`}
                   >
                     {msg.sender === 'user' ? msg.text : renderFormattedText(msg.text)}
+
+                    {/* Action Link Buttons (e.g. Apply to Join Club, View Elevate-X, Browse Events) */}
+                    {msg.sender === 'bot' && msg.actionButtons && msg.actionButtons.length > 0 && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap gap-2">
+                        {msg.actionButtons.map((btn, bIdx) => (
+                          <button
+                            key={`btn-${bIdx}`}
+                            onClick={() => {
+                              if (btn.url.startsWith('/')) {
+                                navigate(btn.url);
+                                setIsOpen(false);
+                              } else {
+                                window.open(btn.url, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-xs shadow-md shadow-blue-500/20 hover:shadow-lg transition-all cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+                          >
+                            <span>{btn.label}</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <span className="text-[9px] font-semibold text-slate-400 dark:text-slate-500 mt-1 px-1">
                     {msg.timestamp}
