@@ -31,6 +31,8 @@ export const ChatbotWidget: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showGreetingTooltip, setShowGreetingTooltip] = useState(true);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const latestMessageRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -55,11 +57,35 @@ export const ChatbotWidget: React.FC = () => {
     }
   }, [messages.length]);
 
-  // Auto-scroll to latest message
+  // Intelligent auto-scroll:
+  // When the bot answers, scroll smoothly to the START of the bot's response (do NOT scroll to bottom),
+  // allowing the user to immediately read the answer from the top.
+  // When the user asks a question or bot is typing, scroll to the bottom.
   useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }
+    if (!isOpen || messages.length <= 1) return;
+
+    const lastMsg = messages[messages.length - 1];
+
+    const timer = setTimeout(() => {
+      if (lastMsg?.sender === 'bot' && latestMessageRef.current && messagesContainerRef.current) {
+        const container = messagesContainerRef.current;
+        const targetEl = latestMessageRef.current;
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
+        const relativeTop = targetRect.top - containerRect.top + container.scrollTop;
+
+        container.scrollTo({
+          top: Math.max(0, relativeTop - 12),
+          behavior: 'smooth',
+        });
+      } else if (lastMsg?.sender === 'bot' && latestMessageRef.current) {
+        latestMessageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (lastMsg?.sender === 'user' || isTyping) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 60);
+
+    return () => clearTimeout(timer);
   }, [messages, isTyping, isOpen]);
 
   // Focus input when opened
@@ -330,12 +356,15 @@ export const ChatbotWidget: React.FC = () => {
             </div>
 
             {/* Messages Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
-                >
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
+              {messages.map((msg, index) => {
+                const isLatest = index === messages.length - 1;
+                return (
+                  <div
+                    key={msg.id}
+                    ref={isLatest ? latestMessageRef : undefined}
+                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                  >
                   <div
                     className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 leading-relaxed whitespace-pre-line ${
                       msg.sender === 'user'
@@ -388,7 +417,8 @@ export const ChatbotWidget: React.FC = () => {
                     </div>
                   )}
                 </div>
-              ))}
+              );
+            })}
 
               {/* Initial Quick Suggestion Pills */}
               {messages.length === 1 && topSuggestedQuestions.length > 0 && (

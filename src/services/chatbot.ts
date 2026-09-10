@@ -617,11 +617,7 @@ export const formatMemberResponse = (m: CoreMember): BotResolvedResponse => {
 
   text += `You can view verified achievements, projects, and professional links in our Meet Our Team section.`;
 
-  const firstName = m.name.split(' ')[0];
-  const actionLinks: BotActionLink[] = [
-    { label: `👥 View ${firstName}'s Profile`, url: '/team' },
-    { label: '👥 Meet Our Full Team', url: '/team' },
-  ];
+  const actionLinks: BotActionLink[] = [];
 
   if (m.linkedin_url && m.linkedin_url.startsWith('http')) {
     actionLinks.push({ label: '💼 LinkedIn Profile', url: m.linkedin_url });
@@ -763,10 +759,7 @@ export const resolveMemberQuery = (
       return {
         text: `The design and creative UI/UX efforts at Cloud Stack Club are led by **${top.name}** (${top.role?.name || 'Graphic Designer'}).\n\nHe creates visual assets, digital branding, posters, and user interfaces for club events and web platforms.`,
         suggestions: [],
-        actionLinks: [
-          { label: `👥 View ${top.name.split(' ')[0]}'s Profile`, url: '/team' },
-          { label: '👥 Meet Our Team', url: '/team' },
-        ],
+        actionLinks: [],
       };
     }
   }
@@ -1058,12 +1051,398 @@ export const getActionLinksForFaq = (faq: ChatbotFaq): BotActionLink[] => {
 };
 
 /**
+ * Detects if a query contains specific club/university domain keywords
+ * to ensure club inquiries (e.g. "Good morning, who is the president?")
+ * are not intercepted as generic small talk.
+ */
+const hasClubInquiryKeywords = (q: string): boolean => {
+  const keywords = [
+    'president', 'vice', 'secretary', 'treasurer', 'lead', 'member',
+    'core', 'team', 'coordinator', 'executive', 'founder',
+    'event', 'hackathon', 'workshop', 'webinar', 'bootcamp', 'session',
+    'elevate', 'stack sprint', 'orbit', 'certification', 'industrial',
+    'join', 'register', 'registration', 'apply', 'recruitment', 'membership',
+    'fee', 'cost', 'charge', 'paid', 'price',
+    'cert', 'certificate', 'attendance', 'discrepancy',
+    'domain', 'department', 'track', 'cloud computing', 'devops', 'full stack',
+    'notice', 'announcement', 'news', 'update',
+    'gallery', 'photo', 'video',
+    'venue', 'location', 'timing', 'time', 'date', 'campus', 'offline',
+    'team code', 'solo',
+    'eligible', 'eligibility', '1st year', 'first year', 'fresher', 'branch',
+    'selection', 'interview', 'shortlist',
+    'contact', 'email', 'ticket', 'phone', 'reach'
+  ];
+  return keywords.some((kw) => q.includes(kw));
+};
+
+const stripConversationalFiller = (q: string): string => {
+  return q
+    .replace(/\b(bot|assistant|csc|cloud stack club|everyone|all|there|friend|bro|sir|mam|maam|team)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+/**
+ * Natural Conversational & Daily Life Intelligence Engine:
+ * Handles greetings, pleasantries, well-wishing, time-of-day greetings,
+ * gratitude, small talk, courtesies, humor, and bot identity.
+ */
+export const resolveDailyLifeQuery = (
+  cleanQuery: string,
+  faqs: ChatbotFaq[]
+): BotResolvedResponse | null => {
+  const isBotIdentityQuery =
+    cleanQuery.includes('who are you') ||
+    cleanQuery.includes('what are you') ||
+    cleanQuery.includes('your name') ||
+    cleanQuery.includes('who made you') ||
+    cleanQuery.includes('who created you') ||
+    cleanQuery.includes('who developed you') ||
+    cleanQuery.includes('what can you do') ||
+    cleanQuery.includes('are you a bot') ||
+    cleanQuery.includes('are you ai') ||
+    cleanQuery.includes('are you human') ||
+    cleanQuery.includes('are you real');
+
+  // If query contains club inquiry keywords and is not a bot persona query, let club engines handle it
+  if (!isBotIdentityQuery && hasClubInquiryKeywords(cleanQuery)) {
+    return null;
+  }
+
+  const defaultSuggestions = faqs.length > 0 ? faqs.slice(0, 3) : [];
+  const greetingActions: BotActionLink[] = [
+    { label: '🚀 Apply to Join', url: '/join' },
+    { label: '📅 Browse Events', url: '/events' },
+  ];
+
+  // 1. Bot Identity & Purpose
+  if (
+    cleanQuery.includes('who are you') ||
+    cleanQuery.includes('what are you') ||
+    cleanQuery.includes('your name') ||
+    cleanQuery.includes('who r u') ||
+    cleanQuery.includes('introduce yourself')
+  ) {
+    return {
+      text: `I am the official **Cloud Stack Club Virtual Assistant**! 🤖\n\nI'm here to help Chandigarh University students explore:\n• **Upcoming Hackathons & Bootcamps** (Elevate-X, Stack Sprint, workshops)\n• **Club Membership & Eligibility** for all branches and years\n• **Core Leadership** (President, Vice President, Leads)\n• **Domain Tracks** (Cloud, DevOps, Full Stack, AI/ML, UI/UX, Media)\n• **Official Support & Certificates**\n\nHow can I help you today?`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  // 2. Creator / Origin
+  if (
+    cleanQuery.includes('who made you') ||
+    cleanQuery.includes('who created you') ||
+    cleanQuery.includes('who developed you') ||
+    cleanQuery.includes('who is your creator') ||
+    cleanQuery.includes('who built you') ||
+    cleanQuery.includes('who designed you')
+  ) {
+    return {
+      text: `I was built by the technical team at **Cloud Stack Club**, Chandigarh University! 🚀 Designed to provide students with fast, verified information on club activities, hackathons, and technology tracks.`,
+      suggestions: defaultSuggestions,
+      actionLinks: [
+        { label: '👥 Meet Our Team', url: '/team' },
+        { label: '🚀 Apply to Join', url: '/join' },
+      ],
+    };
+  }
+
+  // 3. AI / Bot Status
+  if (
+    cleanQuery.includes('are you real') ||
+    cleanQuery.includes('are you human') ||
+    cleanQuery.includes('are you a bot') ||
+    cleanQuery.includes('are you ai') ||
+    cleanQuery.includes('are you a robot') ||
+    cleanQuery.includes('are u bot')
+  ) {
+    return {
+      text: `I'm the virtual AI assistant for Cloud Stack Club! 🤖 While I'm powered by code and club data, I'm managed by our real student leadership team. If you'd like to chat with our real coordinators, feel free to visit our Contact page!`,
+      suggestions: defaultSuggestions,
+      actionLinks: [
+        { label: '💬 Contact Coordinators', url: '/contact' },
+        { label: '👥 Meet Our Team', url: '/team' },
+      ],
+    };
+  }
+
+  // 4. Compliments & Praise
+  if (
+    cleanQuery.includes('good bot') ||
+    cleanQuery.includes('best bot') ||
+    cleanQuery.includes('you are smart') ||
+    cleanQuery.includes('you are awesome') ||
+    cleanQuery.includes('you are great') ||
+    cleanQuery.includes('you are helpful') ||
+    cleanQuery.includes('nice bot') ||
+    cleanQuery.includes('love you') ||
+    cleanQuery.includes('great job') ||
+    cleanQuery.includes('well done')
+  ) {
+    return {
+      text: `Thank you so much for the kind words! ❤️ I'm always here to help you navigate Cloud Stack Club and make the most out of university tech events!`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  const stripped = stripConversationalFiller(cleanQuery);
+  const q = stripped || cleanQuery;
+
+  // 5. Time-of-day Greetings
+  if (
+    q === 'good morning' ||
+    q === 'gm' ||
+    q.startsWith('good morning') ||
+    q === 'morning'
+  ) {
+    return {
+      text: `Good morning! ☀️ Wishing you a productive and wonderful day ahead! How can I assist you with Cloud Stack Club today?`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  if (
+    q === 'good afternoon' ||
+    q.startsWith('good afternoon') ||
+    q === 'afternoon'
+  ) {
+    return {
+      text: `Good afternoon! 🌤️ Hope your day is going great! What can I help you with regarding Cloud Stack Club?`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  if (
+    q === 'good evening' ||
+    q.startsWith('good evening') ||
+    q === 'evening'
+  ) {
+    return {
+      text: `Good evening! 🌆 Hope you had a fulfilling day. How can I assist you tonight with Cloud Stack Club?`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  if (
+    q === 'good night' ||
+    q === 'gn' ||
+    q.startsWith('good night') ||
+    q.includes('sweet dreams') ||
+    q.includes('sleep well')
+  ) {
+    return {
+      text: `Good night! 🌙 Wishing you a peaceful and restful sleep. Feel free to reach out anytime tomorrow if you need info on events or club membership!`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 6. Standard Salutations & Greetings
+  const greetingWords = [
+    'hi', 'hello', 'hey', 'heyy', 'heyyy', 'hola', 'namaste',
+    'yo', 'wassup', 'what s up', 'whats up', 'sup', 'greetings', 'howdy'
+  ];
+  if (
+    greetingWords.includes(q) ||
+    greetingWords.some((g) => q === g || q.startsWith(g + ' '))
+  ) {
+    return {
+      text: `Hello there! 👋 Great to have you here. I'm the Cloud Stack Club Assistant. How can I assist you today? You can ask about our upcoming hackathons, how to join the club, our core team, or domain tracks!`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  // 7. Wellbeing Check-ins ("How are you")
+  if (
+    q.includes('how are you') ||
+    q.includes('how r u') ||
+    q.includes('hows it going') ||
+    q.includes('how is it going') ||
+    q.includes('how is everything') ||
+    q.includes('how do you do') ||
+    q.includes('how you doing') ||
+    q.includes('are you doing well') ||
+    q.includes('hope you are doing well') ||
+    q.includes('whats new') ||
+    q.includes('what is new')
+  ) {
+    return {
+      text: `I'm doing fantastic, thank you for asking! 😊 Ready to help you with anything about Cloud Stack Club — whether it's club membership, upcoming workshops, hackathons, or meeting our team. How are you doing today?`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  // 8. User Condition ("I'm good", "Doing well")
+  if (
+    q === 'i am good' ||
+    q === 'im good' ||
+    q === 'i am fine' ||
+    q === 'im fine' ||
+    q === 'doing good' ||
+    q === 'doing well' ||
+    q === 'good' ||
+    q === 'all good' ||
+    q === 'great'
+  ) {
+    return {
+      text: `Glad to hear that! 😊 What would you like to explore today? You can check out our upcoming events, leadership team, or membership details.`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  // 9. Gratitude & Appreciation
+  if (
+    q.includes('thank') ||
+    q.includes('thanks') ||
+    q === 'thx' ||
+    q === 'ty' ||
+    q === 'tysm' ||
+    q.includes('appreciate it') ||
+    q.includes('much appreciated') ||
+    q.includes('grateful')
+  ) {
+    return {
+      text: `You're very welcome! 😊 Always happy to help. Let me know if you need anything else about Cloud Stack Club!`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 10. Courtesies ("You're welcome", "No problem")
+  if (
+    q.includes('you are welcome') ||
+    q.includes('youre welcome') ||
+    q.includes('your welcome') ||
+    q.includes('my pleasure') ||
+    q.includes('no problem') ||
+    q.includes('no worries') ||
+    q === 'np'
+  ) {
+    return {
+      text: `Appreciate your kindness! Let me know if there's anything else you'd like to explore about the club. 🚀`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 11. Goodbyes & Partings
+  if (
+    q === 'bye' ||
+    q === 'goodbye' ||
+    q === 'bye bye' ||
+    q === 'byebye' ||
+    q.startsWith('see you') ||
+    q.startsWith('see ya') ||
+    q === 'cya' ||
+    q.includes('catch you later') ||
+    q.includes('take care') ||
+    q.includes('have a nice day') ||
+    q.includes('have a good day') ||
+    q.includes('have a great day')
+  ) {
+    return {
+      text: `Goodbye! 👋 Have a wonderful day ahead! Whenever you're ready to learn cloud computing, participate in hackathons, or meet the community, Cloud Stack Club is here for you. Take care!`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 12. Affirmations & Acknowledgements
+  const affirmations = [
+    'ok', 'okay', 'k', 'alright', 'got it', 'understood',
+    'sure', 'yep', 'yeah', 'yes', 'cool', 'nice', 'awesome',
+    'superb', 'perfect', 'sounds good', 'fine'
+  ];
+  if (affirmations.includes(q)) {
+    return {
+      text: `Awesome! 👍 Feel free to ask anytime if you want to know about our events, joining the club, or learning cloud & DevOps with us!`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 13. Apologies
+  if (
+    q === 'sorry' ||
+    q.startsWith('sorry') ||
+    q.includes('my bad') ||
+    q.includes('excuse me') ||
+    q.includes('apologies')
+  ) {
+    return {
+      text: `No worries at all! 😊 How can I help you today?`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  // 14. Capabilities / Help
+  if (
+    q === 'what can you do' ||
+    q === 'help me' ||
+    q === 'how can you help' ||
+    q === 'what do you know' ||
+    q === 'help'
+  ) {
+    return {
+      text: `Here is what I can do for you:\n\n• 🚀 **Club Membership:** Find out how to join, who is eligible, and domain tracks.\n• 📅 **Events & Hackathons:** Get live dates, venue details, and registration links for events like Elevate-X.\n• 👥 **Core Team Leads:** Inquire about our President, Vice President, Tech Leads, and coordinators.\n• 📜 **Certificates & Support:** Information on receiving participation certificates and raising discrepancy tickets.`,
+      suggestions: defaultSuggestions,
+      actionLinks: greetingActions,
+    };
+  }
+
+  // 15. Humor / Jokes
+  if (
+    q.includes('joke') ||
+    q.includes('make me laugh') ||
+    q.includes('funny')
+  ) {
+    return {
+      text: `Why do programmers prefer dark mode? Because light attracts bugs! 🐛💻\n\n(And why do cloud engineers love rain? Because they feel right at home with the clouds! ☁️😄)`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 16. Weather
+  if (q.includes('weather')) {
+    return {
+      text: `I live in the cloud ☁️, so it's always 100% uptime here! But on campus, it's always a great day to build something cool with Cloud Stack Club. 🚀`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  // 17. Bot Age
+  if (q.includes('how old are you') || q.includes('your age')) {
+    return {
+      text: `I'm as fresh as Cloud Stack Club's newest release! Always learning and updated with the latest events and club news. 🚀`,
+      suggestions: [],
+      actionLinks: [],
+    };
+  }
+
+  return null;
+};
+
+/**
  * High-Intelligence Hybrid Resolver:
  * 1. Security & Privacy Guard (Zero PII leaks, protects contact details & rosters)
  * 2. Real-Time Member Intelligence Engine (Dynamic database lookups for all core roles & members)
  * 3. Real-Time Event Intelligence Engine (Dynamic database lookups for events & hackathons)
- * 4. Club Policy & Membership Intents
- * 5. Custom Admin FAQs & Keyword Tag Matching
+ * 4. Natural Conversational & Daily Life Engine (Greetings, small talk, gratitude, bot persona)
+ * 5. Club Policy & Membership Intents
+ * 6. Custom Admin FAQs & Keyword Tag Matching
  */
 export const resolveBotQuery = async (
   userQuery: string,
@@ -1104,6 +1483,12 @@ export const resolveBotQuery = async (
     }
   } catch (err) {
     console.warn('Chatbot real event lookup error:', err);
+  }
+
+  // 4. NATURAL CONVERSATIONAL & DAILY LIFE ENGINE
+  const dailyLifeMatch = resolveDailyLifeQuery(cleanQ, faqs);
+  if (dailyLifeMatch) {
+    return dailyLifeMatch;
   }
 
   // 4. JOIN / MEMBERSHIP INTENT
