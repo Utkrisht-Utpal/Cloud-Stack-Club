@@ -1114,7 +1114,7 @@ export const resolveDailyLifeQuery = (
       text: `I'm the virtual AI assistant for Cloud Stack Club! 🤖 While I'm powered by code and club data, I'm managed by our real student leadership team. If you'd like to chat with our real coordinators, feel free to visit our Contact page!`,
       suggestions: defaultSuggestions,
       actionLinks: [
-        { label: '💬 Contact Coordinators', url: '/contact' },
+        { label: '💬 Contact Coordinators', url: '/query' },
         { label: '👥 Meet Our Team', url: '/team' },
       ],
     };
@@ -1524,10 +1524,10 @@ export const resolveBotQuery = async (
 
   if (isContactIntent) {
     return {
-      text: `You can reach our coordinators or raise a formal support query:\n\n• **General Inquiries:** Reach out via our contact page for collaborations, questions, and partnerships.\n• **Discrepancies:** For attendance logs, certificate name corrections, or registration passes, submit an official support ticket.\n\nOur administrative team reviews every submission promptly.`,
+      text: `You can reach our coordinators or raise a formal support query:\n\n• **General Inquiries:** Reach out via our contact page for collaborations, questions, and partnerships.\n• **Discrepancies:** If you are facing issues in joining our club due to any reason like membership in other clubs, please raise a issue in Discrepancies form.\n\nOur administrative team reviews every submission promptly.`,
       suggestions: faqs.slice(0, 3),
       actionLinks: [
-        { label: '💬 Contact Coordinators', url: '/contact' },
+        { label: '💬 Contact Coordinators', url: '/query' },
         { label: '🎫 Submit Ticket', url: '/contact' },
       ],
     };
@@ -1651,7 +1651,7 @@ export const resolveBotQuery = async (
       suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'About Club').slice(0, 3),
       actionLinks: [
         { label: '📅 View Events & Venues', url: '/events' },
-        { label: '💬 Contact Coordinators', url: '/contact' },
+        { label: '💬 Contact Coordinators', url: '/query' },
       ],
     };
   }
