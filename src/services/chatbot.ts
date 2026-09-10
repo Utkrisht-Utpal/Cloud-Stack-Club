@@ -29,6 +29,46 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     display_order: 2,
   },
   {
+    id: 'faq-free-fees',
+    question: 'Is joining Cloud Stack Club free or is there a membership fee?',
+    answer:
+      'Joining Cloud Stack Club is **100% Free**! 🎉 There are no membership fees, hidden charges, or subscription costs to join the community or attend regular workshops.\n\n👉 [Click here to Apply to Join for Free](/join)',
+    category: 'Membership',
+    keywords: ['fee', 'fees', 'free', 'cost', 'charges', 'paid', 'price', 'paise', 'how much'],
+    is_active: true,
+    display_order: 3,
+  },
+  {
+    id: 'faq-eligibility',
+    question: 'Who is eligible to join? Can 1st year / freshers apply?',
+    answer:
+      '**Yes, absolutely!** Cloud Stack Club is open to students from **all years** (1st, 2nd, 3rd, and 4th year) and **all branches** (CSE, AIT, IT, ECE, Mechanical, etc.) at Chandigarh University. Both beginners and experienced coders are welcome!\n\n👉 [Submit Your Membership Application](/join)',
+    category: 'Membership',
+    keywords: ['eligible', 'eligibility', 'who can join', '1st year', 'first year', 'freshers', 'which branch', 'non cse'],
+    is_active: true,
+    display_order: 4,
+  },
+  {
+    id: 'faq-selection-process',
+    question: 'What is the selection process after applying for membership?',
+    answer:
+      'After you submit your application at [/join](/join), the core committee reviews your interests and technical domain preference. Shortlisted candidates may have a brief interaction or interview round, followed by an official acceptance email and invite to internal club channels.\n\n👉 [Apply to Join the Club](/join)',
+    category: 'Membership',
+    keywords: ['selection', 'interview', 'process', 'how selected', 'after apply', 'shortlist', 'results'],
+    is_active: true,
+    display_order: 5,
+  },
+  {
+    id: 'faq-domains',
+    question: 'What domains can I work in as a member?',
+    answer:
+      'Cloud Stack Club offers active domains in Cloud Infrastructure (AWS/Azure/GCP), DevOps & Automation, Full Stack Web & Mobile, AI/Machine Learning, Web3, UI/UX Design, Technical Content Writing, and Event Operations.\n\n👉 [Choose Your Domain & Apply](/join)',
+    category: 'About Club',
+    keywords: ['domains', 'departments', 'sub divisions', 'ai', 'ml', 'web3', 'devops', 'cloud', 'design', 'content'],
+    is_active: true,
+    display_order: 6,
+  },
+  {
     id: 'faq-secretary',
     question: 'Who is the Secretary of Cloud Stack Club?',
     answer:
@@ -36,7 +76,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Leadership',
     keywords: ['secretary', 'gen sec', 'general secretary', 'lakshay', 'gosai', 'who is secretary', 'lead', 'head'],
     is_active: true,
-    display_order: 3,
+    display_order: 7,
   },
   {
     id: 'faq-tech-lead',
@@ -46,17 +86,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Leadership',
     keywords: ['technical lead', 'tech lead', 'utkrisht', 'utpal', 'who is tech lead', 'developer lead', 'coding head'],
     is_active: true,
-    display_order: 4,
-  },
-  {
-    id: 'faq-faculty',
-    question: 'Who are the Faculty Advisors for Cloud Stack Club?',
-    answer:
-      'Cloud Stack Club is mentored and guided by **Dr. Deepti Sharma** (Faculty Advisor) and **Dr. Navjot Singh** (Co - Faculty Advisor) at Chandigarh University. Learn more in our [👥 Meet Our Team](/team) section.',
-    category: 'Leadership',
-    keywords: ['faculty', 'advisor', 'faculty advisor', 'deepti', 'navjot', 'mentor', 'professors', 'teachers', 'sir', 'maam'],
-    is_active: true,
-    display_order: 5,
+    display_order: 8,
   },
   {
     id: 'faq-joint-sec',
@@ -66,7 +96,17 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Leadership',
     keywords: ['joint secretary', 'bani', 'kaur', 'who is joint secretary', 'vice lead'],
     is_active: true,
-    display_order: 6,
+    display_order: 9,
+  },
+  {
+    id: 'faq-faculty',
+    question: 'Who are the Faculty Advisors for Cloud Stack Club?',
+    answer:
+      'Cloud Stack Club is mentored and guided by **Dr. Deepti Sharma** (Faculty Advisor) and **Dr. Navjot Singh** (Co - Faculty Advisor) at Chandigarh University. Learn more in our [👥 Meet Our Team](/team) section.',
+    category: 'Leadership',
+    keywords: ['faculty', 'advisor', 'faculty advisor', 'deepti', 'navjot', 'mentor', 'professors', 'teachers', 'sir', 'maam'],
+    is_active: true,
+    display_order: 10,
   },
   {
     id: 'faq-events',
@@ -76,7 +116,27 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Events',
     keywords: ['events', 'upcoming events', 'workshops', 'hackathons', 'elevate-x', 'stack sprint', 'register event', 'competitions'],
     is_active: true,
-    display_order: 7,
+    display_order: 11,
+  },
+  {
+    id: 'faq-non-members',
+    question: 'Can non-members attend club workshops and hackathons?',
+    answer:
+      '**Yes!** All workshops, bootcamps, and hackathons hosted by Cloud Stack Club are open to **all university students**, even if you are not an official core member.\n\n👉 [Explore Active Events](/events)',
+    category: 'Events',
+    keywords: ['non member', 'not member', 'outside', 'anyone attend', 'can i attend', 'public event'],
+    is_active: true,
+    display_order: 12,
+  },
+  {
+    id: 'faq-team-registration',
+    question: 'How does team registration work for hackathons?',
+    answer:
+      'For team hackathons:\n1. The **Team Leader** registers first and receives a unique Team Code.\n2. **Team Members** register by selecting "Join Existing Team" and entering the Team Code.\n3. Once confirmed, all members receive automated entry passes via email.\n\n👉 [View Events & Register](/events)',
+    category: 'Events',
+    keywords: ['team registration', 'team code', 'register as team', 'team size', 'solo or team'],
+    is_active: true,
+    display_order: 13,
   },
   {
     id: 'faq-certificates',
@@ -86,17 +146,37 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Events',
     keywords: ['certificate', 'cert', 'participation certificate', 'verify certificate', 'attendance', 'merit'],
     is_active: true,
-    display_order: 8,
+    display_order: 14,
   },
   {
-    id: 'faq-domains',
-    question: 'What domains can I work in as a member?',
+    id: 'faq-certificate-correction',
+    question: 'What should I do if my name on the certificate is wrong or attendance was missed?',
     answer:
-      'Cloud Stack Club offers active domains in Cloud Infrastructure (AWS/Azure/GCP), DevOps & Automation, Full Stack Web & Mobile, AI/Machine Learning, Web3, UI/UX Design, Technical Content Writing, and Event Operations.\n\n👉 [Click here to Apply to Join Club](/join)',
-    category: 'About Club',
-    keywords: ['domains', 'departments', 'sub divisions', 'ai', 'ml', 'web3', 'devops', 'cloud', 'design', 'content'],
+      'If you notice a typo in your name or your attendance was not recorded properly, submit a ticket through our official Discrepancy Portal immediately:\n\n👉 [Submit a Discrepancy Ticket](/contact)',
+    category: 'Contact',
+    keywords: ['wrong name', 'spelling mistake', 'attendance issue', 'certificate mistake', 'name error', 'correction'],
     is_active: true,
-    display_order: 9,
+    display_order: 15,
+  },
+  {
+    id: 'faq-timings-location',
+    question: 'Where and when do club sessions and workshops take place?',
+    answer:
+      'Cloud Stack Club is located at **Chandigarh University** (Department of CSE / AIT). Workshops and bootcamps take place on campus in dedicated computer labs or auditoriums, usually on weekday evenings or Saturday mornings.\n\n👉 [View Upcoming Events & Venues](/events)',
+    category: 'About Club',
+    keywords: ['location', 'where is club', 'timing', 'timings', 'venue', 'offline', 'campus', 'where meet'],
+    is_active: true,
+    display_order: 16,
+  },
+  {
+    id: 'faq-gallery',
+    question: 'Where can I see photos and past event highlights?',
+    answer:
+      'You can browse our official photo gallery to see memories, hackathon winners, and workshop highlights from past events!\n\n👉 [Visit Event Gallery](/gallery)',
+    category: 'About Club',
+    keywords: ['gallery', 'photos', 'pictures', 'videos', 'memories', 'past events', 'highlights'],
+    is_active: true,
+    display_order: 17,
   },
   {
     id: 'faq-contact',
@@ -106,7 +186,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     category: 'Contact',
     keywords: ['contact', 'email', 'help', 'support', 'issue', 'query', 'discrepancy', 'feedback', 'phone'],
     is_active: true,
-    display_order: 10,
+    display_order: 18,
   },
 ];
 
@@ -731,6 +811,189 @@ export const resolveBotQuery = async (
       actionLinks: [
         { label: '💬 Contact Coordinators', url: '/contact' },
         { label: '🎫 Submit Ticket', url: '/contact' },
+      ],
+    };
+  }
+
+  // 6. FEES / PRICING / FREE INTENT
+  const isFreeFeesIntent =
+    cleanQ.includes('fee') ||
+    cleanQ.includes('cost') ||
+    cleanQ.includes('free') ||
+    cleanQ.includes('charges') ||
+    cleanQ.includes('paid') ||
+    cleanQ.includes('price') ||
+    cleanQ.includes('paise') ||
+    cleanQ.includes('how much');
+
+  if (isFreeFeesIntent) {
+    return {
+      text: `Joining Cloud Stack Club is **100% Free**! 🎉\n\nThere are no membership charges, subscriptions, or hidden dues. Regular workshops, certification study jams, and community sessions are hosted free of cost for university students.\n\n👉 [Click here to Apply to Join for Free](/join)`,
+      suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
+      actionLinks: [
+        { label: '🚀 Apply for Free', url: '/join' },
+        { label: '📅 Browse Events', url: '/events' },
+      ],
+    };
+  }
+
+  // 7. ELIGIBILITY / 1ST YEAR / FRESHERS / BRANCH INTENT
+  const isEligibilityIntent =
+    cleanQ.includes('eligible') ||
+    cleanQ.includes('eligibility') ||
+    cleanQ.includes('1st year') ||
+    cleanQ.includes('first year') ||
+    cleanQ.includes('freshers') ||
+    cleanQ.includes('who can apply') ||
+    cleanQ.includes('who can join') ||
+    cleanQ.includes('which branch') ||
+    cleanQ.includes('non cse');
+
+  if (isEligibilityIntent) {
+    return {
+      text: `**Yes, absolutely!** Cloud Stack Club is open to students across **all years** (1st, 2nd, 3rd, and 4th year) and **all branches** (CSE, AIT, IT, ECE, Mechanical, etc.) at Chandigarh University.\n\nWhether you are a fresher taking your first steps into coding or an experienced developer, our mentorship programs and bootcamps are tailored to help you build real-world skills.\n\n👉 [Submit Your Application at our Membership Portal](/join)`,
+      suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
+      actionLinks: [
+        { label: '🚀 Apply for Membership', url: '/join' },
+        { label: '📅 View Events', url: '/events' },
+      ],
+    };
+  }
+
+  // 8. SELECTION PROCESS & TIMELINE INTENT
+  const isSelectionIntent =
+    cleanQ.includes('selection') ||
+    cleanQ.includes('interview') ||
+    cleanQ.includes('screening') ||
+    cleanQ.includes('after apply') ||
+    cleanQ.includes('shortlist') ||
+    cleanQ.includes('when results') ||
+    cleanQ.includes('how selected');
+
+  if (isSelectionIntent) {
+    return {
+      text: `Here is what happens after you apply to Cloud Stack Club:\n\n1. **Application Review:** The executive council reviews your application, preferred domain, and motivation.\n2. **Shortlisting & Interaction:** Shortlisted candidates may be invited for an informal technical or behavioral chat.\n3. **Onboarding Email:** Accepted members receive an official acceptance letter with credentials and private invite links to our WhatsApp & Discord communities.\n\n👉 [Apply to Join the Club](/join)`,
+      suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
+      actionLinks: [
+        { label: '🚀 Apply Now', url: '/join' },
+        { label: '💬 Contact Us', url: '/contact' },
+      ],
+    };
+  }
+
+  // 9. TEAM REGISTRATION / HACKATHON TEAMS INTENT
+  const isTeamRegIntent =
+    cleanQ.includes('team code') ||
+    cleanQ.includes('team reg') ||
+    cleanQ.includes('register as team') ||
+    cleanQ.includes('team size') ||
+    cleanQ.includes('solo or team');
+
+  if (isTeamRegIntent) {
+    return {
+      text: `For hackathons and team-enabled events:\n\n• **Team Leader:** Registers first, chooses 'Team Registration', sets a team name, and receives a unique **Team Code**.\n• **Team Members:** Select 'Join Existing Team' on the registration modal and enter the Team Code.\n• **Passes:** Once confirmed, individual and team passes are generated and emailed to all members.\n\n👉 [Explore Active Hackathons & Events](/events)`,
+      suggestions: faqs.filter((f) => f.category === 'Events').slice(0, 3),
+      actionLinks: [{ label: '📅 Browse Events', url: '/events' }],
+    };
+  }
+
+  // 10. NON-MEMBERS ATTENDING EVENTS INTENT
+  const isNonMemberIntent =
+    cleanQ.includes('non member') ||
+    cleanQ.includes('not a member') ||
+    cleanQ.includes('can non members') ||
+    cleanQ.includes('anyone attend') ||
+    cleanQ.includes('can i attend');
+
+  if (isNonMemberIntent) {
+    return {
+      text: `**Yes, of course!** All workshops, bootcamps, and hackathons (including flagship events like Elevate-X and Stack Sprint) are **open to all university students**.\n\nYou do not have to be an official core member to attend events or earn participation certificates.\n\n👉 [Browse Active Events & Register](/events)`,
+      suggestions: faqs.filter((f) => f.category === 'Events').slice(0, 3),
+      actionLinks: [
+        { label: '📅 Browse Events', url: '/events' },
+        { label: '🚀 Apply to Join Club', url: '/join' },
+      ],
+    };
+  }
+
+  // 11. TIMINGS & VENUE / LOCATION INTENT
+  const isTimingLocationIntent =
+    cleanQ.includes('location') ||
+    cleanQ.includes('where is club') ||
+    cleanQ.includes('timing') ||
+    cleanQ.includes('timings') ||
+    cleanQ.includes('venue') ||
+    cleanQ.includes('offline') ||
+    cleanQ.includes('campus') ||
+    cleanQ.includes('where meet');
+
+  if (isTimingLocationIntent) {
+    return {
+      text: `Cloud Stack Club is based at **Chandigarh University** under the Department of Computer Science & Engineering / AIT.\n\n• **Venues:** On-campus computer labs, auditorium halls, or virtual rooms via Google Meet / Discord.\n• **Timings:** Sessions are typically scheduled after class hours (weekday evenings) or on Saturday mornings.\n\n👉 [Check Event Schedule & Venues](/events)`,
+      suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'About Club').slice(0, 3),
+      actionLinks: [
+        { label: '📅 View Events & Venues', url: '/events' },
+        { label: '💬 Contact Coordinators', url: '/contact' },
+      ],
+    };
+  }
+
+  // 12. CERTIFICATES & CORRECTION INTENT
+  const isCertIntent =
+    cleanQ.includes('cert') ||
+    cleanQ.includes('certificate') ||
+    cleanQ.includes('wrong name') ||
+    cleanQ.includes('attendance issue') ||
+    cleanQ.includes('spelling');
+
+  if (isCertIntent) {
+    return {
+      text: `Official participation & merit certificates are digitally verified and emailed to attendees within **3 to 7 working days** after an event.\n\n• **Spelling error or missing certificate?** You can submit an official query ticket right away:\n👉 [Submit a Discrepancy Ticket](/contact)\n\nOur administrative team will review your attendance logs and re-issue the certificate.`,
+      suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'Contact').slice(0, 3),
+      actionLinks: [
+        { label: '🎫 Submit Discrepancy Ticket', url: '/contact' },
+        { label: '📅 View Events', url: '/events' },
+      ],
+    };
+  }
+
+  // 13. DOMAINS & TECH STACK INTENT
+  const isDomainIntent =
+    cleanQ.includes('domain') ||
+    cleanQ.includes('domains') ||
+    cleanQ.includes('departments') ||
+    cleanQ.includes('what can i learn') ||
+    cleanQ.includes('sub division') ||
+    cleanQ.includes('tech stack');
+
+  if (isDomainIntent) {
+    return {
+      text: `Cloud Stack Club offers active tracks across 7 core domains:\n\n☁️ **Cloud Computing:** AWS, Google Cloud, Microsoft Azure architectures.\n⚙️ **DevOps & Linux:** CI/CD pipelines, Docker, Kubernetes, Terraform.\n💻 **Full Stack Development:** Modern React, Node.js, Next.js, Go, Python.\n🤖 **AI & Machine Learning:** Neural networks, LLMs, computer vision, data analysis.\n🎨 **UI/UX Design:** User flows, Figma prototyping, graphic design.\n✍️ **Technical Writing:** Blogs, newsletters, open-source documentation.\n🎯 **Event Operations:** Hackathon execution, sponsorships, social media.\n\n👉 [Choose Your Domain & Apply](/join)`,
+      suggestions: faqs.filter((f) => f.category === 'About Club' || f.category === 'Membership').slice(0, 3),
+      actionLinks: [
+        { label: '🚀 Apply to Join Club', url: '/join' },
+        { label: '👥 Meet Our Team', url: '/team' },
+      ],
+    };
+  }
+
+  // 14. GALLERY & PAST MEMORIES INTENT
+  const isGalleryIntent =
+    cleanQ.includes('gallery') ||
+    cleanQ.includes('photo') ||
+    cleanQ.includes('picture') ||
+    cleanQ.includes('video') ||
+    cleanQ.includes('memories') ||
+    cleanQ.includes('past event') ||
+    cleanQ.includes('highlights');
+
+  if (isGalleryIntent) {
+    return {
+      text: `Check out our official photo gallery to see memories, hackathon winners, coding bootcamps, and workshop highlights from past events!\n\n👉 [Click here to Browse Event Gallery](/gallery)`,
+      suggestions: faqs.filter((f) => f.category === 'About Club' || f.category === 'Events').slice(0, 3),
+      actionLinks: [
+        { label: '📸 View Event Gallery', url: '/gallery' },
+        { label: '📅 Browse Events', url: '/events' },
       ],
     };
   }
