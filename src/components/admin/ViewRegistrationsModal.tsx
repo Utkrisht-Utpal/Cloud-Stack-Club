@@ -150,10 +150,20 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   };
 
   const handleExportExcel = () => {
+    if (!event) return;
+
+    const isTeamEvent = Boolean(
+      event.supports_teams ||
+      sortedAndFiltered.some((r) => {
+        const t = teamMap[r.id];
+        return Boolean(t && (t.team_name || (t.members && t.members.length > 0)));
+      })
+    );
+
     const exportRows: any[] = [];
     let serialNo = 1;
 
-    sortedAndFiltered.forEach((r) => {
+    sortedAndFiltered.forEach((r, idx) => {
       const teamInfo = teamMap[r.id];
       const regAnswers = answersMap[r.id] || {};
 
@@ -164,14 +174,18 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         customAnswersDict[field.label] = sanitizeFormulaValue(ansVal);
       });
 
-      if (teamInfo && teamInfo.members && teamInfo.members.length > 0) {
-        // 1. Team Leader Row
+      if (isTeamEvent) {
+        const hasTeammates = Boolean(teamInfo && teamInfo.members && teamInfo.members.length > 0);
+        const teamName = teamInfo?.team_name || (hasTeammates ? 'Unnamed Team' : 'Solo Participant');
+        const teamRegId = teamInfo?.registration_number || r.registration_number || '';
+
+        // 1. Team Leader / Primary Row
         exportRows.push({
           'S.No': serialNo,
+          'Team Name': sanitizeFormulaValue(teamName),
+          'Team Reg ID': sanitizeFormulaValue(teamRegId),
+          'Member Role': hasTeammates ? 'Team Leader' : 'Solo Participant',
           'Registration No': sanitizeFormulaValue(r.registration_number || ''),
-          'Team Reg ID': sanitizeFormulaValue(teamInfo.registration_number || ''),
-          'Team Name': sanitizeFormulaValue(teamInfo.team_name || ''),
-          'Member Role': 'Team Leader',
           'Member Name': sanitizeFormulaValue(r.registrant_name || ''),
           'Email': sanitizeFormulaValue(r.registrant_email || ''),
           'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
@@ -181,35 +195,54 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         });
 
         // 2. Teammates Rows
-        teamInfo.members.forEach((m, mIdx) => {
-          const blankCustomDict: Record<string, string> = {};
-          formFields.forEach((field) => {
-            blankCustomDict[field.label] = '';
-          });
+        if (hasTeammates && teamInfo && teamInfo.members) {
+          teamInfo.members.forEach((m, mIdx) => {
+            const blankCustomDict: Record<string, string> = {};
+            formFields.forEach((field) => {
+              blankCustomDict[field.label] = '';
+            });
 
-          exportRows.push({
-            'S.No': '',
-            'Registration No': sanitizeFormulaValue(m.registration_number || ''),
-            'Team Reg ID': sanitizeFormulaValue(teamInfo.registration_number || ''),
-            'Team Name': sanitizeFormulaValue(teamInfo.team_name || ''),
-            'Member Role': `Teammate #${mIdx + 2}`,
-            'Member Name': sanitizeFormulaValue(m.name || ''),
-            'Email': sanitizeFormulaValue(m.email || ''),
-            'Phone': sanitizeFormulaValue(m.phone || ''),
-            'University UID': sanitizeFormulaValue(m.uid || ''),
-            ...blankCustomDict,
-            'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
+            exportRows.push({
+              'S.No': '',
+              'Team Name': sanitizeFormulaValue(teamName),
+              'Team Reg ID': sanitizeFormulaValue(teamRegId),
+              'Member Role': `Teammate #${mIdx + 2}`,
+              'Registration No': sanitizeFormulaValue(m.registration_number || ''),
+              'Member Name': sanitizeFormulaValue(m.name || ''),
+              'Email': sanitizeFormulaValue(m.email || ''),
+              'Phone': sanitizeFormulaValue(m.phone || ''),
+              'University UID': sanitizeFormulaValue(m.uid || ''),
+              ...blankCustomDict,
+              'Submitted Date': '',
+            });
           });
-        });
+        }
+
+        // 3. One-line space ONLY between distinct teams (never after the final team)
+        if (idx < sortedAndFiltered.length - 1) {
+          const emptyRow: Record<string, string> = {
+            'S.No': '',
+            'Team Name': '',
+            'Team Reg ID': '',
+            'Member Role': '',
+            'Registration No': '',
+            'Member Name': '',
+            'Email': '',
+            'Phone': '',
+            'University UID': '',
+          };
+          formFields.forEach((field) => {
+            emptyRow[field.label] = '';
+          });
+          emptyRow['Submitted Date'] = '';
+          exportRows.push(emptyRow);
+        }
       } else {
-        // Individual Registrant Row
+        // Individual Event: Clean columns without team clutter, no blank spacer rows
         exportRows.push({
           'S.No': serialNo,
           'Registration No': sanitizeFormulaValue(r.registration_number || ''),
-          'Team Reg ID': '',
-          'Team Name': '',
-          'Member Role': 'Individual Registrant',
-          'Member Name': sanitizeFormulaValue(r.registrant_name || ''),
+          'Participant Name': sanitizeFormulaValue(r.registrant_name || ''),
           'Email': sanitizeFormulaValue(r.registrant_email || ''),
           'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
           'University UID': sanitizeFormulaValue(r.uid || ''),
@@ -218,29 +251,30 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         });
       }
 
-      // 3. Leave a blank separator row after each registration ends
-      const blankSeparatorDict: Record<string, string> = {};
-      formFields.forEach((field) => {
-        blankSeparatorDict[field.label] = '';
-      });
-
-      exportRows.push({
-        'S.No': '',
-        'Registration No': '',
-        'Team Name': '',
-        'Member Role': '',
-        'Member Name': '',
-        'Email': '',
-        'Phone': '',
-        'University UID': '',
-        ...blankSeparatorDict,
-        'Submitted Date': '',
-      });
-
       serialNo++;
     });
 
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
+
+    // Auto-fit column widths based on headers and cell content
+    if (exportRows.length > 0) {
+      const colKeys = Object.keys(exportRows[0]);
+      worksheet['!cols'] = colKeys.map((key) => {
+        let maxLen = key.length;
+        exportRows.forEach((row) => {
+          const val = row[key];
+          if (val !== undefined && val !== null) {
+            const strVal = String(val).trim();
+            if (strVal.length > maxLen) {
+              maxLen = strVal.length;
+            }
+          }
+        });
+        const minW = key === 'S.No' ? 6 : Math.max(key.length + 3, 14);
+        return { wch: Math.min(Math.max(maxLen + 3, minW), 55) };
+      });
+    }
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Registrations');
 
@@ -249,6 +283,16 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   };
 
   const handleExportPdf = () => {
+    if (!event) return;
+
+    const isTeamEvent = Boolean(
+      event.supports_teams ||
+      sortedAndFiltered.some((r) => {
+        const t = teamMap[r.id];
+        return Boolean(t && (t.team_name || (t.members && t.members.length > 0)));
+      })
+    );
+
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
     doc.setFont('helvetica', 'bold');
@@ -258,9 +302,26 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9.5);
     doc.setTextColor(100, 116, 139);
-    doc.text(`Total Registrations: ${sortedAndFiltered.length}  •  Export Date: ${new Date().toLocaleDateString('en-GB')}`, 14, 22);
 
-    const pdfHeaders = ['#', 'Reg Number', 'Team Name', 'Role', 'Member Name', 'Email', 'Phone', 'UID'];
+    let totalHeadcount = 0;
+    sortedAndFiltered.forEach((r) => {
+      totalHeadcount += 1;
+      const t = teamMap[r.id];
+      if (t && t.members) {
+        totalHeadcount += t.members.length;
+      }
+    });
+
+    const subTitle = isTeamEvent
+      ? `Total Teams: ${sortedAndFiltered.length}  •  Total Headcount: ${totalHeadcount}  •  Export Date: ${new Date().toLocaleDateString('en-GB')}`
+      : `Total Registrations: ${sortedAndFiltered.length}  •  Export Date: ${new Date().toLocaleDateString('en-GB')}`;
+
+    doc.text(subTitle, 14, 22);
+
+    const pdfHeaders: string[] = isTeamEvent
+      ? ['#', 'Team Name', 'Team Reg ID', 'Role', 'Reg Number', 'Member Name', 'Email', 'Phone', 'UID']
+      : ['#', 'Reg Number', 'Participant Name', 'Email', 'Phone', 'UID'];
+
     formFields.forEach((field) => {
       pdfHeaders.push(field.label.slice(0, 18));
     });
@@ -269,7 +330,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     const tableRows: string[][] = [];
     let serialNo = 1;
 
-    sortedAndFiltered.forEach((r) => {
+    sortedAndFiltered.forEach((r, idx) => {
       const teamInfo = teamMap[r.id];
       const regAnswers = answersMap[r.id] || {};
 
@@ -277,13 +338,18 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         return regAnswers[field.id] || regAnswers[field.field_key] || '';
       });
 
-      if (teamInfo && teamInfo.members && teamInfo.members.length > 0) {
+      if (isTeamEvent) {
+        const hasTeammates = Boolean(teamInfo && teamInfo.members && teamInfo.members.length > 0);
+        const teamName = teamInfo?.team_name || (hasTeammates ? 'Unnamed Team' : 'Solo');
+        const teamRegId = teamInfo?.registration_number || r.registration_number || '';
+
         // Leader row
         tableRows.push([
           serialNo.toString(),
+          teamName,
+          teamRegId,
+          hasTeammates ? 'Team Leader' : 'Solo',
           r.registration_number || '',
-          teamInfo.team_name || '',
-          'Team Leader',
           r.registrant_name || '',
           r.registrant_email || '',
           r.registrant_phone || '',
@@ -292,29 +358,36 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
 
-        // Teammate rows
-        const blankAnswersList = formFields.map(() => '');
-        teamInfo.members.forEach((m, mIdx) => {
-          tableRows.push([
-            '',
-            m.registration_number || r.registration_number || '',
-            teamInfo.team_name || '',
-            `Teammate #${mIdx + 2}`,
-            m.name || '',
-            m.email || '',
-            m.phone || '',
-            m.uid || '',
-            ...blankAnswersList,
-            '',
-          ]);
-        });
+        // Teammates rows
+        if (hasTeammates && teamInfo && teamInfo.members) {
+          const blankAnswersList = formFields.map(() => '');
+          teamInfo.members.forEach((m, mIdx) => {
+            tableRows.push([
+              '',
+              teamName,
+              teamRegId,
+              `Teammate #${mIdx + 2}`,
+              m.registration_number || '',
+              m.name || '',
+              m.email || '',
+              m.phone || '',
+              m.uid || '',
+              ...blankAnswersList,
+              '',
+            ]);
+          });
+        }
+
+        // Only add a single-line spacer row between different teams (never after the final team)
+        if (idx < sortedAndFiltered.length - 1) {
+          const blankSpacerRow = pdfHeaders.map(() => '');
+          tableRows.push(blankSpacerRow);
+        }
       } else {
-        // Individual row
+        // Individual Event: No team columns, no spacer rows
         tableRows.push([
           serialNo.toString(),
           r.registration_number || '',
-          '',
-          'Individual',
           r.registrant_name || '',
           r.registrant_email || '',
           r.registrant_phone || '',
@@ -324,10 +397,6 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         ]);
       }
 
-      // Blank separator row after each registration
-      const blankRowList = pdfHeaders.map(() => '');
-      tableRows.push(blankRowList);
-
       serialNo++;
     });
 
@@ -336,8 +405,18 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       head: [pdfHeaders],
       body: tableRows,
       theme: 'grid',
-      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold' },
+      headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { fontSize: 7.5 },
+      didParseCell: (data: any) => {
+        // Subtle compact styling for blank spacer rows between teams
+        if (isTeamEvent && data.row.raw && Array.isArray(data.row.raw)) {
+          const isSpacer = data.row.raw.every((c: any) => !c || c === '');
+          if (isSpacer) {
+            data.cell.styles.fillColor = [248, 250, 252];
+            data.cell.styles.minCellHeight = 3;
+          }
+        }
+      },
       margin: { top: 27, left: 10, right: 10, bottom: 15 },
     });
 
