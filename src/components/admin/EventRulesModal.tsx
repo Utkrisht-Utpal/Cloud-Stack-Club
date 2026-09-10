@@ -12,9 +12,17 @@ import {
   ArrowRight,
   ChevronDown,
   Baseline,
-  AlignJustify,
+  IndentDecrease,
+  IndentIncrease,
+  RemoveFormatting,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import {
+  escapeHtml,
+  sanitizeRulesHtml,
+  cleanPastedHtml,
+  convertPlainTextToHtml,
+} from '../../utils/rulesFormatting';
 
 interface EventRulesModalProps {
   isOpen: boolean;
@@ -26,356 +34,23 @@ interface EventRulesModalProps {
 
 const MAX_RULES_LENGTH = 5000;
 
-// Predefined text color palette for the color picker
+// Text color palette presets including common colors
 const TEXT_COLORS = [
   { name: 'Default', value: '' },
+  { name: 'Black', value: '#000000' },
   { name: 'White', value: '#ffffff' },
   { name: 'Silver', value: '#94a3b8' },
   { name: 'Red', value: '#ef4444' },
   { name: 'Orange', value: '#f97316' },
   { name: 'Yellow', value: '#eab308' },
   { name: 'Green', value: '#22c55e' },
+  { name: 'Blue', value: '#3b82f6' },
   { name: 'Cyan', value: '#06b6d4' },
-  { name: 'Blue', value: '#60a5fa' },
   { name: 'Purple', value: '#a855f7' },
   { name: 'Pink', value: '#ec4899' },
-  { name: 'Sky', value: '#38bdf8' },
 ];
 
-// Escape HTML special characters for safe conversion
-const escapeHtml = (str: string): string => {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-};
-
-// Sanitize HTML strictly allowing only formatting and list tags/attributes
-const sanitizeRulesHtml = (html: string): string => {
-  if (!html) return '';
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-
-  // Elements to remove completely along with their children
-  const removeElements = doc.querySelectorAll(
-    'script, style, iframe, object, embed, svg, img, video, audio, form, input, button, select, textarea'
-  );
-  removeElements.forEach((el) => el.remove());
-
-  const allowedTags = new Set([
-    'p',
-    'br',
-    'strong',
-    'b',
-    'em',
-    'i',
-    'u',
-    'span',
-    'ul',
-    'ol',
-    'li',
-  ]);
-
-  const sanitizeElement = (el: HTMLElement) => {
-    const tag = el.tagName.toLowerCase();
-
-    // Convert div to p so paragraph structure is cleanly preserved
-    if (tag === 'div') {
-      const p = doc.createElement('p');
-      if (el.hasAttribute('data-font-size')) {
-        p.setAttribute('data-font-size', el.getAttribute('data-font-size')!);
-      }
-      if (el.hasAttribute('data-line-spacing')) {
-        p.setAttribute('data-line-spacing', el.getAttribute('data-line-spacing')!);
-      }
-      if (el.hasAttribute('style')) {
-        p.setAttribute('style', el.getAttribute('style')!);
-      }
-      while (el.firstChild) p.appendChild(el.firstChild);
-      el.parentNode?.replaceChild(p, el);
-      sanitizeElement(p);
-      return;
-    }
-
-    // Convert headings h1-h6 to p with bold
-    if (/^h[1-6]$/.test(tag)) {
-      const p = doc.createElement('p');
-      p.setAttribute('data-font-size', 'large');
-      p.setAttribute('style', 'font-size: 1.125rem; line-height: 1.6rem;');
-      const strong = doc.createElement('strong');
-      while (el.firstChild) strong.appendChild(el.firstChild);
-      p.appendChild(strong);
-      el.parentNode?.replaceChild(p, el);
-      sanitizeElement(p);
-      return;
-    }
-
-    // Convert <font color="X"> (created by execCommand foreColor) to <span style="color: X">
-    if (tag === 'font') {
-      const span = doc.createElement('span');
-      const colorAttr = el.getAttribute('color');
-      if (colorAttr) {
-        span.setAttribute('style', `color: ${colorAttr};`);
-      }
-      while (el.firstChild) span.appendChild(el.firstChild);
-      el.parentNode?.replaceChild(span, el);
-      sanitizeElement(span);
-      return;
-    }
-
-    // If not in allowed list, unwrap children into parent
-    if (!allowedTags.has(tag)) {
-      const parent = el.parentNode;
-      if (parent) {
-        while (el.firstChild) {
-          parent.insertBefore(el.firstChild, el);
-        }
-        parent.removeChild(el);
-      }
-      return;
-    }
-
-    // Filter attributes: remove event handlers and untrusted attributes
-    const attrs = Array.from(el.attributes);
-    attrs.forEach((attr) => {
-      const name = attr.name.toLowerCase();
-      if (name.startsWith('on') || name.startsWith('javascript:')) {
-        el.removeAttribute(attr.name);
-        return;
-      }
-
-      if (tag === 'ul' || tag === 'ol') {
-        if (name === 'data-list-type') {
-          const valid = ['bullet', 'numbered', 'checklist', 'arrow'].includes(
-            attr.value.toLowerCase()
-          );
-          if (!valid) el.removeAttribute(attr.name);
-        } else {
-          el.removeAttribute(attr.name);
-        }
-      } else if (tag === 'span' || tag === 'p' || tag === 'li') {
-        if (name === 'data-font-size') {
-          const valid = ['small', 'normal', 'large'].includes(
-            attr.value.toLowerCase()
-          );
-          if (!valid) el.removeAttribute(attr.name);
-        } else if (name === 'data-line-spacing') {
-          const valid = ['1', '1.5', '2', '2.5'].includes(attr.value);
-          if (!valid) el.removeAttribute(attr.name);
-        } else if (name === 'style') {
-          // Reconstruct only safe style properties
-          let cleanStyle = '';
-          const rawStyle = attr.value;
-          // Preserve font-size
-          if (rawStyle.toLowerCase().includes('0.75rem') || rawStyle.toLowerCase().includes('12px')) {
-            cleanStyle += 'font-size: 0.75rem; line-height: 1.25rem; ';
-          } else if (rawStyle.toLowerCase().includes('1.125rem') || rawStyle.toLowerCase().includes('18px')) {
-            cleanStyle += 'font-size: 1.125rem; line-height: 1.6rem; ';
-          }
-          // Preserve color (safe CSS values only: hex, rgb, rgba, named)
-          const colorMatch = rawStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
-          if (colorMatch) {
-            const colorVal = colorMatch[1].trim();
-            // Only allow safe color values
-            if (/^(#[0-9a-f]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|[a-z]+)$/i.test(colorVal)) {
-              cleanStyle += `color: ${colorVal}; `;
-            }
-          }
-          if (cleanStyle) {
-            el.setAttribute('style', cleanStyle.trim());
-          } else {
-            el.removeAttribute(attr.name);
-          }
-        } else {
-          el.removeAttribute(attr.name);
-        }
-      } else {
-        el.removeAttribute(attr.name);
-      }
-    });
-
-    // Ensure list elements have data-list-type attribute
-    if (tag === 'ol' && !el.hasAttribute('data-list-type')) {
-      el.setAttribute('data-list-type', 'numbered');
-    } else if (tag === 'ul' && !el.hasAttribute('data-list-type')) {
-      el.setAttribute('data-list-type', 'bullet');
-    }
-
-    // Process children recursively
-    const children = Array.from(el.children);
-    children.forEach((child) => sanitizeElement(child as HTMLElement));
-  };
-
-  Array.from(doc.body.children).forEach((child) =>
-    sanitizeElement(child as HTMLElement)
-  );
-
-  // Remove empty list items that have no text content
-  doc.querySelectorAll('li').forEach((li) => {
-    if (!li.textContent?.trim()) {
-      li.remove();
-    }
-  });
-
-  // Remove empty lists that have no remaining li elements
-  doc.querySelectorAll('ul, ol').forEach((list) => {
-    if (!list.querySelector('li')) {
-      list.remove();
-    }
-  });
-
-  return doc.body.innerHTML;
-};
-
-// Clean pasted HTML from Word, Google Docs, external sites
-const cleanPastedHtml = (html: string): string => {
-  if (!html) return '';
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-
-  // Strip scripts, styles, meta, comments
-  doc.querySelectorAll('script, style, meta, link, xml').forEach((el) => el.remove());
-
-  // Replace b/strong/em/i/u/lists
-  const walk = (el: HTMLElement) => {
-    const tag = el.tagName.toLowerCase();
-    const style = el.getAttribute('style') || '';
-    const isBold =
-      tag === 'b' ||
-      tag === 'strong' ||
-      /font-weight\s*:\s*(bold|[7-9]00)/i.test(style);
-    const isItalic =
-      tag === 'i' ||
-      tag === 'em' ||
-      /font-style\s*:\s*italic/i.test(style);
-    const isUnderline =
-      tag === 'u' ||
-      /text-decoration\s*:\s*underline/i.test(style);
-
-    // Process children first
-    Array.from(el.children).forEach((child) => walk(child as HTMLElement));
-
-    // Simplify spans
-    if (tag === 'span' || tag === 'font') {
-      let wrapper: HTMLElement | null = null;
-      if (isBold) wrapper = doc.createElement('strong');
-      else if (isItalic) wrapper = doc.createElement('em');
-      else if (isUnderline) wrapper = doc.createElement('u');
-      else {
-        const fontSizeAttr = el.getAttribute('data-font-size');
-        const isSmall =
-          fontSizeAttr === 'small' ||
-          style.includes('12px') ||
-          style.includes('0.75rem');
-        const isLarge =
-          fontSizeAttr === 'large' ||
-          style.includes('18px') ||
-          style.includes('1.125rem');
-        if (isSmall || isLarge) {
-          wrapper = doc.createElement('span');
-          const chosenSize = isSmall ? 'small' : 'large';
-          wrapper.setAttribute('data-font-size', chosenSize);
-          wrapper.setAttribute(
-            'style',
-            chosenSize === 'small'
-              ? 'font-size: 0.75rem; line-height: 1.25rem;'
-              : 'font-size: 1.125rem; line-height: 1.6rem;'
-          );
-        }
-      }
-
-      if (wrapper) {
-        while (el.firstChild) wrapper.appendChild(el.firstChild);
-        el.parentNode?.replaceChild(wrapper, el);
-      } else {
-        // Unwrap plain span
-        const frag = doc.createDocumentFragment();
-        while (el.firstChild) frag.appendChild(el.firstChild);
-        el.parentNode?.replaceChild(frag, el);
-      }
-      return;
-    }
-
-    // Keep lists and paragraphs, strip external classes and strange styles
-    el.removeAttribute('class');
-    el.removeAttribute('id');
-    el.removeAttribute('style');
-    el.removeAttribute('color');
-    el.removeAttribute('face');
-    el.removeAttribute('size');
-  };
-
-  Array.from(doc.body.children).forEach((child) => walk(child as HTMLElement));
-  return sanitizeRulesHtml(doc.body.innerHTML);
-};
-
-// Convert legacy plain text (with bullets/numbers) into structured HTML
-const convertPlainTextToHtml = (plain: string): string => {
-  if (!plain || !plain.trim()) return '';
-  const lines = plain.split(/\r?\n/);
-  let html = '';
-  let currentListType: 'bullet' | 'numbered' | 'checklist' | 'arrow' | null = null;
-
-  const closeList = () => {
-    if (currentListType) {
-      html += currentListType === 'numbered' ? '</ol>' : '</ul>';
-      currentListType = null;
-    }
-  };
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) {
-      closeList();
-      html += '<p><br></p>';
-      continue;
-    }
-
-    if (/^[•\-\*]\s*/.test(line)) {
-      if (currentListType !== 'bullet') {
-        closeList();
-        html += '<ul data-list-type="bullet">';
-        currentListType = 'bullet';
-      }
-      const content = line.replace(/^[•\-\*]\s*/, '');
-      html += `<li>${escapeHtml(content)}</li>`;
-    } else if (/^(\d+)[\.\)]\s*/.test(line)) {
-      if (currentListType !== 'numbered') {
-        closeList();
-        html += '<ol data-list-type="numbered">';
-        currentListType = 'numbered';
-      }
-      const content = line.replace(/^(\d+)[\.\)]\s*/, '');
-      html += `<li>${escapeHtml(content)}</li>`;
-    } else if (/^(☑|\[[ xX]\])\s*/.test(line)) {
-      if (currentListType !== 'checklist') {
-        closeList();
-        html += '<ul data-list-type="checklist">';
-        currentListType = 'checklist';
-      }
-      const content = line.replace(/^(☑|\[[ xX]\])\s*/, '');
-      html += `<li>${escapeHtml(content)}</li>`;
-    } else if (/^(→|->|=>)\s*/.test(line)) {
-      if (currentListType !== 'arrow') {
-        closeList();
-        html += '<ul data-list-type="arrow">';
-        currentListType = 'arrow';
-      }
-      const content = line.replace(/^(→|->|=>)\s*/, '');
-      html += `<li>${escapeHtml(content)}</li>`;
-    } else {
-      closeList();
-      html += `<p>${escapeHtml(line)}</p>`;
-    }
-  }
-
-  closeList();
-  return html;
-};
-
-// Helper to find closest element with given tag name
+// Find closest element with given tag name
 const findClosestTag = (
   node: Node | null,
   tagName: string,
@@ -385,7 +60,7 @@ const findClosestTag = (
   while (curr && curr !== root) {
     if (
       curr.nodeType === Node.ELEMENT_NODE &&
-      (curr as HTMLElement).tagName === tagName
+      (curr as HTMLElement).tagName.toUpperCase() === tagName.toUpperCase()
     ) {
       return curr as HTMLElement;
     }
@@ -394,7 +69,7 @@ const findClosestTag = (
   return null;
 };
 
-// Helper to find closest block element inside editor
+// Find closest block element inside editor
 const findClosestBlock = (
   node: Node | null,
   root: HTMLElement
@@ -412,180 +87,90 @@ const findClosestBlock = (
   return null;
 };
 
-// Split a block (e.g. <p>) containing <br> tags into multiple blocks of the same type
-const splitElementByBr = (element: HTMLElement): HTMLElement[] => {
-  if (!element.querySelector('br')) return [element];
-  const text = element.textContent || '';
-  if (!text.trim()) return [element];
+// Compute visible character offset of target node/offset within editor root
+const getCharacterOffset = (root: HTMLElement, targetNode: Node, targetOffset: number): number => {
+  let offset = 0;
+  let found = false;
 
-  const blocks: HTMLElement[] = [];
-  let currentBlock = document.createElement(element.tagName.toLowerCase());
-  Array.from(element.attributes).forEach((attr) => {
-    currentBlock.setAttribute(attr.name, attr.value);
-  });
-
-  const appendToCurrent = (node: Node) => {
-    currentBlock.appendChild(node.cloneNode(true));
-  };
-
-  const flush = () => {
-    if (currentBlock.childNodes.length === 0) {
-      currentBlock.innerHTML = '<br>';
-    }
-    blocks.push(currentBlock);
-    currentBlock = document.createElement(element.tagName.toLowerCase());
-    Array.from(element.attributes).forEach((attr) => {
-      currentBlock.setAttribute(attr.name, attr.value);
-    });
-  };
-
-  const processNode = (node: Node, inlineWrappers: HTMLElement[] = []) => {
-    if (
-      node.nodeType === Node.ELEMENT_NODE &&
-      (node as HTMLElement).tagName.toLowerCase() === 'br'
-    ) {
-      flush();
+  const traverse = (node: Node) => {
+    if (found) return;
+    if (node === targetNode) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        offset += targetOffset;
+      } else {
+        for (let i = 0; i < targetOffset && i < node.childNodes.length; i++) {
+          offset += node.childNodes[i].textContent?.length || 0;
+        }
+      }
+      found = true;
       return;
     }
-
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      if (el.querySelector('br')) {
-        const wrapper = el.cloneNode(false) as HTMLElement;
-        Array.from(el.childNodes).forEach((child) => {
-          processNode(child, [...inlineWrappers, wrapper]);
-        });
-        return;
-      }
-    }
-
-    if (inlineWrappers.length === 0) {
-      appendToCurrent(node);
-    } else {
-      const rootWrap = inlineWrappers[0].cloneNode(false) as HTMLElement;
-      let leaf: HTMLElement = rootWrap;
-      for (let i = 1; i < inlineWrappers.length; i++) {
-        const nextWrap = inlineWrappers[i].cloneNode(false) as HTMLElement;
-        leaf.appendChild(nextWrap);
-        leaf = nextWrap;
-      }
-      leaf.appendChild(node.cloneNode(true));
-      currentBlock.appendChild(rootWrap);
-    }
-  };
-
-  Array.from(element.childNodes).forEach((child) => processNode(child));
-  if (currentBlock.childNodes.length > 0 && currentBlock.textContent?.trim() !== '') {
-    blocks.push(currentBlock);
-  } else if (blocks.length === 0) {
-    currentBlock.innerHTML = '<br>';
-    blocks.push(currentBlock);
-  }
-
-  return blocks;
-};
-
-// Check if a block element intersects the user's current selection range
-const isBlockSelected = (block: HTMLElement, range: Range): boolean => {
-  if (range.collapsed) {
-    return block.contains(range.startContainer) || block === range.startContainer;
-  }
-
-  try {
-    if (!range.intersectsNode(block)) return false;
-  } catch {
-    return false;
-  }
-
-  const startsInBlock =
-    block.contains(range.startContainer) || block === range.startContainer;
-  const endsInBlock =
-    block.contains(range.endContainer) || block === range.endContainer;
-
-  if (endsInBlock && !startsInBlock) {
-    if (range.endOffset === 0) {
-      if (range.endContainer === block) return false;
-      let firstLeaf: Node | null = block;
-      while (firstLeaf && firstLeaf.firstChild) {
-        firstLeaf = firstLeaf.firstChild;
-      }
-      if (range.endContainer === firstLeaf) return false;
-    }
-  }
-
-  return true;
-};
-
-// Normalize top-level loose text/inline nodes and <div> elements into <p>
-const normalizeTopLevelBlocks = (root: HTMLElement) => {
-  const childNodes = Array.from(root.childNodes);
-  let inlineGroup: Node[] = [];
-
-  const flush = () => {
-    if (inlineGroup.length === 0) return;
-    const p = document.createElement('p');
-    root.insertBefore(p, inlineGroup[0]);
-    inlineGroup.forEach((n) => p.appendChild(n));
-    inlineGroup = [];
-  };
-
-  childNodes.forEach((node) => {
     if (node.nodeType === Node.TEXT_NODE) {
-      inlineGroup.push(node);
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
-      const el = node as HTMLElement;
-      const tag = el.tagName.toLowerCase();
-      const isBlock = [
-        'p',
-        'div',
-        'ul',
-        'ol',
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
-        'blockquote',
-      ].includes(tag);
-      if (isBlock) {
-        flush();
-        if (tag === 'div') {
-          const p = document.createElement('p');
-          if (el.hasAttribute('data-font-size')) {
-            p.setAttribute('data-font-size', el.getAttribute('data-font-size')!);
-          }
-          if (el.hasAttribute('style')) {
-            p.setAttribute('style', el.getAttribute('style')!);
-          }
-          while (el.firstChild) p.appendChild(el.firstChild);
-          root.replaceChild(p, el);
-        }
-      } else {
-        inlineGroup.push(node);
+      offset += (node.textContent || '').length;
+    } else {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        traverse(node.childNodes[i]);
+        if (found) return;
       }
     }
-  });
-  flush();
+  };
+
+  traverse(root);
+  return offset;
 };
 
-// Retrieve all candidate line blocks in document order (<p> blocks and <li> list items)
-const getCandidateBlocks = (root: HTMLElement): HTMLElement[] => {
-  const blocks: HTMLElement[] = [];
-  Array.from(root.children).forEach((child) => {
-    const el = child as HTMLElement;
-    const tag = el.tagName.toLowerCase();
-    if (tag === 'ul' || tag === 'ol') {
-      Array.from(el.children).forEach((li) => {
-        if (li.tagName.toLowerCase() === 'li') {
-          blocks.push(li as HTMLElement);
-        }
-      });
+// Restore selection from character offsets within editor root
+const setSelectionFromOffsets = (root: HTMLElement, start: number, end: number) => {
+  let currentOffset = 0;
+  let startNode: Node | null = null;
+  let startOffset = 0;
+  let endNode: Node | null = null;
+  let endOffset = 0;
+
+  const traverse = (node: Node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const len = (node.textContent || '').length;
+      if (!startNode && currentOffset + len >= start) {
+        startNode = node;
+        startOffset = Math.max(0, start - currentOffset);
+      }
+      if (!endNode && currentOffset + len >= end) {
+        endNode = node;
+        endOffset = Math.max(0, end - currentOffset);
+      }
+      currentOffset += len;
     } else {
-      blocks.push(el);
+      for (let i = 0; i < node.childNodes.length; i++) {
+        traverse(node.childNodes[i]);
+      }
     }
-  });
-  return blocks;
+  };
+
+  traverse(root);
+
+  if (!startNode) {
+    startNode = root;
+    startOffset = root.childNodes.length;
+  }
+  if (!endNode) {
+    endNode = root;
+    endOffset = root.childNodes.length;
+  }
+
+  const sel = window.getSelection();
+  if (sel) {
+    const range = document.createRange();
+    try {
+      const maxStart = startNode.nodeType === Node.TEXT_NODE ? (startNode.textContent || '').length : startNode.childNodes.length;
+      const maxEnd = endNode.nodeType === Node.TEXT_NODE ? (endNode.textContent || '').length : endNode.childNodes.length;
+      range.setStart(startNode, Math.min(startOffset, maxStart));
+      range.setEnd(endNode, Math.min(endOffset, maxEnd));
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch {
+      // Ignored
+    }
+  }
 };
 
 export const EventRulesModal: React.FC<EventRulesModalProps> = ({
@@ -596,31 +181,39 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
   onSave,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const fontDropdownRef = useRef<HTMLDivElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const lineSpacingRef = useRef<HTMLDivElement>(null);
+  const listsDropdownRef = useRef<HTMLDivElement>(null);
+
   const savedRangeRef = useRef<Range | null>(null);
   const preferredFontSizeRef = useRef<'small' | 'normal' | 'large'>('normal');
+
+  // Undo/Redo history stack
+  const historyRef = useRef<{ html: string; start: number; end: number }[]>([]);
+  const historyIndexRef = useRef<number>(-1);
+  const isHistoryApplyingRef = useRef<boolean>(false);
 
   const [charCount, setCharCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Formatting state for active button highlights
+  // Active toolbar states
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
-  const [activeFontSize, setActiveFontSize] = useState<
-    'small' | 'normal' | 'large'
-  >('normal');
+  const [activeFontSize, setActiveFontSize] = useState<'small' | 'normal' | 'large'>('normal');
   const [activeListType, setActiveListType] = useState<
     'bullet' | 'numbered' | 'checklist' | 'arrow' | null
   >(null);
   const [activeColor, setActiveColor] = useState<string>('');
   const [activeLineSpacing, setActiveLineSpacing] = useState<'1' | '1.5' | '2' | '2.5'>('1.5');
+  const [activeIndent, setActiveIndent] = useState<number>(0);
 
+  // Dropdown open states
   const [isFontDropdownOpen, setIsFontDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isLineSpacingOpen, setIsLineSpacingOpen] = useState(false);
+  const [isListsDropdownOpen, setIsListsDropdownOpen] = useState(false);
   const [isPlaceholderDismissed, setIsPlaceholderDismissed] = useState(false);
 
   // Save current selection range
@@ -650,10 +243,35 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
   }, []);
 
-  // Calculate visible textual length (excluding HTML tags/styling)
+  // Calculate visible textual length (excluding HTML markup and CSS markers)
   const getVisibleTextLength = useCallback((): number => {
     if (!editorRef.current) return 0;
     return (editorRef.current.textContent || '').length;
+  }, []);
+
+  // Record undo/redo snapshot
+  const pushHistorySnapshot = useCallback(() => {
+    if (isHistoryApplyingRef.current || !editorRef.current) return;
+    const html = editorRef.current.innerHTML;
+    const sel = window.getSelection();
+    let start = 0;
+    let end = 0;
+    if (sel && sel.rangeCount > 0 && editorRef.current.contains(sel.anchorNode)) {
+      const range = sel.getRangeAt(0);
+      start = getCharacterOffset(editorRef.current, range.startContainer, range.startOffset);
+      end = getCharacterOffset(editorRef.current, range.endContainer, range.endOffset);
+    }
+
+    const curr = historyRef.current[historyIndexRef.current];
+    if (curr && curr.html === html) return;
+
+    const nextIndex = historyIndexRef.current + 1;
+    historyRef.current = historyRef.current.slice(0, nextIndex);
+    historyRef.current.push({ html, start, end });
+    if (historyRef.current.length > 50) {
+      historyRef.current.shift();
+    }
+    historyIndexRef.current = historyRef.current.length - 1;
   }, []);
 
   // Update active formatting states from current selection
@@ -667,7 +285,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       setIsItalic(document.queryCommandState('italic'));
       setIsUnderline(document.queryCommandState('underline'));
     } catch {
-      // Ignored if selection is not in document
+      // Ignored
     }
 
     const sel = window.getSelection();
@@ -681,7 +299,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     if (li && li.parentElement) {
       const parentList = li.parentElement;
       const type = parentList.getAttribute('data-list-type');
-      if (type === 'numbered' || parentList.tagName === 'OL') {
+      if (type === 'numbered' || parentList.tagName.toLowerCase() === 'ol') {
         setActiveListType('numbered');
       } else if (type === 'checklist') {
         setActiveListType('checklist');
@@ -722,34 +340,20 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       setActiveFontSize(detectedSize);
       preferredFontSizeRef.current = detectedSize;
     } else {
-      const rawText = editorRef.current.textContent || '';
-      const block = findClosestBlock(sel.anchorNode, editorRef.current);
-      const isBlockEmpty =
-        !block || !block.textContent || !block.textContent.trim();
-
-      if (
-        (!rawText.trim() || isBlockEmpty) &&
-        preferredFontSizeRef.current !== 'normal'
-      ) {
-        setActiveFontSize(preferredFontSizeRef.current);
-      } else {
-        setActiveFontSize('normal');
-        preferredFontSizeRef.current = 'normal';
-      }
+      setActiveFontSize('normal');
+      preferredFontSizeRef.current = 'normal';
     }
 
-    // Detect active text color (walk up from cursor)
+    // Detect active text color
     let colorNode: Node | null = sel.anchorNode;
     let detectedColor = '';
     while (colorNode && colorNode !== editorRef.current) {
       if (colorNode.nodeType === Node.ELEMENT_NODE) {
         const el = colorNode as HTMLElement;
-        // Check for <font color="..."> (created by execCommand before sanitization)
         if (el.tagName.toLowerCase() === 'font') {
           detectedColor = el.getAttribute('color') || '';
           break;
         }
-        // Check for color in style attribute
         const styleAttr = el.getAttribute('style') || '';
         const colorMatch = styleAttr.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
         if (colorMatch) {
@@ -761,7 +365,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
     setActiveColor(detectedColor);
 
-    // Detect active line spacing (walk up from cursor to find block with data-line-spacing)
+    // Detect active line spacing
     let spacingNode: Node | null = sel.anchorNode;
     let detectedSpacing: '1' | '1.5' | '2' | '2.5' = '1.5';
     while (spacingNode && spacingNode !== editorRef.current) {
@@ -776,9 +380,25 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       spacingNode = spacingNode.parentNode;
     }
     setActiveLineSpacing(detectedSpacing);
+
+    // Detect active indent level
+    let indentNode: Node | null = sel.anchorNode;
+    let detectedIndent = 0;
+    while (indentNode && indentNode !== editorRef.current) {
+      if (indentNode.nodeType === Node.ELEMENT_NODE) {
+        const el = indentNode as HTMLElement;
+        const ind = el.getAttribute('data-indent');
+        if (ind) {
+          detectedIndent = parseInt(ind, 10) || 0;
+          break;
+        }
+      }
+      indentNode = indentNode.parentNode;
+    }
+    setActiveIndent(detectedIndent);
   }, [saveCurrentRange]);
 
-  // Synchronize state and character limit
+  // Synchronize editor state and character count
   const updateEditorState = useCallback(() => {
     const len = getVisibleTextLength();
     setCharCount(len);
@@ -786,74 +406,54 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       setError(null);
     }
     updateActiveFormatting();
+    pushHistorySnapshot();
+  }, [getVisibleTextLength, updateActiveFormatting, pushHistorySnapshot]);
+
+  // Undo implementation
+  const handleUndo = useCallback(() => {
+    if (!editorRef.current) return;
+    if (historyIndexRef.current > 0) {
+      isHistoryApplyingRef.current = true;
+      historyIndexRef.current -= 1;
+      const state = historyRef.current[historyIndexRef.current];
+      editorRef.current.innerHTML = state.html;
+      setSelectionFromOffsets(editorRef.current, state.start, state.end);
+      setCharCount(getVisibleTextLength());
+      updateActiveFormatting();
+      isHistoryApplyingRef.current = false;
+    } else {
+      document.execCommand('undo', false);
+      setCharCount(getVisibleTextLength());
+      updateActiveFormatting();
+    }
   }, [getVisibleTextLength, updateActiveFormatting]);
 
-  // Input handler to preserve preferred font size when erasing content
+  // Redo implementation
+  const handleRedo = useCallback(() => {
+    if (!editorRef.current) return;
+    if (historyIndexRef.current < historyRef.current.length - 1) {
+      isHistoryApplyingRef.current = true;
+      historyIndexRef.current += 1;
+      const state = historyRef.current[historyIndexRef.current];
+      editorRef.current.innerHTML = state.html;
+      setSelectionFromOffsets(editorRef.current, state.start, state.end);
+      setCharCount(getVisibleTextLength());
+      updateActiveFormatting();
+      isHistoryApplyingRef.current = false;
+    } else {
+      document.execCommand('redo', false);
+      setCharCount(getVisibleTextLength());
+      updateActiveFormatting();
+    }
+  }, [getVisibleTextLength, updateActiveFormatting]);
+
+  // Input handler
   const handleInput = useCallback(() => {
     setIsPlaceholderDismissed(true);
-
-    if (editorRef.current) {
-      const text = editorRef.current.textContent || '';
-      const pref = preferredFontSizeRef.current;
-
-      if (!text.trim()) {
-        if (pref !== 'normal') {
-          const firstChild = editorRef.current.firstElementChild as HTMLElement | null;
-          const isSingleP =
-            editorRef.current.children.length === 1 &&
-            firstChild?.tagName.toLowerCase() === 'p';
-
-          if (!isSingleP || firstChild?.getAttribute('data-font-size') !== pref) {
-            const p = document.createElement('p');
-            p.setAttribute('data-font-size', pref);
-            p.setAttribute(
-              'style',
-              pref === 'small'
-                ? 'font-size: 0.75rem; line-height: 1.25rem;'
-                : 'font-size: 1.125rem; line-height: 1.6rem;'
-            );
-            p.innerHTML = '<br>';
-            editorRef.current.innerHTML = '';
-            editorRef.current.appendChild(p);
-
-            const sel = window.getSelection();
-            if (sel) {
-              const range = document.createRange();
-              range.setStart(p, 0);
-              range.collapse(true);
-              sel.removeAllRanges();
-              sel.addRange(range);
-            }
-          }
-        }
-      } else {
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0 && editorRef.current.contains(sel.anchorNode)) {
-          const block = findClosestBlock(sel.anchorNode, editorRef.current);
-          if (
-            block &&
-            block !== editorRef.current &&
-            (!block.textContent || !block.textContent.trim()) &&
-            pref !== 'normal'
-          ) {
-            if (block.getAttribute('data-font-size') !== pref) {
-              block.setAttribute('data-font-size', pref);
-              block.setAttribute(
-                'style',
-                pref === 'small'
-                  ? 'font-size: 0.75rem; line-height: 1.25rem;'
-                  : 'font-size: 1.125rem; line-height: 1.6rem;'
-              );
-            }
-          }
-        }
-      }
-    }
-
     updateEditorState();
   }, [updateEditorState]);
 
-  // Callback ref to guarantee rich HTML is immediately loaded when mounted in modal portal
+  // Callback ref to load initial rules
   const setEditorRef = useCallback(
     (node: HTMLDivElement | null) => {
       (editorRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
@@ -872,6 +472,11 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         }
         node.innerHTML = initialHtml;
         setCharCount(node.textContent?.length || 0);
+
+        // Initialize history
+        historyRef.current = [{ html: initialHtml, start: 0, end: 0 }];
+        historyIndexRef.current = 0;
+
         try {
           document.execCommand('defaultParagraphSeparator', false, 'p');
         } catch {
@@ -888,6 +493,10 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
     setError(null);
     setIsFontDropdownOpen(false);
+    setIsColorPickerOpen(false);
+    setIsLineSpacingOpen(false);
+    setIsListsDropdownOpen(false);
+    setActiveIndent(0);
     preferredFontSizeRef.current = 'normal';
 
     let initialHtml = '';
@@ -906,6 +515,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     if (editorRef.current) {
       editorRef.current.innerHTML = initialHtml;
       setCharCount(editorRef.current.textContent?.length || 0);
+      historyRef.current = [{ html: initialHtml, start: 0, end: 0 }];
+      historyIndexRef.current = 0;
       try {
         document.execCommand('defaultParagraphSeparator', false, 'p');
       } catch {
@@ -914,153 +525,33 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
   }, [isOpen, initialRules]);
 
-  // Close font size dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(e.target as Node)
-      ) {
+      const target = e.target as Node;
+      if (fontDropdownRef.current && !fontDropdownRef.current.contains(target)) {
         setIsFontDropdownOpen(false);
       }
-    };
-    if (isFontDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isFontDropdownOpen]);
-
-  // Close color picker on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        colorPickerRef.current &&
-        !colorPickerRef.current.contains(e.target as Node)
-      ) {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(target)) {
         setIsColorPickerOpen(false);
       }
-    };
-    if (isColorPickerOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isColorPickerOpen]);
-
-  // Close line spacing dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        lineSpacingRef.current &&
-        !lineSpacingRef.current.contains(e.target as Node)
-      ) {
+      if (lineSpacingRef.current && !lineSpacingRef.current.contains(target)) {
         setIsLineSpacingOpen(false);
       }
+      if (listsDropdownRef.current && !listsDropdownRef.current.contains(target)) {
+        setIsListsDropdownOpen(false);
+      }
     };
-    if (isLineSpacingOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isLineSpacingOpen]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-  // Format toggles
+  // Format toggles (bold, italic, underline)
   const handleToggleFormat = (command: 'bold' | 'italic' | 'underline') => {
     setIsPlaceholderDismissed(true);
     restoreSavedRange();
     document.execCommand(command, false);
     saveCurrentRange();
-    updateEditorState();
-  };
-
-
-  // Apply text color to selection
-  const handleApplyColor = (color: string) => {
-    setIsPlaceholderDismissed(true);
-    restoreSavedRange();
-
-    if (!color) {
-      // Remove color: apply 'inherit' which neutralizes custom color
-      document.execCommand('foreColor', false, 'inherit');
-      // Walk selection and strip any explicit color style/attribute
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0 && editorRef.current) {
-        const range = sel.getRangeAt(0);
-        const walker = document.createTreeWalker(
-          editorRef.current,
-          NodeFilter.SHOW_ELEMENT
-        );
-        const toStrip: HTMLElement[] = [];
-        let curr = walker.nextNode();
-        while (curr) {
-          const el = curr as HTMLElement;
-          if (range.intersectsNode(el)) {
-            const style = el.getAttribute('style') || '';
-            if (/color\s*:/i.test(style)) toStrip.push(el);
-            if (el.tagName.toLowerCase() === 'font' && el.getAttribute('color')) toStrip.push(el);
-          }
-          curr = walker.nextNode();
-        }
-        toStrip.forEach(el => {
-          if (el.tagName.toLowerCase() === 'font') {
-            el.removeAttribute('color');
-          } else {
-            const cleaned = (el.getAttribute('style') || '').replace(/(?:^|;)\s*color\s*:[^;]*/gi, '').trim().replace(/^;/, '').trim();
-            if (cleaned) {
-              el.setAttribute('style', cleaned);
-            } else {
-              el.removeAttribute('style');
-            }
-          }
-        });
-      }
-    } else {
-      document.execCommand('foreColor', false, color);
-    }
-
-    saveCurrentRange();
-    setActiveColor(color);
-    setIsColorPickerOpen(false);
-    updateEditorState();
-  };
-
-  // Apply line spacing to all selected blocks
-  const handleApplyLineSpacing = (spacing: '1' | '1.5' | '2' | '2.5') => {
-    if (!editorRef.current) return;
-    restoreSavedRange();
-
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
-
-    const range = sel.getRangeAt(0);
-    const allCandidates = getCandidateBlocks(editorRef.current);
-
-    let targetBlocks: HTMLElement[];
-    if (range.collapsed) {
-      const block = findClosestBlock(sel.anchorNode, editorRef.current);
-      targetBlocks = block && block !== editorRef.current ? [block] : [];
-    } else {
-      targetBlocks = allCandidates.filter((b) => isBlockSelected(b, range));
-      if (targetBlocks.length === 0) {
-        const block = findClosestBlock(range.startContainer, editorRef.current);
-        if (block && block !== editorRef.current) targetBlocks = [block];
-      }
-    }
-
-    targetBlocks.forEach((block) => {
-      if (spacing === '1.5') {
-        block.removeAttribute('data-line-spacing');
-      } else {
-        block.setAttribute('data-line-spacing', spacing);
-      }
-    });
-
-    setActiveLineSpacing(spacing);
-    setIsLineSpacingOpen(false);
     updateEditorState();
   };
 
@@ -1070,24 +561,12 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     restoreSavedRange();
     preferredFontSizeRef.current = size;
 
-    let sel = window.getSelection();
-    if (!sel || !sel.rangeCount || !editorRef.current?.contains(sel.anchorNode)) {
-      if (editorRef.current) {
-        const range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        sel?.removeAllRanges();
-        sel?.addRange(range);
-      }
-    }
-
-    sel = window.getSelection();
+    const sel = window.getSelection();
     if (!sel || !sel.rangeCount || !editorRef.current) return;
     const range = sel.getRangeAt(0);
 
-    // If editor is completely empty, initialize paragraph with selected font size
     const rawText = editorRef.current.textContent || '';
-    if (!rawText.trim() && editorRef.current.querySelectorAll('p, li, div').length <= 1) {
+    if (!rawText.trim()) {
       const p = document.createElement('p');
       if (size !== 'normal') {
         p.setAttribute('data-font-size', size);
@@ -1116,7 +595,6 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
 
     if (!range.collapsed) {
-      // TEXT IS SELECTED:
       try {
         document.execCommand('fontSize', false, '7');
       } catch {
@@ -1151,89 +629,21 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
             fontEl.parentNode?.replaceChild(span, fontEl);
           }
         });
-
-        if (size === 'normal') {
-          let curr: Node | null = sel.anchorNode;
-          while (curr && curr !== editorRef.current) {
-            if (
-              curr.nodeType === Node.ELEMENT_NODE &&
-              (curr as HTMLElement).hasAttribute('data-font-size')
-            ) {
-              (curr as HTMLElement).removeAttribute('data-font-size');
-              (curr as HTMLElement).removeAttribute('style');
-            }
-            curr = curr.parentNode;
-          }
-        }
-      } else {
-        // Fallback: extractContents into a span
-        const existingSpan = findClosestTag(sel.anchorNode, 'SPAN', editorRef.current);
-        if (existingSpan && existingSpan.getAttribute('data-font-size')) {
-          if (size === 'normal') {
-            existingSpan.removeAttribute('data-font-size');
-            existingSpan.removeAttribute('style');
-          } else {
-            existingSpan.setAttribute('data-font-size', size);
-            existingSpan.setAttribute(
-              'style',
-              size === 'small'
-                ? 'font-size: 0.75rem; line-height: 1.25rem;'
-                : 'font-size: 1.125rem; line-height: 1.6rem;'
-            );
-          }
-        } else if (size !== 'normal') {
-          const span = document.createElement('span');
-          span.setAttribute('data-font-size', size);
-          span.setAttribute(
-            'style',
-            size === 'small'
-              ? 'font-size: 0.75rem; line-height: 1.25rem;'
-              : 'font-size: 1.125rem; line-height: 1.6rem;'
-          );
-          span.appendChild(range.extractContents());
-          range.insertNode(span);
-
-          sel.removeAllRanges();
-          const newRange = document.createRange();
-          newRange.selectNodeContents(span);
-          sel.addRange(newRange);
-        }
       }
     } else {
-      // CURSOR IS COLLAPSED (apply to current span or enclosing block):
-      const existingSpan = findClosestTag(sel.anchorNode, 'SPAN', editorRef.current);
-      if (existingSpan && existingSpan.hasAttribute('data-font-size')) {
+      const block = findClosestBlock(sel.anchorNode, editorRef.current);
+      if (block && block !== editorRef.current) {
         if (size === 'normal') {
-          existingSpan.removeAttribute('data-font-size');
-          existingSpan.removeAttribute('style');
+          block.removeAttribute('data-font-size');
+          block.removeAttribute('style');
         } else {
-          existingSpan.setAttribute('data-font-size', size);
-          existingSpan.setAttribute(
+          block.setAttribute('data-font-size', size);
+          block.setAttribute(
             'style',
             size === 'small'
               ? 'font-size: 0.75rem; line-height: 1.25rem;'
               : 'font-size: 1.125rem; line-height: 1.6rem;'
           );
-        }
-      } else {
-        const block = findClosestBlock(sel.anchorNode, editorRef.current);
-        if (block && block !== editorRef.current) {
-          if (size === 'normal') {
-            block.removeAttribute('data-font-size');
-            block.removeAttribute('style');
-            block.querySelectorAll('[data-font-size]').forEach((el) => {
-              el.removeAttribute('data-font-size');
-              el.removeAttribute('style');
-            });
-          } else {
-            block.setAttribute('data-font-size', size);
-            block.setAttribute(
-              'style',
-              size === 'small'
-                ? 'font-size: 0.75rem; line-height: 1.25rem;'
-                : 'font-size: 1.125rem; line-height: 1.6rem;'
-            );
-          }
         }
       }
     }
@@ -1244,18 +654,224 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     updateEditorState();
   };
 
-  // List toggle handler supporting multi-line selection, conversion, and toggling off
-  const handleToggleList = (
-    targetType: 'bullet' | 'numbered' | 'checklist' | 'arrow'
-  ) => {
+  // Line spacing handler
+  const handleApplyLineSpacing = (spacing: '1' | '1.5' | '2' | '2.5') => {
+    if (!editorRef.current) return;
+    restoreSavedRange();
+
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+
+    const blocks: HTMLElement[] = [];
+    Array.from(editorRef.current.children).forEach((child) => {
+      const el = child as HTMLElement;
+      if (el.tagName.toLowerCase() === 'ul' || el.tagName.toLowerCase() === 'ol') {
+        Array.from(el.children).forEach((li) => blocks.push(li as HTMLElement));
+      } else {
+        blocks.push(el);
+      }
+    });
+
+    const targetBlocks = range.collapsed
+      ? [findClosestBlock(sel.anchorNode, editorRef.current)].filter(Boolean) as HTMLElement[]
+      : blocks.filter((b) => {
+          try {
+            return range.intersectsNode(b) || b.contains(range.startContainer) || b.contains(range.endContainer);
+          } catch {
+            return false;
+          }
+        });
+
+    targetBlocks.forEach((block) => {
+      if (spacing === '1.5') {
+        block.removeAttribute('data-line-spacing');
+      } else {
+        block.setAttribute('data-line-spacing', spacing);
+      }
+    });
+
+    setActiveLineSpacing(spacing);
+    setIsLineSpacingOpen(false);
+    updateEditorState();
+  };
+
+  // Text color handler
+  const handleApplyColor = (color: string) => {
+    setIsPlaceholderDismissed(true);
+    restoreSavedRange();
+
+    if (!color) {
+      document.execCommand('foreColor', false, 'inherit');
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && editorRef.current) {
+        const range = sel.getRangeAt(0);
+        const walker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_ELEMENT);
+        const toStrip: HTMLElement[] = [];
+        let curr = walker.nextNode();
+        while (curr) {
+          const el = curr as HTMLElement;
+          if (range.intersectsNode(el)) {
+            if (/color\s*:/i.test(el.getAttribute('style') || '')) toStrip.push(el);
+            if (el.tagName.toLowerCase() === 'font' && el.getAttribute('color')) toStrip.push(el);
+          }
+          curr = walker.nextNode();
+        }
+        toStrip.forEach((el) => {
+          if (el.tagName.toLowerCase() === 'font') {
+            el.removeAttribute('color');
+          } else {
+            const cleaned = (el.getAttribute('style') || '')
+              .replace(/(?:^|;)\s*color\s*:[^;]*/gi, '')
+              .trim()
+              .replace(/^;/, '')
+              .trim();
+            if (cleaned) el.setAttribute('style', cleaned);
+            else el.removeAttribute('style');
+          }
+        });
+      }
+    } else {
+      document.execCommand('foreColor', false, color);
+    }
+
+    saveCurrentRange();
+    setActiveColor(color);
+    setIsColorPickerOpen(false);
+    updateEditorState();
+  };
+
+  // Indentation handler (Increase / Decrease indent)
+  const handleIndent = (direction: 'increase' | 'decrease') => {
+    setIsPlaceholderDismissed(true);
+    restoreSavedRange();
+
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount || !editorRef.current) return;
+    const range = sel.getRangeAt(0);
+
+    const blocks: HTMLElement[] = [];
+    Array.from(editorRef.current.children).forEach((child) => {
+      const el = child as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'ul' || tag === 'ol') {
+        Array.from(el.children).forEach((li) => {
+          if (li.tagName.toLowerCase() === 'li') {
+            blocks.push(li as HTMLElement);
+          }
+        });
+      } else {
+        blocks.push(el);
+      }
+    });
+
+    let targetBlocks: HTMLElement[] = [];
+    if (range.collapsed) {
+      let block = findClosestTag(sel.anchorNode, 'LI', editorRef.current);
+      if (!block) {
+        block = findClosestTag(sel.anchorNode, 'P', editorRef.current);
+      }
+      if (!block) {
+        block = findClosestBlock(sel.anchorNode, editorRef.current);
+      }
+      if (block && block !== editorRef.current) {
+        if (block.tagName.toLowerCase() === 'ul' || block.tagName.toLowerCase() === 'ol') {
+          const firstLi = block.querySelector('li') as HTMLElement | null;
+          if (firstLi) targetBlocks = [firstLi];
+        } else {
+          targetBlocks = [block];
+        }
+      }
+    } else {
+      targetBlocks = blocks.filter((b) => {
+        try {
+          return range.intersectsNode(b) || b.contains(range.startContainer) || b.contains(range.endContainer);
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    if (targetBlocks.length === 0) {
+      const fallback = findClosestBlock(sel.anchorNode, editorRef.current);
+      if (fallback && fallback !== editorRef.current) {
+        targetBlocks = [fallback];
+      }
+    }
+
+    let updatedIndent = 0;
+    targetBlocks.forEach((block) => {
+      const currentIndent = parseInt(block.getAttribute('data-indent') || '0', 10) || 0;
+      let nextIndent = direction === 'increase' ? currentIndent + 1 : currentIndent - 1;
+      if (nextIndent < 0) nextIndent = 0;
+      if (nextIndent > 6) nextIndent = 6;
+      updatedIndent = nextIndent;
+
+      if (nextIndent === 0) {
+        block.removeAttribute('data-indent');
+        block.style.marginLeft = '';
+        if (!block.getAttribute('style')) {
+          block.removeAttribute('style');
+        }
+      } else {
+        block.setAttribute('data-indent', String(nextIndent));
+        block.style.marginLeft = `${nextIndent * 1.5}rem`;
+      }
+    });
+
+    setActiveIndent(updatedIndent);
+    saveCurrentRange();
+    updateEditorState();
+  };
+
+  // Clear formatting handler (preserves lists, removes inline bold/italic/underline/color/font-size/line-spacing/indent)
+  const handleClearFormatting = () => {
+    setIsPlaceholderDismissed(true);
+    restoreSavedRange();
+
+    document.execCommand('removeFormat', false);
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editorRef.current) {
+      const range = sel.getRangeAt(0);
+      const elements = editorRef.current.querySelectorAll('*');
+      elements.forEach((el) => {
+        const hEl = el as HTMLElement;
+        const tag = hEl.tagName.toLowerCase();
+        if (range.intersectsNode(hEl)) {
+          if (tag === 'font') {
+            const parent = hEl.parentNode;
+            while (hEl.firstChild) parent?.insertBefore(hEl.firstChild, hEl);
+            hEl.remove();
+            return;
+          }
+          hEl.removeAttribute('data-font-size');
+          hEl.removeAttribute('data-line-spacing');
+          hEl.removeAttribute('data-indent');
+          if (tag !== 'ul' && tag !== 'ol') {
+            hEl.removeAttribute('data-align');
+          }
+          hEl.removeAttribute('style');
+        }
+      });
+    }
+
+    setActiveIndent(0);
+    saveCurrentRange();
+    updateEditorState();
+  };
+
+  // Multi-line list toggle handler supporting Bullet, Numbered, Checklist, Arrow
+  const handleToggleList = (targetType: 'bullet' | 'numbered' | 'checklist' | 'arrow') => {
     setIsPlaceholderDismissed(true);
     restoreSavedRange();
     if (!editorRef.current) return;
     editorRef.current.focus();
 
-    // 1. If editor is completely empty, initialize first list item directly
     const rawText = editorRef.current.textContent?.trim() || '';
     const hasLis = editorRef.current.querySelectorAll('li').length > 0;
+
+    // Completely empty editor
     if (!rawText && !hasLis) {
       const tag = targetType === 'numbered' ? 'ol' : 'ul';
       editorRef.current.innerHTML = `<${tag} data-list-type="${targetType}"><li><br></li></${tag}>`;
@@ -1278,312 +894,269 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     if (!sel || !sel.rangeCount) return;
     const range = sel.getRangeAt(0);
 
-    // 2. Normalize top-level loose text/inline nodes and <div>s to <p>
-    normalizeTopLevelBlocks(editorRef.current);
+    // 1. Capture selection character bounds before DOM restructuring
+    const selStart = getCharacterOffset(editorRef.current, range.startContainer, range.startOffset);
+    const selEnd = getCharacterOffset(editorRef.current, range.endContainer, range.endOffset);
+    const isCollapsed = range.collapsed;
 
-    // 3. Find candidate line blocks and determine which ones are selected
-    const allCandidates = getCandidateBlocks(editorRef.current);
-    let selectedBlocks: HTMLElement[] = [];
+    // 2. Pre-normalize: Split any <p> or <div> blocks that contain <br> separating text into separate <p> blocks
+    const topNodes = Array.from(editorRef.current.childNodes);
+    topNodes.forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent?.trim()) {
+          const p = document.createElement('p');
+          p.textContent = node.textContent;
+          editorRef.current?.replaceChild(p, node);
+        } else {
+          node.remove();
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node as HTMLElement;
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'div') {
+          const p = document.createElement('p');
+          ['data-font-size', 'data-line-spacing', 'data-align', 'data-indent', 'style'].forEach((attr) => {
+            if (el.hasAttribute(attr)) p.setAttribute(attr, el.getAttribute(attr)!);
+          });
+          while (el.firstChild) p.appendChild(el.firstChild);
+          editorRef.current?.replaceChild(p, el);
+        }
+      }
+    });
 
-    if (range.collapsed) {
-      let targetBlock: HTMLElement | null = null;
-      let curr: Node | null = sel.anchorNode;
-      while (curr && curr !== editorRef.current) {
-        if (curr.nodeType === Node.ELEMENT_NODE) {
-          const el = curr as HTMLElement;
-          const tag = el.tagName.toLowerCase();
-          if (tag === 'li' || el.parentElement === editorRef.current) {
-            targetBlock = el;
-            break;
-          }
-        }
-        curr = curr.parentNode;
+    // Split paragraphs with <br> into individual paragraphs
+    const splitParagraphsWithBr = (pEl: HTMLElement) => {
+      if (!pEl.querySelector('br')) return;
+      const html = pEl.innerHTML;
+      const parts = html.split(/<br\s*\/?>/i);
+      if (parts.length > 1) {
+        const frag = document.createDocumentFragment();
+        parts.forEach((part) => {
+          const newP = document.createElement('p');
+          ['data-font-size', 'data-line-spacing', 'data-align', 'data-indent', 'style'].forEach((attr) => {
+            if (pEl.hasAttribute(attr)) newP.setAttribute(attr, pEl.getAttribute(attr)!);
+          });
+          newP.innerHTML = part.trim() ? part : '<br>';
+          frag.appendChild(newP);
+        });
+        pEl.parentNode?.replaceChild(frag, pEl);
       }
-      if (targetBlock) {
-        selectedBlocks.push(targetBlock);
-      } else if (allCandidates.length > 0) {
-        selectedBlocks.push(allCandidates[0]);
+    };
+
+    Array.from(editorRef.current.children).forEach((child) => {
+      const el = child as HTMLElement;
+      if (el.tagName.toLowerCase() === 'p') {
+        splitParagraphsWithBr(el);
       }
-    } else {
-      allCandidates.forEach((b) => {
-        if (isBlockSelected(b, range)) {
-          selectedBlocks.push(b);
-        }
-      });
-      if (selectedBlocks.length === 0) {
-        const startBlock = findClosestBlock(range.startContainer, editorRef.current);
-        if (startBlock && startBlock !== editorRef.current) {
-          selectedBlocks.push(startBlock);
-        }
-      }
+    });
+
+    // 3. Collect candidate line blocks and determine their character ranges
+    interface LineBlockInfo {
+      element: HTMLElement;
+      isLi: boolean;
+      parentList: HTMLElement | null;
+      text: string;
+      start: number;
+      end: number;
+      isSelected: boolean;
     }
 
-    if (selectedBlocks.length === 0) return;
+    const candidateLines: LineBlockInfo[] = [];
+    let runningOffset = 0;
 
-    // 4. If any selected block contains <br> separating text, split it into separate paragraphs
-    const expandedBlocks: HTMLElement[] = [];
-    selectedBlocks.forEach((block) => {
-      if (block.tagName.toLowerCase() !== 'li' && block.querySelector('br')) {
-        const splitBlocks = splitElementByBr(block);
-        if (splitBlocks.length > 1) {
-          const parent = block.parentNode;
-          if (parent) {
-            const frag = document.createDocumentFragment();
-            splitBlocks.forEach((sb) => frag.appendChild(sb));
-            parent.replaceChild(frag, block);
+    Array.from(editorRef.current.children).forEach((child) => {
+      const el = child as HTMLElement;
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'ul' || tag === 'ol') {
+        Array.from(el.children).forEach((liChild) => {
+          const li = liChild as HTMLElement;
+          const text = li.textContent || '';
+          const len = text.length;
+          const lineStart = runningOffset;
+          const lineEnd = runningOffset + len;
+          runningOffset += len;
+
+          const isSelected = isCollapsed
+            ? (lineStart <= selStart && selStart <= lineEnd) || (lineStart === lineEnd && selStart === lineStart)
+            : lineEnd > selStart && lineStart < selEnd;
+
+          candidateLines.push({
+            element: li,
+            isLi: true,
+            parentList: el,
+            text,
+            start: lineStart,
+            end: lineEnd,
+            isSelected,
+          });
+        });
+      } else {
+        const text = el.textContent || '';
+        const len = text.length;
+        const lineStart = runningOffset;
+        const lineEnd = runningOffset + len;
+        runningOffset += len;
+
+        const isSelected = isCollapsed
+          ? (lineStart <= selStart && selStart <= lineEnd) || (lineStart === lineEnd && selStart === lineStart)
+          : lineEnd > selStart && lineStart < selEnd;
+
+        candidateLines.push({
+          element: el,
+          isLi: false,
+          parentList: null,
+          text,
+          start: lineStart,
+          end: lineEnd,
+          isSelected,
+        });
+      }
+    });
+
+    const selectedLines = candidateLines.filter((line) => line.isSelected);
+    if (selectedLines.length === 0) return;
+
+    // 4. Check if all selected lines are already list items of targetType (Toggle Off)
+    const allSelectedMatchTarget =
+      selectedLines.length > 0 &&
+      selectedLines.every((line) => {
+        if (!line.isLi || !line.parentList) return false;
+        const listType =
+          line.parentList.getAttribute('data-list-type') ||
+          (line.parentList.tagName.toLowerCase() === 'ol' ? 'numbered' : 'bullet');
+        return listType === targetType;
+      });
+
+    const newChildren: HTMLElement[] = [];
+    let currentListGroup: HTMLElement | null = null;
+    let firstConvertedLi: HTMLElement | null = null;
+    let lastConvertedLi: HTMLElement | null = null;
+
+    const flushListGroup = () => {
+      if (currentListGroup) {
+        newChildren.push(currentListGroup);
+        currentListGroup = null;
+      }
+    };
+
+    if (allSelectedMatchTarget) {
+      // --- ACTION: TOGGLE OFF (Convert selected <li> back to <p>) ---
+      for (const line of candidateLines) {
+        if (line.isSelected) {
+          flushListGroup();
+          const p = document.createElement('p');
+          p.innerHTML = line.element.innerHTML || '<br>';
+          ['data-font-size', 'data-line-spacing', 'data-align', 'data-indent', 'style'].forEach((attr) => {
+            if (line.element.hasAttribute(attr)) p.setAttribute(attr, line.element.getAttribute(attr)!);
+          });
+          newChildren.push(p);
+        } else if (line.isLi && line.parentList) {
+          const parentType = line.parentList.getAttribute('data-list-type') || 'bullet';
+          const parentTag = line.parentList.tagName.toLowerCase();
+          if (
+            !currentListGroup ||
+            currentListGroup.tagName.toLowerCase() !== parentTag ||
+            currentListGroup.getAttribute('data-list-type') !== parentType
+          ) {
+            flushListGroup();
+            currentListGroup = document.createElement(parentTag);
+            currentListGroup.setAttribute('data-list-type', parentType);
           }
-          expandedBlocks.push(...splitBlocks);
-          return;
+          currentListGroup.appendChild(line.element.cloneNode(true));
+        } else {
+          flushListGroup();
+          newChildren.push(line.element.cloneNode(true) as HTMLElement);
         }
       }
-      expandedBlocks.push(block);
-    });
-    selectedBlocks = expandedBlocks;
-
-    // 5. Check if all selected blocks are already in targetType list (TOGGLE OFF check)
-    // Only check blocks that have visible text
-    const textBlocks = selectedBlocks.filter(
-      (b) => (b.textContent || '').trim().length > 0
-    );
-
-    const allAreTargetList =
-      textBlocks.length > 0 &&
-      textBlocks.every((b) => {
-        if (b.tagName.toLowerCase() !== 'li') return false;
-        const parent = b.parentElement;
-        if (!parent) return false;
-        const parentType =
-          parent.getAttribute('data-list-type') ||
-          (parent.tagName.toLowerCase() === 'ol' ? 'numbered' : 'bullet');
-        return parentType === targetType;
-      });
-
-    if (allAreTargetList) {
-      // --- ACTION: TOGGLE OFF LIST (Convert selected <li> to <p>) ---
-      const createdParagraphs: HTMLElement[] = [];
-      const parentLists = new Set<HTMLElement>();
-      selectedBlocks.forEach((b) => {
-        if (b.parentElement) parentLists.add(b.parentElement);
-      });
-
-      parentLists.forEach((parentList) => {
-        const childLis = Array.from(parentList.children) as HTMLElement[];
-        const parentOfList = parentList.parentNode;
-        if (!parentOfList) return;
-
-        const frag = document.createDocumentFragment();
-        let currentSubList: HTMLElement | null = null;
-
-        childLis.forEach((li) => {
-          const hasText = (li.textContent || '').trim().length > 0;
-          if (selectedBlocks.includes(li)) {
-            currentSubList = null;
-            if (hasText) {
-              const p = document.createElement('p');
-              p.innerHTML = li.innerHTML || '<br>';
-              if (li.hasAttribute('data-font-size')) {
-                p.setAttribute('data-font-size', li.getAttribute('data-font-size')!);
-              }
-              if (li.hasAttribute('style')) {
-                p.setAttribute('style', li.getAttribute('style')!);
-              }
-              frag.appendChild(p);
-              createdParagraphs.push(p);
-            }
-          } else {
-            if (hasText) {
-              if (!currentSubList) {
-                currentSubList = document.createElement(parentList.tagName.toLowerCase());
-                Array.from(parentList.attributes).forEach((attr) => {
-                  currentSubList!.setAttribute(attr.name, attr.value);
-                });
-                frag.appendChild(currentSubList);
-              }
-              currentSubList.appendChild(li);
-            }
-          }
-        });
-
-        parentOfList.replaceChild(frag, parentList);
-      });
-
+      flushListGroup();
       setActiveListType(null);
+    } else {
+      // --- ACTION: CONVERT TO TARGET LIST TYPE ---
+      for (const line of candidateLines) {
+        if (line.isSelected) {
+          const targetTag = targetType === 'numbered' ? 'ol' : 'ul';
+          if (
+            !currentListGroup ||
+            currentListGroup.tagName.toLowerCase() !== targetTag ||
+            currentListGroup.getAttribute('data-list-type') !== targetType
+          ) {
+            flushListGroup();
+            currentListGroup = document.createElement(targetTag);
+            currentListGroup.setAttribute('data-list-type', targetType);
+          }
 
-      if (createdParagraphs.length > 0) {
-        const firstP = createdParagraphs[0];
-        const lastP = createdParagraphs[createdParagraphs.length - 1];
-        const newRange = document.createRange();
-        if (createdParagraphs.length === 1 && range.collapsed) {
-          newRange.selectNodeContents(firstP);
-          newRange.collapse(false);
+          const li = document.createElement('li');
+          li.innerHTML = line.element.innerHTML || '<br>';
+          ['data-font-size', 'data-line-spacing', 'data-align', 'data-indent', 'style'].forEach((attr) => {
+            if (line.element.hasAttribute(attr)) li.setAttribute(attr, line.element.getAttribute(attr)!);
+          });
+          currentListGroup.appendChild(li);
+
+          if (!firstConvertedLi) firstConvertedLi = li;
+          lastConvertedLi = li;
+        } else if (line.isLi && line.parentList) {
+          const parentType = line.parentList.getAttribute('data-list-type') || 'bullet';
+          const parentTag = line.parentList.tagName.toLowerCase();
+          if (
+            !currentListGroup ||
+            currentListGroup.tagName.toLowerCase() !== parentTag ||
+            currentListGroup.getAttribute('data-list-type') !== parentType
+          ) {
+            flushListGroup();
+            currentListGroup = document.createElement(parentTag);
+            currentListGroup.setAttribute('data-list-type', parentType);
+          }
+          currentListGroup.appendChild(line.element.cloneNode(true));
         } else {
-          newRange.setStart(firstP, 0);
-          newRange.setEnd(lastP, lastP.childNodes.length);
+          flushListGroup();
+          newChildren.push(line.element.cloneNode(true) as HTMLElement);
         }
+      }
+      flushListGroup();
+      setActiveListType(targetType);
+    }
+
+    // Merge adjacent identical lists
+    const mergedChildren: HTMLElement[] = [];
+    newChildren.forEach((child) => {
+      const prev = mergedChildren[mergedChildren.length - 1];
+      if (
+        prev &&
+        (prev.tagName.toLowerCase() === 'ul' || prev.tagName.toLowerCase() === 'ol') &&
+        prev.tagName.toLowerCase() === child.tagName.toLowerCase() &&
+        prev.getAttribute('data-list-type') === child.getAttribute('data-list-type')
+      ) {
+        while (child.firstChild) prev.appendChild(child.firstChild);
+      } else {
+        mergedChildren.push(child);
+      }
+    });
+
+    editorRef.current.innerHTML = '';
+    mergedChildren.forEach((node) => editorRef.current?.appendChild(node));
+
+    // Restore selection over converted items
+    if (firstConvertedLi && lastConvertedLi) {
+      try {
+        const newRange = document.createRange();
+        newRange.setStart(firstConvertedLi, 0);
+        newRange.setEnd(lastConvertedLi, (lastConvertedLi as HTMLElement).childNodes.length);
         sel.removeAllRanges();
         sel.addRange(newRange);
         savedRangeRef.current = newRange.cloneRange();
+      } catch {
+        setSelectionFromOffsets(editorRef.current, selStart, selEnd);
       }
     } else {
-      // --- ACTION: CONVERT TO TARGET LIST ---
-      const newTopChildren: HTMLElement[] = [];
-      let currentTargetList: HTMLElement | null = null;
-      const allCreatedLis: HTMLElement[] = [];
-
-      const flushTargetList = () => {
-        if (currentTargetList) {
-          newTopChildren.push(currentTargetList);
-          currentTargetList = null;
-        }
-      };
-
-      const getOrCreateTargetList = (): HTMLElement => {
-        if (!currentTargetList) {
-          const targetTag = targetType === 'numbered' ? 'ol' : 'ul';
-          currentTargetList = document.createElement(targetTag);
-          currentTargetList.setAttribute('data-list-type', targetType);
-        }
-        return currentTargetList;
-      };
-
-      const createLiFromBlock = (b: HTMLElement): HTMLElement => {
-        const li = document.createElement('li');
-        li.innerHTML = b.innerHTML || '<br>';
-        if (b.hasAttribute('data-font-size')) {
-          li.setAttribute('data-font-size', b.getAttribute('data-font-size')!);
-        }
-        if (b.hasAttribute('style')) {
-          li.setAttribute('style', b.getAttribute('style')!);
-        }
-        allCreatedLis.push(li);
-        return li;
-      };
-
-      const isSingleCollapsed = range.collapsed && selectedBlocks.length <= 1;
-      const editorChildren = Array.from(editorRef.current.children);
-
-      editorChildren.forEach((childNode, childIdx) => {
-        const child = childNode as HTMLElement;
-        const tag = child.tagName.toLowerCase();
-
-        if (tag === 'ul' || tag === 'ol') {
-          const childLis = Array.from(child.children) as HTMLElement[];
-          let unselectedSubList: HTMLElement | null = null;
-
-          childLis.forEach((li) => {
-            const hasText = (li.textContent || '').trim().length > 0;
-            if (selectedBlocks.includes(li)) {
-              if (!hasText && !isSingleCollapsed) {
-                // Skip empty li: do not create bullet where there is no text!
-                return;
-              }
-              if (unselectedSubList) {
-                newTopChildren.push(unselectedSubList);
-                unselectedSubList = null;
-              }
-              const tList = getOrCreateTargetList();
-              tList.appendChild(createLiFromBlock(li));
-            } else {
-              flushTargetList();
-              if (hasText) {
-                if (!unselectedSubList) {
-                  unselectedSubList = document.createElement(tag);
-                  Array.from(child.attributes).forEach((attr) => {
-                    unselectedSubList!.setAttribute(attr.name, attr.value);
-                  });
-                }
-                unselectedSubList.appendChild(li);
-              }
-            }
-          });
-
-          if (unselectedSubList) {
-            newTopChildren.push(unselectedSubList);
-          }
-        } else {
-          const hasText = (child.textContent || '').trim().length > 0;
-          if (selectedBlocks.includes(child)) {
-            if (hasText || isSingleCollapsed) {
-              const tList = getOrCreateTargetList();
-              tList.appendChild(createLiFromBlock(child));
-            } else {
-              // Blank line in selection:
-              // Check if any subsequent block in selection has text
-              const remainingHasText = editorChildren
-                .slice(childIdx + 1)
-                .some(
-                  (nextChild) =>
-                    selectedBlocks.includes(nextChild as HTMLElement) &&
-                    (nextChild.textContent || '').trim().length > 0
-                );
-
-              if (!currentTargetList) {
-                // Blank line before any bullet list has started (e.g. under header title)
-                newTopChildren.push(child);
-              } else if (!remainingHasText) {
-                // Blank line after all bullet list items
-                flushTargetList();
-                newTopChildren.push(child);
-              }
-              // If remainingHasText is true and currentTargetList exists, it is an empty line between rules:
-              // omit it so the rules join into a single clean list without empty bullets!
-            }
-          } else {
-            flushTargetList();
-            newTopChildren.push(child);
-          }
-        }
-      });
-
-      flushTargetList();
-
-      // Merge contiguous lists of the same type
-      const mergedTopChildren: HTMLElement[] = [];
-      newTopChildren.forEach((child) => {
-        const prev = mergedTopChildren[mergedTopChildren.length - 1];
-        if (
-          prev &&
-          (prev.tagName.toLowerCase() === 'ul' || prev.tagName.toLowerCase() === 'ol') &&
-          prev.tagName.toLowerCase() === child.tagName.toLowerCase() &&
-          prev.getAttribute('data-list-type') === child.getAttribute('data-list-type')
-        ) {
-          while (child.firstChild) {
-            prev.appendChild(child.firstChild);
-          }
-        } else {
-          mergedTopChildren.push(child);
-        }
-      });
-
-      // Update editor DOM
-      editorRef.current.innerHTML = '';
-      mergedTopChildren.forEach((node) => editorRef.current?.appendChild(node));
-
-      setActiveListType(targetType);
-
-      if (allCreatedLis.length > 0) {
-        const firstLi = allCreatedLis[0];
-        const lastLi = allCreatedLis[allCreatedLis.length - 1];
-        const newRange = document.createRange();
-        if (allCreatedLis.length === 1 && range.collapsed) {
-          newRange.selectNodeContents(firstLi);
-          newRange.collapse(false);
-        } else {
-          newRange.setStart(firstLi, 0);
-          newRange.setEnd(lastLi, lastLi.childNodes.length);
-        }
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-        savedRangeRef.current = newRange.cloneRange();
-      }
+      setSelectionFromOffsets(editorRef.current, selStart, selEnd);
     }
 
     updateEditorState();
   };
 
-  // Enter key & keyboard shortcut interceptor
+  // Keyboard navigation and shortcut handler
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+U)
+    // Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y)
     if (e.ctrlKey || e.metaKey) {
       const key = e.key.toLowerCase();
       if (key === 'b') {
@@ -1601,126 +1174,140 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         handleToggleFormat('underline');
         return;
       }
+      if (key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+        return;
+      }
+      if (key === 'y') {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
     }
 
-    // Prevent browser from destroying font-sized block on Backspace when erasing last character
+    // Tab and Shift+Tab for Increase / Decrease Indent
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      handleIndent(e.shiftKey ? 'decrease' : 'increase');
+      return;
+    }
+
+    // Backspace handling: Bug 2 fix for list items (including the first list item)
     if (e.key === 'Backspace') {
       const sel = window.getSelection();
       if (sel && sel.rangeCount > 0 && editorRef.current?.contains(sel.anchorNode)) {
-        // Handle empty list item — exit it as paragraph
-        const li = findClosestTag(sel.anchorNode, 'LI', editorRef.current);
-        if (li && (!li.textContent || !li.textContent.trim())) {
-          e.preventDefault();
-          const listParent = li.parentElement;
-          const p = document.createElement('p');
-          p.innerHTML = '<br>';
-          if (listParent) {
-            listParent.parentNode?.insertBefore(p, listParent.nextSibling);
-            li.remove();
-            if (listParent.querySelectorAll('li').length === 0) {
-              listParent.remove();
+        let targetLi: HTMLElement | null = findClosestTag(sel.anchorNode, 'LI', editorRef.current);
+        if (!targetLi && sel.anchorNode) {
+          if (sel.anchorNode.nodeType === Node.ELEMENT_NODE) {
+            const el = sel.anchorNode as HTMLElement;
+            if (el.tagName.toLowerCase() === 'ul' || el.tagName.toLowerCase() === 'ol') {
+              const lis = Array.from(el.children).filter((c) => c.tagName.toLowerCase() === 'li') as HTMLElement[];
+              targetLi = lis[Math.min(sel.anchorOffset, lis.length - 1)] || lis[0] || null;
             }
           }
-          const range = document.createRange();
-          range.setStart(p, 0);
-          range.collapse(true);
-          sel.removeAllRanges();
-          sel.addRange(range);
-          updateEditorState();
-          return;
         }
 
-        // Handle Backspace at start of a paragraph: remove preceding blank spacer <p><br></p>
-        if (sel.isCollapsed) {
-          const selRange = sel.getRangeAt(0);
-          if (selRange.startOffset === 0) {
-            const currentBlock = findClosestBlock(sel.anchorNode, editorRef.current);
-            if (
-              currentBlock &&
-              currentBlock !== editorRef.current &&
-              currentBlock.parentElement === editorRef.current
-            ) {
-              const prevSibling = currentBlock.previousElementSibling as HTMLElement | null;
-              if (
-                prevSibling &&
-                (prevSibling.tagName.toLowerCase() === 'p') &&
-                (!prevSibling.textContent || !prevSibling.textContent.trim())
-              ) {
-                // The previous sibling is a blank spacer line — remove it
-                e.preventDefault();
-                prevSibling.remove();
-                // Restore cursor at start of current block
-                const range = document.createRange();
-                range.setStart(currentBlock, 0);
-                range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
-                updateEditorState();
-                return;
+        if (targetLi) {
+          const listParent = targetLi.parentElement;
+          const liText = targetLi.textContent?.trim() || '';
+
+          // Case A: Backspace on an empty list item (including the first list item)
+          if (liText === '') {
+            e.preventDefault();
+            const p = document.createElement('p');
+            p.innerHTML = '<br>';
+
+            if (listParent) {
+              const isFirstLi = targetLi === listParent.firstElementChild;
+              const hasMultipleLis = listParent.querySelectorAll('li').length > 1;
+
+              if (isFirstLi && hasMultipleLis) {
+                listParent.parentNode?.insertBefore(p, listParent);
+                targetLi.remove();
+              } else if (!isFirstLi && hasMultipleLis) {
+                const prevLi = targetLi.previousElementSibling as HTMLElement;
+                targetLi.remove();
+                if (prevLi) {
+                  const range = document.createRange();
+                  range.selectNodeContents(prevLi);
+                  range.collapse(false);
+                  sel.removeAllRanges();
+                  sel.addRange(range);
+                  updateEditorState();
+                  return;
+                }
+              } else {
+                listParent.parentNode?.replaceChild(p, listParent);
               }
             }
-          }
-        }
 
-        const span = findClosestTag(sel.anchorNode, 'SPAN', editorRef.current);
-        if (span && span.hasAttribute('data-font-size')) {
-          const text = span.textContent || '';
-          if (text.length <= 1) {
-            e.preventDefault();
-            const fontSize = span.getAttribute('data-font-size') as 'small' | 'large';
-            const block = findClosestBlock(span, editorRef.current);
-            if (block && block !== editorRef.current) {
-              block.setAttribute('data-font-size', fontSize);
-              block.setAttribute(
-                'style',
-                fontSize === 'small'
-                  ? 'font-size: 0.75rem; line-height: 1.25rem;'
-                  : 'font-size: 1.125rem; line-height: 1.6rem;'
-              );
-              span.remove();
-              block.innerHTML = '<br>';
-              const range = document.createRange();
-              range.setStart(block, 0);
-              range.collapse(true);
-              sel.removeAllRanges();
-              sel.addRange(range);
-              updateEditorState();
-              return;
-            }
-          }
-        }
-
-        const block = findClosestBlock(sel.anchorNode, editorRef.current);
-        if (block && block !== editorRef.current) {
-          const fontSizeAttr = block.getAttribute('data-font-size');
-          const text = block.textContent || '';
-          if (text.length <= 1 && fontSizeAttr) {
-            e.preventDefault();
-            block.innerHTML = '<br>';
             const range = document.createRange();
-            range.setStart(block, 0);
+            range.setStart(p, 0);
             range.collapse(true);
             sel.removeAllRanges();
             sel.addRange(range);
             updateEditorState();
             return;
           }
+
+          // Case B: Backspace at beginning of list item with text (cursor at offset 0)
+          if (sel.isCollapsed) {
+            const range = sel.getRangeAt(0);
+            const isAtBeginning = range.startOffset === 0 && (range.startContainer === targetLi || range.startContainer === targetLi.firstChild);
+
+            if (isAtBeginning && listParent) {
+              const isFirstLi = targetLi === listParent.firstElementChild;
+              if (isFirstLi) {
+                e.preventDefault();
+                const p = document.createElement('p');
+                p.innerHTML = targetLi.innerHTML;
+                ['data-font-size', 'data-line-spacing', 'data-align', 'data-indent', 'style'].forEach((attr) => {
+                  if (targetLi?.hasAttribute(attr)) p.setAttribute(attr, targetLi.getAttribute(attr)!);
+                });
+
+                if (listParent.querySelectorAll('li').length === 1) {
+                  listParent.parentNode?.replaceChild(p, listParent);
+                } else {
+                  listParent.parentNode?.insertBefore(p, listParent);
+                  targetLi.remove();
+                }
+
+                const newRange = document.createRange();
+                newRange.setStart(p, 0);
+                newRange.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+                updateEditorState();
+                return;
+              }
+            }
+          }
         }
       }
     }
 
-    // List navigation on Enter
+    // Enter handling: Bug 3 fix (Double Enter exits list)
     if (e.key === 'Enter') {
       const sel = window.getSelection();
       if (!sel || !sel.rangeCount || !editorRef.current) return;
 
-      const li = findClosestTag(sel.anchorNode, 'LI', editorRef.current);
+      let li = findClosestTag(sel.anchorNode, 'LI', editorRef.current);
+      if (!li && sel.anchorNode && sel.anchorNode.nodeType === Node.ELEMENT_NODE) {
+        const el = sel.anchorNode as HTMLElement;
+        if (el.tagName.toLowerCase() === 'ul' || el.tagName.toLowerCase() === 'ol') {
+          const lis = Array.from(el.children).filter((c) => c.tagName.toLowerCase() === 'li') as HTMLElement[];
+          li = lis[Math.min(sel.anchorOffset, lis.length - 1)] || lis[0] || null;
+        }
+      }
+
       if (li) {
         e.preventDefault();
         const listParent = li.parentElement;
-        const liText = li.textContent?.trim() || '';
+        const liText = li.textContent?.replace(/[\s\u200B\u00A0]/g, '') || '';
 
-        // SECOND ENTER: Empty bullet exits the list!
+        // SECOND ENTER: Empty list item exits list and creates normal paragraph
         if (liText === '') {
           const nextSiblings: Node[] = [];
           let next = li.nextSibling;
@@ -1736,10 +1323,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
             if (nextSiblings.length > 0) {
               const newSubList = listParent.cloneNode(false) as HTMLElement;
               nextSiblings.forEach((node) => newSubList.appendChild(node));
-              listParent.parentNode?.insertBefore(
-                newSubList,
-                listParent.nextSibling
-              );
+              listParent.parentNode?.insertBefore(newSubList, listParent.nextSibling);
               listParent.parentNode?.insertBefore(p, newSubList);
             } else {
               listParent.parentNode?.insertBefore(p, listParent.nextSibling);
@@ -1763,11 +1347,9 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           // FIRST ENTER: Create next item in current list
           const range = sel.getRangeAt(0);
           const newLi = document.createElement('li');
-          const currentSize = li.getAttribute('data-font-size');
-          if (currentSize) {
-            newLi.setAttribute('data-font-size', currentSize);
-            newLi.setAttribute('style', li.getAttribute('style') || '');
-          }
+          ['data-font-size', 'data-line-spacing', 'data-align', 'data-indent', 'style'].forEach((attr) => {
+            if (li?.hasAttribute(attr)) newLi.setAttribute(attr, li.getAttribute(attr)!);
+          });
 
           const afterRange = range.cloneRange();
           afterRange.setEndAfter(li.lastChild || li);
@@ -1779,10 +1361,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
             newLi.appendChild(fragment);
           }
 
-          if (
-            !li.childNodes.length ||
-            (li.textContent === '' && !li.querySelector('br'))
-          ) {
+          if (!li.childNodes.length || (li.textContent === '' && !li.querySelector('br'))) {
             li.innerHTML = '<br>';
           }
 
@@ -1800,7 +1379,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       }
     }
 
-    // Prevent typing if character limit reached
+    // 5,000 visible characters limit check
     if (
       !e.ctrlKey &&
       !e.metaKey &&
@@ -1819,7 +1398,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
   };
 
-  // Paste handling with clean sanitization and length clamping
+  // Safe paste handling
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault();
     const html = e.clipboardData.getData('text/html');
@@ -1859,7 +1438,13 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           `Pasted content was truncated to fit the ${MAX_RULES_LENGTH.toLocaleString()} character limit.`
         );
       }
-      document.execCommand('insertText', false, toInsert);
+      if (toInsert.includes('\n')) {
+        const lines = toInsert.split(/\r?\n/);
+        const htmlLines = lines.map((l) => `<p>${escapeHtml(l) || '<br>'}</p>`).join('');
+        document.execCommand('insertHTML', false, htmlLines);
+      } else {
+        document.execCommand('insertText', false, toInsert);
+      }
     }
 
     updateEditorState();
@@ -1889,6 +1474,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       onClose={onClose}
       title={`Event Rules & Guidelines — ${eventTitle || 'New Event'}`}
       hideCloseButton={true}
+      maxWidth="max-w-xl"
     >
       <style>{`
         .rules-rich-editor ul,
@@ -1918,10 +1504,13 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           position: absolute !important;
           left: 0 !important;
           top: 0 !important;
-          color: #38bdf8 !important;
+          color: #0284c7 !important;
           font-weight: 700 !important;
           font-size: 1.05em !important;
           user-select: none !important;
+        }
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor ul[data-list-type="checklist"] > li::before {
+          color: #38bdf8 !important;
         }
         .rules-rich-editor ul[data-list-type="arrow"] {
           list-style-type: none !important;
@@ -1938,12 +1527,14 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           position: absolute !important;
           left: 0 !important;
           top: 0 !important;
-          color: #38bdf8 !important;
+          color: #0284c7 !important;
           font-weight: 700 !important;
           font-size: 1.1em !important;
           user-select: none !important;
         }
-        /* Do not show bullets on blank/empty lines */
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor ul[data-list-type="arrow"] > li::before {
+          color: #38bdf8 !important;
+        }
         .rules-rich-editor ul > li:empty,
         .rules-rich-editor ul > li:has(> br:only-child),
         .rules-rich-editor ol > li:empty,
@@ -1976,7 +1567,6 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           line-height: 1.6rem !important;
         }
 
-        /* Line spacing overrides */
         .rules-rich-editor [data-line-spacing="1"] {
           line-height: 1 !important;
         }
@@ -1989,41 +1579,73 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         .rules-rich-editor [data-line-spacing="2.5"] {
           line-height: 2.5 !important;
         }
+
+        .rules-rich-editor [data-align="left"] {
+          text-align: left !important;
+        }
+        .rules-rich-editor [data-align="center"] {
+          text-align: center !important;
+        }
+        .rules-rich-editor [data-align="right"] {
+          text-align: right !important;
+        }
+
+        .rules-rich-editor [data-indent="1"] {
+          margin-left: 1.5rem !important;
+        }
+        .rules-rich-editor [data-indent="2"] {
+          margin-left: 3rem !important;
+        }
+        .rules-rich-editor [data-indent="3"] {
+          margin-left: 4.5rem !important;
+        }
+        .rules-rich-editor [data-indent="4"] {
+          margin-left: 6rem !important;
+        }
+        .rules-rich-editor [data-indent="5"] {
+          margin-left: 7.5rem !important;
+        }
+        .rules-rich-editor [data-indent="6"] {
+          margin-left: 9rem !important;
+        }
       `}</style>
 
       <div className="space-y-4">
-        {/* Header Notice Banner */}
-        <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-start gap-2.5">
-          <ScrollText className="w-5 h-5 text-blue-600 dark:text-sky-400 shrink-0 mt-0.5" />
-          <div className="text-xs space-y-1">
-            <p className="font-bold text-blue-900 dark:text-blue-200">
+        {/* Header Notice Banner — light & dark theme */}
+        <div className="p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-500/10 border border-blue-200/80 dark:border-blue-500/25 flex items-start gap-3 shadow-xs dark:shadow-sm">
+          <div className="w-8 h-8 rounded-xl bg-blue-100/90 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 flex items-center justify-center shrink-0 mt-0.5 shadow-inner">
+            <ScrollText className="w-4 h-4 text-blue-600 dark:text-sky-400" />
+          </div>
+          <div className="text-xs space-y-0.5">
+            <p className="font-bold text-blue-900 dark:text-sky-200 tracking-wide text-xs">
               Configure Event Participation Rules
             </p>
-            <p className="text-blue-700/80 dark:text-blue-300/80 leading-relaxed">
-              Define the eligibility guidelines, event schedule flow, judging criteria, code of conduct, and submission specifications for participants.
+            <p className="text-blue-800/80 dark:text-slate-300 text-[11.5px] leading-relaxed">
+              Define the eligibility guidelines, event schedule flow, judging criteria, code of conduct, and submission specifications.
             </p>
           </div>
         </div>
 
-        {/* Rich Text Editor Container */}
-        <div className="rounded-2xl bg-slate-900/90 border border-slate-700/80 shadow-inner overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/40 focus-within:border-blue-500/60 transition-all">
-          {/* Professional Compact Toolbar — single row */}
-          <div className="px-2.5 py-1.5 border-b border-slate-700/70 bg-slate-800/60 flex items-center gap-1">
-
-
-            {/* Group 2: Bold · Italic · Underline */}
-            <div className="flex items-center gap-0.5 bg-slate-900/50 border border-slate-700/50 rounded-lg p-0.5">
+        {/* Rich Text Editor Container — light & dark theme */}
+        <div className="rounded-2xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 shadow-sm dark:shadow-2xl dark:shadow-black/40 relative focus-within:ring-2 focus-within:ring-blue-500/30 dark:focus-within:ring-sky-500/50 focus-within:border-blue-500/60 dark:focus-within:border-sky-500/70 transition-all">
+          {/* Professional Compact Toolbar — single unified row, all buttons in one line */}
+          <div className="px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/70 flex items-center flex-nowrap gap-1 relative z-40 select-none rounded-t-2xl">
+            {/* Group 1: Bold · Italic · Underline */}
+            <div className="flex items-center bg-slate-200/60 dark:bg-slate-900/70 border border-slate-300/80 dark:border-slate-700/60 rounded-lg p-0.5 shrink-0 shadow-inner">
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
                 onClick={() => handleToggleFormat('bold')}
                 title="Bold (Ctrl+B)"
                 aria-label="Bold (Ctrl+B)"
                 aria-pressed={isBold}
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
                   isBold
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
+                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700/70'
                 }`}
               >
                 <Bold className="w-3.5 h-3.5" />
@@ -2031,7 +1653,10 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
                 onClick={() => handleToggleFormat('italic')}
                 title="Italic (Ctrl+I)"
                 aria-label="Italic (Ctrl+I)"
@@ -2039,7 +1664,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
                   isItalic
                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700/70'
                 }`}
               >
                 <Italic className="w-3.5 h-3.5" />
@@ -2047,7 +1672,10 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
                 onClick={() => handleToggleFormat('underline')}
                 title="Underline (Ctrl+U)"
                 aria-label="Underline (Ctrl+U)"
@@ -2055,7 +1683,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
                   isUnderline
                     ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700/70'
                 }`}
               >
                 <Underline className="w-3.5 h-3.5" />
@@ -2063,37 +1691,47 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
             </div>
 
             {/* Separator */}
-            <div className="w-px h-5 bg-slate-700/50 mx-0.5 shrink-0" />
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
 
-            {/* Font Size Dropdown */}
-            <div className="relative" ref={dropdownRef}>
+            {/* Group 2: Font Size Dropdown */}
+            <div className="relative shrink-0" ref={fontDropdownRef}>
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
                 onClick={() => {
                   setIsPlaceholderDismissed(true);
                   setIsFontDropdownOpen((prev) => !prev);
                   setIsColorPickerOpen(false);
                   setIsLineSpacingOpen(false);
+                  setIsListsDropdownOpen(false);
                 }}
                 title="Font Size"
                 aria-label="Font Size"
                 aria-haspopup="listbox"
                 aria-expanded={isFontDropdownOpen}
-                className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11px] font-semibold tracking-wide border transition-all cursor-pointer ${
+                className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11.5px] font-medium tracking-wide border transition-all cursor-pointer ${
                   isFontDropdownOpen
-                    ? 'bg-slate-700 border-slate-600 text-slate-100'
-                    : 'bg-slate-900/50 border-slate-700/50 text-slate-400 hover:text-slate-100 hover:bg-slate-700/70 hover:border-slate-600/60'
+                    ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
                 <span className="capitalize">{activeFontSize}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${isFontDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform duration-150 ${
+                    isFontDropdownOpen
+                      ? 'rotate-180 text-blue-600 dark:text-sky-400'
+                      : 'text-slate-400 dark:text-slate-400'
+                  }`}
+                />
               </button>
 
               {isFontDropdownOpen && (
                 <div
                   role="listbox"
-                  className="absolute left-0 mt-1.5 w-36 rounded-xl bg-slate-900 border border-slate-700/80 shadow-2xl shadow-black/70 py-1 z-30 backdrop-blur-md overflow-hidden"
+                  className="absolute left-0 top-full mt-2 w-40 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
                 >
                   {(['small', 'normal', 'large'] as const).map((size) => (
                     <button
@@ -2103,126 +1741,73 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       aria-selected={activeFontSize === size}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleApplyFontSize(size)}
-                      className={`w-full px-3 py-1.5 flex items-center justify-between cursor-pointer transition-colors ${
+                      className={`w-full px-3 py-2 flex items-center justify-between cursor-pointer transition-all text-xs rounded-xl ${
                         activeFontSize === size
-                          ? 'bg-blue-500/15 text-sky-400'
-                          : 'text-slate-300 hover:bg-slate-800'
+                          ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                       }`}
                     >
-                      <span className={`font-medium ${size === 'small' ? 'text-[10px]' : size === 'large' ? 'text-sm' : 'text-xs'}`}>
-                        {size === 'small' ? 'Small — 12px' : size === 'normal' ? 'Normal — 14px' : 'Large — 18px'}
+                      <span
+                        className={`font-medium ${
+                          size === 'small' ? 'text-[11px]' : size === 'large' ? 'text-sm font-semibold' : 'text-xs'
+                        }`}
+                      >
+                        {size === 'small'
+                          ? 'Small — 12px'
+                          : size === 'normal'
+                          ? 'Normal — 14px'
+                          : 'Large — 18px'}
                       </span>
-                      {activeFontSize === size && <Check className="w-3 h-3 text-sky-400 shrink-0" />}
+                      {activeFontSize === size && (
+                        <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      )}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Text Color Picker */}
-            <div className="relative" ref={colorPickerRef}>
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
-                onClick={() => {
-                  setIsPlaceholderDismissed(true);
-                  setIsColorPickerOpen((prev) => !prev);
-                  setIsFontDropdownOpen(false);
-                  setIsLineSpacingOpen(false);
-                }}
-                title="Text Color"
-                aria-label="Text Color"
-                aria-haspopup="dialog"
-                aria-expanded={isColorPickerOpen}
-                className={`w-7 h-7 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
-                  isColorPickerOpen
-                    ? 'bg-slate-700 border-slate-600'
-                    : 'bg-slate-900/50 border-slate-700/50 hover:bg-slate-700/70 hover:border-slate-600/60'
-                }`}
-              >
-                <Baseline className="w-3 h-3 text-slate-400" />
-                {/* Color indicator bar */}
-                <div
-                  className="w-3.5 h-0.5 rounded-full"
-                  style={{ backgroundColor: activeColor || '#94a3b8' }}
-                />
-              </button>
-
-              {isColorPickerOpen && (
-                <div
-                  role="dialog"
-                  aria-label="Text color picker"
-                  className="absolute left-0 mt-1.5 w-44 rounded-xl bg-slate-900 border border-slate-700/80 shadow-2xl shadow-black/70 p-2.5 z-30 backdrop-blur-md"
-                >
-                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider mb-2">Text Color</p>
-                  <div className="grid grid-cols-6 gap-1.5 mb-2">
-                    {TEXT_COLORS.filter(c => c.value).map((c) => (
-                      <button
-                        key={c.value}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleApplyColor(c.value)}
-                        title={c.name}
-                        aria-label={c.name}
-                        className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 cursor-pointer ${
-                          activeColor === c.value
-                            ? 'border-white shadow-md'
-                            : 'border-transparent hover:border-slate-500'
-                        }`}
-                        style={{ backgroundColor: c.value }}
-                      />
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleApplyColor('')}
-                    className={`w-full px-2 py-1 rounded-md text-[11px] font-medium flex items-center gap-1.5 cursor-pointer transition-colors ${
-                      !activeColor
-                        ? 'bg-blue-500/15 text-sky-400'
-                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-                    }`}
-                  >
-                    <div className="w-3.5 h-3.5 rounded-sm border border-dashed border-slate-500 bg-transparent" />
-                    Default
-                    {!activeColor && <Check className="w-3 h-3 text-sky-400 ml-auto" />}
-                  </button>
-                </div>
-              )}
-            </div>
-
             {/* Separator */}
-            <div className="w-px h-5 bg-slate-700/50 mx-0.5 shrink-0" />
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
 
-            {/* Line Spacing Dropdown */}
-            <div className="relative" ref={lineSpacingRef}>
+            {/* Group 3: Line Spacing Dropdown */}
+            <div className="relative shrink-0" ref={lineSpacingRef}>
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
                 onClick={() => {
                   setIsLineSpacingOpen((prev) => !prev);
                   setIsFontDropdownOpen(false);
                   setIsColorPickerOpen(false);
+                  setIsListsDropdownOpen(false);
                 }}
                 title="Line Spacing"
                 aria-label="Line Spacing"
                 aria-haspopup="listbox"
                 aria-expanded={isLineSpacingOpen}
-                className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11px] font-semibold border transition-all cursor-pointer ${
+                className={`h-7 px-1.5 rounded-lg flex items-center gap-0.5 text-[11.5px] font-medium tracking-wide border transition-all cursor-pointer ${
                   isLineSpacingOpen
-                    ? 'bg-slate-700 border-slate-600 text-slate-100'
-                    : 'bg-slate-900/50 border-slate-700/50 text-slate-400 hover:text-slate-100 hover:bg-slate-700/70 hover:border-slate-600/60'
+                    ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
-                <AlignJustify className="w-3 h-3" />
                 <span>{activeLineSpacing}×</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${isLineSpacingOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform duration-150 ${
+                    isLineSpacingOpen
+                      ? 'rotate-180 text-blue-600 dark:text-sky-400'
+                      : 'text-slate-400 dark:text-slate-400'
+                  }`}
+                />
               </button>
 
               {isLineSpacingOpen && (
                 <div
                   role="listbox"
-                  className="absolute left-0 mt-1.5 w-32 rounded-xl bg-slate-900 border border-slate-700/80 shadow-2xl shadow-black/70 py-1 z-30 backdrop-blur-md overflow-hidden"
+                  className="absolute left-0 top-full mt-2 w-40 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
                 >
                   {(['1', '1.5', '2', '2.5'] as const).map((sp) => (
                     <button
@@ -2232,14 +1817,24 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       aria-selected={activeLineSpacing === sp}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleApplyLineSpacing(sp)}
-                      className={`w-full px-3 py-1.5 text-xs flex items-center justify-between cursor-pointer transition-colors ${
+                      className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
                         activeLineSpacing === sp
-                          ? 'bg-blue-500/15 text-sky-400'
-                          : 'text-slate-300 hover:bg-slate-800'
+                          ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                          : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                       }`}
                     >
-                      <span>{sp === '1' ? 'Single (1×)' : sp === '1.5' ? 'Default (1.5×)' : sp === '2' ? 'Double (2×)' : 'Wide (2.5×)'}</span>
-                      {activeLineSpacing === sp && <Check className="w-3 h-3 text-sky-400 shrink-0" />}
+                      <span className="font-medium">
+                        {sp === '1'
+                          ? 'Compact (1.0)'
+                          : sp === '1.5'
+                          ? 'Normal (1.5)'
+                          : sp === '2'
+                          ? 'Relaxed (2.0)'
+                          : 'Extra (2.5)'}
+                      </span>
+                      {activeLineSpacing === sp && (
+                        <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -2247,92 +1842,330 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
             </div>
 
             {/* Separator */}
-            <div className="w-px h-5 bg-slate-700/50 mx-0.5 shrink-0" />
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
 
-            {/* Group 3: List Buttons — Bullet · Numbered · Checklist · Arrow */}
-            <div className="flex items-center gap-0.5 bg-slate-900/50 border border-slate-700/50 rounded-lg p-0.5">
+            {/* Group 4: Text Color Picker & Custom Color */}
+            <div className="relative shrink-0" ref={colorPickerRef}>
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
-                onClick={() => handleToggleList('bullet')}
-                title="Bullet List (•)"
-                aria-label="Bullet List"
-                aria-pressed={activeListType === 'bullet'}
-                className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
-                  activeListType === 'bullet'
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
+                onClick={() => {
+                  setIsPlaceholderDismissed(true);
+                  setIsColorPickerOpen((prev) => !prev);
+                  setIsFontDropdownOpen(false);
+                  setIsLineSpacingOpen(false);
+                  setIsListsDropdownOpen(false);
+                }}
+                title="Text Color"
+                aria-label="Text Color"
+                aria-haspopup="dialog"
+                aria-expanded={isColorPickerOpen}
+                className={`w-7 h-7 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
+                  isColorPickerOpen
+                    ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
-                <List className="w-3.5 h-3.5" />
+                <Baseline className="w-3.5 h-3.5" />
+                <div
+                  className="w-3.5 h-0.5 rounded-full shadow-xs"
+                  style={{ backgroundColor: activeColor || '#38bdf8' }}
+                />
               </button>
 
+              {isColorPickerOpen && (
+                <div
+                  role="dialog"
+                  aria-label="Text color picker"
+                  className="absolute left-0 top-full mt-2 w-52 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-3 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                      Text Color
+                    </p>
+                    <label className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-sky-400 hover:underline cursor-pointer font-medium">
+                      <span>Custom</span>
+                      <input
+                        type="color"
+                        value={activeColor || '#000000'}
+                        onChange={(e) => handleApplyColor(e.target.value)}
+                        className="w-4 h-4 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        title="Pick custom color"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-6 gap-1.5 mb-2.5">
+                    {TEXT_COLORS.filter((c) => c.value).map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleApplyColor(c.value)}
+                        title={c.name}
+                        aria-label={c.name}
+                        className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 cursor-pointer ${
+                          c.value === '#ffffff' ? 'border-slate-300 dark:border-slate-600' : 'border-transparent'
+                        } ${
+                          activeColor.toLowerCase() === c.value.toLowerCase()
+                            ? 'ring-2 ring-blue-500 shadow-md'
+                            : 'hover:border-slate-400'
+                        }`}
+                        style={{ backgroundColor: c.value }}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => handleApplyColor('')}
+                    className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors ${
+                      !activeColor
+                        ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/20 dark:text-sky-400'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    <div className="w-3.5 h-3.5 rounded-sm border border-dashed border-slate-400 dark:border-slate-500 bg-transparent" />
+                    Reset to Default
+                    {!activeColor && (
+                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 ml-auto" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Separator */}
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
+
+            {/* Group 5: Lists Dropdown (Bullet, Numbered, Checklist, Arrow) */}
+            <div className="relative shrink-0" ref={listsDropdownRef}>
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
-                onClick={() => handleToggleList('numbered')}
-                title="Numbered List (1.)"
-                aria-label="Numbered List"
-                aria-pressed={activeListType === 'numbered'}
-                className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
-                  activeListType === 'numbered'
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
+                onClick={() => {
+                  setIsListsDropdownOpen((prev) => !prev);
+                  setIsFontDropdownOpen(false);
+                  setIsColorPickerOpen(false);
+                  setIsLineSpacingOpen(false);
+                }}
+                title="Lists (Bullet, Numbered, Checklist, Arrow)"
+                aria-label="Lists"
+                aria-haspopup="listbox"
+                aria-expanded={isListsDropdownOpen}
+                className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11.5px] font-medium border transition-all cursor-pointer ${
+                  activeListType
+                    ? 'bg-blue-50 border-blue-400 text-blue-600 dark:bg-blue-600/20 dark:border-blue-500/60 dark:text-sky-300 shadow-xs'
+                    : isListsDropdownOpen
+                    ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
-                <ListOrdered className="w-3.5 h-3.5" />
+                {activeListType === 'numbered' ? (
+                  <ListOrdered className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                ) : activeListType === 'checklist' ? (
+                  <CheckSquare className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                ) : activeListType === 'arrow' ? (
+                  <ArrowRight className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400" />
+                ) : (
+                  <List className="w-3.5 h-3.5" />
+                )}
+                <span>Lists</span>
+                <ChevronDown
+                  className={`w-3 h-3 transition-transform duration-150 ${
+                    isListsDropdownOpen
+                      ? 'rotate-180 text-blue-600 dark:text-sky-400'
+                      : 'text-slate-400 dark:text-slate-400'
+                  }`}
+                />
               </button>
 
-              <button
-                type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
-                onClick={() => handleToggleList('checklist')}
-                title="Checklist (☑)"
-                aria-label="Checklist"
-                aria-pressed={activeListType === 'checklist'}
-                className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
-                  activeListType === 'checklist'
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
-                }`}
-              >
-                <CheckSquare className="w-3.5 h-3.5" />
-              </button>
+              {isListsDropdownOpen && (
+                <div
+                  role="listbox"
+                  className="absolute left-0 top-full mt-2 w-44 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
+                >
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={activeListType === 'bullet'}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      handleToggleList('bullet');
+                      setIsListsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                      activeListType === 'bullet'
+                        ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 font-medium">
+                      <List className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <span>Bullet List</span>
+                    </div>
+                    {activeListType === 'bullet' && (
+                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                    )}
+                  </button>
 
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={activeListType === 'numbered'}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      handleToggleList('numbered');
+                      setIsListsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                      activeListType === 'numbered'
+                        ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 font-medium">
+                      <ListOrdered className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <span>Numbered List</span>
+                    </div>
+                    {activeListType === 'numbered' && (
+                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={activeListType === 'checklist'}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      handleToggleList('checklist');
+                      setIsListsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                      activeListType === 'checklist'
+                        ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 font-medium">
+                      <CheckSquare className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <span>Checklist</span>
+                    </div>
+                    {activeListType === 'checklist' && (
+                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={activeListType === 'arrow'}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      handleToggleList('arrow');
+                      setIsListsDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                      activeListType === 'arrow'
+                        ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 font-medium">
+                      <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                      <span>Arrow List</span>
+                    </div>
+                    {activeListType === 'arrow' && (
+                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Separator */}
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
+
+            {/* Group 6: Indent & Outdent */}
+            <div className="flex items-center bg-slate-200/60 dark:bg-slate-900/70 border border-slate-300/80 dark:border-slate-700/60 rounded-lg p-0.5 shrink-0 shadow-inner gap-0.5">
               <button
                 type="button"
-                onMouseDown={(e) => { e.preventDefault(); saveCurrentRange(); }}
-                onClick={() => handleToggleList('arrow')}
-                title="Arrow List (→)"
-                aria-label="Arrow List"
-                aria-pressed={activeListType === 'arrow'}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
+                onClick={() => handleIndent('decrease')}
+                title="Decrease Indent (Shift+Tab)"
+                aria-label="Decrease Indent"
+                disabled={activeIndent === 0}
                 className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
-                  activeListType === 'arrow'
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-900/40'
-                    : 'text-slate-400 hover:text-slate-100 hover:bg-slate-700/70'
+                  activeIndent === 0
+                    ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-600'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700/70'
                 }`}
               >
-                <ArrowRight className="w-3.5 h-3.5" />
+                <IndentDecrease className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  saveCurrentRange();
+                }}
+                onClick={() => handleIndent('increase')}
+                title="Increase Indent (Tab)"
+                aria-label="Increase Indent"
+                disabled={activeIndent >= 6}
+                className={`w-7 h-7 rounded-md flex items-center justify-center transition-all cursor-pointer ${
+                  activeIndent >= 6
+                    ? 'opacity-40 cursor-not-allowed text-slate-400 dark:text-slate-600'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700/70'
+                }`}
+              >
+                <IndentIncrease className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            {/* Separator */}
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
+
+            {/* Group 7: Clear Formatting button */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                saveCurrentRange();
+              }}
+              onClick={handleClearFormatting}
+              title="Clear Formatting"
+              aria-label="Clear Formatting"
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shrink-0 active:scale-95 shadow-xs"
+            >
+              <RemoveFormatting className="w-3.5 h-3.5" />
+            </button>
           </div>
 
           {/* Editable Content Area */}
           <div
-            className="relative min-h-[220px] max-h-[340px] overflow-y-auto p-4 cursor-text"
+            className="relative min-h-[220px] max-h-[340px] overflow-y-auto p-4 cursor-text bg-white dark:bg-transparent"
             onClick={() => editorRef.current?.focus()}
           >
-            {/* Placeholder / Example Guidelines */}
+            {/* Placeholder Guidelines */}
             {!isPlaceholderDismissed && isEmpty && (
-              <div
-                className="absolute top-4 left-4 right-4 pointer-events-none select-none text-xs sm:text-sm leading-relaxed font-sans opacity-70"
-              >
-                <div className="text-slate-400 font-semibold mb-2">Example guidelines:</div>
-                <div className="space-y-1 text-slate-500">
-                  <div>• Eligibility: Open to all 1st–4th year undergraduate students.</div>
-                  <div>• Team Size: 1 to 4 members per team.</div>
-                  <div>• Code of Conduct: Any form of plagiarism will lead to immediate disqualification.</div>
-                  <div>• Submission: Projects must be submitted before the deadline on GitHub.</div>
+              <div className="absolute top-4 left-4 right-4 pointer-events-none select-none text-xs sm:text-sm leading-relaxed font-sans opacity-80">
+                <div className="text-slate-500 dark:text-slate-400 font-semibold mb-2">Example guidelines:</div>
+                <div className="space-y-1 text-slate-400 dark:text-slate-500">
+                  <div>• Eligibility: Open to all students.</div>
+                  <div>• Team Size: 1–4 members.</div>
+                  <div>• Code of Conduct: Maintain professional behavior.</div>
                 </div>
               </div>
             )}
@@ -2356,44 +2189,44 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
               onBlur={updateEditorState}
               onKeyUp={updateActiveFormatting}
               onMouseUp={updateActiveFormatting}
-              className="rules-rich-editor min-h-[200px] outline-none text-xs sm:text-sm leading-relaxed text-slate-100 font-sans"
+              className="rules-rich-editor min-h-[200px] outline-none text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-100 font-sans"
             />
           </div>
 
-          {/* Footer Status Bar */}
-          <div className="px-3.5 py-2 border-t border-slate-800/80 bg-slate-900/70 flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400/80 shrink-0"></span>
-              <span className="hidden sm:inline">Press Enter twice to exit list</span>
+          {/* Footer Status Bar — light & dark theme */}
+          <div className="px-3.5 py-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/80 flex items-center justify-between rounded-b-2xl">
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-sky-400 animate-pulse shrink-0" />
+              <span className="font-medium text-slate-600 dark:text-slate-400">Double Enter exits list • Ctrl+B/I/U/Z enabled</span>
             </div>
 
-            <span
-              className={`text-xs font-semibold shrink-0 ${
+            <div
+              className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-semibold tracking-wide transition-colors shrink-0 ${
                 remainingChars < 200
                   ? remainingChars <= 0
-                    ? 'text-red-500 font-bold'
-                    : 'text-amber-500 font-bold'
-                  : 'text-slate-400'
+                    ? 'bg-red-50 dark:bg-red-500/15 border-red-300 dark:border-red-500/40 text-red-600 dark:text-red-400 font-bold'
+                    : 'bg-amber-50 dark:bg-amber-500/15 border-amber-300 dark:border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold'
+                  : 'bg-white dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-300 shadow-xs'
               }`}
             >
-              {charCount.toLocaleString()} / {MAX_RULES_LENGTH.toLocaleString()} characters
-            </span>
+              {charCount.toLocaleString()} / {MAX_RULES_LENGTH.toLocaleString()} chars
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+        {/* Action Buttons — light & dark theme */}
+        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800/80">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+            className="px-4.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-sm active:scale-[0.98]"
           >
             Cancel
           </button>
@@ -2401,7 +2234,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           <button
             type="button"
             onClick={handleSave}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98]"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 via-sky-600 to-blue-600 hover:from-blue-500 hover:to-sky-500 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/25 hover:shadow-sky-500/30 active:scale-[0.98]"
           >
             <Check className="w-3.5 h-3.5 text-white" />
             <span>Save Rules</span>
