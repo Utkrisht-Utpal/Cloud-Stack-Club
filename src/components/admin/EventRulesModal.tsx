@@ -11,8 +11,6 @@ import {
   CheckSquare,
   ArrowRight,
   ChevronDown,
-  Undo2,
-  Redo2,
   Baseline,
   AlignJustify,
 } from 'lucide-react';
@@ -979,20 +977,6 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     updateEditorState();
   };
 
-  // Undo / Redo
-  const handleUndo = () => {
-    restoreSavedRange();
-    document.execCommand('undo', false);
-    saveCurrentRange();
-    updateEditorState();
-  };
-
-  const handleRedo = () => {
-    restoreSavedRange();
-    document.execCommand('redo', false);
-    saveCurrentRange();
-    updateEditorState();
-  };
 
   // Apply text color to selection
   const handleApplyColor = (color: string) => {

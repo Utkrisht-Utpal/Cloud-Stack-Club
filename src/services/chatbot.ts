@@ -3,7 +3,7 @@ import { getEvents } from './events';
 import { getEventRegistrationCountsMap } from './registrationForms';
 import { getCoreMembers, type CoreMember } from './members';
 import { getActiveNotices } from './notices';
-import { formatEventDate, formatEventTime } from '../utils/formatters';
+import { formatEventDate, formatEventTime, isRegistrationActive } from '../utils/formatters';
 import type { ChatbotFaq, ChatbotFaqPayload, Event } from '../types/database';
 
 const CHATBOT_LOCAL_FAQS_KEY = 'csc_chatbot_faqs_cache_v2';
@@ -807,6 +807,16 @@ export const resolveDynamicEventQuery = (
       cleanQuery.includes('solo or individual') ||
       cleanQuery.includes('registration date') ||
       cleanQuery.includes('register date') ||
+      cleanQuery.includes('want to register') ||
+      cleanQuery.includes('wanna register') ||
+      cleanQuery.includes('how to register') ||
+      cleanQuery.includes('where to register') ||
+      cleanQuery.includes('where can i register') ||
+      cleanQuery.includes('registration link') ||
+      cleanQuery.includes('link to register') ||
+      cleanQuery.includes('register for event') ||
+      cleanQuery.includes('book a seat') ||
+      cleanQuery.includes('reserve a seat') ||
       cleanQuery.includes('deadline') ||
       cleanQuery.includes('last date to register') ||
       cleanQuery === 'what s the time' ||
@@ -836,6 +846,8 @@ export const resolveDynamicEventQuery = (
           cleanQuery.includes('slots') ||
           cleanQuery.includes('rule') ||
           cleanQuery.includes('rules') ||
+          cleanQuery.includes('register') ||
+          cleanQuery.includes('registration') ||
           cleanQuery.includes('eligibility')));
 
     if (isGenericAspect) {
@@ -860,19 +872,95 @@ export const resolveDynamicEventQuery = (
     const maxReg = evt.max_registrations;
     const registered = regCountsMap[evt.id.toLowerCase()] || 0;
     const remaining = maxReg !== null ? Math.max(0, maxReg - registered) : null;
-    const isRegOpen = evt.registration_enabled;
+    const isRegOpen = isRegistrationActive(evt, registered);
     const eventUrl = `/events/${evt.slug || evt.id}`;
+    const registerUrl = `/events/${evt.slug || evt.id}/register`;
 
     const actionLinks: BotActionLink[] = [];
     if (isRegOpen) {
-      actionLinks.push({ label: `🎟️ Register for ${evt.title}`, url: eventUrl });
-    } else {
-      actionLinks.push({ label: `View ${evt.title}`, url: eventUrl });
+      actionLinks.push({ label: `🎟️ Register for ${evt.title}`, url: registerUrl });
     }
+    actionLinks.push({ label: isRegOpen ? `View Event Details` : `View ${evt.title}`, url: eventUrl });
     if (evt.status === 'completed') {
       actionLinks.unshift({ label: '📸 View Event Gallery', url: '/gallery' });
     }
     actionLinks.push({ label: '📅 Browse All Events', url: '/events' });
+
+    // Aspect 0: EXPLICIT REGISTRATION REQUEST ("I want to register for...")
+    const isRegisterIntent =
+      cleanQuery.includes('want to register') ||
+      cleanQuery.includes('wanna register') ||
+      cleanQuery.includes('how to register') ||
+      cleanQuery.includes('how do i register') ||
+      cleanQuery.includes('where to register') ||
+      cleanQuery.includes('where can i register') ||
+      cleanQuery.includes('can i register') ||
+      cleanQuery.includes('link to register') ||
+      cleanQuery.includes('registration link') ||
+      cleanQuery.includes('registration form') ||
+      cleanQuery.includes('sign up for') ||
+      cleanQuery.includes('signup for') ||
+      cleanQuery.includes('book a seat') ||
+      cleanQuery.includes('reserve a seat') ||
+      cleanQuery.includes('register for') ||
+      cleanQuery.includes('register in') ||
+      cleanQuery.includes('register now') ||
+      cleanQuery.includes('apply for event') ||
+      cleanQuery.includes('fill form') ||
+      cleanQuery.includes('entry pass') ||
+      cleanQuery.includes('get pass') ||
+      cleanQuery.includes('participate in');
+
+    if (isRegisterIntent) {
+      if (isRegOpen) {
+        const text = `🎟️ **Register for ${titleLabel}:**\n\n` +
+          `Registration for **${evt.title}** is **🟢 Open Now**!\n\n` +
+          (evt.supports_teams
+            ? `• 👥 **Participation Format:** Team Event (Up to **${evt.max_team_size || 4} members** per team). The Team Leader registers first to get a Team Code, and teammates join using that code.\n`
+            : `• 👥 **Participation Format:** Strictly Individual (Solo) pass.\n`) +
+          `• 📍 **Venue:** ${venue}\n` +
+          `• 🗓️ **Date & Time:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}\n` +
+          (evt.registration_end ? `• ⏳ **Registration Deadline:** ${formatEventDate(evt.registration_end)}\n` : '') +
+          (remaining !== null ? `• 💺 **Available Capacity:** ${remaining} seats remaining (${maxReg} total)\n\n` : '\n') +
+          `You can open the official registration form directly by clicking the button below:\n` +
+          `👉 [Open ${evt.title} Registration Form](${registerUrl})`;
+
+        return {
+          text: scrubPii(text),
+          suggestions: [],
+          actionLinks: [
+            { label: `🎟️ Register for ${evt.title}`, url: registerUrl },
+            { label: `📄 View Event Details`, url: eventUrl },
+            { label: '📅 Browse All Events', url: '/events' },
+          ],
+        };
+      } else {
+        const reason = evt.status === 'completed'
+          ? `This event was successfully completed on **${dateFormatted}**.`
+          : (maxReg && registered >= maxReg)
+          ? `Registration has reached maximum capacity (${maxReg} seats filled).`
+          : (evt.registration_end && new Date(evt.registration_end) < new Date())
+          ? `The registration deadline (${formatEventDate(evt.registration_end)}) has passed.`
+          : `Registrations are currently closed for this event.`;
+
+        const text = `🔴 **Registration Closed for ${titleLabel}:**\n\n` +
+          `${reason}\n\n` +
+          `• 🗓️ **Event Date:** ${dateFormatted}\n` +
+          `• 📍 **Venue:** ${venue}\n\n` +
+          `You can view the event overview or explore our upcoming events where registration is currently open!`;
+
+        return {
+          text: scrubPii(text),
+          suggestions: [],
+          actionLinks: [
+            { label: `📄 View ${evt.title} Details`, url: eventUrl },
+            (evt.status === 'completed'
+              ? { label: '📸 View Event Gallery', url: '/gallery' }
+              : { label: '📅 Browse Open Events', url: '/events' }),
+          ],
+        };
+      }
+    }
 
     // Aspect 1: WHERE / LOCATION / VENUE
     const isLocationQuery =
@@ -1202,13 +1290,17 @@ export const resolveDynamicEventQuery = (
         text += `\n\n*Also upcoming:* **${second.title}** (${formatEventDate(second.date)}).`;
       }
 
+      const actionLinks: BotActionLink[] = [];
+      if (top.registration_enabled) {
+        actionLinks.push({ label: `🎟️ Register for ${top.title}`, url: `/events/${top.slug || top.id}/register` });
+      }
+      actionLinks.push({ label: `View ${top.title}`, url: eventUrl });
+      actionLinks.push({ label: 'Browse All Events', url: '/events' });
+
       return {
         text: scrubPii(text),
         suggestions: [],
-        actionLinks: [
-          { label: `View ${top.title}`, url: eventUrl },
-          { label: 'Browse All Events', url: '/events' },
-        ],
+        actionLinks,
       };
     } else {
       return {
