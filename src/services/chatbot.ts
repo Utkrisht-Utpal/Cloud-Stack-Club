@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { getEvents } from './events';
+import { getEventRegistrationCountsMap } from './registrationForms';
 import { getCoreMembers, type CoreMember } from './members';
 import { getActiveNotices } from './notices';
 import { formatEventDate, formatEventTime } from '../utils/formatters';
@@ -740,14 +741,385 @@ export const resolveMemberQuery = (
  */
 export const resolveDynamicEventQuery = (
   cleanQuery: string,
-  events: Event[]
+  events: Event[],
+  regCountsMap: Record<string, number> = {}
 ): BotResolvedResponse | null => {
   if (!events || events.length === 0) return null;
 
   const validEvents = events.filter((e) => e.status !== 'cancelled');
   const tokens = cleanQuery.split(' ').filter((t) => !STOP_WORDS.has(t) && t.length > 1);
 
-  // A. Hackathons / Competitions query
+  // -------------------------------------------------------------
+  // 1. SPECIFIC EVENT NAME MATCH (Highest Priority)
+  // -------------------------------------------------------------
+  let matchedEvent: Event | null = null;
+
+  // A. Direct title or slug match
+  for (const evt of validEvents) {
+    const cleanTitle = normalizeText(evt.title);
+    const cleanSlug = normalizeText((evt.slug || '').replace(/-/g, ' '));
+    if (cleanQuery.includes(cleanTitle) || (cleanSlug.length > 3 && cleanQuery.includes(cleanSlug))) {
+      matchedEvent = evt;
+      break;
+    }
+  }
+
+  // B. Distinctive keywords match (e.g. "aws", "ideathon", "industry visit")
+  if (!matchedEvent) {
+    for (const evt of validEvents) {
+      const cleanTitle = normalizeText(evt.title);
+      const titleTokens = cleanTitle.split(' ').filter((t) => !STOP_WORDS.has(t) && t.length > 2);
+
+      // High-confidence match: "aws" is unique to AWS Certification
+      if (titleTokens.includes('aws') && (tokens.includes('aws') || cleanQuery.includes('aws'))) {
+        matchedEvent = evt;
+        break;
+      }
+
+      // Check token overlap
+      const matchCount = titleTokens.filter((tt) => tokens.includes(tt) || cleanQuery.includes(tt)).length;
+      if (matchCount > 0 && matchCount >= Math.min(titleTokens.length, 2)) {
+        matchedEvent = evt;
+        break;
+      }
+    }
+  }
+
+  // C. Generic Event Aspect Match (When user asks about "the event", "an event", or event aspects without a specific title)
+  let isGenericMatch = false;
+  if (!matchedEvent) {
+    const mentionsEvent =
+      cleanQuery.includes('event') ||
+      cleanQuery.includes('events') ||
+      cleanQuery.includes('workshop') ||
+      cleanQuery.includes('bootcamp') ||
+      cleanQuery.includes('hackathon') ||
+      cleanQuery.includes('competition');
+
+    const isGenericAspect =
+      cleanQuery.includes('capacity left') ||
+      cleanQuery.includes('seats left') ||
+      cleanQuery.includes('remaining seats') ||
+      cleanQuery.includes('capacity') ||
+      cleanQuery.includes('team size') ||
+      cleanQuery.includes('team or individual') ||
+      cleanQuery.includes('individual or team') ||
+      cleanQuery.includes('solo or individual') ||
+      cleanQuery.includes('registration date') ||
+      cleanQuery.includes('register date') ||
+      cleanQuery.includes('deadline') ||
+      cleanQuery.includes('last date to register') ||
+      cleanQuery === 'what s the time' ||
+      cleanQuery === 'whats the time' ||
+      cleanQuery === 'what is the time' ||
+      cleanQuery === 'what is the timing' ||
+      cleanQuery === 'what s the timing' ||
+      cleanQuery === 'event time' ||
+      cleanQuery === 'timing' ||
+      cleanQuery === 'timings' ||
+      (mentionsEvent &&
+        (cleanQuery.includes('where') ||
+          cleanQuery.includes('venue') ||
+          cleanQuery.includes('location') ||
+          cleanQuery.includes('place') ||
+          cleanQuery.includes('when') ||
+          cleanQuery.includes('date') ||
+          cleanQuery.includes('schedule') ||
+          cleanQuery.includes('day') ||
+          cleanQuery.includes('time') ||
+          cleanQuery.includes('timing') ||
+          cleanQuery.includes('timings') ||
+          cleanQuery.includes('clock') ||
+          cleanQuery.includes('seat') ||
+          cleanQuery.includes('seats') ||
+          cleanQuery.includes('slot') ||
+          cleanQuery.includes('slots') ||
+          cleanQuery.includes('rule') ||
+          cleanQuery.includes('rules') ||
+          cleanQuery.includes('eligibility')));
+
+    if (isGenericAspect) {
+      const liveOrUpcoming = validEvents
+        .filter((e) => e.status === 'live' || e.status === 'upcoming')
+        .sort((a, b) => (new Date(a.date || '').getTime() || 0) - (new Date(b.date || '').getTime() || 0));
+
+      if (liveOrUpcoming.length > 0) {
+        matchedEvent = liveOrUpcoming[0];
+        isGenericMatch = true;
+      }
+    }
+  }
+
+  // If a specific event is identified (or inferred from upcoming event), answer the exact aspect requested!
+  if (matchedEvent) {
+    const evt = matchedEvent;
+    const titleLabel = isGenericMatch ? `Upcoming Event (${evt.title})` : evt.title;
+    const dateFormatted = formatEventDate(evt.date);
+    const timeFormatted = evt.start_time ? formatEventTime(evt.start_time) : '';
+    const venue = evt.location || 'Chandigarh University campus (Exact room/hall to be announced)';
+    const maxReg = evt.max_registrations;
+    const registered = regCountsMap[evt.id.toLowerCase()] || 0;
+    const remaining = maxReg !== null ? Math.max(0, maxReg - registered) : null;
+    const isRegOpen = evt.registration_enabled;
+    const eventUrl = `/events/${evt.slug || evt.id}`;
+
+    const actionLinks: BotActionLink[] = [];
+    if (isRegOpen) {
+      actionLinks.push({ label: `🎟️ Register for ${evt.title}`, url: eventUrl });
+    } else {
+      actionLinks.push({ label: `View ${evt.title}`, url: eventUrl });
+    }
+    if (evt.status === 'completed') {
+      actionLinks.unshift({ label: '📸 View Event Gallery', url: '/gallery' });
+    }
+    actionLinks.push({ label: '📅 Browse All Events', url: '/events' });
+
+    // Aspect 1: WHERE / LOCATION / VENUE
+    const isLocationQuery =
+      cleanQuery.includes('where') ||
+      cleanQuery.includes('location') ||
+      cleanQuery.includes('venue') ||
+      cleanQuery.includes('place') ||
+      cleanQuery.includes('room') ||
+      cleanQuery.includes('hall') ||
+      cleanQuery.includes('auditorium') ||
+      cleanQuery.includes('campus') ||
+      cleanQuery.includes('organised') ||
+      cleanQuery.includes('organized') ||
+      cleanQuery.includes('held') ||
+      cleanQuery.includes('offline');
+
+    if (isLocationQuery) {
+      const locationVerb = evt.status === 'completed' ? 'took place at' : 'will take place at';
+      const text = `📍 **Venue & Location for ${titleLabel}:**\n\n` +
+        `**${evt.title}** ${locationVerb} **${venue}** on the Chandigarh University campus.\n\n` +
+        `• 🗓️ **Date:** ${dateFormatted}\n` +
+        `• ⏰ **Time:** ${timeFormatted || 'Schedule to be notified'}\n` +
+        `• 🎟️ **Registration:** ${isRegOpen ? '🟢 Open Now' : '🔴 Closed'}` +
+        (remaining !== null ? `\n• 💺 **Capacity:** ${remaining} seats remaining (${maxReg} total)` : '');
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 2: CAPACITY / SEATS LEFT / AVAILABILITY
+    const isCapacityQuery =
+      cleanQuery.includes('capacity') ||
+      cleanQuery.includes('seat') ||
+      cleanQuery.includes('seats') ||
+      cleanQuery.includes('slot') ||
+      cleanQuery.includes('slots') ||
+      cleanQuery.includes('how many can') ||
+      cleanQuery.includes('how many participants') ||
+      cleanQuery.includes('how many students') ||
+      cleanQuery.includes('availability') ||
+      cleanQuery.includes('remaining');
+
+    if (isCapacityQuery) {
+      const text = `💺 **Seat Capacity for ${titleLabel}:**\n\n` +
+        (maxReg !== null
+          ? `• 🎯 **Total Seat Capacity:** **${maxReg} seats**\n` +
+            `• 👥 **Currently Registered:** **${registered} participants**\n` +
+            `• 🟢 **Seats Remaining:** **${remaining} seats available**\n\n`
+          : `• 🎯 **Total Capacity:** Open capacity (no hard limit)\n\n`) +
+        (isRegOpen
+          ? `Registration is currently **Open**! You can reserve your seat directly via the event registration form.`
+          : `Registration is currently **Closed**.`);
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 3: TEAM SIZE / FORMAT (SOLO VS TEAM)
+    const isTeamFormatQuery =
+      cleanQuery.includes('team size') ||
+      cleanQuery.includes('team or') ||
+      cleanQuery.includes('solo or') ||
+      cleanQuery.includes('individual or') ||
+      cleanQuery.includes('solo') ||
+      cleanQuery.includes('individual') ||
+      cleanQuery.includes('team members') ||
+      cleanQuery.includes('how many members') ||
+      cleanQuery.includes('group size') ||
+      cleanQuery.includes('participate alone') ||
+      cleanQuery.includes('format');
+
+    if (isTeamFormatQuery) {
+      let text = '';
+      if (evt.supports_teams) {
+        text = `👥 **Participation Format for ${titleLabel}:**\n\n` +
+          `This is a **Team Event**! 🎉\n` +
+          `• **Team Size:** Up to **${evt.max_team_size || 4} members** per team.\n` +
+          `• **Registration Method:** The Team Leader registers first and receives a unique Team Code. Teammates then join by selecting "Join Existing Team" and entering the code.\n` +
+          `• **Solo Registration:** Solo participants are also welcome to register.`;
+      } else {
+        text = `👥 **Participation Format for ${titleLabel}:**\n\n` +
+          `**${evt.title}** is strictly an **Individual (Solo)** participation event.\n` +
+          `• **Team Size:** 1 participant per registration.\n` +
+          `• **Passes:** Each registered student receives their personal verified entry pass via email.`;
+      }
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 4: REGISTRATION DATES / DEADLINE / WINDOW
+    const isRegDatesQuery =
+      cleanQuery.includes('registration date') ||
+      cleanQuery.includes('register date') ||
+      cleanQuery.includes('deadline') ||
+      cleanQuery.includes('last date') ||
+      cleanQuery.includes('last day') ||
+      cleanQuery.includes('till when') ||
+      cleanQuery.includes('until when') ||
+      cleanQuery.includes('registration open') ||
+      cleanQuery.includes('registration close') ||
+      cleanQuery.includes('apply date') ||
+      cleanQuery.includes('when can i register') ||
+      cleanQuery.includes('is registration open');
+
+    if (isRegDatesQuery) {
+      const regStart = evt.registration_start ? formatEventDate(evt.registration_start) : 'Open';
+      const regEnd = evt.registration_end ? formatEventDate(evt.registration_end) : 'Until seats fill';
+      const text = `🎟️ **Registration Details for ${titleLabel}:**\n\n` +
+        `• 🟢 **Registration Window:** ${regStart} – ${regEnd}\n` +
+        `• 📌 **Current Status:** ${isRegOpen ? '🟢 **Registration is Open!**' : '🔴 **Registration is Closed**'}\n` +
+        `• 👥 **Format:** ${evt.supports_teams ? `Team Event (${evt.max_team_size || 4} members)` : 'Individual Pass'}\n` +
+        `• 💺 **Capacity:** ${maxReg ? `${maxReg} total seats` : 'Open capacity'}`;
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 5: TIME / TIMING
+    const isTimeQuery =
+      cleanQuery.includes('time') ||
+      cleanQuery.includes('timing') ||
+      cleanQuery.includes('timings') ||
+      cleanQuery.includes('clock') ||
+      cleanQuery.includes('what time') ||
+      cleanQuery.includes('start time') ||
+      cleanQuery.includes('end time');
+
+    if (isTimeQuery) {
+      const timeStr = evt.start_time ? formatEventTime(evt.start_time) : 'Schedule TBA';
+      const endTimeStr = evt.end_time ? ` to ${formatEventTime(evt.end_time)}` : '';
+      const timeVerb = evt.status === 'completed' ? 'The event was held at' : 'The event begins at';
+      const text = `⏰ **Timing for ${titleLabel}:**\n\n` +
+        `${timeVerb} **${timeStr}${endTimeStr}** on **${dateFormatted}**.\n\n` +
+        `• 📍 **Venue:** ${venue}\n` +
+        `• 🎟️ **Registration:** ${isRegOpen ? 'Open Now' : 'Closed'}`;
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 6: DATE / WHEN / SCHEDULE
+    const isDateQuery =
+      cleanQuery.includes('when') ||
+      cleanQuery.includes('date') ||
+      cleanQuery.includes('day') ||
+      cleanQuery.includes('schedule') ||
+      cleanQuery.includes('which day') ||
+      cleanQuery.includes('what date');
+
+    if (isDateQuery) {
+      const dateVerb = evt.status === 'completed' ? 'was held on' : 'is scheduled for';
+      const text = `🗓️ **Schedule & Date for ${titleLabel}:**\n\n` +
+        `**${evt.title}** ${dateVerb} **${dateFormatted}**${timeFormatted ? ` at **${timeFormatted}**` : ''}.\n\n` +
+        `• 📍 **Venue:** ${venue}\n` +
+        `• 🎟️ **Registration:** ${isRegOpen ? 'Open Now' : 'Closed'}`;
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 7: RULES & ELIGIBILITY
+    const isRulesQuery =
+      cleanQuery.includes('rule') ||
+      cleanQuery.includes('rules') ||
+      cleanQuery.includes('eligible') ||
+      cleanQuery.includes('eligibility') ||
+      cleanQuery.includes('requirement') ||
+      cleanQuery.includes('requirements') ||
+      cleanQuery.includes('guidelines') ||
+      cleanQuery.includes('who can participate') ||
+      cleanQuery.includes('criteria');
+
+    if (isRulesQuery) {
+      let text = `📋 **Rules & Eligibility for ${titleLabel}:**\n\n`;
+      if (evt.rules) {
+        const cleanRules = evt.rules.split('\n').slice(0, 10).join('\n');
+        text += `${cleanRules}\n\n`;
+      } else {
+        text += `• Open to all Chandigarh University students.\n` +
+          `• Official university email ID is required for registration.\n` +
+          `• Please bring your University ID card to the venue.\n\n`;
+      }
+      text += `You can view complete registration instructions and guidelines on the event page.`;
+
+      return {
+        text: scrubPii(text),
+        suggestions: [],
+        actionLinks,
+      };
+    }
+
+    // Aspect 8: GENERAL / ALL DETAILS
+    const statusLabel =
+      evt.status === 'live'
+        ? '🟢 Currently Live & Ongoing'
+        : evt.status === 'upcoming'
+        ? '🗓️ Upcoming Event'
+        : '🏁 Event Completed';
+    const regStatus = isRegOpen
+      ? evt.supports_teams
+        ? 'Open (Team & Solo Registrations)'
+        : 'Open (Individual Passes)'
+      : 'Registration Closed';
+
+    let text = `Here are the details for **${titleLabel}**:\n\n` +
+      `• 📌 **Status:** ${statusLabel}\n` +
+      `• 🗓️ **Date & Time:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}\n` +
+      `• 📍 **Venue / Location:** ${venue}\n` +
+      `• 👥 **Participation Format:** ${evt.supports_teams ? `Team Event (Up to ${evt.max_team_size || 4} members)` : 'Individual (Solo)'}\n` +
+      `• 🎟️ **Registration:** ${regStatus}` +
+      (evt.registration_end ? ` (Deadline: ${formatEventDate(evt.registration_end)})` : '') + '\n' +
+      (maxReg !== null ? `• 💺 **Capacity:** ${remaining !== null ? `${remaining} / ${maxReg} seats available` : `${maxReg} total seats`}\n` : '');
+
+    if (evt.description) {
+      const cleanDesc = evt.description.replace(/\n+/g, ' ').trim();
+      text += `\n${cleanDesc.length > 220 ? cleanDesc.slice(0, 220) + '...' : cleanDesc}\n`;
+    }
+
+    return {
+      text: scrubPii(text),
+      suggestions: [],
+      actionLinks,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // 2. HACKATHONS / COMPETITIONS LIST QUERY
+  // -------------------------------------------------------------
   if (
     cleanQuery.includes('hackathon') ||
     cleanQuery.includes('coding competition') ||
@@ -782,52 +1154,6 @@ export const resolveDynamicEventQuery = (
         text: scrubPii(text),
         suggestions: [],
         actionLinks,
-      };
-    }
-  }
-
-  // B. Specific Event Name match (e.g. AWS Certification, Industry Visit, Orbit-X, Stack Sprint, Elevate-X)
-  for (const evt of validEvents) {
-    const cleanTitle = normalizeText(evt.title);
-    const titleTokens = cleanTitle.split(' ').filter((t) => !STOP_WORDS.has(t));
-
-    const matchesExact = cleanQuery.includes(cleanTitle) || cleanTitle.includes(cleanQuery);
-    const matchesTokens =
-      titleTokens.length > 0 &&
-      titleTokens.some((tt) => tt.length > 2 && tokens.includes(tt)) &&
-      (tokens.length === 1 || titleTokens.filter((tt) => tokens.includes(tt)).length >= Math.min(2, titleTokens.length));
-
-    if (matchesExact || matchesTokens) {
-      const dateFormatted = formatEventDate(evt.date);
-      const timeFormatted = evt.start_time ? formatEventTime(evt.start_time) : '';
-      const venueFormatted = evt.location ? `\n• 📍 **Venue:** ${evt.location}` : '';
-      const statusLabel =
-        evt.status === 'live'
-          ? '🟢 Currently Live & Ongoing'
-          : evt.status === 'upcoming'
-          ? '🗓️ Upcoming Event'
-          : '🏁 Event Completed';
-      const regStatus = evt.registration_enabled
-        ? evt.supports_teams
-          ? 'Open (Team & Solo Registrations)'
-          : 'Open (Individual Passes)'
-        : 'Registration Closed';
-
-      let text = `Here are the details for **${evt.title}**:\n\n• 📌 **Status:** ${statusLabel}\n• 🗓️ **Date:** ${dateFormatted}${timeFormatted ? ` at ${timeFormatted}` : ''}${venueFormatted}\n• 🎟️ **Registration:** ${regStatus}`;
-
-      if (evt.description) {
-        const cleanDesc = evt.description.replace(/\n+/g, ' ').trim();
-        text += `\n\n${cleanDesc.length > 200 ? cleanDesc.slice(0, 200) + '...' : cleanDesc}`;
-      }
-
-      const eventUrl = `/events/${evt.slug || evt.id}`;
-      return {
-        text: scrubPii(text),
-        suggestions: [],
-        actionLinks: [
-          { label: `View ${evt.title}`, url: eventUrl },
-          { label: '📅 Browse Events', url: '/events' },
-        ],
       };
     }
   }
@@ -898,27 +1224,54 @@ export const resolveDynamicEventQuery = (
   }
 
   // D. Past / Completed Events query
-  if (
+  const isPastQuery =
     cleanQuery.includes('past event') ||
     cleanQuery.includes('previous event') ||
     cleanQuery.includes('completed event') ||
-    cleanQuery.includes('what events happened')
-  ) {
-    const past = validEvents.filter((e) => e.status === 'completed');
+    cleanQuery.includes('earlier event') ||
+    cleanQuery.includes('last event') ||
+    cleanQuery.includes('old event') ||
+    cleanQuery.includes('past workshop') ||
+    cleanQuery.includes('previous workshop') ||
+    cleanQuery.includes('completed workshop') ||
+    cleanQuery.includes('earlier workshop') ||
+    cleanQuery.includes('past hackathon') ||
+    cleanQuery.includes('previous hackathon') ||
+    cleanQuery.includes('what events happened') ||
+    cleanQuery.includes('events conducted') ||
+    cleanQuery.includes('did club conduct') ||
+    cleanQuery.includes('club conduct') ||
+    cleanQuery.includes('events organized') ||
+    cleanQuery.includes('events held') ||
+    cleanQuery.includes('events so far') ||
+    cleanQuery.includes('history of events') ||
+    cleanQuery.includes('previous activities') ||
+    cleanQuery.includes('past activities') ||
+    ((cleanQuery.includes('past') || cleanQuery.includes('previous') || cleanQuery.includes('earlier') || cleanQuery.includes('history')) &&
+      (cleanQuery.includes('event') || cleanQuery.includes('workshop') || cleanQuery.includes('session') || cleanQuery.includes('hackathon')));
+
+  if (isPastQuery) {
+    const past = validEvents
+      .filter((e) => e.status === 'completed')
+      .sort((a, b) => (new Date(b.date || '').getTime() || 0) - (new Date(a.date || '').getTime() || 0));
+
     if (past.length > 0) {
-      let text = `Here are some of the flagship past events organized by Cloud Stack Club:\n\n`;
+      let text = `Here are the major completed events and workshops organized by Cloud Stack Club:\n\n`;
       text += past
-        .slice(0, 4)
-        .map((p) => `• **${p.title}** (${formatEventDate(p.date)}) — ${p.location || 'Chandigarh University'}`)
-        .join('\n');
-      text += `\n\nYou can see event photos, project highlights, and memories in our Event Gallery!`;
+        .slice(0, 5)
+        .map((p) => {
+          const format = p.supports_teams ? `Team Event (Up to ${p.max_team_size || 4} members)` : 'Individual / Open';
+          return `🏆 **${p.title}**\n• 🗓️ **Date:** ${formatEventDate(p.date)}\n• 📍 **Venue:** ${p.location || 'Chandigarh University'}\n• 👥 **Format:** ${format}`;
+        })
+        .join('\n\n');
+      text += `\n\nYou can explore photo albums, project highlights, and memories in our official Event Gallery!`;
 
       return {
         text: scrubPii(text),
         suggestions: [],
         actionLinks: [
           { label: '📸 View Event Gallery', url: '/gallery' },
-          { label: '📅 Browse Events', url: '/events' },
+          { label: '📅 Browse All Events', url: '/events' },
         ],
       };
     }
@@ -1427,8 +1780,23 @@ export const resolveBotQuery = async (
 
   // 3. DYNAMIC REAL EVENTS ENGINE (Live DB)
   try {
-    const events = await getEvents();
-    const eventMatch = resolveDynamicEventQuery(cleanQ, events);
+    const [eventsResult, countsMapResult] = await Promise.allSettled([
+      getEvents(),
+      getEventRegistrationCountsMap(),
+    ]);
+
+    let events: Event[] = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+    const regCountsMap: Record<string, number> = countsMapResult.status === 'fulfilled' ? countsMapResult.value : {};
+
+    // Direct RPC fallback if events array is empty
+    if (!events || events.length === 0) {
+      const { data: rpcEvts } = await supabase.rpc('get_public_events');
+      if (rpcEvts && Array.isArray(rpcEvts)) {
+        events = rpcEvts as Event[];
+      }
+    }
+
+    const eventMatch = resolveDynamicEventQuery(cleanQ, events, regCountsMap);
     if (eventMatch) {
       return eventMatch;
     }
@@ -1658,11 +2026,43 @@ export const resolveBotQuery = async (
 
   // 12. CERTIFICATES & CORRECTION INTENT
   const isCertIntent =
-    cleanQ.includes('cert') ||
-    cleanQ.includes('certificate') ||
-    cleanQ.includes('wrong name') ||
-    cleanQ.includes('attendance issue') ||
-    cleanQ.includes('spelling');
+    !cleanQ.includes('certification') &&
+    !cleanQ.includes('certified') &&
+    (
+      ((cleanQ.includes('certificate') ||
+        cleanQ.includes('cert ') ||
+        cleanQ.endsWith('cert') ||
+        cleanQ.includes('participation cert')) &&
+        (cleanQ.includes('download') ||
+          cleanQ.includes('get') ||
+          cleanQ.includes('receive') ||
+          cleanQ.includes('how') ||
+          cleanQ.includes('when') ||
+          cleanQ.includes('where') ||
+          cleanQ.includes('find') ||
+          cleanQ.includes('wrong') ||
+          cleanQ.includes('spelling') ||
+          cleanQ.includes('issue') ||
+          cleanQ.includes('discrepancy') ||
+          cleanQ.includes('missed') ||
+          cleanQ.includes('attendance') ||
+          cleanQ.includes('collect') ||
+          cleanQ.includes('claim') ||
+          cleanQ.includes('portal') ||
+          cleanQ.includes('verify') ||
+          cleanQ.includes('provided') ||
+          cleanQ.includes('give') ||
+          cleanQ.includes('will i') ||
+          cleanQ.includes('do we') ||
+          cleanQ.includes('not received') ||
+          cleanQ.includes('haven\'t received'))) ||
+      cleanQ.includes('wrong name') ||
+      cleanQ.includes('attendance issue') ||
+      cleanQ.includes('spelling mistake') ||
+      cleanQ === 'certificate' ||
+      cleanQ === 'certificates' ||
+      cleanQ === 'cert'
+    );
 
   if (isCertIntent) {
     return {
