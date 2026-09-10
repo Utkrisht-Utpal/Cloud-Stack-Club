@@ -11,7 +11,6 @@ import {
   CheckSquare,
   ArrowRight,
   ChevronDown,
-  Baseline,
   IndentDecrease,
   IndentIncrease,
   RemoveFormatting,
@@ -23,6 +22,7 @@ import {
   cleanPastedHtml,
   convertPlainTextToHtml,
 } from '../../utils/rulesFormatting';
+import { ColorWheelPicker } from './ColorWheelPicker';
 
 interface EventRulesModalProps {
   isOpen: boolean;
@@ -33,22 +33,6 @@ interface EventRulesModalProps {
 }
 
 const MAX_RULES_LENGTH = 5000;
-
-// Text color palette presets including common colors
-const TEXT_COLORS = [
-  { name: 'Default', value: '' },
-  { name: 'Black', value: '#000000' },
-  { name: 'White', value: '#ffffff' },
-  { name: 'Silver', value: '#94a3b8' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Yellow', value: '#eab308' },
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Cyan', value: '#06b6d4' },
-  { name: 'Purple', value: '#a855f7' },
-  { name: 'Pink', value: '#ec4899' },
-];
 
 // Find closest element with given tag name
 const findClosestTag = (
@@ -206,6 +190,14 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     'bullet' | 'numbered' | 'checklist' | 'arrow' | null
   >(null);
   const [activeColor, setActiveColor] = useState<string>('');
+  const [recentColors, setRecentColors] = useState<string[]>([
+    '#3B82F6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#8B5CF6',
+    '#EC4899',
+  ]);
   const [activeLineSpacing, setActiveLineSpacing] = useState<'1' | '1.5' | '2' | '2.5'>('1.5');
   const [activeIndent, setActiveIndent] = useState<number>(0);
 
@@ -344,24 +336,54 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       preferredFontSizeRef.current = 'normal';
     }
 
-    // Detect active text color
-    let colorNode: Node | null = sel.anchorNode;
+    // Detect active text color (including mixed colors in selection)
     let detectedColor = '';
-    while (colorNode && colorNode !== editorRef.current) {
-      if (colorNode.nodeType === Node.ELEMENT_NODE) {
-        const el = colorNode as HTMLElement;
-        if (el.tagName.toLowerCase() === 'font') {
-          detectedColor = el.getAttribute('color') || '';
-          break;
+    if (!sel.isCollapsed && editorRef.current) {
+      try {
+        const range = sel.getRangeAt(0);
+        const elements = editorRef.current.querySelectorAll('*');
+        const colorsFound = new Set<string>();
+        elements.forEach((el) => {
+          if (range.intersectsNode(el)) {
+            if (el.tagName.toLowerCase() === 'font') {
+              const c = el.getAttribute('color');
+              if (c) colorsFound.add(c.toLowerCase());
+            }
+            const styleAttr = (el as HTMLElement).getAttribute('style') || '';
+            const match = styleAttr.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+            if (match) {
+              colorsFound.add(match[1].trim().toLowerCase());
+            }
+          }
+        });
+        if (colorsFound.size > 1) {
+          detectedColor = 'mixed';
+        } else if (colorsFound.size === 1) {
+          detectedColor = Array.from(colorsFound)[0];
         }
-        const styleAttr = el.getAttribute('style') || '';
-        const colorMatch = styleAttr.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
-        if (colorMatch) {
-          detectedColor = colorMatch[1].trim();
-          break;
-        }
+      } catch {
+        // Fallback
       }
-      colorNode = colorNode.parentNode;
+    }
+
+    if (!detectedColor) {
+      let colorNode: Node | null = sel.anchorNode;
+      while (colorNode && colorNode !== editorRef.current) {
+        if (colorNode.nodeType === Node.ELEMENT_NODE) {
+          const el = colorNode as HTMLElement;
+          if (el.tagName.toLowerCase() === 'font') {
+            detectedColor = el.getAttribute('color') || '';
+            break;
+          }
+          const styleAttr = el.getAttribute('style') || '';
+          const colorMatch = styleAttr.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+          if (colorMatch) {
+            detectedColor = colorMatch[1].trim();
+            break;
+          }
+        }
+        colorNode = colorNode.parentNode;
+      }
     }
     setActiveColor(detectedColor);
 
@@ -702,6 +724,11 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     restoreSavedRange();
 
     if (!color) {
+      try {
+        document.execCommand('styleWithCSS', false, 'true');
+      } catch {
+        // Ignored
+      }
       document.execCommand('foreColor', false, 'inherit');
       const sel = window.getSelection();
       if (sel && sel.rangeCount > 0 && editorRef.current) {
@@ -731,14 +758,31 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           }
         });
       }
+      setActiveColor('');
     } else {
+      try {
+        document.execCommand('styleWithCSS', false, 'true');
+      } catch {
+        // Ignored
+      }
       document.execCommand('foreColor', false, color);
+      setActiveColor(color);
+      // Track recent colors (max 8)
+      setRecentColors((prev) => {
+        const normalized = color.toUpperCase();
+        const filtered = prev.filter((c) => c.toUpperCase() !== normalized);
+        return [normalized, ...filtered].slice(0, 8);
+      });
     }
 
     saveCurrentRange();
-    setActiveColor(color);
-    setIsColorPickerOpen(false);
     updateEditorState();
+  };
+
+  // Reset color handler
+  const handleResetColor = () => {
+    handleApplyColor('');
+    setIsColorPickerOpen(false);
   };
 
   // Indentation handler (Increase / Decrease indent)
@@ -1608,6 +1652,62 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         .rules-rich-editor [data-indent="6"] {
           margin-left: 9rem !important;
         }
+        .rules-rich-editor {
+          color: #1e293b;
+        }
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor {
+          color: #f1f5f9 !important;
+        }
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor p,
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor li,
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor strong,
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor b,
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor em,
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor u {
+          color: inherit;
+        }
+        /* In dark mode, ensure any dark or black inline text colors are forced to high-contrast readable color */
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #0"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#0"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #1"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#1"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #2"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#2"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #3"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#3"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #4"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#4"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #5"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#5"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: black"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:black"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(0"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(0"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(1"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(1"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(2"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(2"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(3"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(3"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(4"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(4"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(5"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(5"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(6"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(6"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(7"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(7"] {
+          color: #f1f5f9 !important;
+        }
+        /* In light mode, ensure any white text is forced to dark slate */
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #fff"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#fff"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: white"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:white"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(255"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(255"] {
+          color: #1e293b !important;
+        }
       `}</style>
 
       <div className="space-y-4">
@@ -1784,17 +1884,38 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                   setIsColorPickerOpen(false);
                   setIsListsDropdownOpen(false);
                 }}
-                title="Line Spacing"
+                title={`Line Spacing (${activeLineSpacing}×)`}
                 aria-label="Line Spacing"
                 aria-haspopup="listbox"
                 aria-expanded={isLineSpacingOpen}
-                className={`h-7 px-1.5 rounded-lg flex items-center gap-0.5 text-[11.5px] font-medium tracking-wide border transition-all cursor-pointer ${
+                className={`h-7 px-1.5 rounded-lg flex items-center gap-1 border transition-all cursor-pointer ${
                   isLineSpacingOpen
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
-                <span>{activeLineSpacing}×</span>
+                {/* Line Spacing Icon (Vertical Blue Double Arrow + 4 Horizontal Text Lines) */}
+                <svg
+                  viewBox="0 0 20 20"
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3.2 5.8L5.5 3.2L7.8 5.8M3.2 14.2L5.5 16.8L7.8 14.2M5.5 3.5V16.5"
+                    className="stroke-sky-500 dark:stroke-sky-400"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M10 4.5H18M10 8.5H18M10 12.5H18M10 16.5H18"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                  />
+                </svg>
                 <ChevronDown
                   className={`w-3 h-3 transition-transform duration-150 ${
                     isLineSpacingOpen
@@ -1863,78 +1984,61 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                 aria-label="Text Color"
                 aria-haspopup="dialog"
                 aria-expanded={isColorPickerOpen}
-                className={`w-7 h-7 rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer border ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                   isColorPickerOpen
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
-                <Baseline className="w-3.5 h-3.5" />
-                <div
-                  className="w-3.5 h-0.5 rounded-full shadow-xs"
-                  style={{ backgroundColor: activeColor || '#38bdf8' }}
-                />
+                <svg
+                  viewBox="0 0 24 24"
+                  className="w-4 h-4"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <defs>
+                    <linearGradient
+                      id="textColorRainbow"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#ff4500" />
+                      <stop offset="25%" stopColor="#ffaa00" />
+                      <stop offset="50%" stopColor="#22c55e" />
+                      <stop offset="75%" stopColor="#06b6d4" />
+                      <stop offset="100%" stopColor="#2563eb" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="m6 15.5 6-12 6 12M8 11.5h8"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <rect
+                    x="4"
+                    y="18.5"
+                    width="16"
+                    height="3.5"
+                    rx="1.75"
+                    fill="url(#textColorRainbow)"
+                  />
+                </svg>
               </button>
 
               {isColorPickerOpen && (
-                <div
-                  role="dialog"
-                  aria-label="Text color picker"
-                  className="absolute left-0 top-full mt-2 w-52 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-3 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                      Text Color
-                    </p>
-                    <label className="flex items-center gap-1 text-[10px] text-blue-600 dark:text-sky-400 hover:underline cursor-pointer font-medium">
-                      <span>Custom</span>
-                      <input
-                        type="color"
-                        value={activeColor || '#000000'}
-                        onChange={(e) => handleApplyColor(e.target.value)}
-                        className="w-4 h-4 rounded cursor-pointer border-0 p-0 bg-transparent"
-                        title="Pick custom color"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="grid grid-cols-6 gap-1.5 mb-2.5">
-                    {TEXT_COLORS.filter((c) => c.value).map((c) => (
-                      <button
-                        key={c.value}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleApplyColor(c.value)}
-                        title={c.name}
-                        aria-label={c.name}
-                        className={`w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 cursor-pointer ${
-                          c.value === '#ffffff' ? 'border-slate-300 dark:border-slate-600' : 'border-transparent'
-                        } ${
-                          activeColor.toLowerCase() === c.value.toLowerCase()
-                            ? 'ring-2 ring-blue-500 shadow-md'
-                            : 'hover:border-slate-400'
-                        }`}
-                        style={{ backgroundColor: c.value }}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleApplyColor('')}
-                    className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-colors ${
-                      !activeColor
-                        ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/20 dark:text-sky-400'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
-                    }`}
-                  >
-                    <div className="w-3.5 h-3.5 rounded-sm border border-dashed border-slate-400 dark:border-slate-500 bg-transparent" />
-                    Reset to Default
-                    {!activeColor && (
-                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 ml-auto" />
-                    )}
-                  </button>
+                <div className="absolute left-0 top-full mt-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <ColorWheelPicker
+                    currentColor={activeColor}
+                    recentColors={recentColors}
+                    onApplyColor={(color) => handleApplyColor(color)}
+                    onResetColor={handleResetColor}
+                    onClose={() => setIsColorPickerOpen(false)}
+                  />
                 </div>
               )}
             </div>

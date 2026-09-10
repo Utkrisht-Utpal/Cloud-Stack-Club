@@ -19,6 +19,64 @@ export const hasRulesTextContent = (content: string): boolean => {
   return stripped.length > 0;
 };
 
+// Detect whether an inline color is a neutral theme color (black, white, dark slate, dark charcoal)
+// that should adapt dynamically between light and dark modes rather than remaining hardcoded.
+export const isNeutralThemeColor = (colorStr: string): boolean => {
+  if (!colorStr) return true;
+  const str = colorStr.trim().toLowerCase();
+
+  // Explicit keywords
+  if (['black', 'inherit', 'initial', 'unset', 'currentcolor', 'white'].includes(str)) return true;
+
+  // Hex colors
+  if (str.startsWith('#')) {
+    let hex = str.slice(1);
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    if (hex.length === 4) hex = hex.slice(0, 3).split('').map((c) => c + c).join('');
+    if (hex.length === 8) hex = hex.slice(0, 6);
+    if (hex.length === 6) {
+      const num = parseInt(hex, 16);
+      if (!isNaN(num)) {
+        return isRgbNeutral((num >> 16) & 255, (num >> 8) & 255, num & 255);
+      }
+    }
+  }
+
+  // rgb/rgba colors
+  const rgbMatch = str.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (rgbMatch) {
+    return isRgbNeutral(
+      parseInt(rgbMatch[1], 10),
+      parseInt(rgbMatch[2], 10),
+      parseInt(rgbMatch[3], 10)
+    );
+  }
+
+  return false;
+};
+
+const isRgbNeutral = (r: number, g: number, b: number): boolean => {
+  const [rs, gs, bs] = [r, g, b].map((c) => {
+    c /= 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  const lum = 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const sat = max === 0 ? 0 : (max - min) / max;
+
+  // Dark neutral: luminance < 0.14 (black, dark slate, dark charcoal, e.g. #000, #1e293b, rgb(33, 37, 41))
+  // OR any very dark color with luminance < 0.06
+  if (lum < 0.06) return true;
+  if (lum < 0.14 && sat < 0.35) return true;
+
+  // Light neutral: luminance > 0.85 and low saturation (pure white, near white)
+  if (lum > 0.85 && sat < 0.15) return true;
+
+  return false;
+};
+
 // Sanitize HTML strictly allowing only safe formatting and list tags/attributes
 export const sanitizeRulesHtml = (html: string): string => {
   if (!html) return '';
@@ -79,15 +137,23 @@ export const sanitizeRulesHtml = (html: string): string => {
 
     // Convert <font color="X"> to <span style="color: X">
     if (tag === 'font') {
-      const span = doc.createElement('span');
       const colorAttr = el.getAttribute('color');
-      if (colorAttr) {
+      if (colorAttr && !isNeutralThemeColor(colorAttr)) {
+        const span = doc.createElement('span');
         span.setAttribute('style', `color: ${colorAttr};`);
+        while (el.firstChild) span.appendChild(el.firstChild);
+        el.parentNode?.replaceChild(span, el);
+        sanitizeElement(span);
+        return;
+      } else {
+        // Plain unwrap
+        const parent = el.parentNode;
+        if (parent) {
+          while (el.firstChild) parent.insertBefore(el.firstChild, el);
+          parent.removeChild(el);
+        }
+        return;
       }
-      while (el.firstChild) span.appendChild(el.firstChild);
-      el.parentNode?.replaceChild(span, el);
-      sanitizeElement(span);
-      return;
     }
 
     // If not in allowed list, unwrap children into parent
@@ -180,12 +246,23 @@ export const sanitizeRulesHtml = (html: string): string => {
             cleanStyle += `line-height: ${lhMatch[1]}; `;
           }
 
-          // Preserve color (safe CSS values only: hex, rgb, rgba, named)
+          // Preserve color (safe chromatic custom colors only; neutral black/white stripped so themes adapt)
           const colorMatch = rawStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
           if (colorMatch) {
             const colorVal = colorMatch[1].trim();
-            if (/^(#[0-9a-f]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|[a-z]+)$/i.test(colorVal)) {
+            if (
+              !isNeutralThemeColor(colorVal) &&
+              /^(#[0-9a-f]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)|[a-z]+)$/i.test(colorVal)
+            ) {
               cleanStyle += `color: ${colorVal}; `;
+            }
+          }
+
+          // If list item text starts with a checkmark emoji, hide bullet disc so checkmark isn't duplicated
+          if (tag === 'li') {
+            const text = el.textContent?.trim() || '';
+            if (/^[✅☑✔✓]/.test(text)) {
+              cleanStyle += 'list-style-type: none; ';
             }
           }
 
@@ -201,6 +278,16 @@ export const sanitizeRulesHtml = (html: string): string => {
         el.removeAttribute(attr.name);
       }
     });
+
+    // Unwrap plain spans that have no attributes remaining
+    if (tag === 'span' && el.attributes.length === 0) {
+      const parent = el.parentNode;
+      if (parent) {
+        while (el.firstChild) parent.insertBefore(el.firstChild, el);
+        parent.removeChild(el);
+        return;
+      }
+    }
 
     // Ensure list elements have valid data-list-type attribute
     if (tag === 'ol' && !el.hasAttribute('data-list-type')) {
@@ -318,13 +405,23 @@ export const convertPlainTextToHtml = (plain: string): string => {
     }
 
     if (/^[•\-\*]\s*/.test(line)) {
-      if (currentListType !== 'bullet') {
-        closeList();
-        html += '<ul data-list-type="bullet">';
-        currentListType = 'bullet';
+      const stripped = line.replace(/^[•\-\*]\s*/, '');
+      if (/^(☑|✅|✔|✓|\[[ xX]\])\s*/u.test(stripped)) {
+        if (currentListType !== 'checklist') {
+          closeList();
+          html += '<ul data-list-type="checklist">';
+          currentListType = 'checklist';
+        }
+        const content = stripped.replace(/^(☑|✅|✔|✓|\[[ xX]\])\s*/u, '');
+        html += `<li>${escapeHtml(content)}</li>`;
+      } else {
+        if (currentListType !== 'bullet') {
+          closeList();
+          html += '<ul data-list-type="bullet">';
+          currentListType = 'bullet';
+        }
+        html += `<li>${escapeHtml(stripped)}</li>`;
       }
-      const content = line.replace(/^[•\-\*]\s*/, '');
-      html += `<li>${escapeHtml(content)}</li>`;
     } else if (/^(\d+)[\.\)]\s*/.test(line)) {
       if (currentListType !== 'numbered') {
         closeList();
@@ -333,13 +430,13 @@ export const convertPlainTextToHtml = (plain: string): string => {
       }
       const content = line.replace(/^(\d+)[\.\)]\s*/, '');
       html += `<li>${escapeHtml(content)}</li>`;
-    } else if (/^(☑|\[[ xX]\])\s*/.test(line)) {
+    } else if (/^(☑|✅|✔|✓|\[[ xX]\])\s*/u.test(line)) {
       if (currentListType !== 'checklist') {
         closeList();
         html += '<ul data-list-type="checklist">';
         currentListType = 'checklist';
       }
-      const content = line.replace(/^(☑|\[[ xX]\])\s*/, '');
+      const content = line.replace(/^(☑|✅|✔|✓|\[[ xX]\])\s*/u, '');
       html += `<li>${escapeHtml(content)}</li>`;
     } else if (/^(→|->|=>)\s*/.test(line)) {
       if (currentListType !== 'arrow') {
