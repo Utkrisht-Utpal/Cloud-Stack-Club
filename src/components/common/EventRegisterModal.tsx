@@ -59,7 +59,16 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   // Team Registration State
   const [isTeamRegistration, setIsTeamRegistration] = useState(false);
   const [teamName, setTeamName] = useState('');
-  const [teamMembers, setTeamMembers] = useState<Array<{ name: string; email: string; uid: string; phone: string }>>([]);
+  const [teamMembers, setTeamMembers] = useState<
+    Array<{
+      name: string;
+      email: string;
+      uid: string;
+      phone: string;
+      department: string;
+      year: string;
+    }>
+  >([]);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
   const { cooldown, isCoolingDown, startCooldown, resetCooldown } = useSubmitCooldown(9);
 
@@ -88,7 +97,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
         year: '1st Year',
       });
       setTeamName('');
-      setTeamMembers([{ name: '', email: '', uid: '', phone: '' }]);
+      setTeamMembers([{ name: '', email: '', uid: '', phone: '', department: '', year: '1st Year' }]);
       setCustomAnswers({});
       setTurnstileToken('');
 
@@ -139,14 +148,21 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const handleAddTeamMember = () => {
     const maxMembers = (event.max_team_size || 4) - 1;
     if (teamMembers.length >= maxMembers) return;
-    setTeamMembers((prev) => [...prev, { name: '', email: '', uid: '', phone: '' }]);
+    setTeamMembers((prev) => [
+      ...prev,
+      { name: '', email: '', uid: '', phone: '', department: '', year: '1st Year' },
+    ]);
   };
 
   const handleRemoveTeamMember = (index: number) => {
     setTeamMembers((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleUpdateTeamMember = (index: number, key: 'name' | 'email' | 'uid' | 'phone', value: string) => {
+  const handleUpdateTeamMember = (
+    index: number,
+    key: 'name' | 'email' | 'uid' | 'phone' | 'department' | 'year',
+    value: string
+  ) => {
     setTeamMembers((prev) =>
       prev.map((m, idx) => (idx === index ? { ...m, [key]: value } : m))
     );
@@ -213,8 +229,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
       for (let i = 0; i < teamMembers.length; i++) {
         const m = teamMembers[i];
-        if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim()) {
-          triggerErrorWithCooldown(`Please fill in Name, Email, UID, and Phone Number for Teammate #${i + 2}.`);
+        if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim() || !m.department.trim()) {
+          triggerErrorWithCooldown(`Please fill in Name, Email, UID, Phone Number, and Department for Teammate #${i + 2}.`);
           return;
         }
         if (m.uid.trim().length !== 10) {
@@ -304,7 +320,18 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           registrant_phone: formData.phone.trim() || undefined,
           uid: formData.uid.trim(),
           team_name: isTeamRegistration ? teamName.trim() : undefined,
-          team_members: isTeamRegistration ? teamMembers.filter((m) => m.name.trim()) : undefined,
+          team_members: isTeamRegistration
+            ? teamMembers
+                .filter((m) => m.name.trim())
+                .map((m) => ({
+                  name: m.name.trim(),
+                  email: m.email.trim(),
+                  uid: m.uid.trim().toUpperCase(),
+                  phone: m.phone.trim(),
+                  department: m.department.trim(),
+                  year: m.year || '1st Year',
+                }))
+            : undefined,
           answers: formattedAnswers,
         },
         turnstileToken.trim()
@@ -819,6 +846,24 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                           value={m.phone}
                           onChange={(e) => handleUpdateTeamMember(idx, 'phone', e.target.value.replace(/\D/g, '').slice(0, 10))}
                           className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
+                        />
+                      </div>
+
+                      {/* Row 3: Department and Academic Year */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Department / Branch *"
+                          value={m.department}
+                          onChange={(e) => handleUpdateTeamMember(idx, 'department', e.target.value)}
+                          className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
+                        />
+                        <CustomSelect
+                          value={m.year || '1st Year'}
+                          onChange={(val) => handleUpdateTeamMember(idx, 'year', val)}
+                          options={YEAR_OPTIONS}
+                          triggerClassName="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white flex items-center justify-between cursor-pointer"
                         />
                       </div>
                     </div>

@@ -701,6 +701,11 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                           <div className="font-bold text-slate-900 dark:text-white">{m.name}</div>
                                           <div className="text-[11px] text-slate-500">{m.email}</div>
                                           {m.uid && <div className="text-[10px] font-mono text-slate-400">UID: {m.uid}</div>}
+                                          {(m.department || m.year) && (
+                                            <div className="text-[10px] text-slate-500 font-medium">
+                                              {[m.department, m.year].filter(Boolean).join(' • ')}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>

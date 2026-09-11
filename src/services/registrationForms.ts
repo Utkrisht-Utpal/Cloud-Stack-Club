@@ -372,6 +372,8 @@ export const getTeamDetailsForRegistration = async (
     email: string;
     phone?: string | null;
     uid?: string | null;
+    department?: string | null;
+    year?: string | null;
     registration_number?: string | null;
   }>;
 } | null> => {

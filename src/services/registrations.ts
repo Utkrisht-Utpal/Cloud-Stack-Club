@@ -55,6 +55,8 @@ export const registerForEvent = async (
     email: m.email.trim(),
     phone: m.phone?.trim() || null,
     uid: m.uid ? m.uid.trim().toUpperCase() : null,
+    department: m.department?.trim() || null,
+    year: m.year?.trim() || null,
   }));
 
   const formattedAnswers = (answers || []).map((ans) => ({
