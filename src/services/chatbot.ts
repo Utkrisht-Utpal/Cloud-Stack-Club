@@ -594,18 +594,58 @@ export const resolveMemberQuery = (
 ): BotResolvedResponse | null => {
   if (!members || members.length === 0) return null;
 
+  // STRICT GUARD: If the user is asking how to become, join, apply, or recruitment/selection,
+  // this is a membership/recruitment inquiry and MUST NOT be intercepted as a member lookup!
+  const isJoinOrBecomeIntent =
+    cleanQuery.includes('become') ||
+    cleanQuery.includes('join') ||
+    cleanQuery.includes('apply') ||
+    cleanQuery.includes('recruitment') ||
+    cleanQuery.includes('recruiting') ||
+    cleanQuery.includes('selection') ||
+    cleanQuery.includes('how can i be') ||
+    cleanQuery.includes('how to be') ||
+    cleanQuery.includes('how do i be') ||
+    cleanQuery.includes('get into') ||
+    cleanQuery.includes('part of') ||
+    cleanQuery.includes('hiring') ||
+    cleanQuery.includes('hire') ||
+    cleanQuery.includes('criteria to') ||
+    cleanQuery.includes('eligibility to') ||
+    cleanQuery.includes('process to');
+
+  if (isJoinOrBecomeIntent) return null;
+
   const tokens = cleanQuery.split(' ').filter((t) => !STOP_WORDS.has(t) && t.length > 1);
 
-  // A. General team / core members query
+  // A. General team / core members query (strictly requires listing / introducing intent)
+  const hasListingIntent =
+    cleanQuery.includes('who are') ||
+    cleanQuery.includes('who is in') ||
+    cleanQuery.includes('list') ||
+    cleanQuery.includes('show') ||
+    cleanQuery.includes('meet') ||
+    cleanQuery.includes('tell me about') ||
+    cleanQuery.includes('names of') ||
+    cleanQuery.includes('members of') ||
+    cleanQuery.includes('who lead') ||
+    cleanQuery.includes('who manages') ||
+    cleanQuery.includes('council') ||
+    cleanQuery.includes('current team') ||
+    cleanQuery.includes('current core') ||
+    cleanQuery === 'core team' ||
+    cleanQuery === 'core members' ||
+    cleanQuery === 'the team' ||
+    cleanQuery === 'team members';
+
   const isAllTeamQuery =
+    hasListingIntent &&
     (cleanQuery.includes('core team') ||
       cleanQuery.includes('core member') ||
       cleanQuery.includes('whole team') ||
       cleanQuery.includes('all member') ||
-      cleanQuery.includes('list member') ||
-      cleanQuery.includes('who are in the team') ||
-      cleanQuery.includes('show team') ||
-      cleanQuery.includes('meet team')) &&
+      cleanQuery.includes('team member') ||
+      cleanQuery.includes('council')) &&
     !tokens.some((t) =>
       ['graphic', 'designer', 'video', 'editor', 'writer', 'treasurer', 'photographer', 'marketing', 'logistics', 'volunteer', 'discipline', 'hospitality', 'media', 'social', 'tech', 'technical', 'secretary', 'lead'].includes(t)
     );
@@ -1970,7 +2010,44 @@ export const resolveBotQuery = async (
     return dailyLifeMatch;
   }
 
-  // 4. JOIN / MEMBERSHIP INTENT
+  // 4A. CORE TEAM / LEADERSHIP RECRUITMENT INTENT
+  const isCoreRecruitmentIntent =
+    (cleanQ.includes('core') || cleanQ.includes('lead') || cleanQ.includes('coordinator') || cleanQ.includes('council') || cleanQ.includes('executive')) &&
+    (cleanQ.includes('become') ||
+      cleanQ.includes('join') ||
+      cleanQ.includes('how to be') ||
+      cleanQ.includes('how can i be') ||
+      cleanQ.includes('how do i be') ||
+      cleanQ.includes('how to get') ||
+      cleanQ.includes('how can i get') ||
+      cleanQ.includes('apply') ||
+      cleanQ.includes('recruitment') ||
+      cleanQ.includes('recruiting') ||
+      cleanQ.includes('selection') ||
+      cleanQ.includes('screening') ||
+      cleanQ.includes('interview') ||
+      cleanQ.includes('hiring') ||
+      cleanQ.includes('part of'));
+
+  if (isCoreRecruitmentIntent) {
+    const text = `Here is how you can become a **Core Member** or Coordinator at Cloud Stack Club:\n\n1. 🚀 **Submit an Application:** Apply through our official recruitment portal at [/join](/join). Select your primary domain of interest (Cloud Architecture, DevOps, Full Stack Development, AI/ML, UI/UX Design, Technical Content, or Event Operations) and share your GitHub, portfolio, or past projects.\n2. 🎯 **Domain Task & Screening:** Shortlisted candidates are invited for a domain challenge or brief interaction with the student leadership council and Faculty Advisors.\n3. 💡 **Active Contribution:** Demonstrate consistency and passion by participating in club workshops, hackathons, and community projects. Active contributors are regularly promoted into coordinator and lead roles.\n4. 📜 **Official Onboarding:** Inducted core members receive official leadership credentials, verified club badges, and internal council channel access.\n\nReady to build and lead with us? Submit your application on our portal!`;
+
+    return {
+      text,
+      suggestions: [
+        { id: 'faq-selection-process', question: 'What is the selection process after applying for membership?', answer: '', category: 'Membership', keywords: [], is_active: true, display_order: 1 },
+        { id: 'faq-domains', question: 'What domains can I work in as a member?', answer: '', category: 'About Club', keywords: [], is_active: true, display_order: 2 },
+        { id: 'faq-lead-sec', question: 'Who is the Secretary of Cloud Stack Club?', answer: '', category: 'Leadership', keywords: [], is_active: true, display_order: 3 },
+      ],
+      actionLinks: [
+        { label: '🚀 Apply for Core Team', url: '/join' },
+        { label: '👥 Meet Current Team', url: '/team' },
+        { label: '💬 Contact Us', url: '/contact' },
+      ],
+    };
+  }
+
+  // 4B. GENERAL JOIN / MEMBERSHIP INTENT
   const isJoinIntent =
     cleanQ.includes('how can i join') ||
     cleanQ.includes('how to join') ||
@@ -1980,7 +2057,15 @@ export const resolveBotQuery = async (
     cleanQ.includes('apply for club') ||
     cleanQ.includes('member registration') ||
     cleanQ.includes('recruitment') ||
-    cleanQ.includes('how to become member') ||
+    cleanQ.includes('how to become') ||
+    cleanQ.includes('how can i be') ||
+    cleanQ.includes('how do i become') ||
+    cleanQ.includes('become a member') ||
+    cleanQ.includes('become member') ||
+    cleanQ.includes('want to join') ||
+    cleanQ.includes('wanna join') ||
+    cleanQ.includes('wish to join') ||
+    (cleanQ.includes('become') && cleanQ.includes('member')) ||
     (cleanQ.includes('join') &&
       (cleanQ.includes('can') || cleanQ.includes('i') || cleanQ.includes('club') || cleanQ.includes('csc')));
 
