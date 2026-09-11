@@ -24,6 +24,12 @@ import {
   isRegistrationFull,
   isFeedbackActive,
 } from '../utils/formatters';
+import {
+  sanitizeRulesHtml,
+  convertPlainTextToHtml,
+  isHtmlRules,
+  hasRulesTextContent,
+} from '../utils/rulesFormatting';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import type { Event, GalleryPhoto } from '../types/database';
@@ -170,11 +176,12 @@ export const EventDetailPage: React.FC = () => {
   const isRegActive = isRegistrationActive(event, currentCount);
   const isFeedback = isFeedbackActive(event);
 
-  // Format guidelines / rules into list items
-  const rulesList = (event.rules || '')
-    .split('\n')
-    .map((r) => r.trim())
-    .filter((r) => r.length > 0);
+  // Format guidelines / rules into sanitized rich HTML
+  const rawRules = event.rules || '';
+  const isHtml = isHtmlRules(rawRules);
+  const formattedRulesHtml = isHtml
+    ? sanitizeRulesHtml(rawRules)
+    : sanitizeRulesHtml(convertPlainTextToHtml(rawRules));
 
   // Only show rules on public page when event is ongoing or upcoming
   const now = new Date();
@@ -186,7 +193,7 @@ export const EventDetailPage: React.FC = () => {
     (!eventDateStr || eventDateStr >= todayStr);
   const isOngoingOrUpcoming =
     (isOngoing || isUpcoming) && event.status !== 'completed' && event.status !== 'cancelled';
-  const showRules = isOngoingOrUpcoming && rulesList.length > 0;
+  const showRules = isOngoingOrUpcoming && hasRulesTextContent(rawRules);
 
   return (
     <div className="min-h-screen pt-28 pb-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto relative z-10 space-y-6">
@@ -428,6 +435,183 @@ export const EventDetailPage: React.FC = () => {
       {/* Card 3: Rules & Participation Guidelines (only shown for ongoing or upcoming events) */}
       {showRules && (
         <div className="neumorphic-card p-6 sm:p-8 rounded-3xl relative overflow-hidden space-y-4">
+          <style>{`
+            .public-rules-content ul,
+            .public-rules-content ul[data-list-type="bullet"] {
+              list-style-type: disc !important;
+              padding-left: 1.5rem !important;
+              margin: 0.4rem 0 !important;
+            }
+            .public-rules-content ol,
+            .public-rules-content ol[data-list-type="numbered"] {
+              list-style-type: decimal !important;
+              padding-left: 1.5rem !important;
+              margin: 0.4rem 0 !important;
+            }
+            .public-rules-content ul[data-list-type="checklist"] {
+              list-style-type: none !important;
+              padding-left: 0 !important;
+              margin: 0.4rem 0 !important;
+            }
+            .public-rules-content ul[data-list-type="checklist"] > li {
+              position: relative !important;
+              padding-left: 1.6rem !important;
+              margin: 0.4rem 0 !important;
+            }
+            .public-rules-content ul[data-list-type="checklist"] > li::before {
+              content: "☑" !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              color: #0284c7 !important;
+              font-weight: 700 !important;
+              font-size: 1.05em !important;
+              user-select: none !important;
+            }
+            :is(.dark, [data-theme="dark"]) .public-rules-content ul[data-list-type="checklist"] > li::before {
+              color: #38bdf8 !important;
+            }
+            .public-rules-content ul[data-list-type="arrow"] {
+              list-style-type: none !important;
+              padding-left: 0 !important;
+              margin: 0.4rem 0 !important;
+            }
+            .public-rules-content ul[data-list-type="arrow"] > li {
+              position: relative !important;
+              padding-left: 1.6rem !important;
+              margin: 0.4rem 0 !important;
+            }
+            .public-rules-content ul[data-list-type="arrow"] > li::before {
+              content: "→" !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              color: #0284c7 !important;
+              font-weight: 700 !important;
+              font-size: 1.1em !important;
+              user-select: none !important;
+            }
+            :is(.dark, [data-theme="dark"]) .public-rules-content ul[data-list-type="arrow"] > li::before {
+              color: #38bdf8 !important;
+            }
+            .public-rules-content [data-font-size="small"] {
+              font-size: 0.8125rem !important;
+              line-height: 1.35rem !important;
+            }
+            .public-rules-content [data-font-size="normal"] {
+              font-size: 0.9375rem !important;
+              line-height: 1.6rem !important;
+            }
+            .public-rules-content [data-font-size="large"] {
+              font-size: 1.1875rem !important;
+              line-height: 1.75rem !important;
+            }
+            .public-rules-content [data-line-spacing="1"] {
+              line-height: 1.25 !important;
+            }
+            .public-rules-content [data-line-spacing="1.5"] {
+              line-height: 1.6 !important;
+            }
+            .public-rules-content [data-line-spacing="2"] {
+              line-height: 2 !important;
+            }
+            .public-rules-content [data-line-spacing="2.5"] {
+              line-height: 2.5 !important;
+            }
+            .public-rules-content [data-align="left"] {
+              text-align: left !important;
+            }
+            .public-rules-content [data-align="center"] {
+              text-align: center !important;
+            }
+            .public-rules-content [data-align="right"] {
+              text-align: right !important;
+            }
+            .public-rules-content [data-indent="1"] {
+              margin-left: 1.5rem !important;
+            }
+            .public-rules-content [data-indent="2"] {
+              margin-left: 3rem !important;
+            }
+            .public-rules-content [data-indent="3"] {
+              margin-left: 4.5rem !important;
+            }
+            .public-rules-content [data-indent="4"] {
+              margin-left: 6rem !important;
+            }
+            .public-rules-content [data-indent="5"] {
+              margin-left: 7.5rem !important;
+            }
+            .public-rules-content [data-indent="6"] {
+              margin-left: 9rem !important;
+            }
+            .public-rules-content p {
+              margin-bottom: 0.5rem;
+            }
+            .public-rules-content p:last-child {
+              margin-bottom: 0;
+            }
+            .public-rules-content li {
+              margin: 0.35rem 0;
+            }
+            .public-rules-content {
+              color: #1e293b;
+            }
+            :is(.dark, [data-theme="dark"]) .public-rules-content {
+              color: #e2e8f0 !important;
+            }
+            :is(.dark, [data-theme="dark"]) .public-rules-content p,
+            :is(.dark, [data-theme="dark"]) .public-rules-content li,
+            :is(.dark, [data-theme="dark"]) .public-rules-content strong,
+            :is(.dark, [data-theme="dark"]) .public-rules-content b,
+            :is(.dark, [data-theme="dark"]) .public-rules-content em,
+            :is(.dark, [data-theme="dark"]) .public-rules-content u {
+              color: inherit;
+            }
+            /* In dark mode, ensure any dark or black inline text colors are forced to high-contrast readable color */
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #0"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#0"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #1"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#1"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #2"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#2"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #3"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#3"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #4"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#4"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #5"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#5"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: black"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:black"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(0"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(0"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(1"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(1"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(2"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(2"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(3"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(3"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(4"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(4"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(5"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(5"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(6"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(6"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(7"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(7"] {
+              color: #e2e8f0 !important;
+            }
+            /* In light mode, ensure any white text is forced to dark slate */
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: #fff"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:#fff"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: white"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:white"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: rgb(255"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:rgb(255"] {
+              color: #1e293b !important;
+            }
+          `}</style>
+
           <div className="flex items-center gap-2.5 text-blue-600 dark:text-sky-400">
             <ScrollText className="w-5 h-5 shrink-0" />
             <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -435,21 +619,11 @@ export const EventDetailPage: React.FC = () => {
             </h2>
           </div>
 
-          <div className="space-y-2.5">
-            {rulesList.map((rule, idx) => {
-              const cleanRule = rule.replace(/^[•\-\*]\s*/, '');
-              return (
-                <div
-                  key={idx}
-                  className="flex items-start gap-3 p-3.5 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-white/60 dark:border-slate-700/60 text-xs sm:text-sm text-slate-800 dark:text-slate-200 font-medium"
-                >
-                  <span className="w-5 h-5 rounded-full bg-blue-500/15 text-blue-600 dark:text-sky-400 font-bold text-[11px] flex items-center justify-center shrink-0 mt-0.5">
-                    {idx + 1}
-                  </span>
-                  <p className="leading-relaxed flex-1">{cleanRule}</p>
-                </div>
-              );
-            })}
+          <div className="p-4 sm:p-6 rounded-2xl bg-white/60 dark:bg-slate-800/60 border border-white/60 dark:border-slate-700/60 shadow-xs">
+            <div
+              className="public-rules-content text-xs sm:text-sm leading-relaxed text-slate-800 dark:text-slate-200 font-sans"
+              dangerouslySetInnerHTML={{ __html: formattedRulesHtml }}
+            />
           </div>
         </div>
       )}
