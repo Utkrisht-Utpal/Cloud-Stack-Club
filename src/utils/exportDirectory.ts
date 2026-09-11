@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatOfficialEmail } from './formatters';
 import type { Member, ContactFeedback, EventFeedback } from '../types/database';
 
 /**
@@ -26,6 +27,7 @@ export const exportMembersToExcel = (
     'S.No': index + 1,
     'Member Name': sanitizeFormulaValue(m.name || ''),
     'Email': sanitizeFormulaValue(m.email || ''),
+    'Official Email': sanitizeFormulaValue(formatOfficialEmail(m.uid)),
     'Mobile No': sanitizeFormulaValue(m.phone || 'N/A'),
     'University UID': sanitizeFormulaValue(m.uid || 'N/A'),
     'Member ID': sanitizeFormulaValue(m.member_id || (m as any).registration_id || 'N/A'),
@@ -42,6 +44,7 @@ export const exportMembersToExcel = (
     { wch: 6 },  // S.No
     { wch: 22 }, // Name
     { wch: 28 }, // Email
+    { wch: 28 }, // Official Email
     { wch: 15 }, // Mobile
     { wch: 15 }, // UID
     { wch: 16 }, // Member ID
@@ -90,6 +93,7 @@ export const exportMembersToPdf = (
     (index + 1).toString(),
     m.name || 'N/A',
     m.email || 'N/A',
+    formatOfficialEmail(m.uid) || 'N/A',
     m.phone || 'N/A',
     m.uid || 'N/A',
     m.department || 'N/A',
@@ -99,7 +103,7 @@ export const exportMembersToPdf = (
 
   autoTable(doc, {
     startY: 27,
-    head: [['#', 'Member Name', 'Email', 'Mobile No', 'University UID', 'Department', 'Year', 'Role / Status']],
+    head: [['#', 'Member Name', 'Email', 'Official Email', 'Mobile No', 'University UID', 'Department', 'Year', 'Role / Status']],
     body: tableRows,
     theme: 'grid',
     headStyles: {

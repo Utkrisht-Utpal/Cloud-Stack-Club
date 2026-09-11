@@ -20,6 +20,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { sanitizeFormulaValue } from '../../utils/exportDirectory';
+import { formatOfficialEmail } from '../../utils/formatters';
 import type { Event, EventRegistration, EventFormField } from '../../types/database';
 
 /**
@@ -188,6 +189,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           'Registration No': sanitizeFormulaValue(r.registration_number || ''),
           'Member Name': sanitizeFormulaValue(r.registrant_name || ''),
           'Email': sanitizeFormulaValue(r.registrant_email || ''),
+          'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
           'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
           'University UID': sanitizeFormulaValue(r.uid || ''),
           ...customAnswersDict,
@@ -210,6 +212,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               'Registration No': sanitizeFormulaValue(m.registration_number || ''),
               'Member Name': sanitizeFormulaValue(m.name || ''),
               'Email': sanitizeFormulaValue(m.email || ''),
+              'Official Email': sanitizeFormulaValue(formatOfficialEmail(m.uid)),
               'Phone': sanitizeFormulaValue(m.phone || ''),
               'University UID': sanitizeFormulaValue(m.uid || ''),
               ...blankCustomDict,
@@ -228,6 +231,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
             'Registration No': '',
             'Member Name': '',
             'Email': '',
+            'Official Email': '',
             'Phone': '',
             'University UID': '',
           };
@@ -244,6 +248,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           'Registration No': sanitizeFormulaValue(r.registration_number || ''),
           'Participant Name': sanitizeFormulaValue(r.registrant_name || ''),
           'Email': sanitizeFormulaValue(r.registrant_email || ''),
+          'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
           'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
           'University UID': sanitizeFormulaValue(r.uid || ''),
           ...customAnswersDict,
@@ -319,8 +324,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     doc.text(subTitle, 14, 22);
 
     const pdfHeaders: string[] = isTeamEvent
-      ? ['#', 'Team Name', 'Team Reg ID', 'Role', 'Reg Number', 'Member Name', 'Email', 'Phone', 'UID']
-      : ['#', 'Reg Number', 'Participant Name', 'Email', 'Phone', 'UID'];
+      ? ['#', 'Team Name', 'Team Reg ID', 'Role', 'Reg Number', 'Member Name', 'Email', 'Official Email', 'Phone', 'UID']
+      : ['#', 'Reg Number', 'Participant Name', 'Email', 'Official Email', 'Phone', 'UID'];
 
     formFields.forEach((field) => {
       pdfHeaders.push(field.label.slice(0, 18));
@@ -352,6 +357,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           r.registration_number || '',
           r.registrant_name || '',
           r.registrant_email || '',
+          formatOfficialEmail(r.uid),
           r.registrant_phone || '',
           r.uid || '',
           ...customAnswersList,
@@ -370,6 +376,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               m.registration_number || '',
               m.name || '',
               m.email || '',
+              formatOfficialEmail(m.uid),
               m.phone || '',
               m.uid || '',
               ...blankAnswersList,
@@ -390,6 +397,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           r.registration_number || '',
           r.registrant_name || '',
           r.registrant_email || '',
+          formatOfficialEmail(r.uid),
           r.registrant_phone || '',
           r.uid || '',
           ...customAnswersList,

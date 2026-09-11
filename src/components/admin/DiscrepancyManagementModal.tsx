@@ -25,6 +25,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { sanitizeFormulaValue } from '../../utils/exportDirectory';
+import { formatOfficialEmail } from '../../utils/formatters';
 import {
   getAllDiscrepancies,
   updateDiscrepancyStatus,
@@ -178,6 +179,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
       'Ticket Number': sanitizeFormulaValue(r.ticket_number),
       'Student Name': sanitizeFormulaValue(r.name),
       'UID': sanitizeFormulaValue(r.uid || 'N/A'),
+      'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
       'Email Address': sanitizeFormulaValue(r.email),
       'Phone Number': sanitizeFormulaValue(r.phone),
       'Department / Branch': sanitizeFormulaValue(r.department),
@@ -194,6 +196,22 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    worksheet['!cols'] = [
+      { wch: 5 },  // #
+      { wch: 18 }, // Ticket Number
+      { wch: 22 }, // Student Name
+      { wch: 16 }, // UID
+      { wch: 28 }, // Official Email
+      { wch: 28 }, // Email Address
+      { wch: 16 }, // Phone Number
+      { wch: 22 }, // Department
+      { wch: 14 }, // Year
+      { wch: 35 }, // Issue Description
+      { wch: 14 }, // Status
+      { wch: 25 }, // Admin Notes
+      { wch: 15 }, // Submitted Date
+      { wch: 15 }, // Submitted Time
+    ];
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Discrepancies');
     XLSX.writeFile(
@@ -216,7 +234,9 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
     const tableData = filtered.map((r, idx) => [
       idx + 1,
       r.ticket_number,
-      `${r.name}\n${r.uid ? `UID: ${r.uid}` : ''}`,
+      r.name,
+      r.uid || 'N/A',
+      formatOfficialEmail(r.uid) || 'N/A',
       `${r.email}\n${r.phone}`,
       `${r.department}\n(${r.year_of_study})`,
       new Date(r.created_at).toLocaleString('en-GB', {
@@ -228,7 +248,7 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
 
     autoTable(doc, {
       startY: 25,
-      head: [['#', 'Ticket No', 'Student Name', 'Contact Details', 'Department & Year', 'Date & Time', 'Status']],
+      head: [['#', 'Ticket No', 'Student Name', 'UID', 'Official Email', 'Contact Details', 'Department & Year', 'Date & Time', 'Status']],
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },

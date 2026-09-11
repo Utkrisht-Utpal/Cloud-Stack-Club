@@ -202,3 +202,14 @@ export const formatLinkedInDisplay = (raw?: string | null): string => {
   return `in/${str}`;
 };
 
+/**
+ * Formats a student's Chandigarh University UID into an official institutional email (e.g. "24BCF10063" -> "24BCF10063@cuchd.in")
+ */
+export const formatOfficialEmail = (uid?: string | null): string => {
+  if (!uid) return '';
+  const trimmed = String(uid).trim();
+  if (!trimmed || trimmed.toLowerCase() === 'n/a') return '';
+  if (trimmed.includes('@')) return trimmed;
+  return `${trimmed}@cuchd.in`;
+};
+
