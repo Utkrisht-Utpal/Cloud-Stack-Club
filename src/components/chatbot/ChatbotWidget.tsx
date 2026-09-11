@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -25,16 +25,38 @@ interface ChatMessage {
 
 export const ChatbotWidget: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [faqs, setFaqs] = useState<ChatbotFaq[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showGreetingTooltip, setShowGreetingTooltip] = useState(true);
+  const [isPastHome, setIsPastHome] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const latestMessageRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Hide greeting tooltip when user scrolls past home (or hero fold), or on non-home pages
+  useEffect(() => {
+    const handleScroll = () => {
+      if (location.pathname === '/') {
+        const hero = document.getElementById('hero');
+        if (hero) {
+          setIsPastHome(hero.getBoundingClientRect().bottom <= 80);
+        } else {
+          setIsPastHome(window.scrollY > 80);
+        }
+      } else {
+        setIsPastHome(true);
+      }
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [location.pathname]);
 
   // Load FAQs on mount
   useEffect(() => {
@@ -258,7 +280,7 @@ export const ChatbotWidget: React.FC = () => {
       <div className="fixed bottom-6 right-6 z-40 sm:bottom-8 sm:right-8 flex flex-col items-end pointer-events-auto">
         {/* Floating Greeting Pill / Tooltip */}
         <AnimatePresence>
-          {!isOpen && showGreetingTooltip && (
+          {!isOpen && showGreetingTooltip && !isPastHome && (
             <motion.div
               initial={{ opacity: 0, y: 10, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
