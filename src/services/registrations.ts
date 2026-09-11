@@ -161,6 +161,8 @@ export const registerForEvent = async (
           email: m.email.trim(),
           phone: m.phone ? m.phone.trim() : null,
           uid: m.uid ? m.uid.trim().toUpperCase() : null,
+          department: match?.department || m.department?.trim() || null,
+          year: match?.year || m.year?.trim() || null,
           registration_number: match?.registration_number || null,
           member_id: match?.member_id || null,
           created_at: match?.created_at || new Date().toISOString(),

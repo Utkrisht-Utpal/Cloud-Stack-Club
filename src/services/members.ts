@@ -21,6 +21,8 @@ export interface CoreMember {
   linkedin_text?: string | null;
 }
 
+
+
 const MEMBER_SOCIALS_MAP_KEY = 'csc_member_socials_map';
 
 export interface MemberSocials {

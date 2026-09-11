@@ -329,7 +329,7 @@ export async function sendTeamMemberRegistrationEmail(params: {
   leader_year?: string | null;
   leader_registration_number?: string | null;
   team_name: string;
-  other_members: Array<{ name: string; department?: string | null; year?: string | null; uid?: string | null; registration_number?: string | null }>;
+  other_members: Array<{ name: string; email?: string | null; department?: string | null; year?: string | null; uid?: string | null; registration_number?: string | null }>;
   event_title: string;
   event_date: string;
   event_time?: string | null;
@@ -406,10 +406,11 @@ export async function sendTeamRegistrationEmails(params: {
         .filter((other) => other.email !== m.email || other.name !== m.name)
         .map((other) => ({
           name: other.name,
-          department: other.department,
-          year: other.year,
-          uid: other.uid,
-          registration_number: other.registration_number,
+          email: other.email,
+          department: other.department || null,
+          year: other.year || null,
+          uid: other.uid || null,
+          registration_number: other.registration_number || null,
         }));
 
       try {
@@ -417,8 +418,8 @@ export async function sendTeamRegistrationEmails(params: {
           member_email: m.email.trim(),
           member_name: m.name.trim(),
           member_uid: m.uid ? m.uid.trim() : null,
-          member_department: m.department || params.leader.department || null,
-          member_year: m.year || params.leader.year || null,
+          member_department: m.department || null,
+          member_year: m.year || null,
           member_registration_number: m.registration_number || null,
           leader_name: params.leader.name,
           leader_email: params.leader.email,

@@ -382,8 +382,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                   email: m.email.trim(),
                   uid: m.uid ? m.uid.trim() : null,
                   phone: m.phone ? m.phone.trim() : null,
-                  department: formData.department.trim(),
-                  year: formData.year,
+                  department: (m.department || found?.department || '').trim(),
+                  year: (m.year || found?.year || '1st Year').trim(),
                   registration_number: found?.registration_number || result?.team?.members?.[idx]?.registration_number || undefined,
                 };
               }),
@@ -695,12 +695,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     required
                     maxLength={10}
                     value={formData.uid}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase(),
-                      })
-                    }
+                    onChange={(e) => setFormData({ ...formData, uid: e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 10).toUpperCase() })}
                     placeholder="University ID (UID)"
                     className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-mono font-bold uppercase border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
                   />
