@@ -21,11 +21,11 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
   },
   {
     id: 'faq-join-csc',
-    question: 'How can I join Cloud Stack Club?',
+    question: 'How can I join Cloud Stack Club or become a core member?',
     answer:
-      'You can apply directly through our official membership portal to select your preferred technical or non-technical domain and submit your university UID.\n\nRecruitment drives open during official campus recruitment cycles. Have questions? Reach our leadership team anytime.',
+      'To join Cloud Stack Club, first register as a club member on our official registration page at [/join](/join).\n\nIf you want to become a **Core Member**, please note that there is no separate direct application form: you must first register as a regular member, and then either contact the team via our [Contact Form](/contact) or visit us in person at **D3 202, South Campus, Chandigarh University**.',
     category: 'Membership',
-    keywords: ['join', 'how to join', 'membership', 'apply', 'recruit', 'recruitment', 'member application', 'eligibility', 'form'],
+    keywords: ['join', 'how to join', 'membership', 'apply', 'recruit', 'recruitment', 'member application', 'eligibility', 'form', 'core member'],
     is_active: true,
     display_order: 2,
   },
@@ -51,21 +51,27 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
   },
   {
     id: 'faq-selection-process',
-    question: 'What is the selection process after applying for membership?',
+    question: 'What is the selection process to become a core member?',
     answer:
-      'After you submit your application, the core committee reviews your interests and technical domain preference. Shortlisted candidates may have a brief interaction or interview round, followed by an official acceptance email and invite to internal club channels.',
+      'To become a core member or coordinator:\n\n1. **Register as a Member First:** Complete your member registration via [/join](/join).\n2. **Contact Us or Visit In Person:** Either submit a query through our [Contact Form](/contact) expressing your interest and domain, or meet the core team in person at **D3 202, South Campus, Chandigarh University**.\n3. **Skill Evaluation & Allotment:** The leadership council evaluates your skills, projects, and motivation to align you with open coordinator or functional roles.\n\n*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive council roles and not open for direct application).*',
     category: 'Membership',
-    keywords: ['selection', 'interview', 'process', 'how selected', 'after apply', 'shortlist', 'results'],
+    keywords: ['selection', 'interview', 'process', 'how selected', 'after apply', 'shortlist', 'results', 'become core member', 'core team'],
     is_active: true,
     display_order: 5,
   },
   {
     id: 'faq-domains',
-    question: 'What domains can I work in as a member?',
+    question: 'What domains and roles can I join or work in as a member?',
     answer:
-      'Cloud Stack Club offers active domains in Cloud Infrastructure (AWS/Azure/GCP), DevOps & Automation, Full Stack Web & Mobile, AI/Machine Learning, Web3, UI/UX Design, Technical Content Writing, and Event Operations.',
+      'Students can join and contribute across all active roles in our club database (excluding executive leadership & faculty):\n\n' +
+      '• 💻 **Technical & Research:** Technical Lead, Research and Developement Coordinator\n' +
+      '• 🎨 **Creative & Media:** Graphic Designer, Video editor, Photographer & Videographer\n' +
+      '• ✍️ **Content & Outreach:** Content Writer, Content Creator, Social Media Manager, Marketing Coordinator, Public Outreach Coordinator\n' +
+      '• 🎪 **Events & Logistics:** Event Coordinator, Event Logistics and Resource Co-ordinator, Operations and planning\n' +
+      '• 🤝 **Operations & Administration:** Volunteer Coordinator, Discipline Coordinator, Hospitality Incharge, Documentation Coordinator, Treasurer\n\n' +
+      '*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles. To join any role above, register on [/join](/join), then reach out via our [Contact Form](/contact) or visit **D3 202, South Campus, Chandigarh University**).*',
     category: 'About Club',
-    keywords: ['domains', 'departments', 'sub divisions', 'ai', 'ml', 'web3', 'devops', 'cloud', 'design', 'content'],
+    keywords: ['domains', 'departments', 'sub divisions', 'roles', 'which roles', 'available roles', 'ai', 'ml', 'cloud', 'design', 'content'],
     is_active: true,
     display_order: 6,
   },
@@ -114,9 +120,9 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-timings-location',
     question: 'Where and when do club sessions and workshops take place?',
     answer:
-      'Cloud Stack Club is located at **Chandigarh University** (Department of CSE / AIT). Workshops and bootcamps take place on campus in dedicated computer labs or auditoriums, usually on weekday evenings or Saturday mornings.',
+      'Cloud Stack Club is located at **D3 202, South Campus, Chandigarh University** (Department of CSE / AIT).\n\n• **Club Room / Office:** D3 202, South Campus\n• **Venues:** On-campus computer labs, auditorium halls, or virtual rooms via Google Meet / Discord.\n• **Timings:** Sessions are typically scheduled after class hours (weekday evenings) or on Saturday mornings. Feel free to visit us in D3 202 during college hours!',
     category: 'About Club',
-    keywords: ['location', 'where is club', 'timing', 'timings', 'venue', 'offline', 'campus', 'where meet'],
+    keywords: ['location', 'where is club', 'timing', 'timings', 'venue', 'offline', 'campus', 'where meet', 'd3 202', 'south campus'],
     is_active: true,
     display_order: 11,
   },
@@ -2030,19 +2036,31 @@ export const resolveBotQuery = async (
       cleanQ.includes('part of'));
 
   if (isCoreRecruitmentIntent) {
-    const text = `Here is how you can become a **Core Member** or Coordinator at Cloud Stack Club:\n\n1. 🚀 **Submit an Application:** Apply through our official recruitment portal at [/join](/join). Select your primary domain of interest (Cloud Architecture, DevOps, Full Stack Development, AI/ML, UI/UX Design, Technical Content, or Event Operations) and share your GitHub, portfolio, or past projects.\n2. 🎯 **Domain Task & Screening:** Shortlisted candidates are invited for a domain challenge or brief interaction with the student leadership council and Faculty Advisors.\n3. 💡 **Active Contribution:** Demonstrate consistency and passion by participating in club workshops, hackathons, and community projects. Active contributors are regularly promoted into coordinator and lead roles.\n4. 📜 **Official Onboarding:** Inducted core members receive official leadership credentials, verified club badges, and internal council channel access.\n\nReady to build and lead with us? Submit your application on our portal!`;
+    const text = `To become a **Core Member** of Cloud Stack Club, please note that there is no separate direct application form. Here is the official procedure:\n\n` +
+      `1. 📝 **First, Register as a Member:** You must first register as an official club member on our portal at [/join](/join).\n` +
+      `2. 📍 **Connect with Leadership:** Once registered, you must either:\n` +
+      `   • Contact us through our official [Contact Form](/contact) mentioning your interest and preferred role, OR\n` +
+      `   • Visit our club room in person at **D3 202, South Campus, Chandigarh University**.\n\n` +
+      `🎯 **Available Roles & Domains You Can Join:**\n` +
+      `You can join across all active roles available in the club database (excluding Faculty Advisors, Secretary, and Joint Secretary):\n` +
+      `• 💻 **Technical & Research:** Technical Lead, Research and Developement Coordinator\n` +
+      `• 🎨 **Creative & Media:** Graphic Designer, Video editor, Photographer & Videographer\n` +
+      `• ✍️ **Content & Marketing:** Content Writer, Content Creator, Social Media Manager, Marketing Coordinator, Public Outreach Coordinator\n` +
+      `• 🎪 **Events & Logistics:** Event Coordinator, Event Logistics and Resource Co-ordinator, Operations and planning\n` +
+      `• 🤝 **Operations & Administration:** Volunteer Coordinator, Discipline Coordinator, Hospitality Incharge, Documentation Coordinator, Treasurer\n\n` +
+      `*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles).*`;
 
     return {
       text,
       suggestions: [
-        { id: 'faq-selection-process', question: 'What is the selection process after applying for membership?', answer: '', category: 'Membership', keywords: [], is_active: true, display_order: 1 },
-        { id: 'faq-domains', question: 'What domains can I work in as a member?', answer: '', category: 'About Club', keywords: [], is_active: true, display_order: 2 },
-        { id: 'faq-lead-sec', question: 'Who is the Secretary of Cloud Stack Club?', answer: '', category: 'Leadership', keywords: [], is_active: true, display_order: 3 },
+        { id: 'faq-domains', question: 'What domains and roles can I join or work in as a member?', answer: '', category: 'About Club', keywords: [], is_active: true, display_order: 1 },
+        { id: 'faq-timings-location', question: 'Where and when do club sessions and workshops take place?', answer: '', category: 'About Club', keywords: [], is_active: true, display_order: 2 },
+        { id: 'faq-contact', question: 'How can I contact coordinators or report an issue?', answer: '', category: 'Contact', keywords: [], is_active: true, display_order: 3 },
       ],
       actionLinks: [
-        { label: '🚀 Apply for Core Team', url: '/join' },
-        { label: '👥 Meet Current Team', url: '/team' },
-        { label: '💬 Contact Us', url: '/contact' },
+        { label: '🚀 Register as Member', url: '/join' },
+        { label: '💬 Contact Form', url: '/contact' },
+        { label: '👥 Meet Our Team', url: '/team' },
       ],
     };
   }
@@ -2070,14 +2088,17 @@ export const resolveBotQuery = async (
       (cleanQ.includes('can') || cleanQ.includes('i') || cleanQ.includes('club') || cleanQ.includes('csc')));
 
   if (isJoinIntent) {
-    const text = `You can apply directly through our official membership portal! We welcome enthusiastic Chandigarh University students across all years and branches.\n\n• **Who can apply?** Open to all students interested in Cloud Computing (AWS, GCP, Azure), DevOps, Full Stack Development, AI/ML, UI/UX Design, or Event Management.\n• **Application Steps:** Fill out your university UID, contact details, domain of choice, and submit. You will receive email updates on your application status.\n\nHave questions? You can also reach our leadership team anytime.`;
+    const text = `To join Cloud Stack Club:\n\n` +
+      `1. 📝 **Register as Member:** Fill out the member registration form at [/join](/join) with your university UID, contact details, and department.\n` +
+      `2. ⭐ **Interested in Becoming a Core Member?** There is no separate application link. First complete your member registration, then either reach out via our [Contact Form](/contact) or visit us directly in person at **D3 202, South Campus, Chandigarh University**.\n\n` +
+      `Membership is 100% free and open to all Chandigarh University students!`;
 
     return {
       text,
       suggestions: faqs.filter((f) => f.category === 'Membership' || f.category === 'About Club').slice(0, 3),
       actionLinks: [
-        { label: '🚀 Apply to Join Club', url: '/join' },
-        { label: '💬 Contact Us', url: '/contact' },
+        { label: '🚀 Register as Member', url: '/join' },
+        { label: '💬 Contact Form', url: '/contact' },
       ],
     };
   }
@@ -2199,15 +2220,22 @@ export const resolveBotQuery = async (
     cleanQ.includes('after apply') ||
     cleanQ.includes('shortlist') ||
     cleanQ.includes('when results') ||
-    cleanQ.includes('how selected');
+    cleanQ.includes('how selected') ||
+    cleanQ.includes('selection process');
 
   if (isSelectionIntent) {
     return {
-      text: `Here is what happens after you apply to Cloud Stack Club:\n\n1. **Application Review:** The executive council reviews your application, preferred domain, and motivation.\n2. **Shortlisting & Interaction:** Shortlisted candidates may be invited for an informal technical or behavioral chat.\n3. **Onboarding Email:** Accepted members receive an official acceptance letter with credentials and private invite links to our WhatsApp & Discord communities.`,
+      text: `Here is the official selection and onboarding process for Cloud Stack Club:\n\n` +
+        `1. **Register as a Member First:** You must first register as a regular club member on [/join](/join).\n` +
+        `2. **Express Interest for Core Roles:** There is no separate application form. Once registered, either reach out via our [Contact Form](/contact) mentioning your domain, or visit the core team in person at **D3 202, South Campus, Chandigarh University**.\n` +
+        `3. **Interaction & Skill Fit:** The leadership council will schedule a brief interaction to assess your skills, projects, and motivation for available roles across Tech, Research, Creative, Media, Content, Events, and Operations.\n` +
+        `4. **Onboarding:** Inducted members receive official responsibilities, credentials, and internal core channel access.\n\n` +
+        `*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles and not open for direct application).*`,
       suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
       actionLinks: [
-        { label: '🚀 Apply Now', url: '/join' },
-        { label: '💬 Contact Us', url: '/contact' },
+        { label: '🚀 Register as Member', url: '/join' },
+        { label: '💬 Contact Form', url: '/contact' },
+        { label: '👥 Meet Our Team', url: '/team' },
       ],
     };
   }
@@ -2250,21 +2278,31 @@ export const resolveBotQuery = async (
   // 11. TIMINGS & VENUE / LOCATION INTENT
   const isTimingLocationIntent =
     cleanQ.includes('location') ||
+    cleanQ.includes('located') ||
     cleanQ.includes('where is club') ||
+    cleanQ.includes('where is the club') ||
+    cleanQ.includes('where to meet') ||
+    cleanQ.includes('where can i meet') ||
+    cleanQ.includes('where meet') ||
+    cleanQ.includes('club room') ||
     cleanQ.includes('timing') ||
     cleanQ.includes('timings') ||
     cleanQ.includes('venue') ||
     cleanQ.includes('offline') ||
     cleanQ.includes('campus') ||
-    cleanQ.includes('where meet');
+    cleanQ.includes('d3 202') ||
+    cleanQ.includes('south campus');
 
   if (isTimingLocationIntent) {
     return {
-      text: `Cloud Stack Club is based at **Chandigarh University** under the Department of Computer Science & Engineering / AIT.\n\n• **Venues:** On-campus computer labs, auditorium halls, or virtual rooms via Google Meet / Discord.\n• **Timings:** Sessions are typically scheduled after class hours (weekday evenings) or on Saturday mornings.`,
+      text: `Cloud Stack Club is based at **Chandigarh University** under the Department of Computer Science & Engineering / AIT.\n\n` +
+        `• 📍 **Club Room / Office:** **D3 202, South Campus, Chandigarh University**\n` +
+        `• 🏛️ **Venues:** On-campus computer labs, auditorium halls, or virtual rooms via Google Meet / Discord.\n` +
+        `• ⏰ **Timings:** Sessions are typically scheduled after class hours (weekday evenings) or on Saturday mornings. You can visit us in **D3 202** during college working hours!`,
       suggestions: faqs.filter((f) => f.category === 'Events' || f.category === 'About Club').slice(0, 3),
       actionLinks: [
         { label: '📅 View Events & Venues', url: '/events' },
-        { label: '💬 Contact Coordinators', url: '/query' },
+        { label: '💬 Contact Coordinators', url: '/contact' },
       ],
     };
   }
@@ -2320,21 +2358,34 @@ export const resolveBotQuery = async (
     };
   }
 
-  // 13. DOMAINS & TECH STACK INTENT
+  // 13. DOMAINS & AVAILABLE ROLES INTENT
   const isDomainIntent =
     cleanQ.includes('domain') ||
     cleanQ.includes('domains') ||
     cleanQ.includes('departments') ||
     cleanQ.includes('what can i learn') ||
     cleanQ.includes('sub division') ||
-    cleanQ.includes('tech stack');
+    cleanQ.includes('tech stack') ||
+    cleanQ.includes('available role') ||
+    cleanQ.includes('available roles') ||
+    cleanQ.includes('which roles') ||
+    cleanQ.includes('what roles') ||
+    cleanQ.includes('roles available') ||
+    cleanQ.includes('which domain');
 
   if (isDomainIntent) {
     return {
-      text: `Cloud Stack Club offers active tracks across 7 core domains:\n\n☁️ **Cloud Computing:** AWS, Google Cloud, Microsoft Azure architectures.\n⚙️ **DevOps & Linux:** CI/CD pipelines, Docker, Kubernetes, Terraform.\n💻 **Full Stack Development:** Modern React, Node.js, Next.js, Go, Python.\n🤖 **AI & Machine Learning:** Neural networks, LLMs, computer vision, data analysis.\n🎨 **UI/UX Design:** User flows, Figma prototyping, graphic design.\n✍️ **Technical Writing:** Blogs, newsletters, open-source documentation.\n🎯 **Event Operations:** Hackathon execution, sponsorships, social media.`,
+      text: `Students can join and contribute across all active roles available in the club database (excluding Faculty Advisors, Secretary, and Joint Secretary):\n\n` +
+        `• 💻 **Technical & Research:** Technical Lead, Research and Developement Coordinator (Cloud Architectures, DevOps, Full Stack, AI/ML)\n` +
+        `• 🎨 **Creative & Media:** Graphic Designer, Video editor, Photographer & Videographer (UI/UX, Figma, Video Editing, Event Coverage)\n` +
+        `• ✍️ **Content & Outreach:** Content Writer, Content Creator, Social Media Manager, Marketing Coordinator, Public Outreach Coordinator\n` +
+        `• 🎪 **Events & Logistics:** Event Coordinator, Event Logistics and Resource Co-ordinator, Operations and planning\n` +
+        `• 🤝 **Operations & Administration:** Volunteer Coordinator, Discipline Coordinator, Hospitality Incharge, Documentation Coordinator, Treasurer\n\n` +
+        `*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles. To join any role above, first register as a member at [/join](/join), then contact us via our [Contact Form](/contact) or visit **D3 202, South Campus, Chandigarh University**).*`,
       suggestions: faqs.filter((f) => f.category === 'About Club' || f.category === 'Membership').slice(0, 3),
       actionLinks: [
-        { label: '🚀 Apply to Join Club', url: '/join' },
+        { label: '🚀 Register as Member', url: '/join' },
+        { label: '💬 Contact Form', url: '/contact' },
         { label: '👥 Meet Our Team', url: '/team' },
       ],
     };
