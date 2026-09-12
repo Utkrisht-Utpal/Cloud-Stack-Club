@@ -68,7 +68,7 @@ export const TestimonialsSection: React.FC = () => {
                   className="h-full"
                 >
                   {/* Testimonial Card matching User wireframe */}
-                  <div className="relative h-full flex flex-col justify-between rounded-2xl bg-slate-900/60 dark:bg-slate-900/60 border border-slate-800 hover:border-blue-500/50 transition-all duration-300 p-6 sm:p-7 shadow-lg shadow-black/20 hover:shadow-blue-500/5 group backdrop-blur-sm">
+                  <div className="relative h-full flex flex-col justify-between rounded-2xl bg-slate-900/60 dark:bg-slate-900/60 border border-slate-800 hover:border-blue-500/50 transition-all duration-300 p-5 sm:p-6 shadow-lg shadow-black/20 hover:shadow-blue-500/5 group backdrop-blur-sm">
                     
                     {/* Top-Left: Event Name */}
                     <div className="flex items-start justify-between gap-3 mb-4">
@@ -81,14 +81,14 @@ export const TestimonialsSection: React.FC = () => {
                     </div>
 
                     {/* Center: testimonial description */}
-                    <div className="my-auto py-2">
+                    <div className="my-auto py-1">
                       <p className="text-slate-300 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-normal whitespace-pre-line">
                         "{t.testimonial_description}"
                       </p>
                     </div>
 
                     {/* Bottom-Right: ~author name & department/position */}
-                    <div className="pt-4 mt-3 border-t border-slate-800/60 flex flex-col items-end">
+                    <div className="pt-2 mt-3 border-t border-slate-800/60 flex flex-col items-end">
                       <span className="text-xs sm:text-sm font-medium text-slate-300 dark:text-slate-400 italic">
                         ~{t.author_name}
                       </span>
