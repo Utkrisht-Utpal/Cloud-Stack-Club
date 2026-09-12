@@ -13,7 +13,8 @@ export const TestimonialsSection: React.FC = () => {
   const loadTestimonials = useCallback(async () => {
     try {
       const data = await getTestimonials();
-      setTestimonials(data);
+      const sorted = [...data].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+      setTestimonials(sorted);
     } catch (err) {
       console.warn('Could not load testimonials for main page:', err);
     } finally {
