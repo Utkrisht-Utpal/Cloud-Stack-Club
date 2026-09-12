@@ -18,6 +18,7 @@ interface CustomSelectProps {
   options: SelectOption[];
   placeholder?: string;
   icon?: React.ReactNode;
+  leadingIcon?: React.ReactNode;
   showDot?: boolean;
   triggerClassName?: string;
 }
@@ -29,6 +30,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   placeholder = "Select option",
   icon,
+  leadingIcon,
   showDot = false,
   triggerClassName,
 }) => {
@@ -59,7 +61,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       const viewportWidth = window.innerWidth;
       const spaceBelow = viewportHeight - rect.bottom;
       const shouldDropUp = spaceBelow < 220 && rect.top > 200;
-      const menuWidth = rect.width;
+      const menuWidth = Math.min(viewportWidth - 24, Math.max(rect.width, 280));
       let menuLeft = rect.left;
       if (menuLeft + menuWidth > viewportWidth - 12) {
         menuLeft = Math.max(12, viewportWidth - menuWidth - 12);
@@ -131,16 +133,21 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         className={triggerClassName || defaultTriggerClass}
       >
         <span className={`text-xs sm:text-sm font-medium flex items-center gap-2 text-left min-w-0 flex-1 whitespace-nowrap ${triggerClassName ? 'text-inherit' : 'text-slate-900 dark:text-slate-100'}`}>
+          {leadingIcon && (
+            <span className="shrink-0 flex items-center">
+              {leadingIcon}
+            </span>
+          )}
           {showDot && (
             <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-sky-400 shrink-0" />
           )}
-          <span className="whitespace-nowrap truncate">
+          <span className={`whitespace-nowrap truncate ${!selectedOption ? 'text-slate-400 dark:text-slate-500' : ''}`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </span>
         <ChevronDown
           className={`w-4 h-4 transition-transform duration-300 shrink-0 ml-1.5 ${
-            triggerClassName ? 'text-inherit opacity-80' : 'text-blue-600 dark:text-sky-400'
+            triggerClassName ? 'text-slate-400 dark:text-slate-500' : 'text-blue-600 dark:text-sky-400'
           } ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         />
       </button>
@@ -186,19 +193,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                       onChange(option.value);
                       setIsOpen(false);
                     }}
-                    className={`w-full px-3 py-2 rounded-xl text-left transition-all flex items-center gap-2 cursor-pointer ${
+                    className={`w-full px-3 py-2 rounded-xl text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
                       isSelected
                         ? "bg-blue-600 text-white font-semibold shadow-md"
                         : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300"
                     }`}
                   >
-                    <div className="flex flex-col text-left min-w-0 flex-1 whitespace-nowrap">
-                      <span className="text-xs sm:text-sm font-bold text-left whitespace-nowrap">
+                    <div className="flex flex-col text-left min-w-0 flex-1">
+                      <span className="text-xs sm:text-sm font-bold text-left truncate">
                         {option.label}
                       </span>
                       {option.description && (
                         <span
-                          className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 whitespace-nowrap ${
+                          className={`text-[10px] sm:text-xs text-left leading-tight mt-0.5 truncate ${
                             isSelected
                               ? "text-blue-100"
                               : "text-slate-500 dark:text-slate-400"
@@ -208,6 +215,17 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                         </span>
                       )}
                     </div>
+                    {option.badge && (
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 transition-colors ${
+                          isSelected
+                            ? "bg-white/20 text-white"
+                            : "bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20"
+                        }`}
+                      >
+                        {option.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}

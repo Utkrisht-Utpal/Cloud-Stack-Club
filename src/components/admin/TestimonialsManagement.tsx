@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare,
@@ -18,6 +18,7 @@ import {
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
+import { CustomSelect, type SelectOption } from '../ui/CustomSelect';
 import { getTestimonials, createTestimonial, deleteTestimonial } from '../../services/testimonials';
 import { getEvents } from '../../services/events';
 import type { Testimonial, Event } from '../../types/database';
@@ -208,6 +209,20 @@ export const TestimonialsManagement: React.FC = () => {
   const previewDescription =
     description.trim() || 'The testimonial description will be displayed here in this card format.';
 
+  const eventSelectOptions: SelectOption[] = useMemo(() => [
+    ...eventsList.map((evt) => ({
+      value: evt.title,
+      label: evt.title,
+      badge: evt.status ? evt.status.toUpperCase() : undefined,
+    })),
+    {
+      value: '__custom__',
+      label: '+ Enter other / past event name...',
+      description: 'Specify custom or past event',
+      badge: 'CUSTOM',
+    },
+  ], [eventsList]);
+
   return (
     <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
       {/* Header */}
@@ -291,32 +306,24 @@ export const TestimonialsManagement: React.FC = () => {
             </div>
 
             {/* 2. Event & Order (Side-by-Side) */}
-            <div className="grid grid-cols-12 gap-3">
+            <div className="grid grid-cols-12 gap-3 items-start">
               <div className="col-span-8 sm:col-span-8">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                   Event <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectedEventName}
-                    onChange={(e) => setSelectedEventName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none cursor-pointer"
-                    required
-                  >
-                    <option value="" disabled>
-                      Select Event from Database
-                    </option>
-                    {eventsList.map((evt) => (
-                      <option key={evt.id} value={evt.title}>
-                        {evt.title} ({evt.status || 'Event'})
-                      </option>
-                    ))}
-                    <option value="__custom__">+ Enter other / past event name...</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                </div>
+                <CustomSelect
+                  value={selectedEventName}
+                  onChange={(val) => {
+                    setSelectedEventName(val);
+                    if (val !== '__custom__') {
+                      setCustomEventName('');
+                    }
+                  }}
+                  options={eventSelectOptions}
+                  placeholder="Select Event from Database"
+                  leadingIcon={<Calendar className="w-4 h-4 text-slate-400" />}
+                  triggerClassName="w-full h-[42px] px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 hover:border-blue-500/60 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all flex items-center justify-between cursor-pointer"
+                />
               </div>
 
               <div className="col-span-4 sm:col-span-4">
@@ -334,7 +341,7 @@ export const TestimonialsManagement: React.FC = () => {
                       else setDisplayOrder(Math.max(1, parseInt(val, 10) || 1));
                     }}
                     placeholder="1"
-                    className="w-full pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-[42px] pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                     required
                   />
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
