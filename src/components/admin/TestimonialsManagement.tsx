@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare,
@@ -44,6 +44,37 @@ export const TestimonialsManagement: React.FC = () => {
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Measure left box height to keep left and right boxes at exact same height
+  const leftBoxRef = useRef<HTMLDivElement>(null);
+  const [leftHeight, setLeftHeight] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (leftBoxRef.current && window.innerWidth >= 1024) {
+        setLeftHeight(leftBoxRef.current.offsetHeight);
+      } else {
+        setLeftHeight(undefined);
+      }
+    };
+
+    updateHeight();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateHeight();
+    });
+
+    if (leftBoxRef.current) {
+      resizeObserver.observe(leftBoxRef.current);
+    }
+
+    window.addEventListener('resize', updateHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateHeight);
+    };
+  }, [selectedEventName, formError]);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -225,165 +256,168 @@ export const TestimonialsManagement: React.FC = () => {
         {/* ===================================================================== */}
         {/* LEFT SIDE: Add Testimonial Form (matching user wireframe)             */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between lg:h-[660px]">
-          <div>
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
-              <Sparkles className="w-4 h-4 text-blue-500" />
-              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-                Add Testimonial
-              </h3>
+        <div
+          ref={leftBoxRef}
+          className="lg:col-span-5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col"
+        >
+          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+            <Sparkles className="w-4 h-4 text-blue-500" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+              Add Testimonial
+            </h3>
+          </div>
+
+          <form id="add-testimonial-form" onSubmit={handleAddTestimonial} className="space-y-3.5 flex flex-col">
+            {formError && (
+              <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-red-500 dark:text-red-400 text-xs font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            {/* 1. testimonial description */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Testimonial Description <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Enter what the participant said about the event..."
+                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none h-[95px]"
+                required
+              />
             </div>
 
-            <form id="add-testimonial-form" onSubmit={handleAddTestimonial} className="space-y-3.5">
-              {formError && (
-                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-red-500 dark:text-red-400 text-xs font-medium">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{formError}</span>
-                </div>
-              )}
-
-              {/* 1. testimonial description */}
-              <div>
+            {/* 2. Event & Order (Side-by-Side) */}
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-8 sm:col-span-8">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Testimonial Description <span className="text-red-500">*</span>
+                  Event <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter what the participant said about the event..."
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none h-[95px]"
+                <div className="relative">
+                  <select
+                    value={selectedEventName}
+                    onChange={(e) => setSelectedEventName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select Event from Database
+                    </option>
+                    {eventsList.map((evt) => (
+                      <option key={evt.id} value={evt.title}>
+                        {evt.title} ({evt.status || 'Event'})
+                      </option>
+                    ))}
+                    <option value="__custom__">+ Enter other / past event name...</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="col-span-4 sm:col-span-4">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 truncate" title="Display Order">
+                  Order <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    min={1}
+                    value={displayOrder}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '') setDisplayOrder('');
+                      else setDisplayOrder(Math.max(1, parseInt(val, 10) || 1));
+                    }}
+                    placeholder="1"
+                    className="w-full pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    required
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
+                    <ListOrdered className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {selectedEventName === '__custom__' && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={customEventName}
+                  onChange={(e) => setCustomEventName(e.target.value)}
+                  placeholder="Enter custom event name (e.g. Elevate-X 2024)"
+                  className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
                   required
                 />
               </div>
+            )}
 
-              {/* 2. Event & Order (Side-by-Side) */}
-              <div className="grid grid-cols-12 gap-3">
-                <div className="col-span-8 sm:col-span-8">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                    Event <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={selectedEventName}
-                      onChange={(e) => setSelectedEventName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none cursor-pointer"
-                      required
-                    >
-                      <option value="" disabled>
-                        Select Event from Database
-                      </option>
-                      {eventsList.map((evt) => (
-                        <option key={evt.id} value={evt.title}>
-                          {evt.title} ({evt.status || 'Event'})
-                        </option>
-                      ))}
-                      <option value="__custom__">+ Enter other / past event name...</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                      <Calendar className="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="col-span-4 sm:col-span-4">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 truncate" title="Display Order">
-                    Order <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min={1}
-                      value={displayOrder}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') setDisplayOrder('');
-                        else setDisplayOrder(Math.max(1, parseInt(val, 10) || 1));
-                      }}
-                      placeholder="1"
-                      className="w-full pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                      required
-                    />
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
-                      <ListOrdered className="w-4 h-4" />
-                    </div>
-                  </div>
+            {/* 3. Author Name: */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Author Name: <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={authorName}
+                  onChange={(e) => setAuthorName(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  required
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                  <User className="w-4 h-4" />
                 </div>
               </div>
+            </div>
 
-              {selectedEventName === '__custom__' && (
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    value={customEventName}
-                    onChange={(e) => setCustomEventName(e.target.value)}
-                    placeholder="Enter custom event name (e.g. Elevate-X 2024)"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                    required
-                  />
-                </div>
-              )}
-
-              {/* 3. Author Name: */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Author Name: <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    placeholder="e.g. Rahul Sharma"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                    required
-                  />
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                    <User className="w-4 h-4" />
-                  </div>
+            {/* 4. Department / Position: */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Department / Position:
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={authorPosition}
+                  onChange={(e) => setAuthorPosition(e.target.value)}
+                  placeholder="e.g. CSE - 3rd Year / Full Stack Lead"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                />
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                  <Briefcase className="w-4 h-4" />
                 </div>
               </div>
+            </div>
 
-              {/* 4. Department / Position: */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                  Department / Position:
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={authorPosition}
-                    onChange={(e) => setAuthorPosition(e.target.value)}
-                    placeholder="e.g. CSE - 3rd Year / Full Stack Lead"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
-                  />
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                    <Briefcase className="w-4 h-4" />
-                  </div>
-                </div>
-              </div>
-            </form>
-          </div>
-
-          {/* Submit Button anchored at the bottom */}
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80">
-            <button
-              type="submit"
-              form="add-testimonial-form"
-              disabled={isSubmitting}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{isSubmitting ? 'Adding Testimonial...' : 'Add Testimonial +'}</span>
-            </button>
-          </div>
+            {/* Submit Button attached directly below Department / Position */}
+            <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800/80">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{isSubmitting ? 'Adding Testimonial...' : 'Add Testimonial +'}</span>
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* ===================================================================== */}
         {/* RIGHT SIDE: Testimonial Previews (User View)                          */}
-        {/* Exact same height (lg:h-[660px]) with styled sleek custom scrollbar  */}
+        {/* Matches left box height dynamically so both end at the same baseline */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col lg:h-[660px]">
+        <div
+          style={leftHeight ? { height: `${leftHeight}px` } : undefined}
+          className="lg:col-span-7 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col min-h-[460px] lg:min-h-0"
+        >
           
           {/* Header & Search */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
