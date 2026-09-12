@@ -32,6 +32,7 @@ import {
   Bell,
   HelpCircle,
   Bot,
+  MessageSquareQuote,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -62,6 +63,7 @@ import { BroadcastEventModal } from './BroadcastEventModal';
 import { UpdateFeedbackStatusModal } from './UpdateFeedbackStatusModal';
 import { EmailLogsManagement } from './EmailLogsManagement';
 import { ChatbotManagement } from './ChatbotManagement';
+import { TestimonialsManagement } from './TestimonialsManagement';
 import { NoticeManagementModal } from './NoticeManagementModal';
 import { DiscrepancyManagementModal } from './DiscrepancyManagementModal';
 import { getActiveNotices } from '../../services/notices';
@@ -156,7 +158,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = false, setMobileNavOpen }) => {
-  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'team' | 'emails' | 'chatbot'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'team' | 'emails' | 'chatbot' | 'testimonials'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
@@ -1483,7 +1485,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             </button>
                           </div>
                         </th>
-                        <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
+                        <th className="py-3.5 px-4 font-bold">IDs & CREDENTIALS</th>
                         <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
                         <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
                         <th className="py-3.5 px-4 text-right font-bold">ACTIONS</th>
@@ -1587,7 +1589,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             </button>
                           </div>
                         </th>
-                        <th className="py-3.5 px-4 font-bold">IDS & CREDENTIALS</th>
+                        <th className="py-3.5 px-4 font-bold">IDs & CREDENTIALS</th>
                         <th className="py-3.5 px-4 font-bold">ACADEMIC DETAILS</th>
                         <th className="py-3.5 px-4 font-bold">ROLE STATUS</th>
                         <th className="py-3.5 px-4 text-center font-bold min-w-[140px]">ACTIONS</th>
