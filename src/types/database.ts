@@ -33,6 +33,18 @@ export interface Notice {
   created_by?: string | null;
 }
 
+export interface Testimonial {
+  id: string;
+  testimonial_description: string;
+  event_name: string;
+  event_id?: string | null;
+  author_name: string;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Role {
   id: string;
   name: string;

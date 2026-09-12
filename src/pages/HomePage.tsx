@@ -5,6 +5,7 @@ import { AboutSection } from '../components/sections/AboutSection';
 import { WhatWeDoSection } from '../components/sections/WhatWeDoSection';
 import { WhyJoinSection } from '../components/sections/WhyJoinSection';
 import { EventsSection } from '../components/sections/EventsSection';
+import { TestimonialsSection } from '../components/sections/TestimonialsSection';
 import { ContactSection } from '../components/sections/ContactSection';
 
 interface HomePageProps {
@@ -19,6 +20,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onJoinClick }) => {
     let targetId = '';
     if (location.pathname === '/about') targetId = 'about';
     else if (location.pathname === '/domains') targetId = 'domains';
+    else if (location.pathname === '/testimonials') targetId = 'testimonials';
     else if (location.pathname === '/contact' || location.pathname === '/contact-us') targetId = 'contact';
     else if (location.hash) targetId = location.hash.replace('#', '');
 
@@ -44,6 +46,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onJoinClick }) => {
       <WhatWeDoSection />
       <WhyJoinSection />
       <EventsSection />
+      <TestimonialsSection />
       <ContactSection />
     </div>
   );
