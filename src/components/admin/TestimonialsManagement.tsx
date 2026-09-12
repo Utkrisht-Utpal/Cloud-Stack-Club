@@ -14,12 +14,19 @@ import {
   ExternalLink,
   Briefcase,
   ListOrdered,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
 import { CustomSelect, type SelectOption } from '../ui/CustomSelect';
-import { getTestimonials, createTestimonial, deleteTestimonial } from '../../services/testimonials';
+import {
+  getTestimonials,
+  createTestimonial,
+  deleteTestimonial,
+  swapTestimonialOrders,
+} from '../../services/testimonials';
 import { getEvents } from '../../services/events';
 import type { Testimonial, Event } from '../../types/database';
 
@@ -42,6 +49,15 @@ export const TestimonialsManagement: React.FC = () => {
   // Delete modal state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [swappingId, setSwappingId] = useState<string | null>(null);
+
+  // Helper to compute next available display order
+  const getNextAvailableOrder = (list: Testimonial[]): number => {
+    if (!list || list.length === 0) return 1;
+    const orders = list.map((t) => t.display_order ?? 0).filter((o) => o > 0);
+    if (orders.length === 0) return 1;
+    return Math.max(...orders) + 1;
+  };
 
   // Toast notification state
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -85,9 +101,12 @@ export const TestimonialsManagement: React.FC = () => {
         getTestimonials(),
         getEvents(),
       ]);
-      setTestimonials(fetchedTestimonials);
+      const sorted = [...fetchedTestimonials].sort(
+        (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+      );
+      setTestimonials(sorted);
       setEventsList(fetchedEvents);
-      setDisplayOrder(fetchedTestimonials.length + 1);
+      setDisplayOrder(getNextAvailableOrder(sorted));
     } catch (err) {
       console.warn('Error loading testimonials data:', err);
     } finally {
@@ -100,8 +119,15 @@ export const TestimonialsManagement: React.FC = () => {
 
     const handleUpdate = () => {
       getTestimonials().then((data) => {
-        setTestimonials(data);
-        setDisplayOrder(data.length + 1);
+        const sorted = [...data].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+        setTestimonials(sorted);
+        setDisplayOrder((prev) => {
+          const prevNum = parseInt(String(prev), 10);
+          if (isNaN(prevNum) || sorted.some((t) => t.display_order === prevNum)) {
+            return getNextAvailableOrder(sorted);
+          }
+          return prev;
+        });
       }).catch(console.warn);
     };
 
@@ -134,6 +160,21 @@ export const TestimonialsManagement: React.FC = () => {
       return;
     }
 
+    const parsedOrder = typeof displayOrder === 'number' ? displayOrder : parseInt(String(displayOrder), 10);
+    if (isNaN(parsedOrder) || parsedOrder <= 0) {
+      setFormError('Please enter a valid positive order number (1, 2, 3...).');
+      return;
+    }
+
+    // Check uniqueness constraint
+    const duplicate = testimonials.find((t) => t.display_order === parsedOrder);
+    if (duplicate) {
+      setFormError(
+        `Order #${parsedOrder} is already in use by "${duplicate.author_name}" (${duplicate.event_name}). Each testimonial must have a unique order number.`
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -141,26 +182,31 @@ export const TestimonialsManagement: React.FC = () => {
         (ev) => ev.title.trim().toLowerCase() === finalEventName.toLowerCase()
       );
 
-      const parsedOrder = typeof displayOrder === 'number' ? displayOrder : parseInt(String(displayOrder), 10);
-      const finalOrder = isNaN(parsedOrder) || parsedOrder <= 0 ? testimonials.length + 1 : parsedOrder;
-
       const res = await createTestimonial({
         testimonial_description: cleanDescription,
         event_name: finalEventName,
         event_id: matchedEvent ? matchedEvent.id : null,
         author_name: cleanAuthorName,
         author_position: authorPosition.trim() || null,
-        display_order: finalOrder,
+        display_order: parsedOrder,
       });
 
-      if (res.success) {
+      if (res.success && res.data) {
+        const createdItem = res.data;
         setToastMessage({ type: 'success', message: 'Testimonial created successfully!' });
         setDescription('');
         setSelectedEventName('');
         setCustomEventName('');
         setAuthorName('');
         setAuthorPosition('');
-        setDisplayOrder(testimonials.length + 2);
+        // Immediately update preview list in real time
+        setTestimonials((prev) => {
+          const fresh = [...prev.filter((t) => t.id !== createdItem.id), createdItem].sort(
+            (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+          );
+          setDisplayOrder(getNextAvailableOrder(fresh));
+          return fresh;
+        });
       } else {
         setFormError(res.error || 'Failed to create testimonial.');
       }
@@ -174,12 +220,19 @@ export const TestimonialsManagement: React.FC = () => {
   // Handle testimonial deletion
   const handleConfirmDelete = async () => {
     if (!deletingId) return;
+    const targetId = deletingId;
     setIsDeleting(true);
 
     try {
-      const res = await deleteTestimonial(deletingId);
+      const res = await deleteTestimonial(targetId);
       if (res.success) {
         setToastMessage({ type: 'success', message: 'Testimonial removed.' });
+        // Immediately update preview list in real time
+        setTestimonials((prev) => {
+          const fresh = prev.filter((t) => t.id !== targetId);
+          setDisplayOrder(getNextAvailableOrder(fresh));
+          return fresh;
+        });
       } else {
         setToastMessage({ type: 'error', message: res.error || 'Failed to remove testimonial.' });
       }
@@ -191,15 +244,57 @@ export const TestimonialsManagement: React.FC = () => {
     }
   };
 
-  // Filtered testimonials
-  const filteredTestimonials = testimonials.filter((t) => {
-    const q = searchQuery.toLowerCase();
-    return (
-      t.event_name.toLowerCase().includes(q) ||
-      t.author_name.toLowerCase().includes(q) ||
-      t.testimonial_description.toLowerCase().includes(q)
-    );
-  });
+  // Handle swapping order between adjacent cards
+  const handleSwapOrders = async (firstId: string, secondId: string) => {
+    setSwappingId(firstId);
+
+    // Immediately swap in preview list state
+    setTestimonials((prev) => {
+      const first = prev.find((t) => t.id === firstId);
+      const second = prev.find((t) => t.id === secondId);
+      if (!first || !second) return prev;
+      const orderA = first.display_order;
+      const orderB = second.display_order;
+      return prev
+        .map((t) => {
+          if (t.id === firstId) return { ...t, display_order: orderB };
+          if (t.id === secondId) return { ...t, display_order: orderA };
+          return t;
+        })
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+    });
+
+    try {
+      const res = await swapTestimonialOrders(firstId, secondId);
+      if (res.success) {
+        setToastMessage({ type: 'success', message: 'Testimonial display order updated.' });
+      } else {
+        setToastMessage({ type: 'error', message: res.error || 'Failed to update order.' });
+      }
+    } catch (err: any) {
+      setToastMessage({ type: 'error', message: err?.message || 'Failed to update order.' });
+    } finally {
+      setSwappingId(null);
+    }
+  };
+
+  // Filtered testimonials strictly ordered by display_order ascending
+  const filteredTestimonials = testimonials
+    .filter((t) => {
+      const q = searchQuery.toLowerCase();
+      return (
+        t.event_name.toLowerCase().includes(q) ||
+        t.author_name.toLowerCase().includes(q) ||
+        t.testimonial_description.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+  const parsedOrderInput = typeof displayOrder === 'number' ? displayOrder : parseInt(String(displayOrder), 10);
+  const existingWithSameOrder = !isNaN(parsedOrderInput) && parsedOrderInput > 0
+    ? testimonials.find((t) => t.display_order === parsedOrderInput)
+    : undefined;
+  const nextAvailableOrder = getNextAvailableOrder(testimonials);
 
   const previewEventName =
     selectedEventName === '__custom__'
@@ -327,7 +422,7 @@ export const TestimonialsManagement: React.FC = () => {
               </div>
 
               <div className="col-span-4 sm:col-span-4">
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 truncate" title="Display Order">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5 truncate" title="Display Order (Unique)">
                   Order <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -340,8 +435,12 @@ export const TestimonialsManagement: React.FC = () => {
                       if (val === '') setDisplayOrder('');
                       else setDisplayOrder(Math.max(1, parseInt(val, 10) || 1));
                     }}
-                    placeholder="1"
-                    className="w-full h-[42px] pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    placeholder={String(nextAvailableOrder)}
+                    className={`w-full h-[42px] pl-3 pr-8 py-2.5 rounded-xl bg-white dark:bg-slate-900 border text-sm font-bold text-slate-900 dark:text-slate-100 focus:outline-none transition-colors ${
+                      existingWithSameOrder
+                        ? 'border-amber-500 ring-1 ring-amber-500/50'
+                        : 'border-slate-300 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500'
+                    }`}
                     required
                   />
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2.5 text-slate-400">
@@ -350,6 +449,25 @@ export const TestimonialsManagement: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Live Duplicate Order Warning with 1-Click Fix */}
+            {existingWithSameOrder && (
+              <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 text-amber-600 dark:text-amber-400 text-xs">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span className="truncate">
+                    Order #{parsedOrderInput} is taken by <strong>{existingWithSameOrder.author_name}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDisplayOrder(nextAvailableOrder)}
+                  className="px-2 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500/30 font-bold shrink-0 text-[11px] transition-colors cursor-pointer"
+                >
+                  Use #{nextAvailableOrder}
+                </button>
+              </div>
+            )}
 
             {selectedEventName === '__custom__' && (
               <div className="mt-2">
@@ -502,7 +620,7 @@ export const TestimonialsManagement: React.FC = () => {
               </div>
             ) : (
               <AnimatePresence>
-                {filteredTestimonials.map((t) => (
+                {filteredTestimonials.map((t, idx) => (
                   <motion.div
                     key={t.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -510,27 +628,47 @@ export const TestimonialsManagement: React.FC = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-blue-500/40 p-4 sm:p-5 shadow-sm hover:shadow-md transition-all group"
                   >
-                    {/* Header: Event Name, Order Badge + Delete Button */}
+                    {/* Header: Event Name, Order Badge + Reorder & Delete Actions */}
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-sky-300 text-xs font-bold">
                           <Calendar className="w-3.5 h-3.5 text-blue-500" />
                           <span className="truncate max-w-[200px]">{t.event_name}</span>
                         </div>
-                        <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/60">
-                          #{t.display_order}
+                        <span className="text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-sky-400 border border-blue-200 dark:border-blue-700/60 shadow-xs">
+                          Order #{t.display_order}
                         </span>
                       </div>
 
-                      {/* Admin Delete Action */}
-                      <button
-                        type="button"
-                        onClick={() => setDeletingId(t.id)}
-                        title="Delete Testimonial"
-                        className="text-slate-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Admin Actions: Move Up, Move Down, Delete */}
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0 || swappingId !== null}
+                          onClick={() => handleSwapOrders(t.id, filteredTestimonials[idx - 1].id)}
+                          title="Move up in order"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-blue-500/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === filteredTestimonials.length - 1 || swappingId !== null}
+                          onClick={() => handleSwapOrders(t.id, filteredTestimonials[idx + 1].id)}
+                          title="Move down in order"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:bg-blue-500/10 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeletingId(t.id)}
+                          title="Delete Testimonial"
+                          className="text-slate-400 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-lg transition-colors cursor-pointer ml-0.5"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Body: testimonial description */}
