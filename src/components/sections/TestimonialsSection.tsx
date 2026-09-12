@@ -86,11 +86,16 @@ export const TestimonialsSection: React.FC = () => {
                       </p>
                     </div>
 
-                    {/* Bottom-Right: ~author name */}
-                    <div className="pt-4 mt-3 border-t border-slate-800/60 flex justify-end">
-                      <span className="text-xs sm:text-sm font-medium text-slate-400 dark:text-slate-400 italic">
+                    {/* Bottom-Right: ~author name & department/position */}
+                    <div className="pt-4 mt-3 border-t border-slate-800/60 flex flex-col items-end">
+                      <span className="text-xs sm:text-sm font-medium text-slate-300 dark:text-slate-400 italic">
                         ~{t.author_name}
                       </span>
+                      {t.author_position && (
+                        <span className="text-[11px] sm:text-xs font-normal text-slate-400/80 dark:text-slate-500 mt-0.5 tracking-wide">
+                          {t.author_position}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </motion.div>

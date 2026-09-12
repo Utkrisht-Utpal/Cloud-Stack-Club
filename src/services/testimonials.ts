@@ -74,6 +74,7 @@ export async function createTestimonial(
     event_name: string;
     event_id?: string | null;
     author_name: string;
+    author_position?: string | null;
     display_order?: number;
     is_active?: boolean;
   }
@@ -87,6 +88,7 @@ export async function createTestimonial(
     event_name: testimonial.event_name.trim(),
     event_id: testimonial.event_id || null,
     author_name: testimonial.author_name.trim(),
+    author_position: testimonial.author_position?.trim() || null,
     display_order: testimonial.display_order ?? 0,
     is_active: testimonial.is_active ?? true,
     created_at: nowIso,
@@ -109,6 +111,7 @@ export async function createTestimonial(
           event_name: payload.event_name,
           event_id: payload.event_id,
           author_name: payload.author_name,
+          author_position: payload.author_position,
           display_order: payload.display_order,
           is_active: payload.is_active,
           updated_at: nowIso,

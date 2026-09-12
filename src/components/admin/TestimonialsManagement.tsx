@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Search,
   ExternalLink,
+  Briefcase,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -31,6 +32,7 @@ export const TestimonialsManagement: React.FC = () => {
   const [selectedEventName, setSelectedEventName] = useState('');
   const [customEventName, setCustomEventName] = useState('');
   const [authorName, setAuthorName] = useState('');
+  const [authorPosition, setAuthorPosition] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -106,6 +108,7 @@ export const TestimonialsManagement: React.FC = () => {
         event_name: finalEventName,
         event_id: matchedEvent ? matchedEvent.id : null,
         author_name: cleanAuthorName,
+        author_position: authorPosition.trim() || null,
         display_order: testimonials.length + 1,
       });
 
@@ -115,6 +118,7 @@ export const TestimonialsManagement: React.FC = () => {
         setSelectedEventName('');
         setCustomEventName('');
         setAuthorName('');
+        setAuthorPosition('');
       } else {
         setFormError(res.error || 'Failed to create testimonial.');
       }
@@ -206,126 +210,147 @@ export const TestimonialsManagement: React.FC = () => {
       </div>
 
       {/* Two-Column Layout: Left (Add Testimonial) | Right (Testimonial Previews) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* ===================================================================== */}
         {/* LEFT SIDE: Add Testimonial Form (matching user wireframe)             */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
-            <Sparkles className="w-4 h-4 text-blue-500" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
-              Add Testimonial
-            </h3>
-          </div>
-
-          <form onSubmit={handleAddTestimonial} className="space-y-4">
-            {formError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2.5 text-red-500 dark:text-red-400 text-xs font-medium">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            {/* 1. testimonial description */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Testimonial Description <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                rows={5}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter what the participant said about the event..."
-                className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-y min-h-[110px]"
-                required
-              />
+        <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col justify-between lg:h-[660px]">
+          <div>
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-slate-800">
+              <Sparkles className="w-4 h-4 text-blue-500" />
+              <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                Add Testimonial
+              </h3>
             </div>
 
-            {/* 2. Event */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Event <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedEventName}
-                  onChange={(e) => setSelectedEventName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none cursor-pointer"
-                  required
-                >
-                  <option value="" disabled>
-                    Select Event from Database
-                  </option>
-                  {eventsList.map((evt) => (
-                    <option key={evt.id} value={evt.title}>
-                      {evt.title} ({evt.status || 'Event'})
-                    </option>
-                  ))}
-                  <option value="__custom__">+ Enter other / past event name...</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                  <Calendar className="w-4 h-4" />
-                </div>
-              </div>
-
-              {selectedEventName === '__custom__' && (
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    value={customEventName}
-                    onChange={(e) => setCustomEventName(e.target.value)}
-                    placeholder="Enter custom event name (e.g. Elevate-X 2024)"
-                    className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                    required
-                  />
+            <form id="add-testimonial-form" onSubmit={handleAddTestimonial} className="space-y-3.5">
+              {formError && (
+                <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center gap-2 text-red-500 dark:text-red-400 text-xs font-medium">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{formError}</span>
                 </div>
               )}
-            </div>
 
-            {/* 3. Author Name: */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-                Author Name: <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder="e.g. Rahul Sharma"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              {/* 1. testimonial description */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Testimonial Description <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Enter what the participant said about the event..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors resize-none h-[95px]"
                   required
                 />
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
-                  <User className="w-4 h-4" />
+              </div>
+
+              {/* 2. Event */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Event <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedEventName}
+                    onChange={(e) => setSelectedEventName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors appearance-none cursor-pointer"
+                    required
+                  >
+                    <option value="" disabled>
+                      Select Event from Database
+                    </option>
+                    {eventsList.map((evt) => (
+                      <option key={evt.id} value={evt.title}>
+                        {evt.title} ({evt.status || 'Event'})
+                      </option>
+                    ))}
+                    <option value="__custom__">+ Enter other / past event name...</option>
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {selectedEventName === '__custom__' && (
+                  <div className="mt-2">
+                    <input
+                      type="text"
+                      value={customEventName}
+                      onChange={(e) => setCustomEventName(e.target.value)}
+                      placeholder="Enter custom event name (e.g. Elevate-X 2024)"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Author Name: */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Author Name: <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    placeholder="e.g. Rahul Sharma"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    required
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                    <User className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Submit Button */}
-            <div className="pt-2">
-              <Button
-                type="submit"
-                variant="primary"
-                size="md"
-                disabled={isSubmitting}
-                icon={<Plus className="w-4 h-4" />}
-                className="w-full font-bold shadow-lg shadow-blue-600/20"
-              >
-                {isSubmitting ? 'Adding Testimonial...' : 'Add Testimonial'}
-              </Button>
-            </div>
-          </form>
+              {/* 4. Department / Position: */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Department / Position:
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={authorPosition}
+                    onChange={(e) => setAuthorPosition(e.target.value)}
+                    placeholder="e.g. CSE - 3rd Year / Full Stack Lead"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-400">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {/* Submit Button anchored at the bottom */}
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80">
+            <button
+              type="submit"
+              form="add-testimonial-form"
+              disabled={isSubmitting}
+              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 active:scale-[0.99] text-white font-bold text-sm tracking-wide shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+            >
+              <Plus className="w-4 h-4" />
+              <span>{isSubmitting ? 'Adding Testimonial...' : 'Add Testimonial +'}</span>
+            </button>
+          </div>
         </div>
 
         {/* ===================================================================== */}
         {/* RIGHT SIDE: Testimonial Previews (User View)                          */}
+        {/* Exact same height (lg:h-[660px]) with styled sleek custom scrollbar  */}
         {/* ===================================================================== */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col lg:h-[660px]">
           
           {/* Header & Search */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:px-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-blue-500" />
               <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
@@ -345,48 +370,55 @@ export const TestimonialsManagement: React.FC = () => {
             </div>
           </div>
 
-          {/* Live Draft Card Preview (while typing) */}
-          {(description.trim() || authorName.trim() || selectedEventName) && (
-            <div className="border-2 border-dashed border-blue-500/40 rounded-2xl p-4 sm:p-5 bg-blue-50/20 dark:bg-blue-500/5 relative">
-              <span className="absolute top-2.5 right-3 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500 text-white shadow-sm">
-                Live Draft Preview
-              </span>
+          {/* Scrollable Container with Website Look-and-Feel Scrollbar */}
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-3.5 pr-1.5 custom-scrollbar [scrollbar-width:thin] [scrollbar-color:rgba(59,130,246,0.3)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700/60 hover:[&::-webkit-scrollbar-thumb]:bg-blue-500/50 [&::-webkit-scrollbar-thumb]:rounded-full transition-colors">
+            
+            {/* Live Draft Card Preview (while typing) */}
+            {(description.trim() || authorName.trim() || authorPosition.trim() || selectedEventName) && (
+              <div className="border-2 border-dashed border-blue-500/40 rounded-2xl p-4 sm:p-5 bg-blue-50/20 dark:bg-blue-500/5 relative">
+                <span className="absolute top-2.5 right-3 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500 text-white shadow-sm">
+                  Live Draft Preview
+                </span>
 
-              {/* Exact user card layout from wireframe */}
-              <div className="flex flex-col justify-between pt-2">
-                {/* Event Name */}
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-sky-300 text-xs font-bold w-fit mb-3">
-                  <Calendar className="w-3.5 h-3.5 text-blue-500" />
-                  <span>{previewEventName}</span>
-                </div>
+                {/* Exact user card layout from wireframe */}
+                <div className="flex flex-col justify-between pt-1">
+                  {/* Event Name */}
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-sky-300 text-xs font-bold w-fit mb-2.5">
+                    <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                    <span>{previewEventName}</span>
+                  </div>
 
-                {/* testimonial description */}
-                <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed my-2 italic">
-                  "{previewDescription}"
-                </p>
+                  {/* testimonial description */}
+                  <p className="text-slate-800 dark:text-slate-200 text-sm leading-relaxed my-1.5 italic">
+                    "{previewDescription}"
+                  </p>
 
-                {/* ~author name */}
-                <div className="flex justify-end pt-2 border-t border-slate-200 dark:border-slate-800 mt-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                    ~{previewAuthorName}
-                  </span>
+                  {/* ~author name & department/position */}
+                  <div className="flex flex-col items-end pt-2 border-t border-slate-200 dark:border-slate-800 mt-2">
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      ~{previewAuthorName}
+                    </span>
+                    {authorPosition.trim() && (
+                      <span className="text-[11px] font-normal text-slate-400/80 dark:text-slate-400/80 mt-0.5">
+                        {authorPosition.trim()}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Published Testimonial Cards List */}
-          {loading ? (
-            <div className="py-12 flex justify-center items-center">
-              <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-            </div>
-          ) : filteredTestimonials.length === 0 ? (
-            <div className="py-12 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
-              <MessageSquare className="w-8 h-8 mx-auto text-slate-400 mb-2 opacity-50" />
-              <p className="text-xs font-semibold text-slate-500">No testimonials match your filter.</p>
-            </div>
-          ) : (
-            <div className="space-y-3.5 max-h-[600px] overflow-y-auto pr-1">
+            {/* Published Testimonial Cards List */}
+            {loading ? (
+              <div className="py-12 flex justify-center items-center">
+                <div className="w-8 h-8 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+              </div>
+            ) : filteredTestimonials.length === 0 ? (
+              <div className="py-12 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                <MessageSquare className="w-8 h-8 mx-auto text-slate-400 mb-2 opacity-50" />
+                <p className="text-xs font-semibold text-slate-500">No testimonials match your filter.</p>
+              </div>
+            ) : (
               <AnimatePresence>
                 {filteredTestimonials.map((t) => (
                   <motion.div
@@ -419,17 +451,22 @@ export const TestimonialsManagement: React.FC = () => {
                       "{t.testimonial_description}"
                     </p>
 
-                    {/* Footer: ~author name */}
-                    <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2">
+                    {/* Footer: ~author name & department/position */}
+                    <div className="flex flex-col items-end pt-2 border-t border-slate-100 dark:border-slate-800/80 mt-2">
                       <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 italic">
                         ~{t.author_name}
                       </span>
+                      {t.author_position && (
+                        <span className="text-[11px] font-normal text-slate-400/80 dark:text-slate-400/80 mt-0.5">
+                          {t.author_position}
+                        </span>
+                      )}
                     </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
       </div>
