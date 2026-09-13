@@ -36,7 +36,7 @@ export const TestimonialsSection: React.FC = () => {
   }, [loadTestimonials]);
 
   return (
-    <section id="testimonials" className="py-20 relative z-10">
+    <section id="testimonials" className="scroll-mt-24 sm:scroll-mt-28 py-20 relative z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SectionTitle
           badge="Event Testimonials"
