@@ -126,7 +126,7 @@ export const Footer: React.FC = () => {
               QUICK LINKS
             </h4>
             <ul className="grid grid-cols-2 gap-2 text-sm font-medium">
-              {siteConfig.navLinks.map((link) => (
+              {(siteConfig.footerLinks || siteConfig.navLinks).map((link) => (
                 <li key={link.name}>
                   <button
                     type="button"

@@ -27,6 +27,11 @@ export interface SiteConfig {
     href: string;
     isExternalPage?: boolean;
   }[];
+  footerLinks?: {
+    name: string;
+    href: string;
+    isExternalPage?: boolean;
+  }[];
 }
 
 export interface DomainItem {
