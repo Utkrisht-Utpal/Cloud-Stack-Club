@@ -602,27 +602,6 @@ export const EmailLogsManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* SMTP Response & Technical Metadata */}
-            {selectedLog.metadata && (selectedLog.metadata.smtp_message_id || selectedLog.metadata.smtp_response) && (
-              <div className="space-y-1.5 pb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SMTP Relay Handshake (Gmail):</span>
-                <div className="p-3 rounded-2xl bg-slate-950 text-slate-200 border border-slate-800 space-y-1 font-mono text-[10px]">
-                  {selectedLog.metadata.smtp_message_id && (
-                    <div className="truncate">
-                      <span className="text-slate-400">Message-ID: </span>
-                      <span className="text-emerald-400">{selectedLog.metadata.smtp_message_id}</span>
-                    </div>
-                  )}
-                  {selectedLog.metadata.smtp_response && (
-                    <div className="truncate">
-                      <span className="text-slate-400">SMTP Response: </span>
-                      <span className="text-sky-400">{selectedLog.metadata.smtp_response}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Rejection reason or custom metadata */}
             {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
               <div className="space-y-1.5 pb-2">
