@@ -49,7 +49,16 @@ export const TestimonialsManagement: React.FC = () => {
   // Delete modal state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [swappingId, setSwappingId] = useState<string | null>(null);
+  // Edit modal states
+  const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editSelectedEventName, setEditSelectedEventName] = useState('');
+  const [editCustomEventName, setEditCustomEventName] = useState('');
+  const [editAuthorName, setEditAuthorName] = useState('');
+  const [editAuthorPosition, setEditAuthorPosition] = useState('');
+  const [editDisplayOrder, setEditDisplayOrder] = useState<number | string>(1);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editFormError, setEditFormError] = useState<string | null>(null);
 
   // Helper to compute next available display order
   const getNextAvailableOrder = (list: Testimonial[]): number => {
@@ -244,37 +253,99 @@ export const TestimonialsManagement: React.FC = () => {
     }
   };
 
-  // Handle swapping order between adjacent cards
-  const handleSwapOrders = async (firstId: string, secondId: string) => {
-    setSwappingId(firstId);
+  // Open Edit Modal
+  const handleOpenEdit = (t: Testimonial) => {
+    setEditingTestimonial(t);
+    setEditDescription(t.testimonial_description);
+    const eventExists = eventsList.some(
+      (ev) => ev.title.trim().toLowerCase() === t.event_name.trim().toLowerCase()
+    );
+    if (eventExists) {
+      setEditSelectedEventName(t.event_name);
+      setEditCustomEventName('');
+    } else {
+      setEditSelectedEventName('__custom__');
+      setEditCustomEventName(t.event_name);
+    }
+    setEditAuthorName(t.author_name);
+    setEditAuthorPosition(t.author_position || '');
+    setEditDisplayOrder(t.display_order ?? 1);
+    setEditFormError(null);
+  };
 
-    // Immediately swap in preview list state
-    setTestimonials((prev) => {
-      const first = prev.find((t) => t.id === firstId);
-      const second = prev.find((t) => t.id === secondId);
-      if (!first || !second) return prev;
-      const orderA = first.display_order;
-      const orderB = second.display_order;
-      return prev
-        .map((t) => {
-          if (t.id === firstId) return { ...t, display_order: orderB };
-          if (t.id === secondId) return { ...t, display_order: orderA };
-          return t;
-        })
-        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
-    });
+  // Save Testimonial Edits directly to Supabase
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTestimonial) return;
+    setEditFormError(null);
+
+    const cleanDesc = editDescription.trim();
+    const finalEvent =
+      editSelectedEventName === '__custom__' ? editCustomEventName.trim() : editSelectedEventName.trim();
+    const cleanAuthor = editAuthorName.trim();
+
+    if (!cleanDesc) {
+      setEditFormError('Please enter a testimonial description.');
+      return;
+    }
+    if (!finalEvent) {
+      setEditFormError('Please select or enter an event name.');
+      return;
+    }
+    if (!cleanAuthor) {
+      setEditFormError('Please enter the author name.');
+      return;
+    }
+
+    const parsedOrder = typeof editDisplayOrder === 'number' ? editDisplayOrder : parseInt(String(editDisplayOrder), 10);
+    if (isNaN(parsedOrder) || parsedOrder <= 0) {
+      setEditFormError('Please enter a valid positive order number (1, 2, 3...).');
+      return;
+    }
+
+    // Check duplicate with another testimonial
+    const duplicate = testimonials.find(
+      (t) => t.id !== editingTestimonial.id && t.display_order === parsedOrder
+    );
+    if (duplicate) {
+      setEditFormError(
+        `Order #${parsedOrder} is already in use by "${duplicate.author_name}" (${duplicate.event_name}). Each testimonial must have a unique order number.`
+      );
+      return;
+    }
+
+    setIsSavingEdit(true);
 
     try {
-      const res = await swapTestimonialOrders(firstId, secondId);
-      if (res.success) {
-        setToastMessage({ type: 'success', message: 'Testimonial display order updated.' });
+      const matchedEvent = eventsList.find(
+        (ev) => ev.title.trim().toLowerCase() === finalEvent.toLowerCase()
+      );
+
+      const res = await updateTestimonial(editingTestimonial.id, {
+        testimonial_description: cleanDesc,
+        event_name: finalEvent,
+        event_id: matchedEvent ? matchedEvent.id : null,
+        author_name: cleanAuthor,
+        author_position: editAuthorPosition.trim() || null,
+        display_order: parsedOrder,
+      });
+
+      if (res.success && res.data) {
+        const saved = res.data;
+        setToastMessage({ type: 'success', message: 'Testimonial updated in database!' });
+        setTestimonials((prev) =>
+          prev
+            .map((item) => (item.id === saved.id ? saved : item))
+            .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+        );
+        setEditingTestimonial(null);
       } else {
-        setToastMessage({ type: 'error', message: res.error || 'Failed to update order.' });
+        setEditFormError(res.error || 'Failed to update testimonial.');
       }
     } catch (err: any) {
-      setToastMessage({ type: 'error', message: err?.message || 'Failed to update order.' });
+      setEditFormError(err?.message || 'An unexpected error occurred.');
     } finally {
-      setSwappingId(null);
+      setIsSavingEdit(false);
     }
   };
 
