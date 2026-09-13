@@ -220,28 +220,142 @@ export async function swapTestimonialOrders(
 }
 
 /**
+ * Updates an existing testimonial by id.
+ * Directly persists changes to the Supabase database.
+ * Validates display_order uniqueness so no other testimonial shares the same order.
+ */
+export async function updateTestimonial(
+  id: string,
+  updates: {
+    testimonial_description?: string;
+    event_name?: string;
+    event_id?: string | null;
+    author_name?: string;
+    author_position?: string | null;
+    display_order?: number;
+    is_active?: boolean;
+  }
+): Promise<{ success: boolean; data?: Testimonial; error?: string }> {
+  const currentList = getCachedTestimonials();
+  const existing = currentList.find((t) => t.id === id);
+
+  if (!existing) {
+    return { success: false, error: 'Testimonial not found.' };
+  }
+
+  // 1. Guard against duplicate display_order with other testimonials
+  if (typeof updates.display_order === 'number') {
+    const duplicate = currentList.find(
+      (t) => t.id !== id && t.display_order === updates.display_order
+    );
+    if (duplicate) {
+      return {
+        success: false,
+        error: `Order #${updates.display_order} is already assigned to "${duplicate.author_name}" (${duplicate.event_name}). Each testimonial must have a unique order number.`,
+      };
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const payloadUpdates: Partial<Testimonial> = {
+    ...updates,
+    updated_at: nowIso,
+  };
+
+  // 2. Persist directly to Supabase database
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from('testimonials')
+        .update({
+          ...(payloadUpdates.testimonial_description !== undefined && {
+            testimonial_description: payloadUpdates.testimonial_description.trim(),
+          }),
+          ...(payloadUpdates.event_name !== undefined && {
+            event_name: payloadUpdates.event_name.trim(),
+          }),
+          ...(payloadUpdates.event_id !== undefined && {
+            event_id: payloadUpdates.event_id,
+          }),
+          ...(payloadUpdates.author_name !== undefined && {
+            author_name: payloadUpdates.author_name.trim(),
+          }),
+          ...(payloadUpdates.author_position !== undefined && {
+            author_position: payloadUpdates.author_position ? payloadUpdates.author_position.trim() : null,
+          }),
+          ...(payloadUpdates.display_order !== undefined && {
+            display_order: payloadUpdates.display_order,
+          }),
+          ...(payloadUpdates.is_active !== undefined && {
+            is_active: payloadUpdates.is_active,
+          }),
+          updated_at: nowIso,
+        })
+        .eq('id', id)
+        .select('*')
+        .maybeSingle();
+
+      if (error) {
+        if (error.message?.includes('unique') || error.message?.includes('duplicate') || error.code === '23505') {
+          return {
+            success: false,
+            error: `Order #${updates.display_order} is already taken in the database. Please choose a different order number.`,
+          };
+        }
+        console.warn('DB testimonial update error:', error.message);
+        return { success: false, error: error.message };
+      }
+
+      if (data) {
+        const saved = data as Testimonial;
+        const freshList = currentList.map((t) => (t.id === id ? saved : t)).sort(
+          (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+        );
+        setCachedTestimonials(freshList);
+        window.dispatchEvent(new CustomEvent('csc-testimonials-updated'));
+        return { success: true, data: saved };
+      }
+    } catch (err: any) {
+      console.warn('DB testimonial update exception:', err);
+      return { success: false, error: err?.message || 'Failed to update testimonial in database.' };
+    }
+  }
+
+  // Local fallback
+  const merged: Testimonial = { ...existing, ...payloadUpdates };
+  const freshList = currentList.map((t) => (t.id === id ? merged : t)).sort(
+    (a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)
+  );
+  setCachedTestimonials(freshList);
+  window.dispatchEvent(new CustomEvent('csc-testimonials-updated'));
+
+  return { success: true, data: merged };
+}
+
+/**
  * Deletes a testimonial by id.
+ * Completely deletes the row entry from the Supabase database.
  * Updates local cache immediately and broadcasts update.
  */
 export async function deleteTestimonial(id: string): Promise<{ success: boolean; error?: string }> {
-  // 1. Immediately remove from local cache
-  const currentList = getCachedTestimonials().filter((t) => t.id !== id);
-  setCachedTestimonials(currentList);
-  window.dispatchEvent(new CustomEvent('csc-testimonials-updated'));
-
-  // 2. Delete from Supabase
+  // 1. Delete from Supabase first
   if (isSupabaseConfigured()) {
     try {
       const { error } = await supabase.from('testimonials').delete().eq('id', id);
       if (error) {
-        console.warn('DB testimonial delete warning (removed locally):', error.message);
+        console.warn('DB testimonial delete warning:', error.message);
         return { success: false, error: error.message };
       }
     } catch (err: any) {
-      console.warn('DB testimonial delete exception (removed locally):', err);
-      return { success: false, error: err?.message || 'Failed to delete' };
+      console.warn('DB testimonial delete exception:', err);
+      return { success: false, error: err?.message || 'Failed to delete from database.' };
     }
   }
+
+  // 2. Remove from local cache and broadcast
+  const currentList = getCachedTestimonials().filter((t) => t.id !== id);
+  setCachedTestimonials(currentList);
+  window.dispatchEvent(new CustomEvent('csc-testimonials-updated'));
 
   return { success: true };
 }

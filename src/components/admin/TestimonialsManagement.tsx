@@ -14,18 +14,18 @@ import {
   ExternalLink,
   Briefcase,
   ListOrdered,
-  ArrowUp,
-  ArrowDown,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { ConfirmModal } from '../ui/ConfirmModal';
+import { Modal } from '../ui/Modal';
 import { Toast } from '../ui/Toast';
 import { CustomSelect, type SelectOption } from '../ui/CustomSelect';
 import {
   getTestimonials,
   createTestimonial,
+  updateTestimonial,
   deleteTestimonial,
-  swapTestimonialOrders,
 } from '../../services/testimonials';
 import { getEvents } from '../../services/events';
 import type { Testimonial, Event } from '../../types/database';
