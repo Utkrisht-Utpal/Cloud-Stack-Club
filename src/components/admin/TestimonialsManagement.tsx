@@ -696,7 +696,7 @@ export const TestimonialsManagement: React.FC = () => {
               </div>
             ) : (
               <AnimatePresence>
-                {filteredTestimonials.map((t, idx) => (
+                {filteredTestimonials.map((t) => (
                   <motion.div
                     key={t.id}
                     initial={{ opacity: 0, y: 10 }}
@@ -920,10 +920,9 @@ export const TestimonialsManagement: React.FC = () => {
               <Button
                 type="submit"
                 variant="primary"
-                isLoading={isSavingEdit}
                 disabled={isSavingEdit}
               >
-                Save Changes
+                {isSavingEdit ? 'Saving Changes...' : 'Save Changes'}
               </Button>
             </div>
           </form>
