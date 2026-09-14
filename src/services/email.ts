@@ -318,6 +318,7 @@ export async function sendTeamLeaderRegistrationEmail(params: {
 
 /**
  * Dispatches an automated notification email to a Team Member.
+ * (WhatsApp link is excluded from team member emails and only provided to Team Leader & Individual Registrations)
  */
 export async function sendTeamMemberRegistrationEmail(params: {
   member_email: string;
@@ -338,7 +339,6 @@ export async function sendTeamMemberRegistrationEmail(params: {
   event_date: string;
   event_time?: string | null;
   event_venue?: string | null;
-  whatsapp_url?: string | null;
   registration_number?: string | null;
   team_registration_number?: string | null;
 }): Promise<SendEmailResult> {
@@ -364,7 +364,6 @@ export async function sendTeamMemberRegistrationEmail(params: {
     event_date: params.event_date,
     event_time: params.event_time || undefined,
     event_venue: params.event_venue || undefined,
-    whatsapp_url: params.whatsapp_url || undefined,
     registration_number: teamRegId,
     team_registration_number: teamRegId,
   });
@@ -441,7 +440,6 @@ export async function sendTeamRegistrationEmails(params: {
           event_date: params.event_date,
           event_time: params.event_time,
           event_venue: params.event_venue,
-          whatsapp_url: params.whatsapp_url,
           registration_number: teamRegId,
           team_registration_number: teamRegId,
         });

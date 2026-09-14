@@ -93,13 +93,20 @@ export const getStoredWhatsappUrlsMap = (): Record<string, string> => {
   }
 };
 
-export const saveStoredWhatsappUrl = (eventId: string, whatsappUrl: string | null) => {
+export const saveStoredWhatsappUrl = (eventId: string, whatsappUrl: string | null, slug?: string | null) => {
   try {
     const map = getStoredWhatsappUrlsMap();
-    if (whatsappUrl && whatsappUrl.trim()) {
-      map[eventId] = whatsappUrl.trim();
+    const cleanUrl = whatsappUrl ? whatsappUrl.trim() : null;
+    if (cleanUrl) {
+      map[eventId] = cleanUrl;
+      if (slug) {
+        map[slug.toLowerCase()] = cleanUrl;
+      }
     } else {
       delete map[eventId];
+      if (slug) {
+        delete map[slug.toLowerCase()];
+      }
     }
     localStorage.setItem(WHATSAPP_URL_MAP_KEY, JSON.stringify(map));
   } catch {}
@@ -251,13 +258,24 @@ export const getEvents = async (): Promise<Event[]> => {
     const dbEvents = (eventsData as Event[]) || [];
     const catMap = getStoredCategoriesMap();
     const whatsappMap = getStoredWhatsappUrlsMap();
-    const eventsWithCat = dbEvents.map((e) => ({
-      ...e,
-      pdf_url: null, // Guarantee pdf_url is stripped from public memory
-      drive_url: null, // Guarantee drive_url is stripped from public memory (Admin only)
-      category: e.category || catMap[e.id] || null,
-      whatsapp_url: e.whatsapp_url || whatsappMap[e.id] || null,
-    }));
+    const eventsWithCat = dbEvents.map((e) => {
+      const resolvedWhatsapp =
+        e.whatsapp_url ||
+        whatsappMap[e.id] ||
+        (e.slug ? whatsappMap[e.slug.toLowerCase()] : null) ||
+        null;
+      if (resolvedWhatsapp) {
+        whatsappMap[e.id] = resolvedWhatsapp;
+        if (e.slug) whatsappMap[e.slug.toLowerCase()] = resolvedWhatsapp;
+      }
+      return {
+        ...e,
+        pdf_url: null, // Guarantee pdf_url is stripped from public memory
+        drive_url: null, // Guarantee drive_url is stripped from public memory (Admin only)
+        category: e.category || catMap[e.id] || null,
+        whatsapp_url: resolvedWhatsapp,
+      };
+    });
 
     // Background non-blocking status sync (0ms load time optimization)
     autoSyncEventStatuses(eventsWithCat).catch(() => {});
@@ -297,12 +315,23 @@ export const getAdminEvents = async (): Promise<Event[]> => {
     const catMap = getStoredCategoriesMap();
     const driveMap = getStoredDriveUrlsMap();
     const whatsappMap = getStoredWhatsappUrlsMap();
-    const eventsWithExtras = dbEvents.map((e) => ({
-      ...e,
-      category: e.category || catMap[e.id] || null,
-      drive_url: e.drive_url || driveMap[e.id] || null,
-      whatsapp_url: e.whatsapp_url || whatsappMap[e.id] || null,
-    }));
+    const eventsWithExtras = dbEvents.map((e) => {
+      const resolvedWhatsapp =
+        e.whatsapp_url ||
+        whatsappMap[e.id] ||
+        (e.slug ? whatsappMap[e.slug.toLowerCase()] : null) ||
+        null;
+      if (resolvedWhatsapp) {
+        whatsappMap[e.id] = resolvedWhatsapp;
+        if (e.slug) whatsappMap[e.slug.toLowerCase()] = resolvedWhatsapp;
+      }
+      return {
+        ...e,
+        category: e.category || catMap[e.id] || null,
+        drive_url: e.drive_url || driveMap[e.id] || null,
+        whatsapp_url: resolvedWhatsapp,
+      };
+    });
 
     return sortEventsByRelevance(eventsWithExtras);
   } catch (err) {
@@ -432,7 +461,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     saveStoredDriveUrl(createdEvent.id, createdEvent.drive_url);
   }
   if (createdEvent.whatsapp_url) {
-    saveStoredWhatsappUrl(createdEvent.id, createdEvent.whatsapp_url);
+    saveStoredWhatsappUrl(createdEvent.id, createdEvent.whatsapp_url, createdEvent.slug);
   }
 
   // Save locally first so creation NEVER fails on frontend UI
@@ -485,7 +514,7 @@ export const updateEventAdmin = async (
     saveStoredDriveUrl(eventId, eventPayload.drive_url || null);
   }
   if (eventPayload.whatsapp_url !== undefined) {
-    saveStoredWhatsappUrl(eventId, eventPayload.whatsapp_url || null);
+    saveStoredWhatsappUrl(eventId, eventPayload.whatsapp_url || null, eventPayload.slug);
   }
 
   // Recalculate status based on date if date is provided and status is not explicitly cancelled
@@ -797,7 +826,38 @@ export const getEventBySlug = async (slug: string): Promise<Event | null> => {
     return local.find((e) => e.slug === cleanSlug || generateSlug(e.title) === cleanSlug) || null;
   }
 
-  return data ? ({ ...(data as Event), pdf_url: null, drive_url: null }) : null;
+  const rawEvt = data as Event;
+  const catMap = getStoredCategoriesMap();
+  const whatsappMap = getStoredWhatsappUrlsMap();
+  let resolvedWhatsapp =
+    rawEvt.whatsapp_url ||
+    whatsappMap[rawEvt.id] ||
+    (rawEvt.slug ? whatsappMap[rawEvt.slug.toLowerCase()] : null) ||
+    whatsappMap[cleanSlug] ||
+    null;
+
+  // Extra guard: If whatsapp_url is not on view, query events table directly
+  if (!resolvedWhatsapp && isSupabaseConfigured() && rawEvt.id) {
+    try {
+      const { data: directEvt } = await supabase
+        .from('events')
+        .select('whatsapp_url')
+        .eq('id', rawEvt.id)
+        .maybeSingle();
+      if (directEvt?.whatsapp_url) {
+        resolvedWhatsapp = directEvt.whatsapp_url;
+        saveStoredWhatsappUrl(rawEvt.id, resolvedWhatsapp, rawEvt.slug);
+      }
+    } catch {}
+  }
+
+  return {
+    ...rawEvt,
+    pdf_url: null,
+    drive_url: null,
+    category: rawEvt.category || catMap[rawEvt.id] || null,
+    whatsapp_url: resolvedWhatsapp,
+  };
 };
 
 export const getEventById = async (id: string): Promise<Event | null> => {
@@ -822,12 +882,41 @@ export const getEventById = async (id: string): Promise<Event | null> => {
     error = fallback.error;
   }
 
-  if (error) {
-    console.error(`Error fetching event ${id}:`, error.message);
+  if (error || !data) {
+    if (error) console.error(`Error fetching event ${id}:`, error.message);
     return null;
   }
 
-  return data ? ({ ...(data as Event), pdf_url: null, drive_url: null }) : null;
+  const rawEvt = data as Event;
+  const catMap = getStoredCategoriesMap();
+  const whatsappMap = getStoredWhatsappUrlsMap();
+  let resolvedWhatsapp =
+    rawEvt.whatsapp_url ||
+    whatsappMap[rawEvt.id] ||
+    (rawEvt.slug ? whatsappMap[rawEvt.slug.toLowerCase()] : null) ||
+    null;
+
+  if (!resolvedWhatsapp && isSupabaseConfigured() && rawEvt.id) {
+    try {
+      const { data: directEvt } = await supabase
+        .from('events')
+        .select('whatsapp_url')
+        .eq('id', rawEvt.id)
+        .maybeSingle();
+      if (directEvt?.whatsapp_url) {
+        resolvedWhatsapp = directEvt.whatsapp_url;
+        saveStoredWhatsappUrl(rawEvt.id, resolvedWhatsapp, rawEvt.slug);
+      }
+    } catch {}
+  }
+
+  return {
+    ...rawEvt,
+    pdf_url: null,
+    drive_url: null,
+    category: rawEvt.category || catMap[rawEvt.id] || null,
+    whatsapp_url: resolvedWhatsapp,
+  };
 };
 
 export const getAdminEventById = async (id: string): Promise<Event | null> => {

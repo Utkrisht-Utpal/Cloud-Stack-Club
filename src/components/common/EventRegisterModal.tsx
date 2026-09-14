@@ -23,9 +23,10 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { ErrorPopupModal } from './ErrorPopupModal';
 import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { getFormForEvent, getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
-import { getStoredWhatsappUrlsMap } from '../../services/events';
+import { getStoredWhatsappUrlsMap, saveStoredWhatsappUrl } from '../../services/events';
 import { sendIndividualRegistrationEmail, sendTeamRegistrationEmails } from '../../services/email';
 import { formatEventTime } from '../../utils/formatters';
 import type { Event, EventFormField, EventRegistration } from '../../types/database';
@@ -92,6 +93,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [registrationResult, setRegistrationResult] = useState<EventRegistration | null>(null);
   const [isCapacityFull, setIsCapacityFull] = useState<boolean>(false);
+  const [liveWhatsappUrl, setLiveWhatsappUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && event) {
@@ -99,6 +101,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       setError(null);
       resetCooldown();
       setIsCapacityFull(false);
+      setLiveWhatsappUrl(event.whatsapp_url || null);
       setFormData({
         name: '',
         email: '',
@@ -111,6 +114,23 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       setTeamMembers([{ name: '', email: '', uid: '', phone: '', department: '', year: '1st Year' }]);
       setCustomAnswers({});
       setTurnstileToken('');
+
+      // Direct live lookup of whatsapp_url from DB if not already populated on event prop
+      if (!event.whatsapp_url && isSupabaseConfigured()) {
+        (async () => {
+          try {
+            const { data: wData } = await supabase
+              .from('events')
+              .select('whatsapp_url')
+              .eq('id', event.id)
+              .maybeSingle();
+            if (wData?.whatsapp_url) {
+              setLiveWhatsappUrl(wData.whatsapp_url);
+              saveStoredWhatsappUrl(event.id, wData.whatsapp_url, event.slug);
+            }
+          } catch {}
+        })();
+      }
 
       // Check current capacity
       if (event.max_registrations) {
@@ -149,7 +169,13 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
   if (!isOpen || !event) return null;
 
-  const eventWhatsappUrl = event.whatsapp_url || getStoredWhatsappUrlsMap()[event.id] || null;
+  const whatsappMap = getStoredWhatsappUrlsMap();
+  const eventWhatsappUrl =
+    liveWhatsappUrl ||
+    event.whatsapp_url ||
+    whatsappMap[event.id] ||
+    (event.slug ? whatsappMap[event.slug.toLowerCase()] : null) ||
+    null;
 
   const triggerErrorWithCooldown = (msg: string) => {
     setError(msg);
@@ -604,47 +630,36 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             )}
           </div>
 
-          {/* Note Callout */}
-          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 text-left max-w-md mx-auto">
+          {/* Note Callout & Official WhatsApp Action Link */}
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left max-w-md mx-auto space-y-3 shadow-sm">
             <div className="flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200/90 leading-relaxed">
-                <span className="font-bold">Note:</span> Check your registered mail inbox and also the junk file and mark it not as junk.
+              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+                <span className="font-bold text-amber-600 dark:text-amber-400">Note:</span> Check your registered mail inbox and also the junk file and mark it not as junk.
               </p>
             </div>
-          </div>
 
-          {/* Official WhatsApp Group / Channel Link */}
-          {eventWhatsappUrl && (
-            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-left max-w-md mx-auto shadow-sm space-y-2.5">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                  <WhatsAppIcon className="w-4 h-4" />
+            {eventWhatsappUrl && (
+              <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 space-y-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                  <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+                  <span>Official Event WhatsApp Group</span>
                 </div>
-                <div>
-                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
-                    Official Event WhatsApp Group
-                  </h4>
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                    Join for real-time announcements & coordinator updates
-                  </p>
-                </div>
+                <a
+                  href={eventWhatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <WhatsAppIcon className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Join Event WhatsApp Group</span>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" />
+                </a>
               </div>
-
-              <a
-                href={eventWhatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer group"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <WhatsAppIcon className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Join Event WhatsApp Group</span>
-                </div>
-                <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" />
-              </a>
-            </div>
-          )}
+            )}
+          </div>
 
           <button
             type="button"
