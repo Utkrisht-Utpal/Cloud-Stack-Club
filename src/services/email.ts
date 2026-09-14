@@ -237,6 +237,9 @@ export interface EmailStats {
   inquiries: number;
   broadcasts: number;
   feedbacks: number;
+  individualRegistrations?: number;
+  teamLeaderRegistrations?: number;
+  teamMemberRegistrations?: number;
 }
 
 /**
@@ -487,6 +490,9 @@ export async function fetchEmailStats(): Promise<EmailStats> {
       inquiries: data.filter((r) => r.category === 'contact_us').length,
       feedbacks: data.filter((r) => r.category === 'event_feedback').length,
       broadcasts: data.filter((r) => r.category === 'event_broadcast').length,
+      individualRegistrations: data.filter((r) => r.category === 'event_registration_individual').length,
+      teamLeaderRegistrations: data.filter((r) => r.category === 'event_registration_team_leader').length,
+      teamMemberRegistrations: data.filter((r) => r.category === 'event_registration_team_member').length,
     };
   } catch (err) {
     console.error('Failed to query email stats:', err);

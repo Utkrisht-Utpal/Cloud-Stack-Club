@@ -5,6 +5,7 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
+  X,
   Eye,
   Trash2,
   UserCheck,
@@ -25,16 +26,25 @@ import type { EmailLog, EmailCategory } from '../../types/email';
 import { fetchEmailLogs, deleteEmailLog, fetchEmailStats, type EmailStats } from '../../services/email';
 import { supabase } from '../../services/supabase';
 
-const CATEGORIES: Array<{ id: EmailCategory | 'all'; label: string; icon: any; color: string }> = [
-  { id: 'all', label: 'All Emails', icon: Mail, color: 'text-slate-600 dark:text-slate-300' },
-  { id: 'approval', label: 'Approvals', icon: UserCheck, color: 'text-emerald-600 dark:text-emerald-400' },
-  { id: 'rejection', label: 'Rejections', icon: UserX, color: 'text-rose-600 dark:text-rose-400' },
-  { id: 'contact_us', label: 'Contact Us', icon: MessageSquare, color: 'text-blue-600 dark:text-sky-400' },
-  { id: 'event_feedback', label: 'Event Feedback', icon: Sparkles, color: 'text-amber-600 dark:text-amber-400' },
-  { id: 'event_broadcast', label: 'Event Broadcasts', icon: Radio, color: 'text-purple-600 dark:text-purple-400' },
-  { id: 'event_registration_individual', label: 'Individual Reg', icon: Ticket, color: 'text-cyan-600 dark:text-cyan-400' },
-  { id: 'event_registration_team_leader', label: 'Team Reg (Leader)', icon: Users2, color: 'text-indigo-600 dark:text-indigo-400' },
-  { id: 'event_registration_team_member', label: 'Team Reg (Member)', icon: UserCheck, color: 'text-sky-600 dark:text-sky-400' },
+interface CategoryItem {
+  id: EmailCategory | 'all';
+  label: string;
+  shortLabel: string;
+  fullLabel: string;
+  icon: any;
+  color: string;
+}
+
+const CATEGORIES: CategoryItem[] = [
+  { id: 'all', label: 'All Emails', shortLabel: 'All', fullLabel: 'All Emails', icon: Mail, color: 'text-blue-600 dark:text-sky-400' },
+  { id: 'approval', label: 'Approvals', shortLabel: 'Approvals', fullLabel: 'Approvals', icon: UserCheck, color: 'text-emerald-600 dark:text-emerald-400' },
+  { id: 'rejection', label: 'Rejections', shortLabel: 'Rejections', fullLabel: 'Rejections', icon: UserX, color: 'text-rose-600 dark:text-rose-400' },
+  { id: 'contact_us', label: 'Contact Us', shortLabel: 'Contact', fullLabel: 'Contact Us', icon: MessageSquare, color: 'text-blue-600 dark:text-sky-400' },
+  { id: 'event_feedback', label: 'Event Feedback', shortLabel: 'Feedback', fullLabel: 'Event Feedback', icon: Sparkles, color: 'text-amber-600 dark:text-amber-400' },
+  { id: 'event_broadcast', label: 'Event Broadcasts', shortLabel: 'Broadcast', fullLabel: 'Event Broadcasts', icon: Radio, color: 'text-purple-600 dark:text-purple-400' },
+  { id: 'event_registration_individual', label: 'Individual Reg', shortLabel: 'Individual', fullLabel: 'Individual Reg', icon: Ticket, color: 'text-cyan-600 dark:text-cyan-400' },
+  { id: 'event_registration_team_leader', label: 'Team Reg (Leader)', shortLabel: 'Team Leader', fullLabel: 'Team Reg (Leader)', icon: Users2, color: 'text-indigo-600 dark:text-indigo-400' },
+  { id: 'event_registration_team_member', label: 'Team Reg (Member)', shortLabel: 'Team Member', fullLabel: 'Team Reg (Member)', icon: UserCheck, color: 'text-sky-600 dark:text-sky-400' },
 ];
 
 export const getAdminDisplayName = (name?: string | null, email?: string | null): string => {
@@ -160,10 +170,12 @@ export const EmailLogsManagement: React.FC = () => {
     fetchMemberRoles();
   }, []);
 
-  const loadLogs = async () => {
+  const loadLogs = async (overrideCategory?: EmailCategory | 'all', overrideQuery?: string) => {
     setLoading(true);
     try {
-      const data = await fetchEmailLogs(activeCategory, searchQuery);
+      const cat = overrideCategory !== undefined ? overrideCategory : activeCategory;
+      const q = overrideQuery !== undefined ? overrideQuery : searchQuery;
+      const data = await fetchEmailLogs(cat, q);
       setLogs(data);
     } catch (err) {
       console.error('Failed to load email logs:', err);
@@ -202,6 +214,31 @@ export const EmailLogsManagement: React.FC = () => {
   useEffect(() => {
     loadStats();
   }, []);
+
+  const getCategoryCount = (categoryId: EmailCategory | 'all'): number => {
+    switch (categoryId) {
+      case 'all':
+        return stats.total || logs.length;
+      case 'approval':
+        return stats.approvals || logs.filter((l) => l.category === 'approval').length;
+      case 'rejection':
+        return stats.rejections || logs.filter((l) => l.category === 'rejection').length;
+      case 'contact_us':
+        return stats.inquiries || logs.filter((l) => l.category === 'contact_us').length;
+      case 'event_feedback':
+        return stats.feedbacks || logs.filter((l) => l.category === 'event_feedback').length;
+      case 'event_broadcast':
+        return stats.broadcasts || logs.filter((l) => l.category === 'event_broadcast').length;
+      case 'event_registration_individual':
+        return stats.individualRegistrations ?? logs.filter((l) => l.category === 'event_registration_individual').length;
+      case 'event_registration_team_leader':
+        return stats.teamLeaderRegistrations ?? logs.filter((l) => l.category === 'event_registration_team_leader').length;
+      case 'event_registration_team_member':
+        return stats.teamMemberRegistrations ?? logs.filter((l) => l.category === 'event_registration_team_member').length;
+      default:
+        return 0;
+    }
+  };
 
   const handleRefresh = async () => {
     await Promise.all([loadLogs(), loadStats()]);
@@ -404,39 +441,66 @@ export const EmailLogsManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Tabs & Search Bar */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-2">
-        {/* Category Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-          {CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            const isActive = activeCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${isActive
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+      {/* Enhanced Email Taskbar — matching Admin Dashboard taskbar styling without scaling */}
+      <div className="flex items-center gap-1 sm:gap-1.5 xl:gap-2 overflow-x-auto pb-1 scrollbar-none w-full min-w-0">
+        {CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          const isActive = activeCategory === cat.id;
+          const count = getCategoryCount(cat.id);
+
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveCategory(cat.id)}
+              title={cat.fullLabel}
+              className={`justify-center px-2.5 sm:px-3 py-2 rounded-2xl text-xs font-extrabold transition-all duration-150 flex items-center gap-1.5 whitespace-nowrap cursor-pointer shrink-0 ${isActive
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 ring-1 ring-blue-400/30'
+                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 shadow-xs'
+                }`}
+            >
+              <Icon
+                className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : cat.color
+                  }`}
+              />
+              <span>{cat.shortLabel}</span>
+              <span
+                className={`px-1.5 py-0.5 rounded-full text-[10px] font-black min-w-[18px] text-center transition-all ${isActive
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                   }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{cat.label}</span>
-              </button>
-            );
-          })}
-        </div>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Search input */}
-        <form onSubmit={handleSearchSubmit} className="relative min-w-[240px]">
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+      {/* Search Input Row below the Email Taskbar */}
+      <div className="pt-1">
+        <form onSubmit={handleSearchSubmit} className="relative w-full">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search email, name, subject..."
+            placeholder="Search email, recipient name, subject..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="search-input w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-slate-300 dark:focus:border-slate-600 focus:outline-none focus:ring-0 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all"
+            className="search-input w-full pl-10 pr-9 h-11 rounded-2xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-800 focus:outline-none focus:border-blue-500 font-medium text-slate-900 dark:text-white placeholder:text-slate-400 transition-colors shadow-xs"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                loadLogs(activeCategory, '');
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+              title="Clear search"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </form>
       </div>
 
@@ -455,101 +519,101 @@ export const EmailLogsManagement: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-400">
-                  <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
-                  <p className="text-xs font-bold">Loading email logs...</p>
-                </td>
-              </tr>
-            ) : logs.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-slate-400">
-                  <Mail className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-                  <p className="text-xs font-bold">No email logs found matching this filter.</p>
-                </td>
-              </tr>
-            ) : (
-              logs.map((log) => (
-                <tr
-                  key={log.id}
-                  className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
-                >
-                  <td className="py-3 px-4">
-                    <div
-                      className="font-extrabold text-slate-900 dark:text-white truncate max-w-[200px] lg:max-w-[240px]"
-                      title={log.recipient_name || 'Member / User'}
-                    >
-                      {log.recipient_name || 'Member / User'}
-                    </div>
-                    <div
-                      className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px] lg:max-w-[240px]"
-                      title={log.recipient_email}
-                    >
-                      {log.recipient_email}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    {getCategoryBadge(log.category)}
-                  </td>
-                  <td className="py-3 px-4">
-                    <div
-                      className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[300px] lg:max-w-[420px]"
-                      title={log.subject}
-                    >
-                      {log.subject}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    {log.status === 'sent' ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        Sent
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                        <XCircle className="w-3.5 h-3.5" />
-                        Failed
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px]">
-                    {new Date(log.created_at).toLocaleString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </td>
-                  <td className="py-3 px-4 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLog(log)}
-                        className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/25 hover:bg-blue-100 dark:hover:bg-blue-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setLogToDelete(log.id)}
-                        disabled={isDeleting}
-                        className="w-8 h-8 rounded-xl bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 flex items-center justify-center transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete Log"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-xs font-bold">Loading email logs...</p>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : logs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <Mail className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                    <p className="text-xs font-bold">No email logs found matching this filter.</p>
+                  </td>
+                </tr>
+              ) : (
+                logs.map((log) => (
+                  <tr
+                    key={log.id}
+                    className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors"
+                  >
+                    <td className="py-3 px-4">
+                      <div
+                        className="font-extrabold text-slate-900 dark:text-white truncate max-w-[200px] lg:max-w-[240px]"
+                        title={log.recipient_name || 'Member / User'}
+                      >
+                        {log.recipient_name || 'Member / User'}
+                      </div>
+                      <div
+                        className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-[200px] lg:max-w-[240px]"
+                        title={log.recipient_email}
+                      >
+                        {log.recipient_email}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      {getCategoryBadge(log.category)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div
+                        className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[300px] lg:max-w-[420px]"
+                        title={log.subject}
+                      >
+                        {log.subject}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      {log.status === 'sent' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Sent
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                          <XCircle className="w-3.5 h-3.5" />
+                          Failed
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px]">
+                      {new Date(log.created_at).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLog(log)}
+                          className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/25 hover:bg-blue-100 dark:hover:bg-blue-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setLogToDelete(log.id)}
+                          disabled={isDeleting}
+                          className="w-8 h-8 rounded-xl bg-red-500/15 dark:bg-red-500/20 border border-red-500/30 dark:border-red-500/40 text-red-600 dark:text-red-400 shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:shadow-[0_4px_14px_rgba(239,68,68,0.35)] hover:bg-red-500/25 hover:border-red-500/50 hover:scale-110 active:scale-95 flex items-center justify-center transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Delete Log"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
       {/* Log Detail Modal */}
       {selectedLog && (
@@ -604,8 +668,10 @@ export const EmailLogsManagement: React.FC = () => {
 
             {/* Rejection reason or custom metadata */}
             {selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
-              <div className="space-y-1.5 pb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Metadata / Notes:</span>
+              <div className="pt-1 pb-2">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 mb-2">
+                  Metadata / Notes:
+                </label>
                 <div className="p-3.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5">
                   {selectedLog.metadata.rejection_reason && (
                     <div>
