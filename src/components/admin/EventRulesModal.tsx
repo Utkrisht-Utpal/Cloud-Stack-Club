@@ -225,13 +225,12 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
   const restoreSavedRange = useCallback(() => {
     if (!editorRef.current) return;
     editorRef.current.focus();
-    const sel = window.getSelection();
-    if (
-      (!sel || !sel.rangeCount || !editorRef.current.contains(sel.anchorNode)) &&
-      savedRangeRef.current
-    ) {
-      sel?.removeAllRanges();
-      sel?.addRange(savedRangeRef.current);
+    if (savedRangeRef.current) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRangeRef.current);
+      }
     }
   }, []);
 
@@ -1666,46 +1665,30 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         :is(.dark, [data-theme="dark"]) .rules-rich-editor u {
           color: inherit;
         }
-        /* In dark mode, ensure any dark or black inline text colors are forced to high-contrast readable color */
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #0"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#0"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #1"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#1"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #2"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#2"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #3"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#3"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #4"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#4"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #5"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#5"],
+        /* In dark mode, ensure any pure black text is readable */
         :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: black"],
         :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:black"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(0"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(0"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(1"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(1"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(2"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(2"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(3"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(3"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(4"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(4"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(5"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(5"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(6"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(6"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(7"],
-        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(7"] {
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #000000"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#000000"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #000;"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:#000;"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(0, 0, 0)"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(0,0,0)"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: rgb(0, 0, 0);"],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(0,0,0);"] {
           color: #f1f5f9 !important;
         }
-        /* In light mode, ensure any white text is forced to dark slate */
-        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #fff"],
-        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#fff"],
+        /* In light mode, ensure any pure white text is readable */
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: white"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:white"],
-        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(255"],
-        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(255"] {
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #ffffff"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#ffffff"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #fff;"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#fff;"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(255, 255, 255)"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(255,255,255)"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(255, 255, 255);"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(255,255,255);"] {
           color: #1e293b !important;
         }
       `}</style>
