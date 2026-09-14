@@ -78,7 +78,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   const [fields, setFields] = useState<Partial<EventFormField>[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -119,7 +118,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   useEffect(() => {
     if (!selectedEventId) {
       setFields([]);
-      setHasUnsavedChanges(false);
       return;
     }
     loadFormFields(selectedEventId);
@@ -127,7 +125,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
 
   const loadFormFields = async (eventId: string) => {
     setLoading(true);
-    setHasUnsavedChanges(false);
     try {
       const form = await getFormForEvent(eventId);
       if (form && form.fields && form.fields.length > 0) {
@@ -178,7 +175,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
     setIsFieldModalOpen(true);
   };
 
-  const handleSaveFieldFromModal = (e: React.FormEvent) => {
+  const handleSaveFieldFromModal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fieldModalData.label.trim()) return;
 
@@ -200,23 +197,61 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
       required: fieldModalData.required,
     };
 
+    let updatedFields: Partial<EventFormField>[];
     if (editingFieldIndex !== null) {
       // Update existing field
-      setFields((prev) =>
-        prev.map((item, idx) => (idx === editingFieldIndex ? { ...item, ...newFieldObj } : item))
+      updatedFields = fields.map((item, idx) =>
+        idx === editingFieldIndex ? { ...item, ...newFieldObj } : item
       );
     } else {
       // Add new field
-      setFields((prev) => [...prev, newFieldObj]);
+      updatedFields = [...fields, newFieldObj];
     }
 
-    setHasUnsavedChanges(true);
+    setFields(updatedFields);
     setIsFieldModalOpen(false);
+
+    // Auto-save to Supabase & localStorage immediately
+    if (selectedEventId) {
+      const selectedEvt = events.find((e) => e.id === selectedEventId);
+      const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
+      setIsSaving(true);
+      try {
+        await saveFormForEvent(selectedEventId, updatedFields, formTitle);
+        setSaveSuccess(editingFieldIndex !== null ? 'Question updated and saved!' : 'Question added and saved!');
+        setTimeout(() => setSaveSuccess(null), 3000);
+      } catch (err: any) {
+        console.error('Error auto-saving question:', err);
+        setSaveError(err?.message || 'Failed to save question to database.');
+      } finally {
+        setIsSaving(false);
+      }
+    }
   };
 
-  const handleDeleteField = (index: number) => {
-    setFields((prev) => prev.filter((_, idx) => idx !== index));
-    setHasUnsavedChanges(true);
+  const handleDeleteField = async (index: number) => {
+    const updatedFields = fields.filter((_, idx) => idx !== index);
+    setFields(updatedFields);
+
+    if (!selectedEventId) return;
+
+    const selectedEvt = events.find((e) => e.id === selectedEventId);
+    const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await saveFormForEvent(selectedEventId, updatedFields, formTitle);
+      setSaveSuccess('Question deleted and saved automatically!');
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error auto-saving after field deletion:', err);
+      setSaveError(err?.message || 'Failed to delete question from database.');
+      // Restore on failure
+      await loadFormFields(selectedEventId);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClearAllFields = async () => {
@@ -224,11 +259,27 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
     if (!window.confirm('Are you sure you want to remove all custom questions for this event? Students will only be asked standard registration details.')) {
       return;
     }
+
     setFields([]);
-    setHasUnsavedChanges(true);
+    const selectedEvt = events.find((e) => e.id === selectedEventId);
+    const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
+
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      await saveFormForEvent(selectedEventId, [], formTitle);
+      setSaveSuccess('All custom questions cleared and saved automatically!');
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err: any) {
+      console.error('Error clearing questions:', err);
+      setSaveError(err?.message || 'Failed to clear questions from database.');
+      await loadFormFields(selectedEventId);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleMoveField = (index: number, direction: 'up' | 'down') => {
+  const handleMoveField = async (index: number, direction: 'up' | 'down') => {
     if (direction === 'up' && index === 0) return;
     if (direction === 'down' && index === fields.length - 1) return;
 
@@ -238,7 +289,20 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
     newFields[index] = newFields[targetIndex];
     newFields[targetIndex] = temp;
     setFields(newFields);
-    setHasUnsavedChanges(true);
+
+    if (!selectedEventId) return;
+
+    const selectedEvt = events.find((e) => e.id === selectedEventId);
+    const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
+
+    setIsSaving(true);
+    try {
+      await saveFormForEvent(selectedEventId, newFields, formTitle);
+    } catch (err: any) {
+      console.error('Error auto-saving field order:', err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveForm = async () => {
@@ -252,7 +316,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
 
     try {
       await saveFormForEvent(selectedEventId, fields, formTitle);
-      setHasUnsavedChanges(false);
       setSaveSuccess(
         fields.length === 0
           ? 'Cleared all custom questions from database. Standard questions active!'
@@ -316,44 +379,13 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
               type="button"
               onClick={handleSaveForm}
               disabled={!selectedEventId || isSaving}
-              className={`h-10 px-5 rounded-2xl text-white text-xs font-extrabold transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                hasUnsavedChanges
-                  ? 'bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-400/50 shadow-amber-500/20 animate-pulse'
-                  : 'bg-blue-600 hover:bg-blue-700 hover:shadow-xl'
-              }`}
+              className="h-10 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-lg hover:shadow-xl flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
-              <span>
-                {isSaving
-                  ? 'Saving to Database...'
-                  : hasUnsavedChanges
-                  ? 'Save Changes (Unsaved) *'
-                  : 'Save Form Configuration'}
-              </span>
+              <span>{isSaving ? 'Saving to Database...' : 'Save Form Configuration'}</span>
             </button>
           </div>
         </div>
-
-        {/* Unsaved Changes Warning Banner */}
-        {hasUnsavedChanges && (
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
-              <span className="font-bold">You have unsaved changes!</span>
-              <span className="hidden sm:inline">
-                Click "Save Form Configuration" to apply deletions and updates to the live database.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleSaveForm}
-              disabled={isSaving}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-sm transition-all"
-            >
-              {isSaving ? 'Saving...' : 'Save Now'}
-            </button>
-          </div>
-        )}
 
         {/* Event Selection Dropdown */}
         <div className="pt-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
@@ -366,11 +398,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             <CustomSelect
               value={selectedEventId}
               onChange={(val) => {
-                if (hasUnsavedChanges) {
-                  if (!window.confirm('You have unsaved form changes for this event. Switch anyway?')) {
-                    return;
-                  }
-                }
                 setSelectedEventId(val);
                 if (onEventSelect) onEventSelect(val);
               }}
@@ -402,11 +429,6 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             ) : (
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-500">
                 Standard Questions Only
-              </span>
-            )}
-            {hasUnsavedChanges && (
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                Unsaved Changes
               </span>
             )}
           </div>
