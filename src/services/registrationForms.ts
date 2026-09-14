@@ -3,19 +3,6 @@ import type { EventRegistrationForm, EventFormField, EventRegistration, Event } 
 
 const LOCAL_FORM_PREFIX = 'csc_event_form_';
 
-const toValidUuid = (str: string): string => {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(str)) return str;
-
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = (hash << 5) - hash + str.charCodeAt(i);
-    hash |= 0;
-  }
-  const hex = Math.abs(hash).toString(16).padStart(8, '0');
-  return `${hex.slice(0, 8)}-0000-4000-8000-00000000${hex.slice(0, 4)}`.toLowerCase();
-};
-
 export const getFormForEvent = async (eventId: string): Promise<EventRegistrationForm | null> => {
   // 1. Try local storage cache first for instant response
   const localData = localStorage.getItem(`${LOCAL_FORM_PREFIX}${eventId}`);
@@ -32,27 +19,60 @@ export const getFormForEvent = async (eventId: string): Promise<EventRegistratio
     return cachedForm;
   }
 
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
-  const validUuid = isUuid ? eventId : toValidUuid(eventId);
-
   try {
+    // Resolve true event UUID from Supabase events table
+    let dbEventId = eventId;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(eventId);
+    if (!isUuid) {
+      const { data: dbEvt } = await supabase
+        .from('events')
+        .select('id')
+        .eq('slug', eventId)
+        .maybeSingle();
+      if (dbEvt?.id) {
+        dbEventId = dbEvt.id;
+      }
+    }
+
+    // Query active form for this event
     const { data: formData, error: formError } = await supabase
       .from('event_registration_forms')
       .select('*')
-      .eq('event_id', validUuid)
+      .eq('event_id', dbEventId)
       .eq('is_active', true)
       .maybeSingle();
 
-    if (formError || !formData) {
+    if (formError) {
+      console.warn('Error fetching event_registration_forms from Supabase:', formError.message);
       return cachedForm;
     }
 
+    if (!formData) {
+      // No active form configured in database
+      const emptyForm: EventRegistrationForm = {
+        id: dbEventId,
+        event_id: eventId,
+        title: 'Event Registration Form',
+        description: null,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        fields: [],
+      };
+      localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(emptyForm));
+      return emptyForm;
+    }
+
     // Fetch form fields ordered by display_order
-    const { data: fieldsData } = await supabase
+    const { data: fieldsData, error: fieldsError } = await supabase
       .from('event_form_fields')
       .select('*')
       .eq('form_id', (formData as any).id)
       .order('display_order', { ascending: true });
+
+    if (fieldsError) {
+      console.warn('Error fetching event_form_fields from Supabase:', fieldsError.message);
+    }
 
     const fieldsList = (fieldsData as EventFormField[]) || [];
 
@@ -61,8 +81,11 @@ export const getFormForEvent = async (eventId: string): Promise<EventRegistratio
       fields: fieldsList,
     };
 
-    // Update local read cache
+    // Update local read cache with exact database state
     localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(fullForm));
+    if (dbEventId !== eventId) {
+      localStorage.setItem(`${LOCAL_FORM_PREFIX}${dbEventId}`, JSON.stringify(fullForm));
+    }
 
     return fullForm;
   } catch (err) {
@@ -111,11 +134,13 @@ export const saveFormForEvent = async (
           dbEventId = dbEvtBySlug.id;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Could not resolve event ID in Supabase:', e);
+    }
   }
 
-  // 2. Resolve form ID for dbEventId
-  let formId = dbEventId;
+  // 2. Resolve existing form ID for dbEventId
+  let activeFormId: string | null = null;
 
   if (isSupabaseConfigured()) {
     try {
@@ -126,27 +151,80 @@ export const saveFormForEvent = async (
         .maybeSingle();
 
       if (existingForm?.id) {
-        formId = existingForm.id;
+        activeFormId = existingForm.id;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Could not query existing event registration form:', e);
+    }
   }
 
-  const formattedFields: EventFormField[] = fields.map((f, index) => ({
-    id: f.id || `field_${Date.now()}_${index}`,
-    form_id: formId,
-    field_key: f.field_key || (f.label ? f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_') : `field_${index}`),
-    label: f.label || `Custom Question ${index + 1}`,
-    field_type: (f.field_type as any) || 'text',
-    options: f.options || null,
-    placeholder: f.placeholder || null,
-    help_text: f.help_text || null,
-    required: f.required ?? false,
-    display_order: index + 1,
-    created_at: now,
-  }));
+  // 3. Upsert event_registration_forms header with onConflict on event_id
+  if (isSupabaseConfigured()) {
+    try {
+      const formPayload: any = {
+        event_id: dbEventId,
+        title: formTitle,
+        description: formDescription,
+        is_active: true,
+        updated_at: now,
+      };
+      if (activeFormId) {
+        formPayload.id = activeFormId;
+      }
+
+      const { data: savedForm, error: formErr } = await supabase
+        .from('event_registration_forms')
+        .upsert(formPayload, { onConflict: 'event_id' })
+        .select('id, event_id, title, description, is_active, created_at, updated_at')
+        .maybeSingle();
+
+      if (formErr) {
+        console.error('Error upserting event_registration_forms:', formErr);
+        if (formErr.message.includes('row-level security') || formErr.code === '42501') {
+          throw new Error('Supabase RLS Policy restriction: Admin permissions required to update event registration forms.');
+        }
+        throw new Error(formErr.message);
+      }
+
+      if (savedForm?.id) {
+        activeFormId = savedForm.id;
+      }
+    } catch (err: any) {
+      console.error('Failed to persist form header in Supabase:', err);
+      throw err;
+    }
+  }
+
+  const resolvedFormId = activeFormId || dbEventId;
+
+  // 4. Format fields payload
+  const allowedFieldTypes = new Set(['text', 'textarea', 'email', 'phone', 'number', 'select', 'radio', 'checkbox', 'file', 'date']);
+  const formattedFields: EventFormField[] = fields.map((f, index) => {
+    let rawType = (f.field_type as string) || 'text';
+    if (!allowedFieldTypes.has(rawType)) {
+      rawType = 'text';
+    }
+    const rawKey = f.field_key || (f.label ? f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_') : 'field');
+    const cleanKey = rawKey.replace(/^_+|_+$/g, '').slice(0, 30) || 'field';
+    const uniqueKey = `${cleanKey}_${index + 1}`;
+
+    return {
+      id: f.id || `field_${Date.now()}_${index}`,
+      form_id: resolvedFormId,
+      field_key: uniqueKey,
+      label: f.label || `Custom Question ${index + 1}`,
+      field_type: rawType as any,
+      options: f.options || null,
+      placeholder: f.placeholder || null,
+      help_text: f.help_text || null,
+      required: f.required ?? false,
+      display_order: index + 1,
+      created_at: now,
+    };
+  });
 
   const formObject: EventRegistrationForm = {
-    id: formId,
+    id: resolvedFormId,
     event_id: eventId,
     title: formTitle,
     description: formDescription,
@@ -156,85 +234,157 @@ export const saveFormForEvent = async (
     fields: formattedFields,
   };
 
-  // 1. Instant local storage cache
+  // 5. Update local storage cache immediately
   localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(formObject));
   if (dbEventId !== eventId) {
     localStorage.setItem(`${LOCAL_FORM_PREFIX}${dbEventId}`, JSON.stringify(formObject));
   }
 
-  // 2. Direct Supabase Persistence
-  if (isSupabaseConfigured()) {
+  // 6. Synchronize fields with Supabase database:
+  //    Completely deletes removed questions and upserts/inserts updated questions.
+  if (isSupabaseConfigured() && activeFormId) {
     try {
-      // Upsert form record in event_registration_forms
-      const { data: savedForm, error: formErr } = await supabase
-        .from('event_registration_forms')
-        .upsert({
-          id: formId,
-          event_id: dbEventId,
-          title: formTitle,
-          description: formDescription,
-          is_active: true,
-          updated_at: now,
-        })
-        .select('*')
-        .maybeSingle();
+      // Step A: Fetch all existing field rows for this form from DB
+      const { data: currentDbFields, error: fetchErr } = await supabase
+        .from('event_form_fields')
+        .select('id, field_key')
+        .eq('form_id', activeFormId);
 
-      if (formErr) {
-        if (formErr.message.includes('row-level security') || formErr.code === '42501') {
-          throw new Error('Supabase RLS Policy restriction: Please run migration 018 in your Supabase SQL Editor to enable writes on event_registration_forms.');
-        }
+      if (fetchErr) {
+        console.warn('Could not fetch existing fields before update:', fetchErr);
       }
 
-      const activeFormId = savedForm?.id || formId;
+      const existingIdsInDb = (currentDbFields || []).map((row) => row.id);
 
-      // Delete existing fields for this form and insert new ones
-      const { error: deleteErr } = await supabase.from('event_form_fields').delete().eq('form_id', activeFormId);
-      if (deleteErr && (deleteErr.message.includes('row-level security') || deleteErr.code === '42501')) {
-        throw new Error('Supabase RLS Policy restriction: Please run migration 018 in your Supabase SQL Editor to enable writes on event_form_fields.');
-      }
+      // If user has 0 fields remaining (deleted all custom questions):
+      if (formattedFields.length === 0) {
+        if (existingIdsInDb.length > 0) {
+          const { error: delAllErr } = await supabase
+            .from('event_form_fields')
+            .delete()
+            .eq('form_id', activeFormId);
 
-      if (formattedFields.length > 0) {
-        const allowedFieldTypes = new Set(['text', 'textarea', 'email', 'phone', 'number', 'select', 'radio', 'checkbox', 'file', 'date']);
-
-        const fieldsPayload = formattedFields.map((f, idx) => {
-          let rawType = (f.field_type as string) || 'text';
-          if (!allowedFieldTypes.has(rawType)) {
-            rawType = 'text'; // Fallback to 'text' if type is 'url' or unrecognised to pass check constraint
+          if (delAllErr) {
+            console.error('Error deleting all fields for form:', delAllErr);
+            throw new Error(delAllErr.message);
           }
+        }
+      } else {
+        // Find which existing DB fields are no longer present in the updated list
+        const incomingDbIds = new Set(
+          formattedFields
+            .map((f) => f.id)
+            .filter((id) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+        );
 
-          const rawKey = f.field_key || (f.label ? f.label.toLowerCase().replace(/[^a-z0-9]+/g, '_') : 'field');
-          const cleanKey = rawKey.replace(/^_+|_+$/g, '').slice(0, 30) || 'field';
-          const uniqueKey = `${cleanKey}_${idx + 1}`;
+        // Any ID in DB that is not in the incoming list MUST be deleted!
+        const idsToDelete = existingIdsInDb.filter((dbId) => !incomingDbIds.has(dbId));
 
-          return {
+        if (idsToDelete.length > 0) {
+          const { error: delErr } = await supabase
+            .from('event_form_fields')
+            .delete()
+            .in('id', idsToDelete);
+
+          if (delErr) {
+            console.warn('Could not delete fields by ID, attempting delete by form_id:', delErr.message);
+            // Fallback: Delete all old fields for form and insert new ones fresh
+            await supabase.from('event_form_fields').delete().eq('form_id', activeFormId);
+          }
+        }
+
+        // Prepare clean fields payload for insert / upsert
+        const fieldsPayload = formattedFields.map((f, idx) => {
+          const payloadItem: any = {
             form_id: activeFormId,
-            field_key: uniqueKey,
-            label: f.label || `Question ${idx + 1}`,
-            field_type: rawType as any,
+            field_key: f.field_key,
+            label: f.label,
+            field_type: f.field_type,
             options: f.options || null,
             placeholder: f.placeholder || null,
             help_text: f.help_text || null,
             required: f.required ?? false,
             display_order: idx + 1,
           };
+          if (f.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(f.id)) {
+            payloadItem.id = f.id;
+          }
+          return payloadItem;
         });
 
-        const { error: fieldsErr } = await supabase
+        const { error: upsertErr } = await supabase
           .from('event_form_fields')
           .upsert(fieldsPayload, { onConflict: 'form_id,field_key' });
 
-        if (fieldsErr) {
-          if (fieldsErr.message.includes('row-level security') || fieldsErr.code === '42501') {
-            throw new Error('Supabase RLS Policy restriction: Please run migration 018 in your Supabase SQL Editor to enable writes on event_form_fields.');
+        if (upsertErr) {
+          console.error('Error upserting event_form_fields:', upsertErr);
+          if (upsertErr.message.includes('row-level security') || upsertErr.code === '42501') {
+            throw new Error('Supabase RLS Policy restriction: Admin permissions required to update event form fields.');
           }
+          throw new Error(upsertErr.message);
         }
       }
-    } catch (err) {
-      // Clean catch without console clutter
+
+      // Step B: Re-fetch clean list from DB to update local cache with exact DB UUIDs
+      const { data: freshFields } = await supabase
+        .from('event_form_fields')
+        .select('*')
+        .eq('form_id', activeFormId)
+        .order('display_order', { ascending: true });
+
+      if (freshFields) {
+        formObject.fields = freshFields as EventFormField[];
+        localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(formObject));
+        if (dbEventId !== eventId) {
+          localStorage.setItem(`${LOCAL_FORM_PREFIX}${dbEventId}`, JSON.stringify(formObject));
+        }
+      }
+    } catch (err: any) {
+      console.error('Database field synchronization error:', err);
+      throw err;
     }
   }
 
+  // Broadcast update event to all listening components
+  window.dispatchEvent(new CustomEvent('csc-event-form-updated', { detail: { eventId, form: formObject } }));
+
   return formObject;
+};
+
+/**
+ * Deletes a single field directly from Supabase and local cache.
+ */
+export const deleteFormFieldDirectly = async (
+  fieldId: string,
+  eventId: string
+): Promise<{ success: boolean; error?: string }> => {
+  if (isSupabaseConfigured() && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId)) {
+    try {
+      const { error } = await supabase.from('event_form_fields').delete().eq('id', fieldId);
+      if (error) {
+        console.error('Error deleting form field directly from Supabase:', error);
+        return { success: false, error: error.message };
+      }
+    } catch (err: any) {
+      console.error('Exception deleting form field directly:', err);
+      return { success: false, error: err?.message || 'Failed to delete question from database.' };
+    }
+  }
+
+  // Also update local cache
+  const localData = localStorage.getItem(`${LOCAL_FORM_PREFIX}${eventId}`);
+  if (localData) {
+    try {
+      const parsed: EventRegistrationForm = JSON.parse(localData);
+      if (parsed && Array.isArray(parsed.fields)) {
+        parsed.fields = parsed.fields.filter((f) => f.id !== fieldId);
+        localStorage.setItem(`${LOCAL_FORM_PREFIX}${eventId}`, JSON.stringify(parsed));
+      }
+    } catch (e) {}
+  }
+
+  window.dispatchEvent(new CustomEvent('csc-event-form-updated', { detail: { eventId } }));
+  return { success: true };
 };
 
 export const getEventRegistrationsService = async (

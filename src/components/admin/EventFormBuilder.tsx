@@ -77,7 +77,10 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   );
   const [fields, setFields] = useState<Partial<EventFormField>[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Field Edit/Add Modal State
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
@@ -116,6 +119,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
   useEffect(() => {
     if (!selectedEventId) {
       setFields([]);
+      setHasUnsavedChanges(false);
       return;
     }
     loadFormFields(selectedEventId);
@@ -123,6 +127,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
 
   const loadFormFields = async (eventId: string) => {
     setLoading(true);
+    setHasUnsavedChanges(false);
     try {
       const form = await getFormForEvent(eventId);
       if (form && form.fields && form.fields.length > 0) {
@@ -205,11 +210,22 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
       setFields((prev) => [...prev, newFieldObj]);
     }
 
+    setHasUnsavedChanges(true);
     setIsFieldModalOpen(false);
   };
 
   const handleDeleteField = (index: number) => {
     setFields((prev) => prev.filter((_, idx) => idx !== index));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleClearAllFields = async () => {
+    if (!selectedEventId) return;
+    if (!window.confirm('Are you sure you want to remove all custom questions for this event? Students will only be asked standard registration details.')) {
+      return;
+    }
+    setFields([]);
+    setHasUnsavedChanges(true);
   };
 
   const handleMoveField = (index: number, direction: 'up' | 'down') => {
@@ -222,24 +238,36 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
     newFields[index] = newFields[targetIndex];
     newFields[targetIndex] = temp;
     setFields(newFields);
+    setHasUnsavedChanges(true);
   };
 
   const handleSaveForm = async () => {
-    if (!selectedEventId) return;
+    if (!selectedEventId || isSaving) return;
 
     const selectedEvt = events.find((e) => e.id === selectedEventId);
     const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
 
+    setIsSaving(true);
+    setSaveError(null);
+
     try {
       await saveFormForEvent(selectedEventId, fields, formTitle);
+      setHasUnsavedChanges(false);
       setSaveSuccess(
-        fields.length === 1
-          ? 'Dynamic form field saved successfully!'
-          : `Saved ${fields.length} dynamic form fields successfully!`
+        fields.length === 0
+          ? 'Cleared all custom questions from database. Standard questions active!'
+          : fields.length === 1
+          ? 'Dynamic form field saved successfully in database!'
+          : `Saved ${fields.length} dynamic form fields successfully in database!`
       );
-      setTimeout(() => setSaveSuccess(null), 3000);
+      setTimeout(() => setSaveSuccess(null), 3500);
+      // Reload fresh state from DB
+      await loadFormFields(selectedEventId);
     } catch (err: any) {
-      console.error('Error saving form:', err);
+      console.error('Error saving form configuration to database:', err);
+      setSaveError(err?.message || 'Failed to save form configuration to database. Please check Supabase connection.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -287,14 +315,45 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             <button
               type="button"
               onClick={handleSaveForm}
-              disabled={!selectedEventId}
-              className="h-10 px-5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-lg hover:shadow-xl flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!selectedEventId || isSaving}
+              className={`h-10 px-5 rounded-2xl text-white text-xs font-extrabold transition-all shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                hasUnsavedChanges
+                  ? 'bg-amber-600 hover:bg-amber-700 ring-2 ring-amber-400/50 shadow-amber-500/20 animate-pulse'
+                  : 'bg-blue-600 hover:bg-blue-700 hover:shadow-xl'
+              }`}
             >
               <Save className="w-4 h-4" />
-              <span>Save Form Configuration</span>
+              <span>
+                {isSaving
+                  ? 'Saving to Database...'
+                  : hasUnsavedChanges
+                  ? 'Save Changes (Unsaved) *'
+                  : 'Save Form Configuration'}
+              </span>
             </button>
           </div>
         </div>
+
+        {/* Unsaved Changes Warning Banner */}
+        {hasUnsavedChanges && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
+              <span className="font-bold">You have unsaved changes!</span>
+              <span className="hidden sm:inline">
+                Click "Save Form Configuration" to apply deletions and updates to the live database.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveForm}
+              disabled={isSaving}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shrink-0 cursor-pointer shadow-sm transition-all"
+            >
+              {isSaving ? 'Saving...' : 'Save Now'}
+            </button>
+          </div>
+        )}
 
         {/* Event Selection Dropdown */}
         <div className="pt-2 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
@@ -307,6 +366,11 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
             <CustomSelect
               value={selectedEventId}
               onChange={(val) => {
+                if (hasUnsavedChanges) {
+                  if (!window.confirm('You have unsaved form changes for this event. Switch anyway?')) {
+                    return;
+                  }
+                }
                 setSelectedEventId(val);
                 if (onEventSelect) onEventSelect(val);
               }}
@@ -326,7 +390,7 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
 
       {/* Main Content Area */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-xl space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-slate-900 dark:text-white">
               Custom Form Fields ({fields.length})
@@ -340,17 +404,37 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
                 Standard Questions Only
               </span>
             )}
+            {hasUnsavedChanges && (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                Unsaved Changes
+              </span>
+            )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleOpenAddField}
-            disabled={!selectedEventId}
-            className="px-4 py-2 rounded-2xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Custom Question</span>
-          </button>
+          <div className="flex items-center gap-2">
+            {fields.length > 0 && (
+              <button
+                type="button"
+                onClick={handleClearAllFields}
+                disabled={!selectedEventId || isSaving}
+                className="px-3.5 py-2 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Remove all custom questions for this event"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear All Questions</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleOpenAddField}
+              disabled={!selectedEventId || isSaving}
+              className="px-4 py-2 rounded-2xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-600 dark:text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Custom Question</span>
+            </button>
+          </div>
         </div>
 
         {/* Standard Always-Collected Student Info Card */}
@@ -655,7 +739,16 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
         message={saveSuccess || ''}
         type="success"
         onClose={() => setSaveSuccess(null)}
-        duration={3000}
+        duration={3500}
+      />
+
+      {/* Save Error Toast */}
+      <Toast
+        isVisible={!!saveError}
+        message={saveError || ''}
+        type="error"
+        onClose={() => setSaveError(null)}
+        duration={5000}
       />
     </div>
   );
