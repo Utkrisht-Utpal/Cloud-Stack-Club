@@ -504,97 +504,98 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           </div>
         </div>
       ) : registrationResult ? (
-        /* Success Ticket Confirmation Screen */
-        <div className="space-y-6 text-center py-4">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/30">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-xl font-black text-slate-900 dark:text-white">
-              You're Registered for {event.title}!
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
-              Your registration has been confirmed. Please save your official registration pass below.
+        /* Success Ticket Confirmation Screen - Compact Viewport Fitted */
+        <div className="space-y-3.5 text-center py-1 max-w-md mx-auto">
+          <div className="space-y-1">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
+                You're Registered for {event.title}!
+              </h3>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Your registration is confirmed. Please save your official pass below.
             </p>
           </div>
 
           {/* Ticket Pass Box */}
-          <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-3 text-left max-w-md mx-auto shadow-inner">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
-              <span className="text-[10px] font-black uppercase text-slate-400">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 space-y-2.5 text-left shadow-inner">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-700/80 pb-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                 {registrationResult.team ? `Team Pass • ${registrationResult.team.team_name}` : 'Registration Pass'}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
                 Confirmed
               </span>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-[11px] font-bold text-slate-400 uppercase">
+            <div className="space-y-0.5">
+              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                 {registrationResult.team ? 'Team Registration ID' : 'Registration Pass ID'}
               </div>
-              <div className="text-xl font-mono font-black text-blue-600 dark:text-sky-400">
+              <div className="text-lg font-mono font-black text-blue-600 dark:text-sky-400">
                 {registrationResult.team
                   ? (registrationResult.team.registration_number || 'REG-CONFIRMED')
                   : (registrationResult.registration_number || 'REG-CONFIRMED')}
               </div>
             </div>
 
-            {/* Date and Venue below Team Registration ID in Bigger and Bold Font */}
-            <div className="grid grid-cols-2 gap-4 py-3 border-y border-slate-200/80 dark:border-slate-700/80">
+            {/* Date and Venue */}
+            <div className="grid grid-cols-2 gap-3 py-2 border-y border-slate-200/80 dark:border-slate-700/80">
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Date</div>
-                <div className="text-sm font-bold tracking-wide text-slate-900 dark:text-white truncate">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Date</div>
+                <div className="text-xs font-bold tracking-wide text-slate-900 dark:text-white truncate">
                   {formattedDate}
                 </div>
               </div>
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Venue</div>
-                <div className="text-sm font-bold tracking-wide text-slate-900 dark:text-white truncate">
-                  {event.location || 'CU Campus'}
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Venue</div>
+                <div className="text-xs font-bold tracking-wide text-slate-900 dark:text-white truncate">
+                  {event.location || 'Revealing Soon'}
                 </div>
               </div>
             </div>
 
-            {/* Individual Registrant Details (If Individual Registration) */}
+            {/* Individual Registrant Details */}
             {!registrationResult.team && (
-              <div className="grid grid-cols-2 gap-4 text-xs pt-2">
+              <div className="grid grid-cols-2 gap-3 text-xs pt-1">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Registrant Name</div>
-                  <div className="font-semibold tracking-wide text-slate-900 dark:text-white truncate">{formData.name}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Registrant Name</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{formData.name}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">University ID (UID)</div>
-                  <div className="font-medium tracking-widest text-slate-900 dark:text-white font-mono">{formData.uid}</div>
+                  <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">University ID (UID)</div>
+                  <div className="text-xs font-bold font-mono text-slate-900 dark:text-white truncate">{formData.uid}</div>
                 </div>
               </div>
             )}
 
-            {/* Team Passes Section (If Team Registration - Includes Leader & Teammates) */}
+            {/* Team Passes Section */}
             {registrationResult.team && (
-              <div className="pt-2 space-y-2.5">
-                <div className="text-[11px] font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
-                  <Users2 className="w-3.5 h-3.5 text-indigo-500" />
+              <div className="pt-1.5 space-y-2">
+                <div className="text-[10px] font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                  <Users2 className="w-3 h-3 text-indigo-500" />
                   <span>Team Passes ({(registrationResult.team.members?.length || 0) + 1} Members)</span>
                 </div>
 
-                <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                   {/* 1. Team Leader Pass */}
-                  <div className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
+                  <div className="p-2 rounded-xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
-                        Team Leader: {formData.name}
+                        Leader: {formData.name}
                       </div>
                       {formData.uid && (
-                        <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
+                        <div className="text-[9px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate">
                           UID: <span className="font-semibold">{formData.uid}</span>
                         </div>
                       )}
                     </div>
-                    <div className="text-right shrink-0 pl-2">
-                      <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
-                      <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
+                    <div className="text-right shrink-0 pl-1.5">
+                      <div className="text-[8px] font-bold tracking-wider uppercase text-slate-400">Pass ID</div>
+                      <div className="text-[11px] font-mono font-bold tracking-wider text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-slate-700">
                         {registrationResult.registration_number || 'REG-CONFIRMED'}
                       </div>
                     </div>
@@ -605,21 +606,21 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     registrationResult.team.members.map((m, mIdx) => (
                       <div
                         key={mIdx}
-                        className="p-2.5 rounded-2xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2"
+                        className="p-2 rounded-xl bg-indigo-50/70 dark:bg-slate-900/90 border border-indigo-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0 flex-1">
                           <div className="text-[10px] font-bold tracking-wide uppercase text-indigo-600 dark:text-indigo-400 truncate">
                             Teammate #{mIdx + 2}: {m.name}
                           </div>
                           {m.uid && (
-                            <div className="text-[10px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate mt-0.5">
+                            <div className="text-[9px] font-mono tracking-wider text-slate-600 dark:text-slate-300 truncate">
                               UID: <span className="font-semibold">{m.uid}</span>
                             </div>
                           )}
                         </div>
-                        <div className="text-right shrink-0 pl-2">
-                          <div className="text-[9px] font-bold tracking-wider uppercase text-slate-400 mb-0.5">Pass ID</div>
-                          <div className="text-xs font-mono font-bold tracking-widest text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-indigo-200 dark:border-slate-700">
+                        <div className="text-right shrink-0 pl-1.5">
+                          <div className="text-[8px] font-bold tracking-wider uppercase text-slate-400">Pass ID</div>
+                          <div className="text-[11px] font-mono font-bold tracking-wider text-indigo-600 dark:text-sky-400 bg-white dark:bg-slate-800 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-slate-700">
                             {m.registration_number || 'REG-CONFIRMED'}
                           </div>
                         </div>
@@ -631,31 +632,31 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           </div>
 
           {/* Note Callout & Official WhatsApp Action Link */}
-          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left max-w-md mx-auto space-y-3 shadow-sm">
-            <div className="flex items-start gap-2.5">
-              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-relaxed">
+          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-left space-y-2.5 shadow-sm">
+            <div className="flex items-start gap-2">
+              <Info className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-[11px] font-medium text-slate-800 dark:text-slate-200 leading-snug">
                 <span className="font-bold text-amber-600 dark:text-amber-400">Note:</span> Check your registered mail inbox and also the junk file and mark it not as junk.
               </p>
             </div>
 
             {eventWhatsappUrl && (
-              <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800/80 space-y-2">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                  <WhatsAppIcon className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
+              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800/80 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                  <WhatsAppIcon className="w-3 h-3 shrink-0 text-emerald-500" />
                   <span>Official Event WhatsApp Group</span>
                 </div>
                 <a
                   href={eventWhatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer group"
+                  className="flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-600/20 cursor-pointer group"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <WhatsAppIcon className="w-4 h-4 shrink-0" />
+                    <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
                     <span className="truncate">Join Event WhatsApp Group</span>
                   </div>
-                  <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" />
+                  <ExternalLink className="w-3 h-3 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" />
                 </a>
               </div>
             )}
@@ -664,7 +665,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-3.5 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-lg cursor-pointer"
+            className="w-full py-2.5 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold transition-all shadow-md cursor-pointer"
           >
             Done
           </button>
