@@ -378,7 +378,7 @@ export const ColorWheelPicker: React.FC<ColorWheelPickerProps> = ({
           e.preventDefault();
         }
       }}
-      className="w-[230px] rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-2xl p-3 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 select-none"
+      className="w-[230px] max-w-[calc(100vw-32px)] rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-2xl p-3 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 select-none"
     >
       <style>{`
         .color-brightness-slider::-webkit-slider-thumb {
