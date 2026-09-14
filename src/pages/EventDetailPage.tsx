@@ -568,46 +568,30 @@ export const EventDetailPage: React.FC = () => {
             :is(.dark, [data-theme="dark"]) .public-rules-content u {
               color: inherit;
             }
-            /* In dark mode, ensure any dark or black inline text colors are forced to high-contrast readable color */
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #0"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#0"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #1"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#1"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #2"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#2"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #3"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#3"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #4"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#4"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #5"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#5"],
+            /* In dark mode, ensure any pure black text is readable */
             :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: black"],
             :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:black"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(0"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(0"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(1"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(1"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(2"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(2"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(3"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(3"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(4"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(4"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(5"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(5"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(6"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(6"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(7"],
-            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(7"] {
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #000000"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#000000"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: #000;"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:#000;"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(0, 0, 0)"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(0,0,0)"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color: rgb(0, 0, 0);"],
+            :is(.dark, [data-theme="dark"]) .public-rules-content [style*="color:rgb(0,0,0);"] {
               color: #e2e8f0 !important;
             }
-            /* In light mode, ensure any white text is forced to dark slate */
-            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: #fff"],
-            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:#fff"],
+            /* In light mode, ensure any pure white text is readable */
             :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: white"],
             :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:white"],
-            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: rgb(255"],
-            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:rgb(255"] {
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: #ffffff"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:#ffffff"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: #fff;"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:#fff;"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: rgb(255, 255, 255)"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:rgb(255,255,255)"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color: rgb(255, 255, 255);"],
+            :not(.dark):not([data-theme="dark"]) .public-rules-content [style*="color:rgb(255,255,255);"] {
               color: #1e293b !important;
             }
           `}</style>
