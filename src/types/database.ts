@@ -104,6 +104,7 @@ export interface Event {
   image_url: string | null;
   pdf_url: string | null;
   drive_url?: string | null;
+  whatsapp_url?: string | null;
   status: EventStatus;
   registration_enabled: boolean;
   registration_start: string | null;

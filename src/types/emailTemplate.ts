@@ -415,6 +415,7 @@ export const CATEGORY_VARIABLES: Record<EmailCategory, TemplateVariable[]> = {
     { key: '{{event_date}}', label: 'Event Date', sampleValue: 'Tuesday, September 15, 2026', description: 'Scheduled event date' },
     { key: '{{event_time}}', label: 'Event Time', sampleValue: '10:00 AM', description: 'Scheduled event time' },
     { key: '{{event_venue}}', label: 'Event Venue', sampleValue: 'Block B, Audi 3, Chandigarh University', description: 'Event location' },
+    { key: '{{whatsapp_url}}', label: 'WhatsApp Group Link', sampleValue: 'https://chat.whatsapp.com/sampleInviteCode', description: 'Official WhatsApp group/channel link' },
     { key: '{{event_url}}', label: 'Event Link', sampleValue: 'https://cloudstackclub.vercel.app/events', description: 'Link to event details' },
   ],
   event_registration_team_leader: [
@@ -430,6 +431,7 @@ export const CATEGORY_VARIABLES: Record<EmailCategory, TemplateVariable[]> = {
     { key: '{{event_date}}', label: 'Event Date', sampleValue: 'Tuesday, September 15, 2026', description: 'Scheduled event date' },
     { key: '{{event_time}}', label: 'Event Time', sampleValue: '09:30 AM', description: 'Scheduled event time' },
     { key: '{{event_venue}}', label: 'Event Venue', sampleValue: 'Block B, Audi 3, Chandigarh University', description: 'Event location' },
+    { key: '{{whatsapp_url}}', label: 'WhatsApp Group Link', sampleValue: 'https://chat.whatsapp.com/sampleInviteCode', description: 'Official WhatsApp group/channel link' },
     { key: '{{event_url}}', label: 'Event Link', sampleValue: 'https://cloudstackclub.vercel.app/events', description: 'Link to event details' },
   ],
   event_registration_team_member: [
@@ -448,6 +450,7 @@ export const CATEGORY_VARIABLES: Record<EmailCategory, TemplateVariable[]> = {
     { key: '{{event_date}}', label: 'Event Date', sampleValue: 'Tuesday, September 15, 2026', description: 'Scheduled event date' },
     { key: '{{event_time}}', label: 'Event Time', sampleValue: '09:30 AM', description: 'Scheduled event time' },
     { key: '{{event_venue}}', label: 'Event Venue', sampleValue: 'Block B, Audi 3, Chandigarh University', description: 'Event location' },
+    { key: '{{whatsapp_url}}', label: 'WhatsApp Group Link', sampleValue: 'https://chat.whatsapp.com/sampleInviteCode', description: 'Official WhatsApp group/channel link' },
     { key: '{{department}}', label: 'Teammate Department', sampleValue: 'Information Technology', description: 'Member department' },
     { key: '{{year}}', label: 'Teammate Year', sampleValue: '3rd Year', description: 'Member year of study' },
     { key: '{{uid}}', label: 'Teammate UID', sampleValue: '22BCS10892', description: 'Member University UID' },

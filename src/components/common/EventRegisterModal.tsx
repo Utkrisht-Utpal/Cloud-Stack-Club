@@ -14,7 +14,9 @@ import {
   Plus, 
   Trash2, 
   ArrowRight,
-  Ticket
+  Ticket,
+  Info,
+  ExternalLink
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
@@ -23,9 +25,18 @@ import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 import { getFormForEvent, getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { registerForEvent } from '../../services/registrations';
+import { getStoredWhatsappUrlsMap } from '../../services/events';
 import { sendIndividualRegistrationEmail, sendTeamRegistrationEmails } from '../../services/email';
 import { formatEventTime } from '../../utils/formatters';
 import type { Event, EventFormField, EventRegistration } from '../../types/database';
+
+// WhatsApp brand icon (inline SVG — Lucide does not include WhatsApp)
+const WhatsAppIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.855L.057 23.177a.75.75 0 0 0 .916.932l5.453-1.428A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.714 9.714 0 0 1-4.951-1.355l-.355-.212-3.679.964.982-3.584-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/>
+  </svg>
+);
 
 interface EventRegisterModalProps {
   isOpen: boolean;
@@ -137,6 +148,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   }, [isOpen, event]);
 
   if (!isOpen || !event) return null;
+
+  const eventWhatsappUrl = event.whatsapp_url || getStoredWhatsappUrlsMap()[event.id] || null;
 
   const triggerErrorWithCooldown = (msg: string) => {
     setError(msg);
@@ -280,16 +293,10 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
     // Check required custom questions
     for (const field of customFields) {
-      const ans = customAnswers[field.field_key];
+      const ans = customAnswers[field.field_key || field.id];
       if (field.required) {
-        if (!ans || (typeof ans === 'string' && !ans.trim())) {
+        if (!ans || (typeof ans === 'string' && !ans.trim()) || (Array.isArray(ans) && ans.length === 0)) {
           triggerErrorWithCooldown(`Please answer the required question: "${field.label}"`);
-          return;
-        }
-      }
-      if (field.field_type === 'phone' && (field.required || ans)) {
-        if (!ans || !/^\d{10}$/.test(String(ans).trim())) {
-          triggerErrorWithCooldown(`Phone number for "${field.label}" must be exactly 10 digits.`);
           return;
         }
       }
@@ -301,11 +308,12 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     }
 
     setIsSubmitting(true);
+    setError(null);
 
     try {
       // Build custom answers payload
       const formattedAnswers = Object.keys(customAnswers).map((key) => {
-        const targetField = customFields.find((f) => f.field_key === key);
+        const targetField = customFields.find((f) => f.field_key === key || f.id === key);
         return {
           field_id: targetField?.id || key,
           answer_text: String(customAnswers[key] || ''),
@@ -320,18 +328,19 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           registrant_phone: formData.phone.trim() || undefined,
           uid: formData.uid.trim(),
           team_name: isTeamRegistration ? teamName.trim() : undefined,
-          team_members: isTeamRegistration
-            ? teamMembers
-                .filter((m) => m.name.trim())
-                .map((m) => ({
-                  name: m.name.trim(),
-                  email: m.email.trim(),
-                  uid: m.uid.trim().toUpperCase(),
-                  phone: m.phone.trim(),
-                  department: m.department.trim(),
-                  year: m.year || '1st Year',
-                }))
-            : undefined,
+          team_members:
+            isTeamRegistration && teamMembers.length > 0
+              ? teamMembers
+                  .filter((m) => m.name.trim() && m.email.trim())
+                  .map((m) => ({
+                    name: m.name.trim(),
+                    email: m.email.trim(),
+                    uid: m.uid ? m.uid.trim().toUpperCase() : undefined,
+                    phone: m.phone ? m.phone.trim() : undefined,
+                    department: m.department.trim(),
+                    year: m.year || '1st Year',
+                  }))
+              : undefined,
           answers: formattedAnswers,
         },
         turnstileToken.trim()
@@ -349,6 +358,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             event_date: event.date || '',
             event_time: event.start_time || undefined,
             event_venue: event.location || undefined,
+            whatsapp_url: eventWhatsappUrl || undefined,
             team_name: teamName.trim(),
             team_registration_number: result?.team?.registration_number || result?.registration_number || undefined,
             leader: {
@@ -405,6 +415,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             event_date: event.date || '',
             event_time: event.start_time || undefined,
             event_venue: event.location || undefined,
+            whatsapp_url: eventWhatsappUrl || undefined,
             registration_number: result?.registration_number,
           }).catch((emailErr) => console.warn('Background individual registration email dispatch notice:', emailErr));
         }
@@ -592,6 +603,48 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Note Callout */}
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 text-left max-w-md mx-auto">
+            <div className="flex items-start gap-2.5">
+              <Info className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs font-semibold text-amber-800 dark:text-amber-200/90 leading-relaxed">
+                <span className="font-bold">Note:</span> Check your registered mail inbox and also the junk file and mark it not as junk.
+              </p>
+            </div>
+          </div>
+
+          {/* Official WhatsApp Group / Channel Link */}
+          {eventWhatsappUrl && (
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-left max-w-md mx-auto shadow-sm space-y-2.5">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                  <WhatsAppIcon className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
+                    Official Event WhatsApp Group
+                  </h4>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
+                    Join for real-time announcements & coordinator updates
+                  </p>
+                </div>
+              </div>
+
+              <a
+                href={eventWhatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer group"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <WhatsAppIcon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Join Event WhatsApp Group</span>
+                </div>
+                <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity" />
+              </a>
+            </div>
+          )}
 
           <button
             type="button"

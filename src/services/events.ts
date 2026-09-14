@@ -82,6 +82,29 @@ export const saveStoredDriveUrl = (eventId: string, driveUrl: string | null) => 
   } catch {}
 };
 
+const WHATSAPP_URL_MAP_KEY = 'csc_event_whatsapp_urls_map';
+
+export const getStoredWhatsappUrlsMap = (): Record<string, string> => {
+  try {
+    const data = localStorage.getItem(WHATSAPP_URL_MAP_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+};
+
+export const saveStoredWhatsappUrl = (eventId: string, whatsappUrl: string | null) => {
+  try {
+    const map = getStoredWhatsappUrlsMap();
+    if (whatsappUrl && whatsappUrl.trim()) {
+      map[eventId] = whatsappUrl.trim();
+    } else {
+      delete map[eventId];
+    }
+    localStorage.setItem(WHATSAPP_URL_MAP_KEY, JSON.stringify(map));
+  } catch {}
+};
+
 export const autoSyncEventStatuses = async (eventsList: Event[]) => {
   if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
 
@@ -178,7 +201,7 @@ export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
     });
 };
 
-export const SAFE_PUBLIC_EVENT_COLUMNS = 'id, title, slug, category, description, rules, date, start_time, end_time, location, image_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at';
+export const SAFE_PUBLIC_EVENT_COLUMNS = 'id, title, slug, category, description, rules, date, start_time, end_time, location, image_url, whatsapp_url, status, registration_enabled, registration_start, registration_end, supports_teams, max_team_size, max_registrations, created_at, updated_at';
 
 export const getEvents = async (): Promise<Event[]> => {
   if (!isSupabaseConfigured()) {
@@ -227,11 +250,13 @@ export const getEvents = async (): Promise<Event[]> => {
 
     const dbEvents = (eventsData as Event[]) || [];
     const catMap = getStoredCategoriesMap();
+    const whatsappMap = getStoredWhatsappUrlsMap();
     const eventsWithCat = dbEvents.map((e) => ({
       ...e,
       pdf_url: null, // Guarantee pdf_url is stripped from public memory
       drive_url: null, // Guarantee drive_url is stripped from public memory (Admin only)
       category: e.category || catMap[e.id] || null,
+      whatsapp_url: e.whatsapp_url || whatsappMap[e.id] || null,
     }));
 
     // Background non-blocking status sync (0ms load time optimization)
@@ -271,10 +296,12 @@ export const getAdminEvents = async (): Promise<Event[]> => {
     const dbEvents = (data as Event[]) || [];
     const catMap = getStoredCategoriesMap();
     const driveMap = getStoredDriveUrlsMap();
+    const whatsappMap = getStoredWhatsappUrlsMap();
     const eventsWithExtras = dbEvents.map((e) => ({
       ...e,
       category: e.category || catMap[e.id] || null,
       drive_url: e.drive_url || driveMap[e.id] || null,
+      whatsapp_url: e.whatsapp_url || whatsappMap[e.id] || null,
     }));
 
     return sortEventsByRelevance(eventsWithExtras);
@@ -386,6 +413,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     image_url: eventPayload.image_url || null,
     pdf_url: eventPayload.pdf_url || null,
     drive_url: eventPayload.drive_url ? eventPayload.drive_url.trim() : null,
+    whatsapp_url: eventPayload.whatsapp_url ? eventPayload.whatsapp_url.trim() : null,
     status: (eventPayload.status as any) || 'upcoming',
     registration_enabled: eventPayload.registration_enabled ?? true,
     registration_start: eventPayload.registration_start || null,
@@ -402,6 +430,9 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   saveStoredCategory(createdEvent.id, createdEvent.category || null);
   if (createdEvent.drive_url) {
     saveStoredDriveUrl(createdEvent.id, createdEvent.drive_url);
+  }
+  if (createdEvent.whatsapp_url) {
+    saveStoredWhatsappUrl(createdEvent.id, createdEvent.whatsapp_url);
   }
 
   // Save locally first so creation NEVER fails on frontend UI
@@ -422,10 +453,11 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
     error &&
     (error.message.includes('category') ||
       error.message.includes('drive_url') ||
+      error.message.includes('whatsapp_url') ||
       error.message.includes('schema cache') ||
       (error as any).code === 'PGRST204')
   ) {
-    const { category, drive_url, ...rest } = createdEvent;
+    const { category, drive_url, whatsapp_url, ...rest } = createdEvent;
     const retry = await supabase.from('events').insert([rest]).select('*').maybeSingle();
     data = retry.data;
     error = retry.error;
@@ -438,6 +470,7 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   return {
     ...((data as Event) || createdEvent),
     drive_url: createdEvent.drive_url || null,
+    whatsapp_url: createdEvent.whatsapp_url || null,
   };
 };
 
@@ -450,6 +483,9 @@ export const updateEventAdmin = async (
   }
   if (eventPayload.drive_url !== undefined) {
     saveStoredDriveUrl(eventId, eventPayload.drive_url || null);
+  }
+  if (eventPayload.whatsapp_url !== undefined) {
+    saveStoredWhatsappUrl(eventId, eventPayload.whatsapp_url || null);
   }
 
   // Recalculate status based on date if date is provided and status is not explicitly cancelled
@@ -488,6 +524,7 @@ export const updateEventAdmin = async (
     location: eventPayload.location || null,
     pdf_url: eventPayload.pdf_url || null,
     ...(eventPayload.drive_url !== undefined ? { drive_url: eventPayload.drive_url ? eventPayload.drive_url.trim() : null } : {}),
+    ...(eventPayload.whatsapp_url !== undefined ? { whatsapp_url: eventPayload.whatsapp_url ? eventPayload.whatsapp_url.trim() : null } : {}),
     image_url: eventPayload.image_url || null,
     status: eventPayload.status || undefined,
     registration_enabled: eventPayload.registration_enabled ?? true,
@@ -511,15 +548,18 @@ export const updateEventAdmin = async (
     error &&
     (error.message.includes('category') ||
       error.message.includes('drive_url') ||
+      error.message.includes('whatsapp_url') ||
       error.message.includes('schema cache') ||
       (error as any).code === 'PGRST204')
   ) {
     if (error.message.includes('category')) delete updateFields.category;
+    if (error.message.includes('drive_url')) delete updateFields.drive_url;
     if (
-      error.message.includes('drive_url') ||
+      error.message.includes('whatsapp_url') ||
       error.message.includes('schema cache') ||
       (error as any).code === 'PGRST204'
     ) {
+      delete updateFields.whatsapp_url;
       delete updateFields.drive_url;
     }
     const retry = await supabase
@@ -539,6 +579,12 @@ export const updateEventAdmin = async (
           ? eventPayload.drive_url.trim()
           : null
         : (data?.drive_url || list[index]?.drive_url || getStoredDriveUrlsMap()[eventId] || null),
+    whatsapp_url:
+      eventPayload.whatsapp_url !== undefined
+        ? eventPayload.whatsapp_url
+          ? eventPayload.whatsapp_url.trim()
+          : null
+        : (data?.whatsapp_url || list[index]?.whatsapp_url || getStoredWhatsappUrlsMap()[eventId] || null),
   };
 
   return mergedResult;

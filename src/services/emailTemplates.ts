@@ -491,6 +491,15 @@ export function renderEmailHtmlPreview(
               <td style="padding: 3px 0;"><span style="display: inline-block; background-color: #14532d; color: #4ade80; font-weight: 800; font-size: 11px; padding: 2px 10px; border-radius: 9999px; border: 1px solid #22c55e;">CONFIRMED</span></td>
             </tr>
           </table>
+
+          ${data.whatsapp_url ? `
+          <div style="margin-top: 14px; padding: 12px 14px; background-color: #064e3b; border-radius: 8px; border: 1px solid #059669; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-size: 11px; color: #a7f3d0; font-weight: 800; text-transform: uppercase;">Official Event WhatsApp Group</p>
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #ffffff; line-height: 1.4;">Join for real-time announcements, schedule updates, and coordinator support.</p>
+            <a href="${data.whatsapp_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #10b981; color: #022c22; text-decoration: none; padding: 8px 20px; border-radius: 6px; font-weight: 800; font-size: 12px;">
+              Join WhatsApp Group &rarr;
+            </a>
+          </div>` : ''}
         </div>
       `;
     } else if (template.category === 'event_registration_team_leader') {
@@ -570,6 +579,15 @@ export function renderEmailHtmlPreview(
             <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
               ${membersHtml}
             </ul>
+          </div>` : ''}
+
+          ${data.whatsapp_url ? `
+          <div style="margin-top: 14px; padding: 12px 14px; background-color: #064e3b; border-radius: 8px; border: 1px solid #059669; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-size: 11px; color: #a7f3d0; font-weight: 800; text-transform: uppercase;">Official Event WhatsApp Group</p>
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #ffffff; line-height: 1.4;">Join for real-time announcements, schedule updates, and coordinator support.</p>
+            <a href="${data.whatsapp_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #10b981; color: #022c22; text-decoration: none; padding: 8px 20px; border-radius: 6px; font-weight: 800; font-size: 12px;">
+              Join WhatsApp Group &rarr;
+            </a>
           </div>` : ''}
         </div>
       `;
@@ -657,6 +675,15 @@ export function renderEmailHtmlPreview(
             <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
               ${otherMembersHtml}
             </ul>
+          </div>` : ''}
+
+          ${data.whatsapp_url ? `
+          <div style="margin-top: 14px; padding: 12px 14px; background-color: #064e3b; border-radius: 8px; border: 1px solid #059669; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-size: 11px; color: #a7f3d0; font-weight: 800; text-transform: uppercase;">Official Event WhatsApp Group</p>
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #ffffff; line-height: 1.4;">Join for real-time announcements, schedule updates, and coordinator support.</p>
+            <a href="${data.whatsapp_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #10b981; color: #022c22; text-decoration: none; padding: 8px 20px; border-radius: 6px; font-weight: 800; font-size: 12px;">
+              Join WhatsApp Group &rarr;
+            </a>
           </div>` : ''}
         </div>
       `;
@@ -1036,6 +1063,15 @@ export function renderEmailHtmlPreview(
             <td style="padding: 3px 0;"><span style="display: inline-block; background-color: #dcfce7; color: #15803d; font-weight: 800; font-size: 11px; padding: 2px 10px; border-radius: 9999px; border: 1px solid #86efac;">CONFIRMED</span></td>
           </tr>
         </table>
+
+        ${data.whatsapp_url ? `
+        <div style="margin-top: 16px; padding: 14px; background-color: #f0fdf4; border-radius: 12px; border: 1px solid #86efac; text-align: center;">
+          <p style="margin: 0 0 4px 0; font-size: 11px; color: #16a34a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Official Event WhatsApp Group</p>
+          <p style="margin: 0 0 10px 0; font-size: 12px; color: #166534; line-height: 1.4;">Join for real-time announcements, schedule updates, and coordinator support.</p>
+          <a href="${data.whatsapp_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 8px 20px; border-radius: 8px; font-weight: 800; font-size: 12px;">
+            Join WhatsApp Group &rarr;
+          </a>
+        </div>` : ''}
       </div>
     `;
   } else if (template.category === 'event_registration_team_leader') {
@@ -1115,6 +1151,15 @@ export function renderEmailHtmlPreview(
           <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
             ${membersHtml}
           </ul>
+        </div>` : ''}
+
+        ${data.whatsapp_url ? `
+        <div style="margin-top: 16px; padding: 14px; background-color: #f0fdf4; border-radius: 12px; border: 1px solid #86efac; text-align: center;">
+          <p style="margin: 0 0 4px 0; font-size: 11px; color: #16a34a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Official Event WhatsApp Group</p>
+          <p style="margin: 0 0 10px 0; font-size: 12px; color: #166534; line-height: 1.4;">Join for real-time announcements, schedule updates, and coordinator support.</p>
+          <a href="${data.whatsapp_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 8px 20px; border-radius: 8px; font-weight: 800; font-size: 12px;">
+            Join WhatsApp Group &rarr;
+          </a>
         </div>` : ''}
       </div>
     `;
@@ -1204,6 +1249,15 @@ export function renderEmailHtmlPreview(
           <ul style="margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
             ${otherMembersHtml}
           </ul>
+        </div>` : ''}
+
+        ${data.whatsapp_url ? `
+        <div style="margin-top: 16px; padding: 14px; background-color: #f0fdf4; border-radius: 12px; border: 1px solid #86efac; text-align: center;">
+          <p style="margin: 0 0 4px 0; font-size: 11px; color: #16a34a; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Official Event WhatsApp Group</p>
+          <p style="margin: 0 0 10px 0; font-size: 12px; color: #166534; line-height: 1.4;">Join for real-time announcements, schedule updates, and coordinator support.</p>
+          <a href="${data.whatsapp_url}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #16a34a; color: #ffffff; text-decoration: none; padding: 8px 20px; border-radius: 8px; font-weight: 800; font-size: 12px;">
+            Join WhatsApp Group &rarr;
+          </a>
         </div>` : ''}
       </div>
     `;

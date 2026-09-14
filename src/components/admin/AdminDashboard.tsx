@@ -258,6 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     location: '',
     rules: '',
     drive_url: '',
+    whatsapp_url: '',
     registration_enabled: false,
     registration_start: '',
     registration_end: '',
@@ -277,6 +278,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     location: '',
     rules: '',
     drive_url: '',
+    whatsapp_url: '',
     registration_enabled: true,
     registration_start: '',
     registration_end: '',
@@ -679,6 +681,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         rules: newEventData.rules.trim() || null,
         pdf_url: null,
         drive_url: newEventData.drive_url.trim() || null,
+        whatsapp_url: newEventData.whatsapp_url.trim() || null,
         image_url: imageUrl,
         registration_enabled: newEventData.registration_enabled,
         registration_start: newEventData.registration_enabled ? (newEventData.registration_start || null) : null,
@@ -705,6 +708,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         location: '',
         rules: '',
         drive_url: '',
+        whatsapp_url: '',
         registration_enabled: false,
         registration_start: '',
         registration_end: '',
@@ -736,6 +740,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       location: evt.location || '',
       rules: evt.rules || '',
       drive_url: evt.drive_url || '',
+      whatsapp_url: evt.whatsapp_url || '',
       registration_enabled: evt.registration_enabled ?? true,
       registration_start: evt.registration_start ? evt.registration_start.split('T')[0] : '',
       registration_end: evt.registration_end ? evt.registration_end.split('T')[0] : '',
@@ -801,6 +806,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         rules: editEventData.rules.trim() || null,
         pdf_url: editingEvent.pdf_url,
         drive_url: editEventData.drive_url.trim() || null,
+        whatsapp_url: editEventData.whatsapp_url.trim() || null,
         image_url: imageUrl,
         status: computedStatus,
         registration_enabled: editEventData.registration_enabled,
@@ -2688,6 +2694,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               </div>
             </div>
 
+            {/* WhatsApp Link Input Field */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>WhatsApp Group / Channel Link</span>
+              </label>
+              <input
+                type="url"
+                value={newEventData.whatsapp_url}
+                onChange={(e) => setNewEventData({ ...newEventData, whatsapp_url: e.target.value })}
+                placeholder="https://chat.whatsapp.com/... or https://whatsapp.com/channel/..."
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
+            </div>
+
             {/* Registration & Team Configuration Section */}
             <div className="p-4 rounded-2xl bg-slate-100/80 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 space-y-3">
               <div className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-sky-400 flex items-center gap-1.5">
@@ -3024,6 +3045,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   </span>
                 </button>
               </div>
+            </div>
+
+            {/* WhatsApp Link Input Field */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                <WhatsAppIcon className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span>WhatsApp Group / Channel Link</span>
+              </label>
+              <input
+                type="url"
+                value={editEventData.whatsapp_url}
+                onChange={(e) => setEditEventData({ ...editEventData, whatsapp_url: e.target.value })}
+                placeholder="https://chat.whatsapp.com/... or https://whatsapp.com/channel/..."
+                className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
             </div>
 
             {/* Edit Registration & Team Configuration Section */}

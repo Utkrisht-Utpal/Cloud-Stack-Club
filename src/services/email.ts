@@ -253,6 +253,7 @@ export async function sendIndividualRegistrationEmail(params: {
   event_date: string;
   event_time?: string | null;
   event_venue?: string | null;
+  whatsapp_url?: string | null;
   registration_number?: string | null;
 }): Promise<SendEmailResult> {
   return invokeSendEmail('event_registration_individual', {
@@ -265,6 +266,7 @@ export async function sendIndividualRegistrationEmail(params: {
     event_date: params.event_date,
     event_time: params.event_time || undefined,
     event_venue: params.event_venue || undefined,
+    whatsapp_url: params.whatsapp_url || undefined,
     registration_number: params.registration_number || undefined,
   });
 }
@@ -286,6 +288,7 @@ export async function sendTeamLeaderRegistrationEmail(params: {
   event_date: string;
   event_time?: string | null;
   event_venue?: string | null;
+  whatsapp_url?: string | null;
   registration_number?: string | null;
   team_registration_number?: string | null;
 }): Promise<SendEmailResult> {
@@ -307,6 +310,7 @@ export async function sendTeamLeaderRegistrationEmail(params: {
     event_date: params.event_date,
     event_time: params.event_time || undefined,
     event_venue: params.event_venue || undefined,
+    whatsapp_url: params.whatsapp_url || undefined,
     registration_number: teamRegId,
     team_registration_number: teamRegId,
   });
@@ -334,6 +338,7 @@ export async function sendTeamMemberRegistrationEmail(params: {
   event_date: string;
   event_time?: string | null;
   event_venue?: string | null;
+  whatsapp_url?: string | null;
   registration_number?: string | null;
   team_registration_number?: string | null;
 }): Promise<SendEmailResult> {
@@ -359,6 +364,7 @@ export async function sendTeamMemberRegistrationEmail(params: {
     event_date: params.event_date,
     event_time: params.event_time || undefined,
     event_venue: params.event_venue || undefined,
+    whatsapp_url: params.whatsapp_url || undefined,
     registration_number: teamRegId,
     team_registration_number: teamRegId,
   });
@@ -372,6 +378,7 @@ export async function sendTeamRegistrationEmails(params: {
   event_date: string;
   event_time?: string | null;
   event_venue?: string | null;
+  whatsapp_url?: string | null;
   team_name: string;
   team_registration_number?: string | null;
   leader: { name: string; email: string; uid: string; department?: string | null; year?: string | null; phone?: string | null; registration_number?: string | null };
@@ -395,6 +402,7 @@ export async function sendTeamRegistrationEmails(params: {
     event_date: params.event_date,
     event_time: params.event_time,
     event_venue: params.event_venue,
+    whatsapp_url: params.whatsapp_url,
     registration_number: teamRegId,
     team_registration_number: teamRegId,
   });
@@ -433,6 +441,7 @@ export async function sendTeamRegistrationEmails(params: {
           event_date: params.event_date,
           event_time: params.event_time,
           event_venue: params.event_venue,
+          whatsapp_url: params.whatsapp_url,
           registration_number: teamRegId,
           team_registration_number: teamRegId,
         });
