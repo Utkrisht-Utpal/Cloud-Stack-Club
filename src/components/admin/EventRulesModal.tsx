@@ -207,6 +207,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
   const [isLineSpacingOpen, setIsLineSpacingOpen] = useState(false);
   const [isListsDropdownOpen, setIsListsDropdownOpen] = useState(false);
   const [isPlaceholderDismissed, setIsPlaceholderDismissed] = useState(false);
+  const [colorPickerOffset, setColorPickerOffset] = useState<number>(0);
+  const [listsDropdownOffset, setListsDropdownOffset] = useState<number>(0);
 
   // Save current selection range
   const saveCurrentRange = useCallback(() => {
@@ -566,6 +568,66 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Dynamically clamp Color Picker within viewport so it never overflows phone screen
+  useEffect(() => {
+    if (!isColorPickerOpen || !colorPickerRef.current) return;
+    const calculateOffset = () => {
+      if (!colorPickerRef.current) return;
+      const rect = colorPickerRef.current.getBoundingClientRect();
+      const pickerWidth = 236; // 230px + buffer
+      const viewportWidth = window.innerWidth;
+
+      const rightEdge = rect.left + pickerWidth;
+      const maxAllowedRight = viewportWidth - 12;
+
+      if (rightEdge > maxAllowedRight) {
+        const shift = rightEdge - maxAllowedRight;
+        const maxShift = rect.left - 12;
+        setColorPickerOffset(-Math.min(shift, Math.max(0, maxShift)));
+      } else {
+        setColorPickerOffset(0);
+      }
+    };
+
+    calculateOffset();
+    window.addEventListener('resize', calculateOffset);
+    window.addEventListener('scroll', calculateOffset, true);
+    return () => {
+      window.removeEventListener('resize', calculateOffset);
+      window.removeEventListener('scroll', calculateOffset, true);
+    };
+  }, [isColorPickerOpen]);
+
+  // Dynamically clamp Lists dropdown within viewport so it never overflows phone screen
+  useEffect(() => {
+    if (!isListsDropdownOpen || !listsDropdownRef.current) return;
+    const calculateOffset = () => {
+      if (!listsDropdownRef.current) return;
+      const rect = listsDropdownRef.current.getBoundingClientRect();
+      const dropdownWidth = 182; // 176px + buffer
+      const viewportWidth = window.innerWidth;
+
+      const rightEdge = rect.left + dropdownWidth;
+      const maxAllowedRight = viewportWidth - 12;
+
+      if (rightEdge > maxAllowedRight) {
+        const shift = rightEdge - maxAllowedRight;
+        const maxShift = rect.left - 12;
+        setListsDropdownOffset(-Math.min(shift, Math.max(0, maxShift)));
+      } else {
+        setListsDropdownOffset(0);
+      }
+    };
+
+    calculateOffset();
+    window.addEventListener('resize', calculateOffset);
+    window.addEventListener('scroll', calculateOffset, true);
+    return () => {
+      window.removeEventListener('resize', calculateOffset);
+      window.removeEventListener('scroll', calculateOffset, true);
+    };
+  }, [isListsDropdownOpen]);
 
   // Format toggles (bold, italic, underline)
   const handleToggleFormat = (command: 'bold' | 'italic' | 'underline') => {
@@ -1510,6 +1572,13 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
   const remainingChars = MAX_RULES_LENGTH - charCount;
   const isEmpty = charCount === 0;
+  const hasActiveColor = Boolean(
+    activeColor &&
+    activeColor !== 'inherit' &&
+    activeColor !== 'initial' &&
+    activeColor !== 'mixed' &&
+    activeColor !== 'transparent'
+  );
 
   return (
     <Modal
@@ -1711,8 +1780,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
         {/* Rich Text Editor Container — light & dark theme */}
         <div className="rounded-2xl bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700/80 shadow-sm dark:shadow-2xl dark:shadow-black/40 relative focus-within:ring-2 focus-within:ring-blue-500/30 dark:focus-within:ring-sky-500/50 focus-within:border-blue-500/60 dark:focus-within:border-sky-500/70 transition-all">
-          {/* Professional Compact Toolbar — single unified row, all buttons in one line */}
-          <div className="px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/70 flex items-center flex-nowrap gap-1 relative z-40 select-none rounded-t-2xl">
+          {/* Professional Compact Toolbar — wraps cleanly on phone screens, single line on desktop */}
+          <div className="px-2 sm:px-2.5 py-1.5 border-b border-slate-200 dark:border-slate-700/70 bg-slate-50/90 dark:bg-slate-800/70 flex flex-wrap sm:flex-nowrap items-center gap-1 sm:gap-1.5 relative z-40 select-none rounded-t-2xl">
             {/* Group 1: Bold · Italic · Underline */}
             <div className="flex items-center bg-slate-200/60 dark:bg-slate-900/70 border border-slate-300/80 dark:border-slate-700/60 rounded-lg p-0.5 shrink-0 shadow-inner">
               <button
@@ -1963,13 +2032,15 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                   setIsLineSpacingOpen(false);
                   setIsListsDropdownOpen(false);
                 }}
-                title="Text Color"
+                title={hasActiveColor ? `Text Color: ${activeColor}` : "Text Color"}
                 aria-label="Text Color"
                 aria-haspopup="dialog"
                 aria-expanded={isColorPickerOpen}
                 className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer border ${
                   isColorPickerOpen
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
+                    : hasActiveColor
+                    ? 'bg-slate-50 border-slate-300 dark:bg-slate-800/90 dark:border-slate-600 text-slate-800 dark:text-slate-100 shadow-xs'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
@@ -2003,18 +2074,24 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                     strokeLinejoin="round"
                   />
                   <rect
-                    x="4"
-                    y="18.5"
-                    width="16"
+                    x="3.5"
+                    y="18"
+                    width="17"
                     height="3.5"
                     rx="1.75"
-                    fill="url(#textColorRainbow)"
+                    fill={hasActiveColor ? activeColor : "url(#textColorRainbow)"}
+                    stroke={hasActiveColor ? "rgba(0,0,0,0.15)" : "none"}
+                    strokeWidth="0.5"
+                    style={hasActiveColor ? { filter: 'drop-shadow(0 0.5px 1px rgba(0,0,0,0.25))' } : undefined}
                   />
                 </svg>
               </button>
 
               {isColorPickerOpen && (
-                <div className="absolute left-0 top-full mt-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div
+                  style={{ transform: colorPickerOffset ? `translateX(${colorPickerOffset}px)` : undefined }}
+                  className="absolute left-0 top-full mt-2 z-50 animate-in fade-in zoom-in-95 duration-100"
+                >
                   <ColorWheelPicker
                     currentColor={activeColor}
                     recentColors={recentColors}
@@ -2026,8 +2103,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
               )}
             </div>
 
-            {/* Separator */}
-            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0" />
+            {/* Separator — hidden on mobile when wrapping */}
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700/60 shrink-0 hidden sm:block" />
 
             {/* Group 5: Lists Dropdown (Bullet, Numbered, Checklist, Arrow) */}
             <div className="relative shrink-0" ref={listsDropdownRef}>
@@ -2077,6 +2154,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
               {isListsDropdownOpen && (
                 <div
                   role="listbox"
+                  style={{ transform: listsDropdownOffset ? `translateX(${listsDropdownOffset}px)` : undefined }}
                   className="absolute left-0 top-full mt-2 w-44 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
                 >
                   <button
@@ -2281,14 +2359,14 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           </div>
 
           {/* Footer Status Bar — light & dark theme */}
-          <div className="px-3.5 py-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/80 flex items-center justify-between rounded-b-2xl">
+          <div className="px-3 sm:px-3.5 py-2 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 rounded-b-2xl">
             <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 dark:bg-sky-400 animate-pulse shrink-0" />
               <span className="font-medium text-slate-600 dark:text-slate-400">Double Enter exits list • Ctrl+B/I/U/Z enabled</span>
             </div>
 
             <div
-              className={`px-2.5 py-0.5 rounded-lg border text-[11px] font-semibold tracking-wide transition-colors shrink-0 ${
+              className={`self-end sm:self-auto px-2.5 py-0.5 rounded-lg border text-[11px] font-semibold tracking-wide transition-colors shrink-0 ${
                 remainingChars < 200
                   ? remainingChars <= 0
                     ? 'bg-red-50 dark:bg-red-500/15 border-red-300 dark:border-red-500/40 text-red-600 dark:text-red-400 font-bold'
