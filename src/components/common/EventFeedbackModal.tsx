@@ -220,16 +220,16 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-hidden">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-x-hidden overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col"
+          className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-2rem)]"
         >
           {/* Compact Header */}
-          <div className="px-5 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-purple-50/60 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-slate-900 flex items-center justify-between gap-3">
+          <div className="shrink-0 px-5 py-3.5 sm:py-4 border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-purple-50/60 dark:from-blue-950/30 dark:via-indigo-950/20 dark:to-slate-900 flex items-center justify-between gap-3">
             <div className="space-y-0.5 min-w-0">
               <div className="flex items-center gap-2">
                 <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
@@ -255,8 +255,8 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
             </button>
           </div>
 
-          {/* Form Body - Compact & Non-Scrollable */}
-          <div className="p-4 sm:p-5">
+          {/* Form Body - Scrollable on mobile/small viewports */}
+          <div className="p-4 sm:p-5 flex-1 min-h-0 overflow-x-hidden overflow-y-auto custom-scrollbar overscroll-contain">
             {isSubmitted ? (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -392,11 +392,11 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
                   {/* Event Rating (Single Line Box with matched height & outer label) */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between gap-1 flex-nowrap">
-                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                      <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                         Event Rating <span className="text-red-500 font-bold">*</span>
                       </label>
-                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400 sm:text-right">
                         {getRatingLabel(hoverEventRating || eventRating)}
                       </span>
                     </div>
@@ -429,11 +429,11 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
 
                 {/* 4. Coordination & Event Management (Single Line 1-10 Scale in Subtle Green) */}
                 <div className="p-3 sm:p-3.5 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/60 space-y-2.5">
-                  <div className="flex items-center justify-between gap-2 flex-nowrap">
-                    <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300 whitespace-nowrap">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                    <label className="text-[11px] font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
                       Coordination & Event Management <span className="text-red-500 font-bold">*</span>
                     </label>
-                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 sm:text-right">
                       {getCoordinationLabel(hoverCoordinationRating || coordinationRating)}
                     </span>
                   </div>
@@ -450,9 +450,9 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                           onClick={() => setCoordinationRating(score)}
                           onMouseEnter={() => setHoverCoordinationRating(score)}
                           onMouseLeave={() => setHoverCoordinationRating(null)}
-                          className={`h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center border ${
+                          className={`h-8 sm:h-9 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center justify-center border min-w-0 ${
                             isSelected
-                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-md shadow-emerald-500/25 scale-[1.05]'
+                              ? 'bg-emerald-600 dark:bg-emerald-500 text-white border-emerald-600 dark:border-emerald-500 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/30'
                               : isHovered
                               ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 border-emerald-400'
                               : 'bg-white dark:bg-slate-800 text-emerald-800 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
