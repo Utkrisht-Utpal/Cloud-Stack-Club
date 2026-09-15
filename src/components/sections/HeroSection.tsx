@@ -84,11 +84,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
   };
 
   return (
-    <section id="hero" className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden">
+    <section id="hero" className="relative min-h-[92vh] flex items-center justify-center pt-24 sm:pt-24 lg:pt-28 pb-16 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
 
         {/* Top Announcement Pill / Covered Space for Hanging Notice Board */}
-        <div className="flex justify-center mb-6 sm:mb-3 px-2">
+        <div className="flex justify-center mb-5 sm:mb-4 lg:mb-3 px-2">
           {activeNotice ? (
             <>
               {/* Desktop (lg+): Spacer preserving the exact clearance while navbar notice board hangs */}
@@ -99,7 +99,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="block lg:hidden w-full max-w-lg"
+                className="block lg:hidden w-full max-w-lg -mt-1 sm:mt-0"
               >
                 {(() => {
                   const style = getNoticeStyle(activeNotice.type);
