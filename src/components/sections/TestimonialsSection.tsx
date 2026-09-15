@@ -50,10 +50,10 @@ export const TestimonialsSection: React.FC = () => {
           </div>
         ) : testimonials.length === 0 ? (
           <div className="py-14 text-center">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-800/40 border border-slate-700/60 flex items-center justify-center text-slate-400">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 flex items-center justify-center text-slate-400">
               <MessageSquare className="w-6 h-6" />
             </div>
-            <p className="text-slate-400 text-sm font-medium">No testimonials posted yet.</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No testimonials posted yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -67,13 +67,13 @@ export const TestimonialsSection: React.FC = () => {
                   transition={{ duration: 0.45, delay: idx * 0.08 }}
                   className="h-full"
                 >
-                  {/* Testimonial Card matching User wireframe */}
-                  <div className="relative h-full flex flex-col justify-between rounded-2xl bg-slate-900/60 dark:bg-slate-900/60 border border-slate-800 hover:border-blue-500/50 transition-all duration-300 p-5 sm:p-6 shadow-lg shadow-black/20 hover:shadow-blue-500/5 group backdrop-blur-sm">
+                  {/* Testimonial Card matching User wireframe with clean Light & Dark Mode */}
+                  <div className="relative h-full flex flex-col justify-between rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 hover:border-blue-500/40 dark:hover:border-sky-500/40 transition-all duration-300 p-6 sm:p-7 shadow-sm hover:shadow-xl shadow-slate-200/60 dark:shadow-black/40 group backdrop-blur-sm">
                     
                     {/* Top-Left: Event Name */}
                     <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 dark:text-sky-300 text-xs font-semibold tracking-wide">
-                        <Calendar className="w-3.5 h-3.5 shrink-0 text-blue-400" />
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200/80 dark:border-blue-500/20 text-blue-600 dark:text-sky-300 text-xs font-semibold tracking-wide shadow-sm">
+                        <Calendar className="w-3.5 h-3.5 shrink-0 text-blue-500 dark:text-sky-400" />
                         <span className="truncate max-w-[240px]" title={t.event_name}>
                           {t.event_name}
                         </span>
@@ -81,19 +81,19 @@ export const TestimonialsSection: React.FC = () => {
                     </div>
 
                     {/* Center: testimonial description */}
-                    <div className="my-auto py-1">
-                      <p className="text-slate-300 dark:text-slate-300 text-sm sm:text-base leading-relaxed font-normal whitespace-pre-line">
+                    <div className="my-auto py-2">
+                      <p className="text-slate-700 dark:text-slate-200 text-sm sm:text-base leading-relaxed font-normal whitespace-pre-line">
                         "{t.testimonial_description}"
                       </p>
                     </div>
 
                     {/* Bottom-Right: ~author name & department/position */}
-                    <div className="pt-2 mt-3 border-t border-slate-800/60 flex flex-col items-end">
-                      <span className="text-xs sm:text-sm font-medium text-slate-300 dark:text-slate-400 italic">
+                    <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-800/80 flex flex-col items-end">
+                      <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-300 italic">
                         ~{t.author_name}
                       </span>
                       {t.author_position && (
-                        <span className="text-[11px] sm:text-xs font-normal text-slate-400/80 dark:text-slate-500 mt-0.5 tracking-wide">
+                        <span className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5 tracking-wide">
                           {t.author_position}
                         </span>
                       )}
