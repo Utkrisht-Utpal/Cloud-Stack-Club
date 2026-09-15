@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, MotionConfig } from 'framer-motion';
-import { ArrowRight, Calendar, Terminal, Cpu } from 'lucide-react';
+import { ArrowRight, Calendar, Terminal, Cpu, Bell, Sparkles, Flame, Info, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TECH_BADGES } from '../../constants/data';
 import { ClubLogo } from '../ui/ClubLogo';
 import { getActiveNotices } from '../../services/notices';
+import { NoticeDetailModal } from '../common/NoticeDetailModal';
+import type { Notice } from '../../types/database';
 
 interface HeroSectionProps {
   onJoinClick: () => void;
@@ -12,16 +14,19 @@ interface HeroSectionProps {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExploreEventsClick }) => {
-  const [hasActiveNotice, setHasActiveNotice] = useState<boolean>(() => {
+  const [activeNotice, setActiveNotice] = useState<Notice | null>(() => {
     try {
       const cached = localStorage.getItem('csc_active_notices_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        return parsed && parsed.length > 0;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
       }
     } catch {}
-    return false;
+    return null;
   });
+  const [isNoticeDetailOpen, setIsNoticeDetailOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -29,7 +34,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
       try {
         const notices = await getActiveNotices();
         if (isMounted) {
-          setHasActiveNotice(notices.length > 0);
+          setActiveNotice(notices.length > 0 ? notices[0] : null);
         }
       } catch (err) {
         console.warn('Failed to load active notice in Hero:', err);
@@ -48,15 +53,119 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
     };
   }, []);
 
+  const getNoticeStyle = (type?: string) => {
+    switch (type) {
+      case 'urgent':
+        return {
+          label: 'Urgent Alert',
+          icon: Flame,
+          badge: 'bg-red-500 text-white shadow-red-500/30',
+        };
+      case 'event':
+        return {
+          label: 'Event Alert',
+          icon: Sparkles,
+          badge: 'bg-purple-500 text-white shadow-purple-500/30',
+        };
+      case 'info':
+        return {
+          label: 'Info',
+          icon: Info,
+          badge: 'bg-amber-500 text-white shadow-amber-500/30',
+        };
+      case 'announcement':
+      default:
+        return {
+          label: 'Notice',
+          icon: Bell,
+          badge: 'bg-blue-600 text-white shadow-blue-500/30',
+        };
+    }
+  };
+
   return (
     <section id="hero" className="relative min-h-[92vh] flex items-center justify-center pt-28 pb-16 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
 
         {/* Top Announcement Pill / Covered Space for Hanging Notice Board */}
-        <div className="flex justify-center mb-6 sm:mb-3">
-          {hasActiveNotice ? (
-            /* Spacer preserving the exact 30-40px clearance above club logo while navbar notice board hangs */
-            <div className="h-8 w-full max-w-md pointer-events-none" aria-hidden="true" />
+        <div className="flex justify-center mb-6 sm:mb-3 px-2">
+          {activeNotice ? (
+            <>
+              {/* Desktop (lg+): Spacer preserving the exact clearance while navbar notice board hangs */}
+              <div className="hidden lg:block h-8 w-full max-w-md pointer-events-none" aria-hidden="true" />
+
+              {/* Mobile & Tablet (<lg): Sleek, prominent, upfront Notice Board Banner */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="block lg:hidden w-full max-w-lg"
+              >
+                {(() => {
+                  const style = getNoticeStyle(activeNotice.type);
+                  const NoticeIcon = style.icon;
+
+                  const handleLinkClick = (e: React.MouseEvent) => {
+                    if (activeNotice.link_url) {
+                      e.stopPropagation();
+                      const url = activeNotice.link_url.trim();
+                      if (url === '/discrepancy' || url === 'discrepancy' || url.endsWith('/discrepancy') || url.endsWith('/query')) {
+                        window.dispatchEvent(new CustomEvent('csc-open-discrepancy-modal'));
+                        return;
+                      }
+                      if (url.startsWith('http://') || url.startsWith('https://')) {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      } else {
+                        window.location.href = url;
+                      }
+                    }
+                  };
+
+                  return (
+                    <div
+                      onClick={() => setIsNoticeDetailOpen(true)}
+                      className="group flex items-center justify-between gap-2 sm:gap-3 px-3.5 sm:px-4 py-2 rounded-full bg-[#e6ecf5]/98 dark:bg-slate-900/98 backdrop-blur-md shadow-[4px_4px_12px_rgba(163,177,198,0.5),-4px_-4px_12px_#ffffff] dark:shadow-xl dark:shadow-blue-500/15 border border-white/80 dark:border-slate-800 hover:scale-[1.01] active:scale-[0.98] transition-all cursor-pointer select-none"
+                      title="Click to view full notice bulletin"
+                    >
+                      {/* Type Badge */}
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center justify-center gap-1.5 shadow-sm shrink-0 leading-none ${style.badge}`}
+                      >
+                        <span className="relative flex h-1.5 w-1.5 shrink-0 items-center justify-center">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+                        </span>
+                        <NoticeIcon className="w-3 h-3 shrink-0" />
+                        <span className="leading-none">{style.label}</span>
+                      </span>
+
+                      {/* Title */}
+                      <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors leading-tight truncate flex-1 text-left">
+                        {activeNotice.title}
+                      </span>
+
+                      {/* Action link or chevron */}
+                      {activeNotice.link_url ? (
+                        <button
+                          type="button"
+                          onClick={handleLinkClick}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 shrink-0 leading-normal cursor-pointer py-0.5 px-1"
+                          title={`Navigate to ${activeNotice.link_url}`}
+                        >
+                          <span className="hidden min-[400px]:inline">{activeNotice.link_text || 'Details'}</span>
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-0.5 text-[11px] font-bold text-blue-600 dark:text-sky-400 shrink-0 leading-normal py-0.5">
+                          <span className="hidden min-[400px]:inline">{activeNotice.link_text || 'Details'}</span>
+                          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            </>
           ) : (
             <motion.div
               initial={{ opacity: 0, y: -15 }}
@@ -236,6 +345,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
         </motion.div>
 
       </div>
+
+      {/* Notice Detail Pop-up Modal for Mobile Notice */}
+      {activeNotice && (
+        <NoticeDetailModal
+          isOpen={isNoticeDetailOpen}
+          onClose={() => setIsNoticeDetailOpen(false)}
+          notice={activeNotice}
+        />
+      )}
     </section>
   );
 };
