@@ -353,6 +353,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           registrant_email: formData.email.trim(),
           registrant_phone: formData.phone.trim() || undefined,
           uid: formData.uid.trim(),
+          department: formData.department.trim(),
+          year: formData.year,
           team_name: isTeamRegistration ? teamName.trim() : undefined,
           team_members:
             isTeamRegistration && teamMembers.length > 0

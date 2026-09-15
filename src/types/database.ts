@@ -176,6 +176,8 @@ export interface EventRegistration {
   registrant_email: string;
   registrant_phone: string | null;
   uid?: string | null;
+  department?: string | null;
+  year?: string | null;
   is_member: boolean;
   team_id: string | null;
   status: RegistrationStatus;
@@ -243,6 +245,8 @@ export interface EventRegistrationPayload {
   registrant_email: string;
   registrant_phone?: string;
   uid?: string;
+  department?: string;
+  year?: string;
   member_id?: string;
   is_member?: boolean;
   team_name?: string;

@@ -120,14 +120,70 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   if (!isOpen || !event) return null;
 
   const filtered = registrations.filter((r) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+
     const teamInfo = teamMap[r.id];
-    return (
-      (r.registrant_name && r.registrant_name.toLowerCase().includes(q)) ||
-      (r.registrant_email && r.registrant_email.toLowerCase().includes(q)) ||
-      (r.registration_number && r.registration_number.toLowerCase().includes(q)) ||
-      (teamInfo && teamInfo.team_name && teamInfo.team_name.toLowerCase().includes(q))
-    );
+    const leaderUid = (r.uid || '').toLowerCase();
+    const leaderEmail = (r.registrant_email || '').toLowerCase();
+    const leaderName = (r.registrant_name || '').toLowerCase();
+    const leaderPhone = (r.registrant_phone || '').toLowerCase();
+    const leaderRegNum = (r.registration_number || '').toLowerCase();
+    const leaderDept = (r.department || '').toLowerCase();
+    const leaderYear = (r.year || '').toLowerCase();
+    const teamName = (teamInfo?.team_name || '').toLowerCase();
+    const teamRegNum = (teamInfo?.registration_number || '').toLowerCase();
+
+    // Check primary registrant / team leader
+    if (
+      leaderName.includes(q) ||
+      leaderEmail.includes(q) ||
+      leaderUid.includes(q) ||
+      leaderPhone.includes(q) ||
+      leaderRegNum.includes(q) ||
+      leaderDept.includes(q) ||
+      leaderYear.includes(q) ||
+      teamName.includes(q) ||
+      teamRegNum.includes(q)
+    ) {
+      return true;
+    }
+
+    // Check all team members
+    if (teamInfo && Array.isArray(teamInfo.members)) {
+      const matchedTeammate = teamInfo.members.some((m) => {
+        const mName = (m.name || '').toLowerCase();
+        const mEmail = (m.email || '').toLowerCase();
+        const mUid = (m.uid || '').toLowerCase();
+        const mPhone = (m.phone || '').toLowerCase();
+        const mRegNum = (m.registration_number || '').toLowerCase();
+        const mDept = (m.department || '').toLowerCase();
+        const mYear = (m.year || '').toLowerCase();
+
+        return (
+          mName.includes(q) ||
+          mEmail.includes(q) ||
+          mUid.includes(q) ||
+          mPhone.includes(q) ||
+          mRegNum.includes(q) ||
+          mDept.includes(q) ||
+          mYear.includes(q)
+        );
+      });
+
+      if (matchedTeammate) return true;
+    }
+
+    // Check custom form answers
+    const regAnswers = answersMap[r.id];
+    if (regAnswers && typeof regAnswers === 'object') {
+      const hasMatchingAnswer = Object.values(regAnswers).some((ans) =>
+        String(ans || '').toLowerCase().includes(q)
+      );
+      if (hasMatchingAnswer) return true;
+    }
+
+    return false;
   });
 
   const sortedAndFiltered = [...filtered].sort((a, b) => {
@@ -192,6 +248,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
           'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
           'University UID': sanitizeFormulaValue(r.uid || ''),
+          'Department': sanitizeFormulaValue(r.department || ''),
+          'Year': sanitizeFormulaValue(r.year || ''),
           ...customAnswersDict,
           'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
         });
@@ -215,6 +273,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               'Official Email': sanitizeFormulaValue(formatOfficialEmail(m.uid)),
               'Phone': sanitizeFormulaValue(m.phone || ''),
               'University UID': sanitizeFormulaValue(m.uid || ''),
+              'Department': sanitizeFormulaValue(m.department || ''),
+              'Year': sanitizeFormulaValue(m.year || ''),
               ...blankCustomDict,
               'Submitted Date': '',
             });
@@ -234,6 +294,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
             'Official Email': '',
             'Phone': '',
             'University UID': '',
+            'Department': '',
+            'Year': '',
           };
           formFields.forEach((field) => {
             emptyRow[field.label] = '';
@@ -251,6 +313,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
           'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
           'University UID': sanitizeFormulaValue(r.uid || ''),
+          'Department': sanitizeFormulaValue(r.department || ''),
+          'Year': sanitizeFormulaValue(r.year || ''),
           ...customAnswersDict,
           'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
         });
@@ -324,8 +388,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     doc.text(subTitle, 14, 22);
 
     const pdfHeaders: string[] = isTeamEvent
-      ? ['#', 'Team Name', 'Team Reg ID', 'Role', 'Reg Number', 'Member Name', 'Email', 'Official Email', 'Phone', 'UID']
-      : ['#', 'Reg Number', 'Participant Name', 'Email', 'Official Email', 'Phone', 'UID'];
+      ? ['#', 'Team Name', 'Team Reg ID', 'Role', 'Reg Number', 'Member Name', 'Email', 'Official Email', 'Phone', 'UID', 'Dept', 'Year']
+      : ['#', 'Reg Number', 'Participant Name', 'Email', 'Official Email', 'Phone', 'UID', 'Dept', 'Year'];
 
     formFields.forEach((field) => {
       pdfHeaders.push(field.label.slice(0, 18));
@@ -360,6 +424,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           formatOfficialEmail(r.uid),
           r.registrant_phone || '',
           r.uid || '',
+          r.department || '',
+          r.year || '',
           ...customAnswersList,
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
@@ -379,6 +445,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               formatOfficialEmail(m.uid),
               m.phone || '',
               m.uid || '',
+              m.department || '',
+              m.year || '',
               ...blankAnswersList,
               '',
             ]);
@@ -400,6 +468,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           formatOfficialEmail(r.uid),
           r.registrant_phone || '',
           r.uid || '',
+          r.department || '',
+          r.year || '',
           ...customAnswersList,
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
@@ -448,7 +518,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by registrant name, email, reg no, team name..."
+              placeholder="Search by name, email, UID, phone, reg no, department, team..."
               className="search-input w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 text-xs font-semibold border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600 transition-colors"
             />
           </div>
@@ -595,6 +665,11 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                 UID: {r.uid.toUpperCase()}
                               </div>
                             )}
+                            {(r.department || r.year) && (
+                              <div className="text-[10px] text-blue-600 dark:text-sky-400 font-semibold whitespace-nowrap">
+                                {[r.department, r.year].filter(Boolean).join(' • ')}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-3 space-y-0.5 whitespace-nowrap w-52">
                             <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">{r.registrant_email}</div>
@@ -685,6 +760,11 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                         <div className="font-bold text-slate-900 dark:text-white">{r.registrant_name}</div>
                                         <div className="text-[11px] text-slate-500">{r.registrant_email}</div>
                                         {r.uid && <div className="text-[10px] font-mono text-slate-400">UID: {r.uid}</div>}
+                                        {(r.department || r.year) && (
+                                          <div className="text-[10px] text-slate-500 font-medium">
+                                            {[r.department, r.year].filter(Boolean).join(' • ')}
+                                          </div>
+                                        )}
                                       </div>
 
                                       {/* Teammates */}
@@ -711,8 +791,13 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                     </div>
                                   </div>
                                 ) : (
-                                  <div className="p-3 rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-500 text-xs">
-                                    Individual registration (No team attached).
+                                  <div className="p-3 rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 text-xs flex items-center justify-between flex-wrap gap-2">
+                                    <span>Individual registration (No team attached).</span>
+                                    {(r.department || r.year) && (
+                                      <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+                                        {[r.department, r.year].filter(Boolean).join(' • ')}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
                               </div>
