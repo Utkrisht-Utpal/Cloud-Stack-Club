@@ -37,3 +37,6 @@ cloudflare-worker.js
 cloudflare-worker.*
 
 /tests
+
+# Documentation
+ADMIN_USER_MANUAL.md
