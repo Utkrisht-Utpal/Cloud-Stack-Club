@@ -19,7 +19,7 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { sanitizeFormulaValue } from '../../utils/exportDirectory';
+import { sanitizeFormulaValue, sanitizePdfText } from '../../utils/exportDirectory';
 import { formatOfficialEmail } from '../../utils/formatters';
 import type { Event, EventRegistration, EventFormField } from '../../types/database';
 
@@ -404,7 +404,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       const regAnswers = answersMap[r.id] || {};
 
       const customAnswersList = formFields.map((field) => {
-        return regAnswers[field.id] || regAnswers[field.field_key] || '';
+        const rawAns = regAnswers[field.id] || regAnswers[field.field_key] || '';
+        return sanitizePdfText(rawAns);
       });
 
       if (isTeamEvent) {
@@ -415,17 +416,17 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         // Leader row
         tableRows.push([
           serialNo.toString(),
-          teamName,
-          teamRegId,
+          sanitizePdfText(teamName),
+          sanitizePdfText(teamRegId),
           hasTeammates ? 'Team Leader' : 'Solo',
-          r.registration_number || '',
-          r.registrant_name || '',
-          r.registrant_email || '',
-          formatOfficialEmail(r.uid),
-          r.registrant_phone || '',
-          r.uid || '',
-          r.department || '',
-          r.year || '',
+          sanitizePdfText(r.registration_number || ''),
+          sanitizePdfText(r.registrant_name || ''),
+          sanitizePdfText(r.registrant_email || ''),
+          sanitizePdfText(formatOfficialEmail(r.uid)),
+          sanitizePdfText(r.registrant_phone || ''),
+          sanitizePdfText(r.uid || ''),
+          sanitizePdfText(r.department || ''),
+          sanitizePdfText(r.year || ''),
           ...customAnswersList,
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
@@ -436,17 +437,17 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           teamInfo.members.forEach((m, mIdx) => {
             tableRows.push([
               '',
-              teamName,
-              teamRegId,
+              sanitizePdfText(teamName),
+              sanitizePdfText(teamRegId),
               `Teammate #${mIdx + 2}`,
-              m.registration_number || '',
-              m.name || '',
-              m.email || '',
-              formatOfficialEmail(m.uid),
-              m.phone || '',
-              m.uid || '',
-              m.department || '',
-              m.year || '',
+              sanitizePdfText(m.registration_number || ''),
+              sanitizePdfText(m.name || ''),
+              sanitizePdfText(m.email || ''),
+              sanitizePdfText(formatOfficialEmail(m.uid)),
+              sanitizePdfText(m.phone || ''),
+              sanitizePdfText(m.uid || ''),
+              sanitizePdfText(m.department || ''),
+              sanitizePdfText(m.year || ''),
               ...blankAnswersList,
               '',
             ]);
@@ -462,14 +463,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         // Individual Event: No team columns, no spacer rows
         tableRows.push([
           serialNo.toString(),
-          r.registration_number || '',
-          r.registrant_name || '',
-          r.registrant_email || '',
-          formatOfficialEmail(r.uid),
-          r.registrant_phone || '',
-          r.uid || '',
-          r.department || '',
-          r.year || '',
+          sanitizePdfText(r.registration_number || ''),
+          sanitizePdfText(r.registrant_name || ''),
+          sanitizePdfText(r.registrant_email || ''),
+          sanitizePdfText(formatOfficialEmail(r.uid)),
+          sanitizePdfText(r.registrant_phone || ''),
+          sanitizePdfText(r.uid || ''),
+          sanitizePdfText(r.department || ''),
+          sanitizePdfText(r.year || ''),
           ...customAnswersList,
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);

@@ -24,7 +24,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { sanitizeFormulaValue } from '../../utils/exportDirectory';
+import { sanitizeFormulaValue, sanitizePdfText } from '../../utils/exportDirectory';
 import { formatOfficialEmail } from '../../utils/formatters';
 import {
   getAllDiscrepancies,
@@ -233,17 +233,17 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
 
     const tableData = filtered.map((r, idx) => [
       idx + 1,
-      r.ticket_number,
-      r.name,
-      r.uid || 'N/A',
-      formatOfficialEmail(r.uid) || 'N/A',
-      `${r.email}\n${r.phone}`,
-      `${r.department}\n(${r.year_of_study})`,
+      sanitizePdfText(r.ticket_number),
+      sanitizePdfText(r.name),
+      sanitizePdfText(r.uid || 'N/A'),
+      sanitizePdfText(formatOfficialEmail(r.uid) || 'N/A'),
+      `${sanitizePdfText(r.email)}\n${sanitizePdfText(r.phone)}`,
+      `${sanitizePdfText(r.department)}\n(${sanitizePdfText(r.year_of_study)})`,
       new Date(r.created_at).toLocaleString('en-GB', {
         dateStyle: 'short',
         timeStyle: 'short',
       }),
-      r.status.toUpperCase(),
+      (r.status || '').toUpperCase(),
     ]);
 
     autoTable(doc, {

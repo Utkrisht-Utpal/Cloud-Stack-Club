@@ -18,6 +18,156 @@ export const sanitizeFormulaValue = (value: any): any => {
   return value;
 };
 
+/**
+ * Map of popular Unicode emojis to clean, readable text equivalents.
+ * Prevents jsPDF standard WinAnsi font from rendering corrupted/mojibake characters (e.g. ðŸš€, â­).
+ */
+const EMOJI_TEXT_MAP: Record<string, string> = {
+  // Stars & Ratings
+  '⭐': '[Star]',
+  '🌟': '[Star]',
+  '✨': '[Sparkles]',
+  '🌠': '[Star]',
+  // Common Positive / Reaction Emojis
+  '🔥': '[Fire]',
+  '🚀': '[Rocket]',
+  '🎉': '[Party]',
+  '🎊': '[Celebration]',
+  '💯': '[100]',
+  '👏': '[Clap]',
+  '🙌': '[Hands Up]',
+  '🤝': '[Handshake]',
+  '🙏': '[Thank You]',
+  '💪': '[Strong]',
+  '👍': '[Thumbs Up]',
+  '👎': '[Thumbs Down]',
+  // Hearts
+  '❤️': '[Heart]',
+  '💖': '[Heart]',
+  '💗': '[Heart]',
+  '💓': '[Heart]',
+  '💕': '[Hearts]',
+  '💙': '[Heart]',
+  '💚': '[Heart]',
+  '💛': '[Heart]',
+  '💜': '[Heart]',
+  '🧡': '[Heart]',
+  '🖤': '[Heart]',
+  '🤍': '[Heart]',
+  '🤎': '[Heart]',
+  // Faces / Emotions
+  '😊': ':)',
+  '😀': ':D',
+  '😃': ':D',
+  '😄': ':D',
+  '😁': ':D',
+  '🙂': ':)',
+  '😇': 'O:)',
+  '😉': ';)',
+  '😍': '[Heart-Eyes]',
+  '🤩': '[Star-Struck]',
+  '😎': '[Cool]',
+  '🥳': '[Party]',
+  '😂': '[Laugh]',
+  '🤣': '[ROFL]',
+  '😭': ":'(",
+  '😢': ':(',
+  '😞': ':(',
+  '🙁': ':(',
+  '☹️': ':(',
+  '😡': '[Angry]',
+  '🤔': '[Thinking]',
+  '🤯': '[Mind Blown]',
+  '😴': '[Sleepy]',
+  // Status / Icons
+  '💡': '[Idea]',
+  '⚡': '[Lightning]',
+  '🎯': '[Target]',
+  '🏆': '[Trophy]',
+  '🥇': '[1st]',
+  '🥈': '[2nd]',
+  '🥉': '[3rd]',
+  '✅': '[✓]',
+  '✔️': '[✓]',
+  '❌': '[X]',
+  '✖️': '[X]',
+  '⚠️': '[Warning]',
+  '❓': '[?]',
+  '❗': '[!]',
+  // Tech / Education / Office
+  '💻': '[Computer]',
+  '🖥️': '[Desktop]',
+  '📱': '[Phone]',
+  '🎓': '[Graduation]',
+  '📚': '[Books]',
+  '📖': '[Book]',
+  '📝': '[Note]',
+  '💬': '[Comment]',
+  '🗨️': '[Chat]',
+  '🗯️': '[Message]',
+  '📌': '[Pin]',
+  '📍': '[Location]',
+  '🔔': '[Bell]',
+  '🔒': '[Lock]',
+  '🔑': '[Key]',
+  '🔗': '[Link]',
+  '⏰': '[Clock]',
+  '⏳': '[Hourglass]',
+  '⏱️': '[Timer]',
+  '☕': '[Coffee]',
+  '🍕': '[Pizza]',
+  '🎂': '[Cake]',
+  '🎁': '[Gift]',
+  '🌐': '[Web]',
+  '🤖': '[Bot]',
+  '🛠️': '[Tools]',
+  '⚙️': '[Settings]',
+  '📊': '[Analytics]',
+  '📈': '[Growth]',
+};
+
+/**
+ * Sanitizes strings for jsPDF rendering:
+ * 1. Converts repeated star emojis (e.g. ⭐⭐⭐⭐⭐ or ★★★★★) into concise rating tags like "[5 Stars]".
+ * 2. Translates common unicode emojis into clean textual representations.
+ * 3. Normalizes smart quotes, em-dashes, and special typographical symbols.
+ * 4. Strips surrogate pairs / remaining unprintable astral symbols to prevent corrupted mojibake symbols.
+ */
+export const sanitizePdfText = (value: any): string => {
+  if (value === null || value === undefined) return '';
+  let text = String(value);
+
+  // Group repeated star sequences (e.g. ⭐⭐⭐⭐⭐ or ★★★★★)
+  text = text.replace(/(?:⭐|★|🌟){1,5}/g, (match) => {
+    const count = [...match].length;
+    return `[${count} Star${count > 1 ? 's' : ''}]`;
+  });
+
+  // Replace mapped emojis
+  for (const [emoji, replacement] of Object.entries(EMOJI_TEXT_MAP)) {
+    if (text.includes(emoji)) {
+      text = text.split(emoji).join(replacement);
+    }
+  }
+
+  // Normalize smart punctuation & special symbols to WinAnsi / ASCII equivalents
+  text = text
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/\u2022/g, '*')
+    .replace(/[\uFE0E\uFE0F\u200B\u200C\u200D]/g, ''); // variation selectors & zero-width joiners
+
+  // Replace any remaining unhandled Unicode emojis / surrogate pairs / astral symbols
+  text = text.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|\p{Extended_Pictographic}/gu, ' ');
+
+  // Collapse consecutive whitespaces created by stripping/replacing
+  text = text.replace(/ {2,}/g, ' ').trim();
+
+  return text;
+};
+
 export const exportMembersToExcel = (
   members: Member[],
   filterType: 'all' | 'members' | 'core',
@@ -83,7 +233,7 @@ export const exportMembersToPdf = (
   doc.setTextColor(100, 116, 139);
 
   const filterText = filterType === 'core' ? 'Core Members' : filterType === 'members' ? 'General Members' : 'All Members';
-  const searchNote = searchQuery ? ` | Search: "${searchQuery}"` : '';
+  const searchNote = searchQuery ? ` | Search: "${sanitizePdfText(searchQuery)}"` : '';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   doc.text(`Filter: ${filterText} (${members.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
@@ -91,14 +241,14 @@ export const exportMembersToPdf = (
   // Table Data mapping
   const tableRows = members.map((m, index) => [
     (index + 1).toString(),
-    m.name || 'N/A',
-    m.email || 'N/A',
-    formatOfficialEmail(m.uid) || 'N/A',
-    m.phone || 'N/A',
-    m.uid || 'N/A',
-    m.department || 'N/A',
-    m.year || 'N/A',
-    m.is_core_member ? (m.role?.name || 'Core Member') : 'Member',
+    sanitizePdfText(m.name || 'N/A'),
+    sanitizePdfText(m.email || 'N/A'),
+    sanitizePdfText(formatOfficialEmail(m.uid) || 'N/A'),
+    sanitizePdfText(m.phone || 'N/A'),
+    sanitizePdfText(m.uid || 'N/A'),
+    sanitizePdfText(m.department || 'N/A'),
+    sanitizePdfText(m.year || 'N/A'),
+    sanitizePdfText(m.is_core_member ? (m.role?.name || 'Core Member') : 'Member'),
   ]);
 
   autoTable(doc, {
@@ -156,7 +306,7 @@ export const exportFeedbacksToPdf = (
   doc.setTextColor(100, 116, 139);
 
   const filterText = filterType.replace('_', ' ').toUpperCase();
-  const searchNote = searchQuery ? ` | Search: "${searchQuery}"` : '';
+  const searchNote = searchQuery ? ` | Search: "${sanitizePdfText(searchQuery)}"` : '';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   doc.text(`Filter: ${filterText} (${feedbacks.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
@@ -165,8 +315,8 @@ export const exportFeedbacksToPdf = (
 
   // Table Data mapping
   const tableRows = feedbacks.map((f, index) => {
-    const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
-    const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
+    const uid = 'university_id' in f && f.university_id ? sanitizePdfText(f.university_id) : '—';
+    const regId = 'registration_id' in f && f.registration_id ? sanitizePdfText(f.registration_id) : '—';
     let eventName = 'Contact Form';
     if ('event_id' in f && f.event_id) {
       const matched = eventMap.get(f.event_id);
@@ -179,12 +329,12 @@ export const exportFeedbacksToPdf = (
 
     return [
       (index + 1).toString(),
-      f.name || 'N/A',
+      sanitizePdfText(f.name || 'N/A'),
       uid,
       regId,
-      eventName,
-      f.email || 'N/A',
-      f.message || 'N/A',
+      sanitizePdfText(eventName),
+      sanitizePdfText(f.email || 'N/A'),
+      sanitizePdfText(f.message || 'N/A'),
       (f.status || 'pending').toUpperCase(),
       f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A',
     ];
