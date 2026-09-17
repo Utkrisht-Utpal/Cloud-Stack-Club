@@ -19,7 +19,12 @@ import {
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { sanitizeFormulaValue, sanitizePdfText } from '../../utils/exportDirectory';
+import {
+  sanitizeFormulaValue,
+  hasEmoji,
+  calculateEmojiCellHeight,
+  renderEmojiCellToCanvas,
+} from '../../utils/exportDirectory';
 import { formatOfficialEmail } from '../../utils/formatters';
 import type { Event, EventRegistration, EventFormField } from '../../types/database';
 
@@ -404,8 +409,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       const regAnswers = answersMap[r.id] || {};
 
       const customAnswersList = formFields.map((field) => {
-        const rawAns = regAnswers[field.id] || regAnswers[field.field_key] || '';
-        return sanitizePdfText(rawAns);
+        return regAnswers[field.id] || regAnswers[field.field_key] || '';
       });
 
       if (isTeamEvent) {
@@ -416,17 +420,17 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         // Leader row
         tableRows.push([
           serialNo.toString(),
-          sanitizePdfText(teamName),
-          sanitizePdfText(teamRegId),
+          teamName,
+          teamRegId,
           hasTeammates ? 'Team Leader' : 'Solo',
-          sanitizePdfText(r.registration_number || ''),
-          sanitizePdfText(r.registrant_name || ''),
-          sanitizePdfText(r.registrant_email || ''),
-          sanitizePdfText(formatOfficialEmail(r.uid)),
-          sanitizePdfText(r.registrant_phone || ''),
-          sanitizePdfText(r.uid || ''),
-          sanitizePdfText(r.department || ''),
-          sanitizePdfText(r.year || ''),
+          r.registration_number || '',
+          r.registrant_name || '',
+          r.registrant_email || '',
+          formatOfficialEmail(r.uid),
+          r.registrant_phone || '',
+          r.uid || '',
+          r.department || '',
+          r.year || '',
           ...customAnswersList,
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
@@ -437,17 +441,17 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           teamInfo.members.forEach((m, mIdx) => {
             tableRows.push([
               '',
-              sanitizePdfText(teamName),
-              sanitizePdfText(teamRegId),
+              teamName,
+              teamRegId,
               `Teammate #${mIdx + 2}`,
-              sanitizePdfText(m.registration_number || ''),
-              sanitizePdfText(m.name || ''),
-              sanitizePdfText(m.email || ''),
-              sanitizePdfText(formatOfficialEmail(m.uid)),
-              sanitizePdfText(m.phone || ''),
-              sanitizePdfText(m.uid || ''),
-              sanitizePdfText(m.department || ''),
-              sanitizePdfText(m.year || ''),
+              m.registration_number || '',
+              m.name || '',
+              m.email || '',
+              formatOfficialEmail(m.uid),
+              m.phone || '',
+              m.uid || '',
+              m.department || '',
+              m.year || '',
               ...blankAnswersList,
               '',
             ]);
@@ -463,14 +467,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         // Individual Event: No team columns, no spacer rows
         tableRows.push([
           serialNo.toString(),
-          sanitizePdfText(r.registration_number || ''),
-          sanitizePdfText(r.registrant_name || ''),
-          sanitizePdfText(r.registrant_email || ''),
-          sanitizePdfText(formatOfficialEmail(r.uid)),
-          sanitizePdfText(r.registrant_phone || ''),
-          sanitizePdfText(r.uid || ''),
-          sanitizePdfText(r.department || ''),
-          sanitizePdfText(r.year || ''),
+          r.registration_number || '',
+          r.registrant_name || '',
+          r.registrant_email || '',
+          formatOfficialEmail(r.uid),
+          r.registrant_phone || '',
+          r.uid || '',
+          r.department || '',
+          r.year || '',
           ...customAnswersList,
           r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
         ]);
@@ -493,6 +497,30 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           if (isSpacer) {
             data.cell.styles.fillColor = [248, 250, 252];
             data.cell.styles.minCellHeight = 3;
+            return;
+          }
+        }
+        if (data.section === 'body') {
+          const rawVal = data.cell.raw;
+          if (hasEmoji(rawVal)) {
+            (data.cell as any)._rawEmoji = String(rawVal);
+            const colWidth = data.column.width || (data.cell.styles as any).cellWidth || 30;
+            const minH = calculateEmojiCellHeight(String(rawVal), typeof colWidth === 'number' ? colWidth : 30, 7.5);
+            data.cell.styles.minCellHeight = Math.max(data.cell.styles.minCellHeight || 0, minH);
+            data.cell.text = [];
+          }
+        }
+      },
+      didDrawCell: (data: any) => {
+        if (data.section === 'body' && (data.cell as any)._rawEmoji) {
+          const rawVal = (data.cell as any)._rawEmoji;
+          const imgData = renderEmojiCellToCanvas(rawVal, data.cell.width, data.cell.height, {
+            fontSizePt: 7.5,
+            textColor: '#1e293b',
+            paddingMm: 1.5,
+          });
+          if (imgData) {
+            doc.addImage(imgData, 'PNG', data.cell.x, data.cell.y, data.cell.width, data.cell.height);
           }
         }
       },

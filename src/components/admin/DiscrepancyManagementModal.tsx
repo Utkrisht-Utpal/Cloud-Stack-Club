@@ -24,7 +24,12 @@ import { CustomSelect } from '../ui/CustomSelect';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { sanitizeFormulaValue, sanitizePdfText } from '../../utils/exportDirectory';
+import {
+  sanitizeFormulaValue,
+  hasEmoji,
+  calculateEmojiCellHeight,
+  renderEmojiCellToCanvas,
+} from '../../utils/exportDirectory';
 import { formatOfficialEmail } from '../../utils/formatters';
 import {
   getAllDiscrepancies,
@@ -233,12 +238,12 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
 
     const tableData = filtered.map((r, idx) => [
       idx + 1,
-      sanitizePdfText(r.ticket_number),
-      sanitizePdfText(r.name),
-      sanitizePdfText(r.uid || 'N/A'),
-      sanitizePdfText(formatOfficialEmail(r.uid) || 'N/A'),
-      `${sanitizePdfText(r.email)}\n${sanitizePdfText(r.phone)}`,
-      `${sanitizePdfText(r.department)}\n(${sanitizePdfText(r.year_of_study)})`,
+      r.ticket_number,
+      r.name,
+      r.uid || 'N/A',
+      formatOfficialEmail(r.uid) || 'N/A',
+      `${r.email}\n${r.phone}`,
+      `${r.department}\n(${r.year_of_study})`,
       new Date(r.created_at).toLocaleString('en-GB', {
         dateStyle: 'short',
         timeStyle: 'short',
@@ -253,6 +258,31 @@ export const DiscrepancyManagementModal: React.FC<DiscrepancyManagementModalProp
       theme: 'striped',
       headStyles: { fillColor: [30, 41, 59], textColor: [255, 255, 255], fontStyle: 'bold' },
       styles: { fontSize: 8, cellPadding: 3 },
+      didParseCell: (data: any) => {
+        if (data.section === 'body') {
+          const rawVal = data.cell.raw;
+          if (hasEmoji(rawVal)) {
+            (data.cell as any)._rawEmoji = String(rawVal);
+            const colWidth = data.column.width || (data.cell.styles as any).cellWidth || 30;
+            const minH = calculateEmojiCellHeight(String(rawVal), typeof colWidth === 'number' ? colWidth : 30, 8);
+            data.cell.styles.minCellHeight = Math.max(data.cell.styles.minCellHeight || 0, minH);
+            data.cell.text = [];
+          }
+        }
+      },
+      didDrawCell: (data: any) => {
+        if (data.section === 'body' && (data.cell as any)._rawEmoji) {
+          const rawVal = (data.cell as any)._rawEmoji;
+          const imgData = renderEmojiCellToCanvas(rawVal, data.cell.width, data.cell.height, {
+            fontSizePt: 8,
+            textColor: '#1e293b',
+            paddingMm: 1.5,
+          });
+          if (imgData) {
+            doc.addImage(imgData, 'PNG', data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+          }
+        }
+      },
     });
 
     doc.save(`CloudStack_Discrepancies_${new Date().toISOString().split('T')[0]}.pdf`);

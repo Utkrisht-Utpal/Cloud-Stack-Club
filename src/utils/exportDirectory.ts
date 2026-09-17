@@ -168,6 +168,148 @@ export const sanitizePdfText = (value: any): string => {
   return text;
 };
 
+export const hasEmoji = (val: any): boolean => {
+  if (!val || typeof val !== 'string') return false;
+  const emojiRegex = /\p{Extended_Pictographic}|[\uD83C-\uD83E][\uDF00-\uDFFF]|[\u2600-\u27BF]/u;
+  return emojiRegex.test(val);
+};
+
+const MM_TO_PX = 3.7795;
+const CANVAS_SCALE = 3; // 3x oversampling for crisp, high-DPI retina rendering of emojis
+
+export const renderEmojiCellToCanvas = (
+  text: string,
+  widthMm: number,
+  heightMm: number,
+  options: {
+    fontSizePt?: number;
+    textColor?: string;
+    paddingMm?: number;
+  } = {}
+): string | null => {
+  if (!text || typeof document === 'undefined') return null;
+
+  const fontSizePt = options.fontSizePt || 8;
+  const textColor = options.textColor || '#1e293b';
+  const paddingMm = options.paddingMm !== undefined ? options.paddingMm : 1.5;
+
+  const fontSizePx = fontSizePt * (96 / 72);
+  const lineHeightPx = fontSizePx * 1.35;
+  const paddingPx = paddingMm * MM_TO_PX;
+  const availWidthPx = Math.max(10, widthMm * MM_TO_PX - paddingPx * 2);
+
+  const fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+
+  // Measure and word-wrap lines
+  const measureCanvas = document.createElement('canvas');
+  const measureCtx = measureCanvas.getContext('2d');
+  if (!measureCtx) return null;
+
+  measureCtx.font = `${fontSizePx * CANVAS_SCALE}px ${fontFamily}`;
+
+  const paragraphs = String(text).split('\n');
+  const lines: string[] = [];
+
+  for (const para of paragraphs) {
+    if (!para.trim()) {
+      lines.push('');
+      continue;
+    }
+    const words = para.split(' ');
+    let currentLine = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = measureCtx.measureText(testLine);
+      const testWidth = metrics.width / CANVAS_SCALE;
+
+      if (testWidth > availWidthPx && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+  }
+
+  // Create high-DPI canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(widthMm * MM_TO_PX * CANVAS_SCALE);
+  canvas.height = Math.ceil(heightMm * MM_TO_PX * CANVAS_SCALE);
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.scale(CANVAS_SCALE, CANVAS_SCALE);
+  ctx.font = `${fontSizePx}px ${fontFamily}`;
+  ctx.fillStyle = textColor;
+  ctx.textBaseline = 'top';
+
+  let currentY = paddingPx;
+  for (const line of lines) {
+    ctx.fillText(line, paddingPx, currentY);
+    currentY += lineHeightPx;
+  }
+
+  return canvas.toDataURL('image/png');
+};
+
+export const calculateEmojiCellHeight = (
+  text: string,
+  widthMm: number,
+  fontSizePt: number = 8,
+  paddingMm: number = 1.5
+): number => {
+  if (!text || typeof document === 'undefined') return 8;
+
+  const fontSizePx = fontSizePt * (96 / 72);
+  const lineHeightPx = fontSizePx * 1.35;
+  const paddingPx = paddingMm * MM_TO_PX;
+  const availWidthPx = Math.max(10, widthMm * MM_TO_PX - paddingPx * 2);
+
+  const measureCanvas = document.createElement('canvas');
+  const measureCtx = measureCanvas.getContext('2d');
+  if (!measureCtx) return 8;
+
+  measureCtx.font = `${fontSizePx * CANVAS_SCALE}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+
+  const paragraphs = String(text).split('\n');
+  let totalLines = 0;
+
+  for (const para of paragraphs) {
+    if (!para.trim()) {
+      totalLines += 1;
+      continue;
+    }
+    const words = para.split(' ');
+    let currentLine = '';
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const metrics = measureCtx.measureText(testLine);
+      const testWidth = metrics.width / CANVAS_SCALE;
+
+      if (testWidth > availWidthPx && currentLine) {
+        totalLines += 1;
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) {
+      totalLines += 1;
+    }
+  }
+
+  const totalHeightPx = totalLines * lineHeightPx + paddingPx * 2;
+  return Math.max(8, totalHeightPx / MM_TO_PX);
+};
+
 export const exportMembersToExcel = (
   members: Member[],
   filterType: 'all' | 'members' | 'core',
@@ -233,7 +375,7 @@ export const exportMembersToPdf = (
   doc.setTextColor(100, 116, 139);
 
   const filterText = filterType === 'core' ? 'Core Members' : filterType === 'members' ? 'General Members' : 'All Members';
-  const searchNote = searchQuery ? ` | Search: "${sanitizePdfText(searchQuery)}"` : '';
+  const searchNote = searchQuery ? ` | Search: "${searchQuery}"` : '';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   doc.text(`Filter: ${filterText} (${members.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
@@ -241,14 +383,14 @@ export const exportMembersToPdf = (
   // Table Data mapping
   const tableRows = members.map((m, index) => [
     (index + 1).toString(),
-    sanitizePdfText(m.name || 'N/A'),
-    sanitizePdfText(m.email || 'N/A'),
-    sanitizePdfText(formatOfficialEmail(m.uid) || 'N/A'),
-    sanitizePdfText(m.phone || 'N/A'),
-    sanitizePdfText(m.uid || 'N/A'),
-    sanitizePdfText(m.department || 'N/A'),
-    sanitizePdfText(m.year || 'N/A'),
-    sanitizePdfText(m.is_core_member ? (m.role?.name || 'Core Member') : 'Member'),
+    m.name || 'N/A',
+    m.email || 'N/A',
+    formatOfficialEmail(m.uid) || 'N/A',
+    m.phone || 'N/A',
+    m.uid || 'N/A',
+    m.department || 'N/A',
+    m.year || 'N/A',
+    m.is_core_member ? (m.role?.name || 'Core Member') : 'Member',
   ]);
 
   autoTable(doc, {
@@ -270,6 +412,31 @@ export const exportMembersToPdf = (
       fillColor: [248, 250, 252],
     },
     margin: { top: 27, left: 14, right: 14, bottom: 16 },
+    didParseCell: (data: any) => {
+      if (data.section === 'body') {
+        const rawVal = data.cell.raw;
+        if (hasEmoji(rawVal)) {
+          (data.cell as any)._rawEmoji = String(rawVal);
+          const colWidth = data.column.width || (data.cell.styles as any).cellWidth || 30;
+          const minH = calculateEmojiCellHeight(String(rawVal), typeof colWidth === 'number' ? colWidth : 30, 8.5);
+          data.cell.styles.minCellHeight = Math.max(data.cell.styles.minCellHeight || 0, minH);
+          data.cell.text = [];
+        }
+      }
+    },
+    didDrawCell: (data: any) => {
+      if (data.section === 'body' && (data.cell as any)._rawEmoji) {
+        const rawVal = (data.cell as any)._rawEmoji;
+        const imgData = renderEmojiCellToCanvas(rawVal, data.cell.width, data.cell.height, {
+          fontSizePt: 8.5,
+          textColor: '#1e293b',
+          paddingMm: 1.5,
+        });
+        if (imgData) {
+          doc.addImage(imgData, 'PNG', data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+        }
+      }
+    },
     didDrawPage: (data: any) => {
       const totalPages = doc.getNumberOfPages();
       doc.setFontSize(8);
@@ -306,7 +473,7 @@ export const exportFeedbacksToPdf = (
   doc.setTextColor(100, 116, 139);
 
   const filterText = filterType.replace('_', ' ').toUpperCase();
-  const searchNote = searchQuery ? ` | Search: "${sanitizePdfText(searchQuery)}"` : '';
+  const searchNote = searchQuery ? ` | Search: "${searchQuery}"` : '';
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   doc.text(`Filter: ${filterText} (${feedbacks.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
@@ -315,8 +482,8 @@ export const exportFeedbacksToPdf = (
 
   // Table Data mapping
   const tableRows = feedbacks.map((f, index) => {
-    const uid = 'university_id' in f && f.university_id ? sanitizePdfText(f.university_id) : '—';
-    const regId = 'registration_id' in f && f.registration_id ? sanitizePdfText(f.registration_id) : '—';
+    const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
+    const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
     let eventName = 'Contact Form';
     if ('event_id' in f && f.event_id) {
       const matched = eventMap.get(f.event_id);
@@ -329,12 +496,12 @@ export const exportFeedbacksToPdf = (
 
     return [
       (index + 1).toString(),
-      sanitizePdfText(f.name || 'N/A'),
+      f.name || 'N/A',
       uid,
       regId,
-      sanitizePdfText(eventName),
-      sanitizePdfText(f.email || 'N/A'),
-      sanitizePdfText(f.message || 'N/A'),
+      eventName,
+      f.email || 'N/A',
+      f.message || 'N/A',
       (f.status || 'pending').toUpperCase(),
       f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A',
     ];
@@ -370,6 +537,31 @@ export const exportFeedbacksToPdf = (
       fillColor: [248, 250, 252],
     },
     margin: { top: 27, left: 14, right: 14, bottom: 16 },
+    didParseCell: (data: any) => {
+      if (data.section === 'body') {
+        const rawVal = data.cell.raw;
+        if (hasEmoji(rawVal)) {
+          (data.cell as any)._rawEmoji = String(rawVal);
+          const colWidth = data.column.width || (data.cell.styles as any).cellWidth || 70;
+          const minH = calculateEmojiCellHeight(String(rawVal), typeof colWidth === 'number' ? colWidth : 70, 8);
+          data.cell.styles.minCellHeight = Math.max(data.cell.styles.minCellHeight || 0, minH);
+          data.cell.text = [];
+        }
+      }
+    },
+    didDrawCell: (data: any) => {
+      if (data.section === 'body' && (data.cell as any)._rawEmoji) {
+        const rawVal = (data.cell as any)._rawEmoji;
+        const imgData = renderEmojiCellToCanvas(rawVal, data.cell.width, data.cell.height, {
+          fontSizePt: 8,
+          textColor: '#1e293b',
+          paddingMm: 1.5,
+        });
+        if (imgData) {
+          doc.addImage(imgData, 'PNG', data.cell.x, data.cell.y, data.cell.width, data.cell.height);
+        }
+      }
+    },
     didDrawPage: (data: any) => {
       const totalPages = doc.getNumberOfPages();
       doc.setFontSize(8);
