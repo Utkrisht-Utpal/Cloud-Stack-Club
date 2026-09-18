@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { getChatbotFaqs, resolveBotQuery, type BotActionLink } from '../../services/chatbot';
 import type { ChatbotFaq } from '../../types/database';
+import { TetrisGame } from './TetrisGame';
 
 interface ChatMessage {
   id: string;
@@ -21,6 +22,7 @@ interface ChatMessage {
   suggestions?: ChatbotFaq[];
   actionButtons?: BotActionLink[];
   timestamp: string;
+  isTetris?: boolean;
 }
 
 export const ChatbotWidget: React.FC = () => {
@@ -72,7 +74,7 @@ export const ChatbotWidget: React.FC = () => {
         {
           id: 'welcome-msg',
           sender: 'bot',
-          text: "Hi there! 👋 Welcome to **Cloud Stack Club** at Chandigarh University. How can I assist you today? You can choose a common question below or type anything you'd like to know!",
+          text: "Hi there! 👋 Welcome to **Cloud Stack Club** at Chandigarh University. How can I assist you today? You can choose a common question below or type anything you'd like to know!\n\nIn the meantime, you can have some fun — type **/tetris** to play a game! 🕹️",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -132,6 +134,26 @@ export const ChatbotWidget: React.FC = () => {
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
+
+    // ── /tetris easter egg ──────────────────────────────────────────────────
+    if (questionText.trim().toLowerCase() === '/tetris') {
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-${Date.now()}-bot`,
+            sender: 'bot',
+            text: '🕹️ Tetris launched! Use arrow keys to play. Good luck!',
+            isTetris: true,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }, 400);
+      return;
+    }
+
     setIsTyping(true);
 
     try {
@@ -388,16 +410,28 @@ export const ChatbotWidget: React.FC = () => {
                     className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                   >
                   <div
-                    className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 leading-relaxed whitespace-pre-line ${
+                    className={`rounded-2xl leading-relaxed ${
                       msg.sender === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/15'
-                        : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200/50 dark:border-slate-700/50 shadow-xs'
+                        ? 'max-w-[88%] px-3.5 py-2.5 whitespace-pre-line bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/15'
+                        : msg.isTetris
+                          ? 'w-full p-3 bg-slate-900 border border-indigo-500/30 shadow-lg shadow-indigo-500/10'
+                          : 'max-w-[88%] px-3.5 py-2.5 whitespace-pre-line bg-slate-100/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-200 border border-slate-200/50 dark:border-slate-700/50 shadow-xs'
                     }`}
                   >
-                    {msg.sender === 'user' ? msg.text : renderFormattedText(msg.text)}
+                    {msg.sender === 'user' ? (
+                      msg.text
+                    ) : msg.isTetris ? (
+                      <TetrisGame
+                        onClose={() =>
+                          setMessages((prev) => prev.filter((m) => m.id !== msg.id))
+                        }
+                      />
+                    ) : (
+                      renderFormattedText(msg.text)
+                    )}
 
                     {/* Action Link Buttons (e.g. Apply to Join Club, View Elevate-X, Browse Events) */}
-                    {msg.sender === 'bot' && msg.actionButtons && msg.actionButtons.length > 0 && (
+                    {msg.sender === 'bot' && !msg.isTetris && msg.actionButtons && msg.actionButtons.length > 0 && (
                       <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap gap-2">
                         {msg.actionButtons.map((btn, bIdx) => (
                           <button
