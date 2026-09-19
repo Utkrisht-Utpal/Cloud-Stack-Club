@@ -14,8 +14,9 @@ import { getEvents } from '../services/events';
 import type { Event } from '../types/database';
 
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { lazyWithRetry } from '../utils/lazyWithRetry';
 
-import { AdminDashboard } from '../components/admin/AdminDashboard';
+const AdminDashboard = lazyWithRetry(() => import('../components/admin/AdminDashboard'), 'AdminDashboard');
 import { AdminLoginModal } from '../components/admin/AdminLoginModal';
 
 import { JoinModal } from '../components/common/JoinModal';
@@ -222,7 +223,15 @@ export const MainLayout: React.FC = () => {
           onToggleMobileNav={() => setMobileNavOpen((prev) => !prev)}
         />
         <ErrorBoundary>
-          <AdminDashboard mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} />
+          <Suspense
+            fallback={
+              <div className="flex-1 min-h-[60vh] flex items-center justify-center">
+                <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }
+          >
+            <AdminDashboard mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} />
+          </Suspense>
         </ErrorBoundary>
         <Footer />
       </div>
