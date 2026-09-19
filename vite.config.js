@@ -22,15 +22,28 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (
+              id.includes('jspdf') ||
+              id.includes('jspdf-autotable') ||
+              id.includes('html2canvas')
+            ) {
+              return 'export-pdf';
+            }
+            if (id.includes('xlsx')) {
+              return 'export-xlsx';
+            }
+            if (id.includes('@supabase')) {
+              return 'supabase';
+            }
+            if (id.includes('lucide-react')) {
+              return 'icons';
+            }
+            if (
               id.includes('react') ||
               id.includes('react-dom') ||
               id.includes('react-router-dom') ||
               id.includes('framer-motion')
             ) {
               return 'vendor';
-            }
-            if (id.includes('lucide-react')) {
-              return 'icons';
             }
           }
         },
