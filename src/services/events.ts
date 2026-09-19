@@ -2,6 +2,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { uploadToR2, deleteFromR2, resolveMediaUrl, isR2Configured, R2_FOLDERS } from '../lib/r2Storage';
 import { generateUUID } from '../utils/uuid';
 import { generateSlug } from '../utils/slug';
+import { deleteGalleryPhotosByEventId } from './gallery';
 import type { Event } from '../types/database';
 
 const CUSTOM_EVENTS_KEY = 'csc_custom_events_list';
@@ -741,9 +742,7 @@ export const deleteEventAdmin = async (
   }
 
   // 3. Delete all gallery photos for this event from Cloudflare R2 & database
-  //    (dynamic import to avoid circular dependency: gallery.ts imports events.ts)
   try {
-    const { deleteGalleryPhotosByEventId } = await import('./gallery');
     await deleteGalleryPhotosByEventId(eventId);
   } catch (e) {
     console.warn('Gallery photos deletion notice:', e);

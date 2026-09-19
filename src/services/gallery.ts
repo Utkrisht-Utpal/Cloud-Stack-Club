@@ -5,7 +5,6 @@
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { uploadToR2, deleteFromR2, R2_FOLDERS, resolveMediaUrl } from '../lib/r2Storage';
-import { getEvents } from './events';
 import type { GalleryPhoto, Event, EventWithGallery } from '../types/database';
 
 const LOCAL_STORAGE_GALLERY_KEY = 'csc_event_gallery_list';
@@ -75,6 +74,7 @@ export const getGalleryPhotosByEvent = async (eventId: string): Promise<GalleryP
  */
 export const getGalleryGroupedByEvent = async (): Promise<EventWithGallery[]> => {
   try {
+    const { getEvents } = await import('./events');
     const [allEvents, allPhotos] = await Promise.all([
       getEvents(),
       getGalleryPhotos(),
