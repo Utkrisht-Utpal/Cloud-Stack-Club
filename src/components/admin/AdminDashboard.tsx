@@ -513,7 +513,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     targetFeedback: any,
     newStatus: FeedbackStatus,
     adminNote: string,
-    shouldSendEmail: boolean
+    shouldSendEmail: boolean,
+    selectedRecipientIds?: Set<string>
   ) => {
     // Bulk Update Handler
     if (pendingStatusFeedback?.feedbacks && pendingStatusFeedback.feedbacks.length > 1) {
@@ -540,26 +541,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       );
       await Promise.allSettled(dbPromises);
 
-      // Email batch dispatch
+      // Email batch dispatch to selected recipients only
       if (shouldSendEmail) {
-        const emailPromises = feedbacksToUpdate.map(async (f) => {
-          if (f.email) {
-            try {
-              if (isEvent) {
-                await sendEventFeedbackEmail(
-                  { name: f.name, email: f.email, event_title: f.event_title },
-                  adminNote
-                );
-              } else {
-                await sendContactUsStatusEmail(
-                  { name: f.name, email: f.email, subject: f.subject },
-                  newStatus,
-                  adminNote
-                );
-              }
-            } catch (e) {
-              console.warn(`Could not dispatch email to ${f.email}:`, e);
+        const recipientsToSend = selectedRecipientIds
+          ? feedbacksToUpdate.filter((f) => selectedRecipientIds.has(f.id) && f.email)
+          : feedbacksToUpdate.filter((f) => f.email);
+
+        const emailPromises = recipientsToSend.map(async (f) => {
+          try {
+            if (isEvent) {
+              await sendEventFeedbackEmail(
+                { name: f.name, email: f.email, event_title: f.event_title },
+                adminNote
+              );
+            } else {
+              await sendContactUsStatusEmail(
+                { name: f.name, email: f.email, subject: f.subject },
+                newStatus,
+                adminNote
+              );
             }
+          } catch (e) {
+            console.warn(`Could not dispatch email to ${f.email}:`, e);
           }
         });
         await Promise.allSettled(emailPromises);
