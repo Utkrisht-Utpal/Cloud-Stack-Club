@@ -59,7 +59,7 @@ export const Modal: React.FC<ModalProps> = ({
   return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 overflow-hidden overscroll-none">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -75,9 +75,9 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.25 }}
-            className={`relative w-full ${maxWidth} rounded-3xl p-6 sm:p-8 shadow-2xl z-10 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white my-auto`}
+            className={`relative w-full ${maxWidth} max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] rounded-3xl p-5 sm:p-7 shadow-2xl z-10 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white my-auto flex flex-col overflow-hidden overscroll-contain`}
           >
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-slate-200 dark:border-slate-800 shrink-0">
               <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">{title}</h3>
               {!hideCloseButton && (
                 <button
@@ -89,7 +89,9 @@ export const Modal: React.FC<ModalProps> = ({
                 </button>
               )}
             </div>
-            <div>{children}</div>
+            <div className="overflow-y-auto custom-scrollbar overscroll-contain pr-1 flex-1 min-h-0">
+              {children}
+            </div>
           </motion.div>
         </div>
       )}
