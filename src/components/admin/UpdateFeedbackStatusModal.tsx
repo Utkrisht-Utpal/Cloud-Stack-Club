@@ -36,29 +36,29 @@ const getStatusBadge = (status: string) => {
     case 'resolved':
     case 'responded':
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
-          <CheckCircle2 className="w-3 h-3" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+          <CheckCircle2 className="w-2.5 h-2.5" />
           Resolved
         </span>
       );
     case 'in_progress':
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-700 dark:text-sky-400 border border-blue-500/20">
-          <RefreshCw className="w-3 h-3" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-500/15 text-blue-700 dark:text-sky-400 border border-blue-500/20">
+          <RefreshCw className="w-2.5 h-2.5" />
           In Progress
         </span>
       );
     case 'archived':
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20">
-          <Archive className="w-3 h-3" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20">
+          <Archive className="w-2.5 h-2.5" />
           Archived
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
-          <Clock className="w-3 h-3" />
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+          <Clock className="w-2.5 h-2.5" />
           Pending
         </span>
       );
@@ -224,39 +224,39 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             ? 'Event Feedback Status Update'
             : 'Inquiry Status Update'
       }
-      maxWidth="max-w-xl"
+      maxWidth="max-w-lg"
       hideCloseButton={true}
     >
-      <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+      <form onSubmit={handleSubmit} className="space-y-3 pt-0.5">
         {error && (
-          <div className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold">
+          <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs font-semibold">
             {error}
           </div>
         )}
 
         {isBulk ? (
           /* Bulk Mode Header Card */
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-500 shrink-0" />
-                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                <span className="font-extrabold text-xs text-slate-900 dark:text-white">
                   {activeFeedbacksList.length} Feedbacks Selected
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Change to:</span>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-[9px] font-bold text-slate-400 uppercase">Change to:</span>
                 {getStatusBadge(targetStatus)}
               </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400">
                   Target Recipients ({selectedEmailCount} of {validEmailCount} Selected):
                 </span>
-                <div className="flex items-center gap-2 text-[10px] font-bold">
+                <div className="flex items-center gap-2 text-[9.5px] font-bold">
                   <button
                     type="button"
                     onClick={handleSelectAllRecipients}
@@ -275,7 +275,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-scrollbar p-1">
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar p-0.5">
                 {activeFeedbacksList.map((f: any, idx) => {
                   const hasEmail = Boolean(f.email);
                   const isRecipientSelected = hasEmail && selectedRecipientIds.has(f.id);
@@ -291,16 +291,16 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
                           ? `${f.name || 'Anonymous'} (${f.email})\nClick to ${isRecipientSelected ? 'unselect' : 'select'}`
                           : 'No email address available'
                       }
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95 border ${
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer select-none active:scale-95 border ${
                         !hasEmail
-                          ? 'bg-slate-100 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-50'
+                          ? 'bg-slate-100 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-40'
                           : isRecipientSelected
-                            ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-sm shadow-blue-500/25 ring-1 ring-blue-400/40'
-                            : 'bg-white dark:bg-slate-900/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 opacity-70'
+                            ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-xs ring-1 ring-blue-400/30'
+                            : 'bg-white dark:bg-slate-900/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 opacity-65'
                       }`}
                     >
                       <span
-                        className={`font-mono text-[10px] ${
+                        className={`font-mono text-[9px] ${
                           isRecipientSelected
                             ? 'text-blue-100'
                             : 'text-slate-400 dark:text-slate-500'
@@ -309,7 +309,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
                         #{idx + 1}
                       </span>
                       <span
-                        className={`truncate max-w-[130px] ${
+                        className={`truncate max-w-[110px] ${
                           !isRecipientSelected && hasEmail ? 'line-through opacity-75' : ''
                         }`}
                       >
@@ -317,59 +317,59 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
                       </span>
                       {hasEmail ? (
                         isRecipientSelected ? (
-                          <Check className="w-3 h-3 text-white shrink-0" />
+                          <Check className="w-2.5 h-2.5 text-white shrink-0" />
                         ) : (
-                          <Mail className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
+                          <Mail className="w-2.5 h-2.5 text-slate-400 dark:text-slate-500 shrink-0" />
                         )
                       ) : (
-                        <span className="text-[9px] text-amber-500 font-normal">(No Email)</span>
+                        <span className="text-[8px] text-amber-500 font-normal">(No Email)</span>
                       )}
                     </button>
                   );
                 })}
               </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 italic">
-                💡 Click on any recipient above to select or unselect them for email dispatch. Selected recipients appear in blue.
+              <p className="text-[9px] text-slate-500 dark:text-slate-400 mt-1 italic">
+                💡 Click any name to toggle their email. Selected recipients appear in blue.
               </p>
             </div>
           </div>
         ) : (
           /* Single Mode Header Card */
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-1.5">
                 {isEvent ? (
-                  <Sparkles className="w-4 h-4 text-purple-500 shrink-0" />
+                  <Sparkles className="w-3.5 h-3.5 text-purple-500 shrink-0" />
                 ) : (
-                  <MessageSquare className="w-4 h-4 text-blue-500 shrink-0" />
+                  <MessageSquare className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 )}
-                <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[280px]">
+                <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate max-w-[260px]">
                   {itemTitle}
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 {getStatusBadge(currentStatus)}
-                <ArrowRight className="w-3 h-3 text-slate-400" />
+                <ArrowRight className="w-2.5 h-2.5 text-slate-400" />
                 {getStatusBadge(targetStatus)}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recipient:</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Recipient:</span>
                 <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{recipientName}</p>
               </div>
               <div className="sm:text-right">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Email Address:</span>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Email Address:</span>
                 <p className="font-mono text-slate-600 dark:text-slate-300 mt-0.5 truncate">{recipientEmail || 'N/A'}</p>
               </div>
             </div>
 
             {feedback?.message && (
-              <div className="pt-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Original Message:</span>
-                <p className="mt-1 p-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 italic line-clamp-3 leading-relaxed">
+              <div className="pt-0.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Original Message:</span>
+                <p className="mt-0.5 p-1.5 rounded-lg bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-[10.5px] text-slate-600 dark:text-slate-300 italic line-clamp-2 leading-relaxed">
                   "{feedback.message}"
                 </p>
               </div>
@@ -377,27 +377,27 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
           </div>
         )}
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-900 dark:text-white">
-              {isBulk ? 'Admin Response Notes (Sent to all selected recipients):' : 'Admin Response / Feedback Notes:'}
+              {isBulk ? 'Admin Response Notes (Sent to all selected):' : 'Admin Response / Notes:'}
             </label>
-            <span className="text-[10px] text-slate-400 font-semibold">
+            <span className="text-[9.5px] text-slate-400 font-semibold">
               {note.length} characters
             </span>
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">
               Quick Suggestions:
             </span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1">
               {presets.map((presetText, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setNote(presetText)}
-                  className="text-left text-[11px] px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 transition-colors border border-slate-200/60 dark:border-slate-700/60 cursor-pointer line-clamp-1 max-w-full"
+                  className="text-left text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 transition-colors border border-slate-200/60 dark:border-slate-700/60 cursor-pointer line-clamp-1 max-w-[240px]"
                 >
                   {presetText}
                 </button>
@@ -408,24 +408,24 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            rows={3}
+            rows={2}
             disabled={isSubmitting}
-            placeholder={isBulk ? "Enter response notes to be dispatched to all selected participants..." : "Enter response notes or feedback for the user..."}
-            className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 leading-relaxed"
+            placeholder={isBulk ? "Enter response notes to dispatch to selected participants..." : "Enter response notes or feedback..."}
+            className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 leading-relaxed"
           />
         </div>
 
-        <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <Mail className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+        <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <Mail className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
             <div className="text-xs">
-              <p className="font-bold text-slate-900 dark:text-white">
+              <p className="font-bold text-slate-900 dark:text-white text-[11px]">
                 {isBulk
                   ? `Send email notification to selected recipients (${selectedEmailCount})`
                   : 'Send email notification to recipient'}
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Dispatches an automated email from the club account with your feedback notes.
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                Dispatches an automated email from the club account.
               </p>
             </div>
           </div>
@@ -438,12 +438,12 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -451,16 +451,16 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
           <button
             type="submit"
             disabled={isSubmitting || (sendEmail && selectedEmailCount > 0 && !note.trim())}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {isSubmitting ? (
               <>
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
-                <span>{isBulk ? `Updating ${activeFeedbacksList.length} Items...` : 'Updating & Sending...'}</span>
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                <span>{isBulk ? `Updating ${activeFeedbacksList.length}...` : 'Updating...'}</span>
               </>
             ) : (
               <>
-                <Send className="w-3.5 h-3.5 shrink-0" />
+                <Send className="w-3 h-3 shrink-0" />
                 <span>
                   {isBulk
                     ? sendEmail && selectedEmailCount > 0
