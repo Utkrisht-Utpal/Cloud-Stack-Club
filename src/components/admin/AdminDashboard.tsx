@@ -2245,7 +2245,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               {/* Card 1: CONTACT FORM */}
               <button
                 type="button"
-                onClick={() => setFeedbackViewTab('contact')}
+                onClick={() => {
+                  setFeedbackViewTab('contact');
+                  setSelectedFeedbackIds(new Set());
+                }}
                 className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${feedbackViewTab === 'contact'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -2278,7 +2281,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               {/* Card 2: EVENT FEEDBACK */}
               <button
                 type="button"
-                onClick={() => setFeedbackViewTab('event')}
+                onClick={() => {
+                  setFeedbackViewTab('event');
+                  setSelectedFeedbackIds(new Set());
+                }}
                 className={`p-4 sm:p-5 rounded-3xl text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[96px] sm:min-h-[120px] ${feedbackViewTab === 'event'
                     ? 'bg-blue-50/50 dark:bg-blue-950/20 border-2 border-blue-500 ring-2 ring-blue-500/20 shadow-md'
                     : 'bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm'
@@ -2317,7 +2323,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   <button
                     key={st}
                     type="button"
-                    onClick={() => setFeedbackFilter(st)}
+                    onClick={() => {
+                      setFeedbackFilter(st);
+                      setSelectedFeedbackIds(new Set());
+                    }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all capitalize whitespace-nowrap cursor-pointer shrink-0 ${feedbackFilter === st
                         ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
                         : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700/60'
@@ -2334,7 +2343,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   <div className="w-full sm:w-56 shrink-0">
                     <CustomSelect
                       value={selectedFeedbackEvent}
-                      onChange={(val) => setSelectedFeedbackEvent(val)}
+                      onChange={(val) => {
+                        setSelectedFeedbackEvent(val);
+                        setSelectedFeedbackIds(new Set());
+                      }}
                       options={[
                         { value: 'all', label: 'All Events' },
                         ...eventsList.map((e) => ({
@@ -2354,7 +2366,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     type="text"
                     placeholder={feedbackViewTab === 'event' ? "Search sender, UID, Reg ID..." : "Search sender, email, query..."}
                     value={feedbackSearch}
-                    onChange={(e) => setFeedbackSearch(e.target.value)}
+                    onChange={(e) => {
+                      setFeedbackSearch(e.target.value);
+                      setSelectedFeedbackIds(new Set());
+                    }}
                     className="search-input w-full pl-10 pr-4 h-11 rounded-2xl bg-slate-50 dark:bg-slate-800/80 text-xs border border-slate-200 dark:border-slate-700/60 focus:outline-none focus:ring-0 focus:border-slate-300 dark:focus:border-slate-600 font-medium text-slate-900 dark:text-white placeholder:text-slate-400 transition-colors"
                   />
                 </div>
@@ -2371,6 +2386,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 </button>
               </div>
             </div>
+
+            {/* Bulk Action Toolbar */}
+            {selectedFeedbackIds.size > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-blue-600/10 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-blue-900/30 border border-blue-500/30 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-black bg-blue-600 text-white shadow-sm shadow-blue-500/30">
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    {selectedFeedbackIds.size} Selected
+                  </span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 hidden sm:inline">
+                    {feedbackViewTab === 'event' ? 'Event Feedbacks' : 'Contact Inquiries'}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="w-38 sm:w-44">
+                    <CustomSelect
+                      value={bulkFeedbackStatus}
+                      onChange={(val) => setBulkFeedbackStatus(val as FeedbackStatus)}
+                      options={[
+                        { value: 'resolved', label: '✅ Set: Resolved' },
+                        { value: 'in_progress', label: '🔄 Set: In Progress' },
+                        { value: 'pending', label: '⏳ Set: Pending' },
+                        { value: 'archived', label: '📁 Set: Archived' },
+                      ]}
+                      triggerClassName="w-full h-9 px-3 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center justify-between shadow-2xs"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenBulkStatusModal(bulkFeedbackStatus)}
+                    className="h-9 px-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/25 active:scale-95"
+                  >
+                    <span>Update Status ({selectedFeedbackIds.size})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFeedbackIds(new Set())}
+                    className="h-9 px-3 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all border border-slate-200 dark:border-slate-700 cursor-pointer active:scale-95"
+                  >
+                    Deselect All
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Table Area */}
             {loadingFeedbacks ? (
@@ -2394,7 +2456,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                     <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-3.5 px-4 font-bold">#</th>
+                      <th className="py-3.5 px-3 w-10 text-center">
+                        <CustomCheckbox
+                          checked={
+                            (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).length > 0 &&
+                            (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).every((f) => selectedFeedbackIds.has(f.id))
+                          }
+                          onChange={() => handleSelectAllFeedbacks()}
+                          className="justify-center"
+                        />
+                      </th>
+                      <th className="py-3.5 px-2 font-bold">#</th>
                       <th className="py-3.5 px-4 font-bold">
                         {feedbackViewTab === 'event' ? 'ATTENDEE DETAILS' : 'SENDER DETAILS'}
                       </th>
@@ -2410,159 +2482,176 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                    {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).map((f: any, idx) => (
-                      <tr key={f.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3.5 px-4 font-bold text-slate-400">{idx + 1}</td>
-                        <td className="py-3.5 px-4 min-w-[230px]">
-                          <div className="space-y-1.5">
-                            <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
-                            {feedbackViewTab === 'event' && (f.university_id || f.registration_id) ? (
-                              <div className="flex items-center gap-1.5 flex-nowrap">
-                                {f.university_id && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-300 font-mono font-bold whitespace-nowrap border border-blue-200/60 dark:border-blue-500/20">
-                                    UID: {f.university_id}
-                                  </span>
-                                )}
-                                {f.registration_id && (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono font-bold whitespace-nowrap border border-emerald-200/60 dark:border-emerald-500/20">
-                                    Reg: {f.registration_id}
+                    {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).map((f: any, idx) => {
+                      const isSelected = selectedFeedbackIds.has(f.id);
+                      return (
+                        <tr
+                          key={f.id}
+                          className={`transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50/70 dark:bg-blue-900/25 border-l-2 border-blue-500'
+                              : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
+                          }`}
+                        >
+                          <td className="py-3.5 px-3 text-center">
+                            <CustomCheckbox
+                              checked={isSelected}
+                              onChange={() => handleToggleSelectFeedback(f.id)}
+                              className="justify-center"
+                            />
+                          </td>
+                          <td className="py-3.5 px-2 font-bold text-slate-400">{idx + 1}</td>
+                          <td className="py-3.5 px-4 min-w-[230px]">
+                            <div className="space-y-1.5">
+                              <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
+                              {feedbackViewTab === 'event' && (f.university_id || f.registration_id) ? (
+                                <div className="flex items-center gap-1.5 flex-nowrap">
+                                  {f.university_id && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-sky-300 font-mono font-bold whitespace-nowrap border border-blue-200/60 dark:border-blue-500/20">
+                                      UID: {f.university_id}
+                                    </span>
+                                  )}
+                                  {f.registration_id && (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-mono font-bold whitespace-nowrap border border-emerald-200/60 dark:border-emerald-500/20">
+                                      Reg: {f.registration_id}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : null}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <a
+                                  href={`mailto:${f.email}`}
+                                  className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono truncate"
+                                >
+                                  {f.email}
+                                </a>
+                                {f.phone && (
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                    • 📞 {f.phone}
                                   </span>
                                 )}
                               </div>
-                            ) : null}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <a
-                                href={`mailto:${f.email}`}
-                                className="text-[11px] text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-sky-400 hover:underline font-mono truncate"
-                              >
-                                {f.email}
-                              </a>
-                              {f.phone && (
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                                  • 📞 {f.phone}
-                                </span>
-                              )}
                             </div>
-                          </div>
-                        </td>
-                        {feedbackViewTab === 'event' && (
-                          <td className="py-3.5 px-4 min-w-[200px]">
-                            {(() => {
-                              const matchedEvent = eventsList.find((e) => e.id === f.event_id);
-                              const eventTitle = matchedEvent ? matchedEvent.title : (f.event_title || 'Event Feedback');
-                              const isEventCancelled = matchedEvent?.status === 'cancelled';
-                              return (
-                                <div className="space-y-1.5">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span
-                                      className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${isEventCancelled
-                                          ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                                          : 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300'
-                                        }`}
-                                    >
-                                      {eventTitle}
-                                    </span>
-                                    {isEventCancelled && (
-                                      <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
-                                        Cancelled
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
-                                    {f.event_rating !== undefined && (
-                                      <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
-                                        ⭐ {f.event_rating}/5 Event
-                                      </span>
-                                    )}
-                                    {f.coordination_rating && (
-                                      <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-                                        🌿 {f.coordination_rating}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })()}
                           </td>
-                        )}
-                        <td className="py-3.5 px-4 min-w-[180px] max-w-[280px]">
-                          {feedbackViewTab === 'event' ? (
-                            <div className="line-clamp-2 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                              {f.message || 'No feedback remarks'}
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="font-semibold text-slate-900 dark:text-white text-xs truncate max-w-[240px] inline-block"
-                                title={f.subject || f.message || 'General Inquiry'}
-                              >
-                                {f.subject || (
-                                  <span className="text-slate-400 font-normal italic">General Inquiry</span>
-                                )}
-                              </span>
-                            </div>
+                          {feedbackViewTab === 'event' && (
+                            <td className="py-3.5 px-4 min-w-[200px]">
+                              {(() => {
+                                const matchedEvent = eventsList.find((e) => e.id === f.event_id);
+                                const eventTitle = matchedEvent ? matchedEvent.title : (f.event_title || 'Event Feedback');
+                                const isEventCancelled = matchedEvent?.status === 'cancelled';
+                                return (
+                                  <div className="space-y-1.5">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span
+                                        className={`inline-block px-2.5 py-1 rounded-xl text-xs font-bold ${isEventCancelled
+                                            ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                            : 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-sky-300'
+                                          }`}
+                                      >
+                                        {eventTitle}
+                                      </span>
+                                      {isEventCancelled && (
+                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/30">
+                                          Cancelled
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                                      {f.event_rating !== undefined && (
+                                        <span className="px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300">
+                                          ⭐ {f.event_rating}/5 Event
+                                        </span>
+                                      )}
+                                      {f.coordination_rating && (
+                                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                                          🌿 {f.coordination_rating}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                            </td>
                           )}
-                        </td>
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => setViewingFeedback(f)}
-                            className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/25 hover:bg-blue-100 dark:hover:bg-blue-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 mx-auto"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
-                          {f.created_at
-                            ? `${new Date(f.created_at).toLocaleDateString('en-GB')} • ${new Date(f.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
-                            : 'N/A'}
-                        </td>
-                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <div className="inline-block text-left">
-                            <CustomSelect
-                              value={
-                                f.status === 'unread'
-                                  ? 'pending'
-                                  : f.status === 'responded'
-                                    ? 'resolved'
-                                    : f.status
-                              }
-                              onChange={(newVal) => {
-                                const current =
+                          <td className="py-3.5 px-4 min-w-[180px] max-w-[280px]">
+                            {feedbackViewTab === 'event' ? (
+                              <div className="line-clamp-2 text-xs text-slate-700 dark:text-slate-300 font-medium">
+                                {f.message || 'No feedback remarks'}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className="font-semibold text-slate-900 dark:text-white text-xs truncate max-w-[240px] inline-block"
+                                  title={f.subject || f.message || 'General Inquiry'}
+                                >
+                                  {f.subject || (
+                                    <span className="text-slate-400 font-normal italic">General Inquiry</span>
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => setViewingFeedback(f)}
+                              className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 border border-blue-200/60 dark:border-blue-500/25 hover:bg-blue-100 dark:hover:bg-blue-500/25 flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 mx-auto"
+                              title="View Details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                          </td>
+                          <td className="py-3.5 px-4 text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">
+                            {f.created_at
+                              ? `${new Date(f.created_at).toLocaleDateString('en-GB')} • ${new Date(f.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+                              : 'N/A'}
+                          </td>
+                          <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                            <div className="inline-block text-left">
+                              <CustomSelect
+                                value={
                                   f.status === 'unread'
                                     ? 'pending'
                                     : f.status === 'responded'
                                       ? 'resolved'
-                                      : f.status;
-                                if (newVal !== current) {
+                                      : f.status
+                                }
+                                onChange={(val) => {
+                                  const targetSt = val as FeedbackStatus;
+                                  const currentSt =
+                                    f.status === 'unread'
+                                      ? 'pending'
+                                      : f.status === 'responded'
+                                        ? 'resolved'
+                                        : f.status;
+                                  if (targetSt === currentSt) return;
                                   setPendingStatusFeedback({
                                     feedback: f,
                                     isEvent: feedbackViewTab === 'event',
-                                    targetStatus: newVal as FeedbackStatus,
+                                    targetStatus: targetSt,
                                   });
-                                }
-                              }}
-                              options={[
-                                { value: 'pending', label: '⏳ Pending' },
-                                { value: 'in_progress', label: '🔄 In Progress' },
-                                { value: 'resolved', label: '✅ Resolved' },
-                                { value: 'archived', label: '📁 Archived' },
-                              ]}
-                              triggerClassName={`min-w-[150px] sm:min-w-[155px] w-auto h-9 px-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap ${f.status === 'pending' || f.status === 'unread'
-                                  ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
-                                  : f.status === 'in_progress'
-                                    ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-500/30'
-                                    : f.status === 'resolved' || f.status === 'responded'
-                                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
-                                      : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
+                                }}
+                                options={[
+                                  { value: 'pending', label: 'Pending' },
+                                  { value: 'in_progress', label: 'In Progress' },
+                                  { value: 'resolved', label: 'Resolved' },
+                                  { value: 'archived', label: 'Archived' },
+                                ]}
+                                triggerClassName={`h-8 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
+                                  f.status === 'resolved' || f.status === 'responded'
+                                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                    : f.status === 'in_progress'
+                                      ? 'bg-blue-500/15 text-blue-700 dark:text-sky-300 border-blue-500/30'
+                                      : f.status === 'pending' || f.status === 'unread'
+                                        ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
+                                        : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
                                 }`}
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
                 </table>
               </div>
             )}
@@ -3390,6 +3479,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         <UpdateFeedbackStatusModal
           isOpen={!!pendingStatusFeedback}
           feedback={pendingStatusFeedback?.feedback || null}
+          feedbacks={pendingStatusFeedback?.feedbacks || undefined}
           isEvent={pendingStatusFeedback?.isEvent || false}
           targetStatus={pendingStatusFeedback?.targetStatus || 'pending'}
           onClose={() => setPendingStatusFeedback(null)}
