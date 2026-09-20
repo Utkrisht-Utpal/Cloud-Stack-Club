@@ -10,6 +10,7 @@ import {
   Archive,
   RefreshCw,
   Users,
+  Check,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import type { FeedbackStatus } from '../../types/database';
@@ -25,7 +26,8 @@ interface UpdateFeedbackStatusModalProps {
     feedback: any,
     newStatus: FeedbackStatus,
     adminNote: string,
-    sendEmail: boolean
+    sendEmail: boolean,
+    selectedRecipientIds?: Set<string>
   ) => Promise<void>;
 }
 
@@ -76,10 +78,14 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
   const [sendEmail, setSendEmail] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRecipientIds, setSelectedRecipientIds] = useState<Set<string>>(new Set());
 
   const isBulk = Boolean(feedbacks && feedbacks.length > 1);
   const activeFeedbacksList = feedbacks && feedbacks.length > 0 ? feedbacks : feedback ? [feedback] : [];
   const validEmailCount = activeFeedbacksList.filter((f) => Boolean(f?.email)).length;
+  const selectedEmailCount = activeFeedbacksList.filter(
+    (f) => Boolean(f?.email) && selectedRecipientIds.has(f.id)
+  ).length;
 
   const presets: string[] = React.useMemo(() => {
     if (isEvent) {
@@ -131,8 +137,21 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
       setSendEmail(true);
       setError(null);
       setIsSubmitting(false);
+
+      // Select all recipients with valid email by default
+      const defaultIds = new Set<string>();
+      if (feedbacks && feedbacks.length > 0) {
+        feedbacks.forEach((f) => {
+          if (f?.email) {
+            defaultIds.add(f.id);
+          }
+        });
+      } else if (feedback?.email) {
+        defaultIds.add(feedback.id);
+      }
+      setSelectedRecipientIds(defaultIds);
     }
-  }, [isOpen, presets]);
+  }, [isOpen, presets, feedbacks, feedback]);
 
   if (!feedback && (!feedbacks || feedbacks.length === 0)) return null;
 
@@ -149,9 +168,34 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
     ? feedback?.event_title || 'Event Feedback'
     : feedback?.subject || 'General Inquiry';
 
+  const handleToggleRecipient = (id: string, hasEmail: boolean) => {
+    if (!hasEmail) return;
+    setSelectedRecipientIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllRecipients = () => {
+    const allValid = new Set<string>();
+    activeFeedbacksList.forEach((f) => {
+      if (f.email) allValid.add(f.id);
+    });
+    setSelectedRecipientIds(allValid);
+  };
+
+  const handleDeselectAllRecipients = () => {
+    setSelectedRecipientIds(new Set());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (sendEmail && !note.trim()) {
+    if (sendEmail && selectedEmailCount > 0 && !note.trim()) {
       setError('Please provide feedback notes or a response message for the recipient.');
       return;
     }
@@ -160,7 +204,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
     setError(null);
 
     try {
-      await onConfirm(feedback, targetStatus, note.trim(), sendEmail);
+      await onConfirm(feedback, targetStatus, note.trim(), sendEmail, selectedRecipientIds);
       onClose();
     } catch (err: any) {
       setError(err?.message || 'Failed to update status. Please try again.');
@@ -208,26 +252,85 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             </div>
 
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
-                Target Recipients ({validEmailCount} with valid email):
-              </span>
-              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-1">
-                {activeFeedbacksList.map((f: any, idx) => (
-                  <span
-                    key={f.id || idx}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 shadow-2xs"
-                    title={f.email}
+              <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Target Recipients ({selectedEmailCount} of {validEmailCount} Selected):
+                </span>
+                <div className="flex items-center gap-2 text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={handleSelectAllRecipients}
+                    className="text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
                   >
-                    <span className="text-slate-400 font-mono text-[10px]">#{idx + 1}</span>
-                    <span className="truncate max-w-[140px]">{f.name || 'Anonymous'}</span>
-                    {f.email ? (
-                      <Mail className="w-3 h-3 text-blue-500/80 shrink-0" />
-                    ) : (
-                      <span className="text-[9px] text-amber-500 font-normal">(No Email)</span>
-                    )}
-                  </span>
-                ))}
+                    Select All
+                  </button>
+                  <span className="text-slate-300 dark:text-slate-700">•</span>
+                  <button
+                    type="button"
+                    onClick={handleDeselectAllRecipients}
+                    className="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:underline cursor-pointer"
+                  >
+                    Deselect All
+                  </button>
+                </div>
               </div>
+
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-scrollbar p-1">
+                {activeFeedbacksList.map((f: any, idx) => {
+                  const hasEmail = Boolean(f.email);
+                  const isRecipientSelected = hasEmail && selectedRecipientIds.has(f.id);
+
+                  return (
+                    <button
+                      key={f.id || idx}
+                      type="button"
+                      disabled={!hasEmail}
+                      onClick={() => handleToggleRecipient(f.id, hasEmail)}
+                      title={
+                        hasEmail
+                          ? `${f.name || 'Anonymous'} (${f.email})\nClick to ${isRecipientSelected ? 'unselect' : 'select'}`
+                          : 'No email address available'
+                      }
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer select-none active:scale-95 border ${
+                        !hasEmail
+                          ? 'bg-slate-100 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-50'
+                          : isRecipientSelected
+                            ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-sm shadow-blue-500/25 ring-1 ring-blue-400/40'
+                            : 'bg-white dark:bg-slate-900/70 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700/80 opacity-70'
+                      }`}
+                    >
+                      <span
+                        className={`font-mono text-[10px] ${
+                          isRecipientSelected
+                            ? 'text-blue-100'
+                            : 'text-slate-400 dark:text-slate-500'
+                        }`}
+                      >
+                        #{idx + 1}
+                      </span>
+                      <span
+                        className={`truncate max-w-[130px] ${
+                          !isRecipientSelected && hasEmail ? 'line-through opacity-75' : ''
+                        }`}
+                      >
+                        {f.name || 'Anonymous'}
+                      </span>
+                      {hasEmail ? (
+                        isRecipientSelected ? (
+                          <Check className="w-3 h-3 text-white shrink-0" />
+                        ) : (
+                          <Mail className="w-3 h-3 text-slate-400 dark:text-slate-500 shrink-0" />
+                        )
+                      ) : (
+                        <span className="text-[9px] text-amber-500 font-normal">(No Email)</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1.5 italic">
+                💡 Click on any recipient above to select or unselect them for email dispatch. Selected recipients appear in blue.
+              </p>
             </div>
           </div>
         ) : (
@@ -317,7 +420,9 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             <Mail className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
             <div className="text-xs">
               <p className="font-bold text-slate-900 dark:text-white">
-                {isBulk ? `Send email notification to all ${validEmailCount} recipients` : 'Send email notification to recipient'}
+                {isBulk
+                  ? `Send email notification to selected recipients (${selectedEmailCount})`
+                  : 'Send email notification to recipient'}
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Dispatches an automated email from the club account with your feedback notes.
@@ -328,7 +433,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             type="checkbox"
             checked={sendEmail}
             onChange={(e) => setSendEmail(e.target.checked)}
-            disabled={isSubmitting || validEmailCount === 0}
+            disabled={isSubmitting || (isBulk ? selectedEmailCount === 0 : validEmailCount === 0)}
             className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
           />
         </div>
@@ -345,7 +450,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
 
           <button
             type="submit"
-            disabled={isSubmitting || (sendEmail && !note.trim())}
+            disabled={isSubmitting || (sendEmail && selectedEmailCount > 0 && !note.trim())}
             className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white text-xs font-bold transition-all inline-flex items-center gap-2 cursor-pointer shadow-md shadow-blue-500/25 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           >
             {isSubmitting ? (
@@ -358,8 +463,8 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
                 <Send className="w-3.5 h-3.5 shrink-0" />
                 <span>
                   {isBulk
-                    ? sendEmail
-                      ? `Update & Send ${validEmailCount} Emails`
+                    ? sendEmail && selectedEmailCount > 0
+                      ? `Update & Send ${selectedEmailCount} Emails`
                       : `Update ${activeFeedbacksList.length} Statuses Only`
                     : sendEmail
                       ? 'Update & Send Email'
