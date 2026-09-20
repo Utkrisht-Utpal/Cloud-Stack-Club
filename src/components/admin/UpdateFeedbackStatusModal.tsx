@@ -36,28 +36,28 @@ const getStatusBadge = (status: string) => {
     case 'resolved':
     case 'responded':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
           <CheckCircle2 className="w-2.5 h-2.5" />
           Resolved
         </span>
       );
     case 'in_progress':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-500/15 text-blue-700 dark:text-sky-400 border border-blue-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black bg-blue-500/15 text-blue-700 dark:text-sky-400 border border-blue-500/20">
           <RefreshCw className="w-2.5 h-2.5" />
           In Progress
         </span>
       );
     case 'archived':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black bg-slate-500/15 text-slate-700 dark:text-slate-400 border border-slate-500/20">
           <Archive className="w-2.5 h-2.5" />
           Archived
         </span>
       );
     default:
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9.5px] font-black bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
           <Clock className="w-2.5 h-2.5" />
           Pending
         </span>
@@ -224,7 +224,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             ? 'Event Feedback Status Update'
             : 'Inquiry Status Update'
       }
-      maxWidth="max-w-lg"
+      maxWidth="max-w-xl"
       hideCloseButton={true}
     >
       <form onSubmit={handleSubmit} className="space-y-3 pt-0.5">
@@ -236,7 +236,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
 
         {isBulk ? (
           /* Bulk Mode Header Card */
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
               <div className="flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-blue-500 shrink-0" />
@@ -275,7 +275,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar p-0.5">
+              <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scrollbar overscroll-contain p-0.5">
                 {activeFeedbacksList.map((f: any, idx) => {
                   const hasEmail = Boolean(f.email);
                   const isRecipientSelected = hasEmail && selectedRecipientIds.has(f.id);
@@ -377,7 +377,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
           </div>
         )}
 
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-900 dark:text-white">
               {isBulk ? 'Admin Response Notes (Sent to all selected):' : 'Admin Response / Notes:'}
@@ -387,28 +387,46 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             </span>
           </div>
 
-          <div className="space-y-1">
-            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">
-              Quick Suggestions:
-            </span>
-            <div className="flex flex-wrap gap-1">
-              {presets.map((presetText, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setNote(presetText)}
-                  className="text-left text-[10px] px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 hover:bg-blue-50 dark:hover:bg-blue-950/40 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 transition-colors border border-slate-200/60 dark:border-slate-700/60 cursor-pointer line-clamp-1 max-w-[240px]"
-                >
-                  {presetText}
-                </button>
-              ))}
+          {/* Quick Suggestions Cards (Enlarged with Full Text) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
+                Quick Suggestions:
+              </span>
+              <span className="text-[9px] text-slate-400 italic">Click any suggestion to apply</span>
+            </div>
+            <div className="space-y-1.5">
+              {presets.map((presetText, idx) => {
+                const isSelectedPreset = note === presetText;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setNote(presetText)}
+                    className={`w-full text-left text-xs p-2.5 rounded-xl transition-all cursor-pointer border leading-relaxed ${
+                      isSelectedPreset
+                        ? 'bg-blue-50/90 dark:bg-blue-950/40 text-blue-700 dark:text-sky-300 border-blue-300 dark:border-blue-500/50 shadow-2xs ring-1 ring-blue-400/25 font-semibold'
+                        : 'bg-slate-100/80 dark:bg-slate-800/70 hover:bg-blue-50/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-300 border-slate-200/80 dark:border-slate-700/60 font-normal'
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 mt-0.5 font-mono">
+                        #{idx + 1}
+                      </span>
+                      <span className="text-[11.5px] leading-snug flex-1">
+                        {presetText}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            rows={2}
+            rows={2.5}
             disabled={isSubmitting}
             placeholder={isBulk ? "Enter response notes to dispatch to selected participants..." : "Enter response notes or feedback..."}
             className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 leading-relaxed"

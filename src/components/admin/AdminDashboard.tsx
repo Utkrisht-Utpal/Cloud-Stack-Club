@@ -2635,10 +2635,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                   });
                                 }}
                                 options={[
-                                  { value: 'pending', label: 'Pending' },
-                                  { value: 'in_progress', label: 'In Progress' },
-                                  { value: 'resolved', label: 'Resolved' },
-                                  { value: 'archived', label: 'Archived' },
+                                  { value: 'pending', label: '⏳ Pending' },
+                                  { value: 'in_progress', label: '🔄 In Progress' },
+                                  { value: 'resolved', label: '✅ Resolved' },
+                                  { value: 'archived', label: '📁 Archived' },
                                 ]}
                                 triggerClassName={`h-8 px-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-between gap-1.5 ${
                                   f.status === 'resolved' || f.status === 'responded'
