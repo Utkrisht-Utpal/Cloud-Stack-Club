@@ -2459,17 +2459,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                 <table className="w-full text-left text-xs border-collapse">
                   <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md shadow-sm">
                     <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 uppercase tracking-wider text-[10px]">
-                      <th className="py-3.5 px-3 w-10 text-center">
-                        <CustomCheckbox
-                          checked={
+                      <th className="py-3.5 px-3 w-12 text-center font-bold">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAllFeedbacks()}
+                          title={
                             (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).length > 0 &&
                             (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).every((f) => selectedFeedbackIds.has(f.id))
+                              ? 'Deselect All'
+                              : 'Select All'
                           }
-                          onChange={() => handleSelectAllFeedbacks()}
-                          className="justify-center"
-                        />
+                          className={`inline-flex items-center justify-center w-7 h-7 rounded-lg font-bold text-xs transition-all cursor-pointer select-none ${
+                            (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).length > 0 &&
+                            (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).every((f) => selectedFeedbackIds.has(f.id))
+                              ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 ring-1 ring-blue-400/40 hover:bg-blue-500'
+                              : selectedFeedbackIds.size > 0
+                                ? 'bg-blue-500/20 text-blue-600 dark:text-sky-400 border border-blue-500/40 hover:bg-blue-500/30'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700/60'
+                          }`}
+                        >
+                          {(feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).length > 0 &&
+                          (feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks).every((f) => selectedFeedbackIds.has(f.id)) ? (
+                            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                          ) : (
+                            '#'
+                          )}
+                        </button>
                       </th>
-                      <th className="py-3.5 px-2 font-bold">#</th>
                       <th className="py-3.5 px-4 font-bold">
                         {feedbackViewTab === 'event' ? 'ATTENDEE DETAILS' : 'SENDER DETAILS'}
                       </th>
@@ -2496,14 +2512,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                               : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
                           }`}
                         >
-                          <td className="py-3.5 px-3 text-center">
-                            <CustomCheckbox
-                              checked={isSelected}
-                              onChange={() => handleToggleSelectFeedback(f.id)}
-                              className="justify-center"
-                            />
+                          <td className="py-3.5 px-3 w-12 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSelectFeedback(f.id)}
+                              title={isSelected ? 'Click to deselect' : 'Click to select'}
+                              className={`group inline-flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer select-none ${
+                                isSelected
+                                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30 ring-1 ring-blue-400/40 hover:bg-blue-500'
+                                  : 'bg-slate-100/70 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-sky-300 hover:border-blue-300 dark:hover:border-blue-500/40 border border-transparent'
+                              }`}
+                            >
+                              {isSelected ? (
+                                <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                              ) : (
+                                <span className="group-hover:hidden">{idx + 1}</span>
+                              )}
+                              {!isSelected && (
+                                <Check className="w-3.5 h-3.5 stroke-[2] hidden group-hover:block text-blue-600 dark:text-sky-400" />
+                              )}
+                            </button>
                           </td>
-                          <td className="py-3.5 px-2 font-bold text-slate-400">{idx + 1}</td>
                           <td className="py-3.5 px-4 min-w-[230px]">
                             <div className="space-y-1.5">
                               <div className="font-bold text-slate-900 dark:text-white text-xs">{f.name}</div>
