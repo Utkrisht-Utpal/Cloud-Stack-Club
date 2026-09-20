@@ -9,6 +9,7 @@ import {
   Clock,
   Archive,
   RefreshCw,
+  Users,
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import type { FeedbackStatus } from '../../types/database';
@@ -17,6 +18,7 @@ interface UpdateFeedbackStatusModalProps {
   isOpen: boolean;
   onClose: () => void;
   feedback: any | null;
+  feedbacks?: any[];
   isEvent: boolean;
   targetStatus: FeedbackStatus;
   onConfirm: (
@@ -65,6 +67,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
   isOpen,
   onClose,
   feedback,
+  feedbacks,
   isEvent,
   targetStatus,
   onConfirm,
@@ -73,6 +76,10 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
   const [sendEmail, setSendEmail] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isBulk = Boolean(feedbacks && feedbacks.length > 1);
+  const activeFeedbacksList = feedbacks && feedbacks.length > 0 ? feedbacks : feedback ? [feedback] : [];
+  const validEmailCount = activeFeedbacksList.filter((f) => Boolean(f?.email)).length;
 
   const presets: string[] = React.useMemo(() => {
     if (isEvent) {
@@ -127,20 +134,20 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
     }
   }, [isOpen, presets]);
 
-  if (!feedback) return null;
+  if (!feedback && (!feedbacks || feedbacks.length === 0)) return null;
 
   const currentStatus =
-    feedback.status === 'unread'
+    feedback?.status === 'unread'
       ? 'pending'
-      : feedback.status === 'responded'
+      : feedback?.status === 'responded'
         ? 'resolved'
-        : feedback.status || 'pending';
+        : feedback?.status || 'pending';
 
-  const recipientName = feedback.name || 'Valued User';
-  const recipientEmail = feedback.email || '';
+  const recipientName = feedback?.name || 'Valued User';
+  const recipientEmail = feedback?.email || '';
   const itemTitle = isEvent
-    ? feedback.event_title || 'Event Feedback'
-    : feedback.subject || 'General Inquiry';
+    ? feedback?.event_title || 'Event Feedback'
+    : feedback?.subject || 'General Inquiry';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +173,13 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEvent ? 'Event Feedback Status Update' : 'Inquiry Status Update'}
+      title={
+        isBulk
+          ? `Bulk ${isEvent ? 'Event Feedback' : 'Inquiry'} Status Update`
+          : isEvent
+            ? 'Event Feedback Status Update'
+            : 'Inquiry Status Update'
+      }
       maxWidth="max-w-xl"
       hideCloseButton={true}
     >
@@ -177,51 +190,94 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
           </div>
         )}
 
-        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
-          <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
-            <div className="flex items-center gap-1.5">
-              {isEvent ? (
-                <Sparkles className="w-4 h-4 text-purple-500 shrink-0" />
-              ) : (
-                <MessageSquare className="w-4 h-4 text-blue-500 shrink-0" />
-              )}
-              <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[280px]">
-                {itemTitle}
-              </span>
+        {isBulk ? (
+          /* Bulk Mode Header Card */
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500 shrink-0" />
+                <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                  {activeFeedbacksList.length} Feedbacks Selected
+                </span>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Change to:</span>
+                {getStatusBadge(targetStatus)}
+              </div>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              {getStatusBadge(currentStatus)}
-              <ArrowRight className="w-3 h-3 text-slate-400" />
-              {getStatusBadge(targetStatus)}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recipient:</span>
-              <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{recipientName}</p>
-            </div>
-            <div className="sm:text-right">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Email Address:</span>
-              <p className="font-mono text-slate-600 dark:text-slate-300 mt-0.5 truncate">{recipientEmail || 'N/A'}</p>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                Target Recipients ({validEmailCount} with valid email):
+              </span>
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar p-1">
+                {activeFeedbacksList.map((f: any, idx) => (
+                  <span
+                    key={f.id || idx}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 shadow-2xs"
+                    title={f.email}
+                  >
+                    <span className="text-slate-400 font-mono text-[10px]">#{idx + 1}</span>
+                    <span className="truncate max-w-[140px]">{f.name || 'Anonymous'}</span>
+                    {f.email ? (
+                      <Mail className="w-3 h-3 text-blue-500/80 shrink-0" />
+                    ) : (
+                      <span className="text-[9px] text-amber-500 font-normal">(No Email)</span>
+                    )}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
+        ) : (
+          /* Single Mode Header Card */
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
+              <div className="flex items-center gap-1.5">
+                {isEvent ? (
+                  <Sparkles className="w-4 h-4 text-purple-500 shrink-0" />
+                ) : (
+                  <MessageSquare className="w-4 h-4 text-blue-500 shrink-0" />
+                )}
+                <span className="font-extrabold text-sm text-slate-900 dark:text-white truncate max-w-[280px]">
+                  {itemTitle}
+                </span>
+              </div>
 
-          {feedback.message && (
-            <div className="pt-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Original Message:</span>
-              <p className="mt-1 p-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 italic line-clamp-3 leading-relaxed">
-                "{feedback.message}"
-              </p>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {getStatusBadge(currentStatus)}
+                <ArrowRight className="w-3 h-3 text-slate-400" />
+                {getStatusBadge(targetStatus)}
+              </div>
             </div>
-          )}
-        </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Recipient:</span>
+                <p className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">{recipientName}</p>
+              </div>
+              <div className="sm:text-right">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Email Address:</span>
+                <p className="font-mono text-slate-600 dark:text-slate-300 mt-0.5 truncate">{recipientEmail || 'N/A'}</p>
+              </div>
+            </div>
+
+            {feedback?.message && (
+              <div className="pt-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Original Message:</span>
+                <p className="mt-1 p-2 rounded-xl bg-white/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 italic line-clamp-3 leading-relaxed">
+                  "{feedback.message}"
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-900 dark:text-white">
-              Admin Response / Feedback Notes:
+              {isBulk ? 'Admin Response Notes (Sent to all selected recipients):' : 'Admin Response / Feedback Notes:'}
             </label>
             <span className="text-[10px] text-slate-400 font-semibold">
               {note.length} characters
@@ -251,7 +307,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             disabled={isSubmitting}
-            placeholder="Enter response notes or feedback for the user..."
+            placeholder={isBulk ? "Enter response notes to be dispatched to all selected participants..." : "Enter response notes or feedback for the user..."}
             className="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-700/80 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 leading-relaxed"
           />
         </div>
@@ -261,7 +317,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             <Mail className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
             <div className="text-xs">
               <p className="font-bold text-slate-900 dark:text-white">
-                Send email notification to recipient
+                {isBulk ? `Send email notification to all ${validEmailCount} recipients` : 'Send email notification to recipient'}
               </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 Dispatches an automated email from the club account with your feedback notes.
@@ -272,7 +328,7 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             type="checkbox"
             checked={sendEmail}
             onChange={(e) => setSendEmail(e.target.checked)}
-            disabled={isSubmitting || !recipientEmail}
+            disabled={isSubmitting || validEmailCount === 0}
             className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer shrink-0"
           />
         </div>
@@ -295,12 +351,20 @@ export const UpdateFeedbackStatusModal: React.FC<UpdateFeedbackStatusModalProps>
             {isSubmitting ? (
               <>
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
-                <span>Updating &amp; Sending...</span>
+                <span>{isBulk ? `Updating ${activeFeedbacksList.length} Items...` : 'Updating & Sending...'}</span>
               </>
             ) : (
               <>
                 <Send className="w-3.5 h-3.5 shrink-0" />
-                <span>{sendEmail ? 'Update & Send Email' : 'Update Status Only'}</span>
+                <span>
+                  {isBulk
+                    ? sendEmail
+                      ? `Update & Send ${validEmailCount} Emails`
+                      : `Update ${activeFeedbacksList.length} Statuses Only`
+                    : sendEmail
+                      ? 'Update & Send Email'
+                      : 'Update Status Only'}
+                </span>
               </>
             )}
           </button>
