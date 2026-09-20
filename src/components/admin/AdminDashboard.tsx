@@ -2612,6 +2612,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                           <td className="py-3.5 px-4 text-right whitespace-nowrap">
                             <div className="inline-block text-left">
                               <CustomSelect
+                                align="right"
                                 value={
                                   f.status === 'unread'
                                     ? 'pending'
