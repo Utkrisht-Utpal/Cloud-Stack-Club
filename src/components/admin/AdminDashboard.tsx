@@ -169,9 +169,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const [broadcastingEvent, setBroadcastingEvent] = useState<Event | null>(null);
   const [pendingStatusFeedback, setPendingStatusFeedback] = useState<{
     feedback: any;
+    feedbacks?: any[];
     isEvent: boolean;
     targetStatus: FeedbackStatus;
   } | null>(null);
+  const [selectedFeedbackIds, setSelectedFeedbackIds] = useState<Set<string>>(new Set());
+  const [bulkFeedbackStatus, setBulkFeedbackStatus] = useState<FeedbackStatus>('resolved');
 
   // Notice Board State
   const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
@@ -470,12 +473,107 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     }
   };
 
+  const handleToggleSelectFeedback = (id: string) => {
+    setSelectedFeedbackIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAllFeedbacks = () => {
+    const activeList = feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks;
+    const allSelected = activeList.length > 0 && activeList.every((f) => selectedFeedbackIds.has(f.id));
+    if (allSelected) {
+      setSelectedFeedbackIds(new Set());
+    } else {
+      setSelectedFeedbackIds(new Set(activeList.map((f) => f.id)));
+    }
+  };
+
+  const handleOpenBulkStatusModal = (statusToSet?: FeedbackStatus) => {
+    const targetStatus = statusToSet || bulkFeedbackStatus;
+    const activeList = feedbackViewTab === 'event' ? filteredEventFeedbacks : filteredContactFeedbacks;
+    const selectedItems = activeList.filter((f) => selectedFeedbackIds.has(f.id));
+    if (selectedItems.length === 0) return;
+
+    setPendingStatusFeedback({
+      feedback: selectedItems[0],
+      feedbacks: selectedItems,
+      isEvent: feedbackViewTab === 'event',
+      targetStatus: targetStatus,
+    });
+  };
+
   const handleConfirmFeedbackStatusUpdate = async (
     targetFeedback: any,
     newStatus: FeedbackStatus,
     adminNote: string,
     shouldSendEmail: boolean
   ) => {
+    // Bulk Update Handler
+    if (pendingStatusFeedback?.feedbacks && pendingStatusFeedback.feedbacks.length > 1) {
+      const feedbacksToUpdate = pendingStatusFeedback.feedbacks;
+      const isEvent = feedbackViewTab === 'event';
+      const targetIds = new Set(feedbacksToUpdate.map((f) => f.id));
+
+      // Optimistic UI updates
+      if (isEvent) {
+        setEventFeedbacksList((prev) =>
+          prev.map((f) => (targetIds.has(f.id) ? { ...f, status: newStatus } : f))
+        );
+      } else {
+        setContactFeedbacksList((prev) =>
+          prev.map((f) => (targetIds.has(f.id) ? { ...f, status: newStatus } : f))
+        );
+      }
+
+      // Database batch updates in parallel
+      const dbPromises = feedbacksToUpdate.map((f) =>
+        isEvent
+          ? updateEventFeedbackStatus(f.id, newStatus)
+          : updateFeedbackStatus(f.id, newStatus)
+      );
+      await Promise.allSettled(dbPromises);
+
+      // Email batch dispatch
+      if (shouldSendEmail) {
+        const emailPromises = feedbacksToUpdate.map(async (f) => {
+          if (f.email) {
+            try {
+              if (isEvent) {
+                await sendEventFeedbackEmail(
+                  { name: f.name, email: f.email, event_title: f.event_title },
+                  adminNote
+                );
+              } else {
+                await sendContactUsStatusEmail(
+                  { name: f.name, email: f.email, subject: f.subject },
+                  newStatus,
+                  adminNote
+                );
+              }
+            } catch (e) {
+              console.warn(`Could not dispatch email to ${f.email}:`, e);
+            }
+          }
+        });
+        await Promise.allSettled(emailPromises);
+      }
+
+      setSelectedFeedbackIds(new Set());
+      setActionSuccess(
+        `Successfully updated ${feedbacksToUpdate.length} feedback(s) to "${newStatus.toUpperCase()}"`
+      );
+      setTimeout(() => setActionSuccess(null), 3500);
+      return;
+    }
+
+    // Single item update
     const id = targetFeedback.id;
     const isEvent = feedbackViewTab === 'event' || !!targetFeedback.event_id || !!targetFeedback.event_title;
 
