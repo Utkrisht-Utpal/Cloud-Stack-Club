@@ -2646,12 +2646,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                                         ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30'
                                         : 'bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30'
                                 }`}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 </table>
               </div>
             )}
