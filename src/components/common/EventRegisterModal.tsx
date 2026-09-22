@@ -29,6 +29,7 @@ import { registerForEvent } from '../../services/registrations';
 import { getStoredWhatsappUrlsMap, saveStoredWhatsappUrl } from '../../services/events';
 import { sendIndividualRegistrationEmail, sendTeamRegistrationEmails } from '../../services/email';
 import { formatEventTime } from '../../utils/formatters';
+import { triggerRegistrationConfetti } from '../../utils/confetti';
 import type { Event, EventFormField, EventRegistration } from '../../types/database';
 
 // WhatsApp brand icon (inline SVG — Lucide does not include WhatsApp)
@@ -376,6 +377,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
       setRegistrationResult(result);
       resetCooldown();
+      triggerRegistrationConfetti();
       if (onSuccessToast) onSuccessToast();
 
       // Trigger background automated confirmation emails
