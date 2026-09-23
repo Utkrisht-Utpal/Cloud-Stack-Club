@@ -307,11 +307,12 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   {activeAdEvent.title}
                 </h2>
 
-                {/* Meta Details Pill Row */}
+                {/* Meta Details Pill Row (Unified Event Info Card) */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="w-7 h-7 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-                      <Calendar className="w-3.5 h-3.5" />
+                  {/* Date */}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                      <Calendar className="w-4 h-4" />
                     </div>
                     <div>
                       <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Date</div>
@@ -322,26 +323,33 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   </div>
 
                   {activeAdEvent.start_time && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="w-7 h-7 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
-                        <Clock className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Time</div>
-                        <div className="text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                          {formatEventTime(activeAdEvent.start_time)}
+                    <>
+                      <div className="hidden sm:block w-px h-7 bg-slate-200 dark:bg-slate-700/80 shrink-0" />
+                      {/* Time */}
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                          <Clock className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Time</div>
+                          <div className="text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                            {formatEventTime(activeAdEvent.start_time)}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </>
                   )}
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                      <MapPin className="w-3.5 h-3.5" />
+                  <div className="hidden sm:block w-px h-7 bg-slate-200 dark:bg-slate-700/80 shrink-0" />
+
+                  {/* Venue */}
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <MapPin className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Venue</div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white leading-tight break-words">
                         {activeAdEvent.location || 'CU Venue'}
                       </div>
                     </div>
