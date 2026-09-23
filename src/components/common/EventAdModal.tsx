@@ -307,13 +307,6 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   {activeAdEvent.title}
                 </h2>
 
-                {/* Event Description */}
-                {activeAdEvent.description && (
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed max-h-32 overflow-y-auto pr-1">
-                    {activeAdEvent.description}
-                  </p>
-                )}
-
                 {/* Meta Details Pill Row */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
                   <div className="flex items-center gap-2 shrink-0">
@@ -357,7 +350,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
                 {/* Additional Details Badges (Only shown for upcoming / registration-active events, hidden when ongoing or in feedback window) */}
                 {!isFeedbackActive && (
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
                     {activeAdEvent.supports_teams && (
                       <span className="px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5">
                         <Users2 className="w-3.5 h-3.5" />
@@ -392,6 +385,21 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                         <span>Registration Ends: {regEndFormatted}</span>
                       </span>
                     )}
+                  </div>
+                )}
+
+                {/* Event Description Card */}
+                {activeAdEvent.description && (
+                  <div className="p-3 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-1">
+                    <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                      <FileText className="w-3 h-3 text-blue-500 shrink-0" />
+                      <span>About This Event</span>
+                    </div>
+                    <div className="max-h-28 sm:max-h-32 overflow-y-auto custom-scrollbar pr-1.5">
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line font-normal">
+                        {activeAdEvent.description}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
