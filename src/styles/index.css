@@ -151,8 +151,8 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: #1d4ed8;
-  animation: hero-gradient-flow 6s ease-in-out infinite;
-  will-change: background-position, opacity, transform;
+  animation: hero-gradient-flow 4s ease-in-out infinite;
+  will-change: background-position;
   display: inline-block;
 }
 
@@ -173,6 +173,67 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-title-gradient {
     background-position: 30% 50%;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   HERO SYNCHRONIZED BREATHING (Logo & Title)
+   Locked to the exact same GPU compositor timeline (4s ease-in-out)
+───────────────────────────────────────────── */
+@keyframes hero-breathe-unit {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+  }
+  50% {
+    transform: scale(1.035) translateY(-5px);
+  }
+}
+
+@keyframes hero-breathe-aura {
+  0%, 100% {
+    transform: scale(0.9);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.55;
+  }
+}
+
+.animate-hero-breathe {
+  animation: hero-breathe-unit 4s ease-in-out infinite;
+  will-change: transform;
+  transform-origin: center center;
+}
+
+.animate-breathe-logo {
+  animation: hero-breathe-unit 4s ease-in-out infinite;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+}
+
+.animate-breathe-title {
+  animation: hero-breathe-unit 4s ease-in-out infinite;
+  will-change: transform;
+  display: inline-block;
+  transform-origin: center center;
+}
+
+.animate-breathe-aura {
+  animation: hero-breathe-aura 4s ease-in-out infinite;
+  will-change: transform, opacity;
+  transform-origin: center center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-breathe,
+  .animate-breathe-logo,
+  .animate-breathe-title,
+  .animate-breathe-aura {
+    animation: none !important;
   }
 }
 
