@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, MotionConfig } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Terminal, Cpu, Bell, Sparkles, Flame, Info, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { TECH_BADGES } from '../../constants/data';
@@ -192,40 +192,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
 
         {/* Main Hero Header */}
         <div className="text-center max-w-4xl mx-auto">
-          {/* Main Shield Logo Badge */}
+          {/* Synchronized Hero Emblem & Title Breathing Unit */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            className="flex justify-center mb-6"
-          >
-            <ClubLogo size="lg" showText={false} />
-          </motion.div>
-
-          <motion.h1
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.1 }}
-            className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]"
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center justify-center"
           >
-            <MotionConfig reducedMotion="never">
-              <motion.span
-                className="hero-title-gradient"
-                animate={{
-                  opacity: [1, 0.82, 1],
-                  scale: [1, 1.018, 1],
-                }}
-                transition={{
-                  duration: 3.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  repeatType: 'loop',
-                }}
-              >
-                Cloud Stack Club
-              </motion.span>
-            </MotionConfig>
-          </motion.h1>
+            <div className="animate-hero-breathe flex flex-col items-center justify-center">
+              {/* Main Shield Logo Badge */}
+              <div className="relative flex items-center justify-center mb-6">
+                {/* Ambient breathing aura behind the shield */}
+                <div className="absolute inset-0 bg-blue-500/25 dark:bg-sky-400/25 rounded-full blur-2xl pointer-events-none -z-10 animate-breathe-aura" />
+                <ClubLogo size="lg" showText={false} />
+              </div>
+
+              {/* Main Title */}
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]">
+                <span className="hero-title-gradient">
+                  Cloud Stack Club
+                </span>
+              </h1>
+            </div>
+          </motion.div>
 
           <motion.p
             initial={{ opacity: 0, y: 15 }}

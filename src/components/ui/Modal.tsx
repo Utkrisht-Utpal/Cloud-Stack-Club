@@ -89,7 +89,7 @@ export const Modal: React.FC<ModalProps> = ({
                 </button>
               )}
             </div>
-            <div className="overflow-y-auto custom-scrollbar overscroll-contain pr-1 flex-1 min-h-0">
+            <div className="overflow-x-hidden overflow-y-auto custom-scrollbar overscroll-contain px-2 pb-4 pt-1 flex-1 min-h-0">
               {children}
             </div>
           </motion.div>
