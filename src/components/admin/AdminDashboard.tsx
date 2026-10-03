@@ -740,6 +740,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     e.preventDefault();
     if (!newEventData.title || !newEventData.date || !newEventData.time) return;
 
+    const trimmedTitle = newEventData.title.trim();
+    const autoSlug = generateSlug(trimmedTitle) || `event-${Date.now()}`;
+    const normalizedTitle = trimmedTitle.toLowerCase();
+
+    const isDuplicate = eventsList.some(
+      (e) =>
+        e.status !== 'cancelled' &&
+        (e.title.trim().toLowerCase() === normalizedTitle ||
+          (e.slug && e.slug.toLowerCase() === autoSlug.toLowerCase()))
+    );
+
+    if (isDuplicate) {
+      setActionError(`An event named "${trimmedTitle}" already exists. Please choose a different event title.`);
+      setTimeout(() => setActionError(null), 4500);
+      return;
+    }
+
     if (newEventData.registration_enabled && newEventData.registration_end && newEventData.date) {
       const regEnd = newEventData.registration_end.split('T')[0];
       const eventDate = newEventData.date.split('T')[0];
@@ -756,7 +773,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
     setIsUploadingMedia(true);
     try {
       const eventId = generateUUID();
-      const autoSlug = generateSlug(newEventData.title) || `event-${Date.now()}`;
 
       let imageUrl: string | null = null;
       if (eventPosterFile) {
@@ -771,7 +787,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
 
       const newEventObj: Event = {
         id: eventId,
-        title: newEventData.title.trim(),
+        title: trimmedTitle,
         category: newEventData.category || null,
         slug: autoSlug,
         description: newEventData.description.trim() || null,
@@ -795,9 +811,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         updated_at: new Date().toISOString(),
       };
 
-      // Optimistic UI Update: Update React state & close modal INSTANTLY
-      setEventsList((prev) => [newEventObj, ...prev.filter((e) => e.id !== eventId)]);
-      setActionSuccess(`Successfully created event "${newEventData.title}"!`);
+      const created = await createEvent(newEventObj);
+      setEventsList((prev) => [created || newEventObj, ...prev.filter((e) => e.id !== eventId)]);
+      setActionSuccess(`Successfully created event "${trimmedTitle}"!`);
       setIsCreateEventOpen(false);
       setEventPosterFile(null);
       setNewEventData({
@@ -818,12 +834,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         max_registrations: '',
       });
       setTimeout(() => setActionSuccess(null), 3000);
-
-      // Async DB Persistence & instant refresh
-      await createEvent(newEventObj);
       await loadAllEvents();
     } catch (err: any) {
-      showAlert('Event Creation Failed', err?.message || 'Unknown error occurred while creating event.', 'error');
+      setActionError(err?.message || 'Failed to create event. Please try again.');
+      setTimeout(() => setActionError(null), 4500);
     } finally {
       setIsUploadingMedia(false);
     }
@@ -854,6 +868,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
   const handleEditEventSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingEvent || !editEventData.title) return;
+
+    const trimmedTitle = editEventData.title.trim();
+    const autoSlug = generateSlug(trimmedTitle) || editingEvent.slug;
+    const normalizedTitle = trimmedTitle.toLowerCase();
+
+    const isDuplicate = eventsList.some(
+      (e) =>
+        e.id !== editingEvent.id &&
+        e.status !== 'cancelled' &&
+        (e.title.trim().toLowerCase() === normalizedTitle ||
+          (autoSlug && e.slug && e.slug.toLowerCase() === autoSlug.toLowerCase()))
+    );
+
+    if (isDuplicate) {
+      setActionError(`An event named "${trimmedTitle}" already exists. Please choose a different event title.`);
+      setTimeout(() => setActionError(null), 4500);
+      return;
+    }
 
     if (editEventData.registration_enabled && editEventData.registration_end && editEventData.date) {
       const regEnd = editEventData.registration_end.split('T')[0];
@@ -897,8 +929,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       }
 
       const updatedPayload: Partial<Event> = {
-        title: editEventData.title.trim(),
-        slug: generateSlug(editEventData.title.trim()) || editingEvent.slug,
+        title: trimmedTitle,
+        slug: autoSlug,
         category: editEventData.category || null,
         description: editEventData.description.trim() || null,
         date: editEventData.date,
@@ -919,20 +951,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         updated_at: new Date().toISOString(),
       };
 
-      // Optimistic UI Update: Update React state & close modal INSTANTLY
+      const updated = await updateEventAdmin(editingEvent.id, updatedPayload);
       setEventsList((prev) =>
-        prev.map((e) => (e.id === editingEvent.id ? { ...e, ...updatedPayload } : e))
+        prev.map((e) => (e.id === editingEvent.id ? { ...e, ...(updated || updatedPayload) } : e))
       );
-      setActionSuccess(`Successfully updated event "${editEventData.title}"!`);
+      setActionSuccess(`Successfully updated event "${trimmedTitle}"!`);
       setEditingEvent(null);
       setEditPosterFile(null);
       setTimeout(() => setActionSuccess(null), 3000);
-
-      // Async DB Persistence & instant refresh
-      await updateEventAdmin(editingEvent.id, updatedPayload);
       await loadAllEvents();
     } catch (err: any) {
-      showAlert('Event Update Failed', err?.message || 'Unknown error occurred while updating event.', 'error');
+      setActionError(err?.message || 'Failed to update event. Please try again.');
+      setTimeout(() => setActionError(null), 4500);
     } finally {
       setIsUploadingMedia(false);
     }
