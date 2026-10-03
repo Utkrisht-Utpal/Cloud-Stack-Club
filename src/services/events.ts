@@ -494,6 +494,15 @@ export const createEvent = async (eventPayload: Partial<Event>): Promise<Event> 
   }
 
   if (error) {
+    if (
+      (error as any).code === '23505' ||
+      error.message.includes('unique constraint') ||
+      error.message.includes('events_slug_key') ||
+      error.message.includes('duplicate key')
+    ) {
+      removeLocalCustomEvent(createdEvent.id);
+      throw new Error(`An event named "${createdEvent.title}" already exists. Please choose a different event title.`);
+    }
     console.warn('DB Event insert notice (event saved locally):', error.message);
   }
 
@@ -599,6 +608,18 @@ export const updateEventAdmin = async (
       .select('*')
       .maybeSingle();
     data = retry.data;
+    error = retry.error;
+  }
+
+  if (error) {
+    if (
+      (error as any).code === '23505' ||
+      error.message.includes('unique constraint') ||
+      error.message.includes('events_slug_key') ||
+      error.message.includes('duplicate key')
+    ) {
+      throw new Error(`An event named "${eventPayload.title || 'this title'}" already exists. Please choose a different event title.`);
+    }
   }
 
   const mergedResult: Event = {
