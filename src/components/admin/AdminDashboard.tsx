@@ -2748,7 +2748,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         )}
 
         {/* Create Event Modal */}
-        <Modal isOpen={isCreateEventOpen} onClose={() => setIsCreateEventOpen(false)} title="Create New Event">
+        <Modal isOpen={isCreateEventOpen} onClose={() => setIsCreateEventOpen(false)} title="Create New Event" maxWidth="max-w-[515px]">
           <form onSubmit={handleCreateEventSubmit} className="space-y-4">
             {/* Event Title & Event Category Side-by-Side */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
@@ -3073,7 +3073,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         </Modal>
 
         {/* Edit Event Modal */}
-        <Modal isOpen={!!editingEvent} onClose={() => setEditingEvent(null)} title={`Edit Event — ${editingEvent?.title || ''}`}>
+        <Modal isOpen={!!editingEvent} onClose={() => setEditingEvent(null)} title={`Edit Event — ${editingEvent?.title || ''}`} maxWidth="max-w-[515px]">
           <form onSubmit={handleEditEventSubmit} className="space-y-4">
             {/* Event Title & Event Category Side-by-Side */}
             <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
