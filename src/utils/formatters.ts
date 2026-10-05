@@ -62,21 +62,77 @@ export const formatEventDate = (dateStr?: string | null): string => {
 };
 
 /**
+ * Combines date string (YYYY-MM-DD) and optional time string (e.g. "14:30" or "02:30 PM")
+ * into a local Date object. If time is omitted or invalid, defaults to start of day (00:00:00).
+ */
+export const getEventStartDateTime = (dateStr?: string | null, timeStr?: string | null): Date | null => {
+  if (!dateStr) return null;
+  const cleanDate = dateStr.split('T')[0];
+  const parts = cleanDate.split('-');
+  if (parts.length < 3) return null;
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  const d = parseInt(parts[2], 10);
+  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
+
+  let hours = 0;
+  let minutes = 0;
+
+  if (timeStr && timeStr.trim()) {
+    const trimmed = timeStr.trim();
+    const isPM = /pm/i.test(trimmed);
+    const isAM = /am/i.test(trimmed);
+    const numericPart = trimmed.replace(/[^\d:]/g, '');
+    const timeParts = numericPart.split(':');
+    if (timeParts.length >= 1) {
+      let h = parseInt(timeParts[0], 10);
+      let min = timeParts.length >= 2 ? parseInt(timeParts[1], 10) : 0;
+      if (!isNaN(h)) {
+        if (isPM && h < 12) h += 12;
+        if (isAM && h === 12) h = 0;
+        hours = h;
+      }
+      if (!isNaN(min)) {
+        minutes = min;
+      }
+    }
+  }
+
+  return new Date(y, m - 1, d, hours, minutes, 0, 0);
+};
+
+/**
  * Checks if feedback is currently open for an event (during live event or T+1 feedback window)
+ * Evaluates both the exact Date AND Time.
  */
 export const isFeedbackActive = (evt?: any): boolean => {
   if (!evt || !evt.date) return false;
+  if (evt.status === 'cancelled' || evt.status === 'inactive') return false;
   if (evt.status === 'live') return true;
+
   try {
-    const today = new Date();
+    const now = new Date();
     const cleanDate = evt.date.split('T')[0];
     const [ey, em, ed] = cleanDate.split('-').map(Number);
     if (!ey || !em || !ed) return false;
-    const dEvent = new Date(ey, em - 1, ed);
-    const dToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const diffTime = dEvent.getTime() - dToday.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays === 0 || diffDays === -1;
+
+    // Feedback window ends at the end of Day T+1 (23:59:59.999 of the day following event)
+    const endOfTPlusOne = new Date(ey, em - 1, ed + 2, 0, 0, 0, 0).getTime();
+
+    // Start time of the event
+    const startDateTime = getEventStartDateTime(evt.date, evt.start_time);
+    if (!startDateTime) return false;
+
+    const startTimeMs = startDateTime.getTime();
+    const nowMs = now.getTime();
+
+    // If event is explicitly marked completed, active as long as within T+1 window
+    if (evt.status === 'completed') {
+      return nowMs < endOfTPlusOne;
+    }
+
+    // Feedback opens when the event's scheduled start time arrives, and stays open until T+1 window ends
+    return nowMs >= startTimeMs && nowMs < endOfTPlusOne;
   } catch {
     return false;
   }
@@ -87,26 +143,33 @@ export interface EventStatusInfo {
   type: 'ongoing' | 'upcoming' | 'completed';
 }
 
-export const getEventStatusInfo = (dateStr?: string | null): EventStatusInfo => {
+export const getEventStatusInfo = (dateStr?: string | null, timeStr?: string | null): EventStatusInfo => {
   if (!dateStr) return { label: 'Upcoming Event', type: 'upcoming' };
   try {
-    const today = new Date();
-    const todayYMD = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    const eventDate = new Date(dateStr);
-    const eventYMD = `${eventDate.getFullYear()}-${String(eventDate.getMonth() + 1).padStart(2, '0')}-${String(eventDate.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    const startDateTime = getEventStartDateTime(dateStr, timeStr);
+    if (!startDateTime) return { label: 'Upcoming Event', type: 'upcoming' };
 
-    if (eventYMD === todayYMD) {
+    const cleanDate = dateStr.split('T')[0];
+    const [ey, em, ed] = cleanDate.split('-').map(Number);
+    if (!ey || !em || !ed) return { label: 'Upcoming Event', type: 'upcoming' };
+
+    const endOfDay = new Date(ey, em - 1, ed, 23, 59, 59, 999).getTime();
+    const nowMs = now.getTime();
+    const startMs = startDateTime.getTime();
+
+    // If current time is before event's scheduled date & time
+    if (nowMs < startMs) {
+      return { label: 'Upcoming Event', type: 'upcoming' };
+    }
+
+    // If event has started and it is still event day
+    if (nowMs >= startMs && nowMs <= endOfDay) {
       return { label: 'Ongoing Event', type: 'ongoing' };
     }
-    
-    const dToday = new Date(todayYMD);
-    const dEvent = new Date(eventYMD);
 
-    if (dEvent < dToday) {
-      return { label: 'Completed Event', type: 'completed' };
-    }
-    return { label: 'Upcoming Event', type: 'upcoming' };
+    // Beyond event day
+    return { label: 'Completed Event', type: 'completed' };
   } catch {
     return { label: 'Upcoming Event', type: 'upcoming' };
   }
