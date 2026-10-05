@@ -58,6 +58,8 @@ import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { GalleryManagement } from './GalleryManagement';
 import { TeamMediaManagement } from './TeamMediaManagement';
 import { EventRulesModal } from './EventRulesModal';
+import { RichDescriptionEditor } from './RichDescriptionEditor';
+import { stripHtml } from '../../utils/descriptionFormatting';
 import { RejectMemberModal } from './RejectMemberModal';
 import { BroadcastEventModal } from './BroadcastEventModal';
 import { UpdateFeedbackStatusModal } from './UpdateFeedbackStatusModal';
@@ -2149,7 +2151,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                             })()}
                           </div>
                           <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed font-medium">
-                            {evt.description || 'No description provided for this event.'}
+                            {stripHtml(evt.description) || 'No description provided for this event.'}
                           </p>
                         </div>
 
@@ -2869,12 +2871,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Description
               </label>
-              <textarea
-                rows={3}
+              <RichDescriptionEditor
                 value={newEventData.description}
-                onChange={(e) => setNewEventData({ ...newEventData, description: e.target.value })}
+                onChange={(val) => setNewEventData({ ...newEventData, description: val })}
                 placeholder="Event details, schedule, and guidelines..."
-                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
               />
             </div>
 
@@ -3223,11 +3223,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 Description
               </label>
-              <textarea
-                rows={3}
+              <RichDescriptionEditor
                 value={editEventData.description}
-                onChange={(e) => setEditEventData({ ...editEventData, description: e.target.value })}
-                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-sm border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                onChange={(val) => setEditEventData({ ...editEventData, description: val })}
+                placeholder="Event details, schedule, and guidelines..."
               />
             </div>
 

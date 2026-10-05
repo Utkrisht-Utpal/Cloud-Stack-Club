@@ -30,6 +30,7 @@ import {
   isHtmlRules,
   hasRulesTextContent,
 } from '../utils/rulesFormatting';
+import { sanitizeDescriptionHtml } from '../utils/descriptionFormatting';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import type { Event, GalleryPhoto } from '../types/database';
@@ -426,10 +427,16 @@ export const EventDetailPage: React.FC = () => {
         <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
           About the Event
         </h2>
-        <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line font-medium">
-          {event.description ||
-            'Join us for this exciting Cloud Stack Club session designed to provide hands-on experience and real-world skills.'}
-        </p>
+        {event.description ? (
+          <div
+            className="public-description-content text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed font-medium space-y-2"
+            dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(event.description) }}
+          />
+        ) : (
+          <p className="text-sm sm:text-base text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+            Join us for this exciting Cloud Stack Club session designed to provide hands-on experience and real-world skills.
+          </p>
+        )}
       </div>
 
       {/* Card 3: Rules & Participation Guidelines (only shown for ongoing or upcoming events) */}

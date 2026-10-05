@@ -452,5 +452,87 @@ html.horizontal-scroll-active body {
     -moz-appearance: textfield;
     appearance: textfield;
   }
+
+  /* Public Event Description Rich Formatting */
+  .public-description-content blockquote {
+    border-left: 3px solid #3b82f6;
+    padding-left: 0.75rem;
+    margin: 0.5rem 0;
+    font-style: italic;
+    background-color: rgba(59, 130, 246, 0.08);
+    border-radius: 0 0.375rem 0.375rem 0;
+  }
+  .public-description-content ul {
+    list-style-type: disc !important;
+    padding-left: 1.5rem !important;
+    margin: 0.4rem 0 !important;
+  }
+  .public-description-content ol {
+    list-style-type: decimal !important;
+    padding-left: 1.5rem !important;
+    margin: 0.4rem 0 !important;
+  }
+  .public-description-content li {
+    margin: 0.25rem 0 !important;
+  }
+  .public-description-content code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background-color: rgba(148, 163, 184, 0.2);
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.25rem;
+    font-size: 0.85em;
+  }
+  :where(.dark, .dark *) .public-description-content code {
+    background-color: rgba(51, 65, 85, 0.5);
+    color: #f472b6;
+  }
+
+  /* Adaptive theme text utility */
+  .theme-adaptive-text {
+    color: var(--text-main, #0f172a) !important;
+  }
+  :where(.dark, .dark *) .theme-adaptive-text {
+    color: var(--text-main, #f8fafc) !important;
+  }
+
+  /* Theme Contrast Safeguards for Public Rich Descriptions */
+  :not(.dark) .public-description-content font[color="#ffffff" i],
+  :not(.dark) .public-description-content font[color="#fff" i],
+  :not(.dark) .public-description-content font[color="#94a3b8" i],
+  :not(.dark) .public-description-content font[color="#cbd5e1" i],
+  :not(.dark) .public-description-content font[color="#e2e8f0" i],
+  :not(.dark) .public-description-content font[color="#f8fafc" i],
+  :not(.dark) .public-description-content font[color="#f1f5f9" i],
+  :not(.dark) .public-description-content [style*="color: #ffffff" i],
+  :not(.dark) .public-description-content [style*="color: #fff" i],
+  :not(.dark) .public-description-content [style*="color: #94a3b8" i],
+  :not(.dark) .public-description-content [style*="color: #cbd5e1" i],
+  :not(.dark) .public-description-content [style*="color: #e2e8f0" i],
+  :not(.dark) .public-description-content [style*="color: #f8fafc" i],
+  :not(.dark) .public-description-content [style*="color: rgb(255, 255, 255)"],
+  :not(.dark) .public-description-content [style*="color: rgb(148, 163, 184)"],
+  :not(.dark) .public-description-content [style*="color: rgb(203, 213, 225)"] {
+    color: var(--text-main, #0f172a) !important;
+  }
+
+  :where(.dark, .dark *) .public-description-content font[color="#000000" i],
+  :where(.dark, .dark *) .public-description-content font[color="#000" i],
+  :where(.dark, .dark *) .public-description-content font[color="#0f172a" i],
+  :where(.dark, .dark *) .public-description-content font[color="#1e293b" i],
+  :where(.dark, .dark *) .public-description-content font[color="#334155" i],
+  :where(.dark, .dark *) .public-description-content font[color="#475569" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: #000000" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: #000" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: #0f172a" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: #1e293b" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: #334155" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: #475569" i],
+  :where(.dark, .dark *) .public-description-content [style*="color: rgb(0, 0, 0)"],
+  :where(.dark, .dark *) .public-description-content [style*="color: rgb(15, 23, 42)"],
+  :where(.dark, .dark *) .public-description-content [style*="color: rgb(30, 41, 59)"],
+  :where(.dark, .dark *) .public-description-content [style*="color: rgb(71, 85, 105)"] {
+    color: var(--text-main, #f8fafc) !important;
+  }
 }
+
 
