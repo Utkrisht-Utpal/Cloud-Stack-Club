@@ -25,6 +25,7 @@ import {
 import { generateSlug } from '../utils/slug';
 import { EVENT_CATEGORY_OPTIONS } from '../constants/data';
 import { CustomSelect } from '../components/ui/CustomSelect';
+import { stripHtml } from '../utils/descriptionFormatting';
 import type { Event } from '../types/database';
 
 export const EventsDirectoryPage: React.FC = () => {
@@ -363,7 +364,7 @@ export const EventsDirectoryPage: React.FC = () => {
 
                       {evt.description && (
                         <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium">
-                          {evt.description}
+                          {stripHtml(evt.description)}
                         </p>
                       )}
                     </div>

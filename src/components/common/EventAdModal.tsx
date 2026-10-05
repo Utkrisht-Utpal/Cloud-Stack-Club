@@ -13,6 +13,7 @@ import {
 } from '../../utils/formatters';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { getStoredDriveUrlsMap } from '../../services/events';
+import { sanitizeDescriptionHtml } from '../../utils/descriptionFormatting';
 import type { Event } from '../../types/database';
 
 const GoogleDriveIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
@@ -403,9 +404,10 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                       <span>About This Event</span>
                     </div>
                     <div className="max-h-28 sm:max-h-32 overflow-y-auto custom-scrollbar pr-1.5">
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line font-normal">
-                        {activeAdEvent.description}
-                      </p>
+                      <div
+                        className="public-description-content text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-normal"
+                        dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(activeAdEvent.description) }}
+                      />
                     </div>
                   </div>
                 )}
