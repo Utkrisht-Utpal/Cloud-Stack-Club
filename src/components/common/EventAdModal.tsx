@@ -3,7 +3,14 @@ import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, MapPin, Sparkles, ArrowRight, FileText, Users2, Ticket, Timer, MessageSquare } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
-import { formatEventTime, getEventStatusInfo, isRegistrationActive, isRegistrationFull } from '../../utils/formatters';
+import {
+  formatEventTime,
+  getEventStatusInfo,
+  getEventStartDateTime,
+  isFeedbackActive,
+  isRegistrationActive,
+  isRegistrationFull,
+} from '../../utils/formatters';
 import { getEventRegistrationCountsMap } from '../../services/registrationForms';
 import { getStoredDriveUrlsMap } from '../../services/events';
 import type { Event } from '../../types/database';
@@ -25,28 +32,6 @@ interface EventAdModalProps {
   onViewPdfClick?: (pdfUrl: string, title: string) => void;
   onFeedbackClick?: (event: Event) => void;
 }
-
-/**
- * Calculates day difference between event date and today (midnight-aligned)
- *  0 = Today (Event Day T)
- * -1 = Yesterday (Day T+1 relative to event)
- * < -1 = Older past event (Day T+2 onwards)
- * > 0 = Future / Upcoming event
- */
-const getDiffDays = (dateStr?: string | null): number | null => {
-  if (!dateStr) return null;
-  const parts = dateStr.split('T')[0].split('-');
-  if (parts.length < 3) return null;
-  const y = parseInt(parts[0], 10);
-  const m = parseInt(parts[1], 10);
-  const d = parseInt(parts[2], 10);
-  if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
-
-  const now = new Date();
-  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-  const eventMidnight = new Date(y, m - 1, d).getTime();
-  return Math.round((eventMidnight - todayMidnight) / (24 * 60 * 60 * 1000));
-};
 
 export const EventAdModal: React.FC<EventAdModalProps> = ({
   events,
@@ -94,18 +79,20 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     if (!events || events.length === 0) return;
     if (userDismissedRef.current) return;
 
-    // 1. Priority 1: Check for event in the T + 1 Feedback Window (Day T: 0, Day T+1: -1)
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    // 1. Priority 1: Check for event in the Feedback Window (event start date & time has arrived / concluded within Day T & Day T+1)
     const feedbackCandidates = events
       .filter((evt) => {
         if (evt.status === ('cancelled' as any) || evt.status === ('inactive' as any)) return false;
-        const diff = getDiffDays(evt.date);
-        return diff === 0 || diff === -1;
+        return isFeedbackActive(evt);
       })
       .sort((a, b) => {
-        const diffA = getDiffDays(a.date) ?? -999;
-        const diffB = getDiffDays(b.date) ?? -999;
-        // Prioritize ongoing event today (0) over yesterday (-1)
-        return diffB - diffA;
+        const timeA = getEventStartDateTime(a.date, a.start_time)?.getTime() ?? 0;
+        const timeB = getEventStartDateTime(b.date, b.start_time)?.getTime() ?? 0;
+        // Prioritize most recent ongoing / just-concluded event
+        return timeB - timeA;
       });
 
     if (feedbackCandidates.length > 0) {
@@ -115,7 +102,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
       return;
     }
 
-    // 2. Priority 2: Nearest Upcoming Event (Day T+2 onwards or future)
+    // 2. Priority 2: Nearest Upcoming Event (event scheduled date & time is in the future)
     const upcomingCandidates = events
       .filter((evt) => {
         if (
@@ -125,13 +112,26 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
         ) {
           return false;
         }
-        const diff = getDiffDays(evt.date);
-        return diff !== null && diff > 0;
+        const startDt = getEventStartDateTime(evt.date, evt.start_time);
+        if (!startDt) return false;
+        return startDt.getTime() > nowMs;
       })
       .sort((a, b) => {
-        const diffA = getDiffDays(a.date) ?? 999;
-        const diffB = getDiffDays(b.date) ?? 999;
-        return diffA - diffB;
+        const countA = regCountsMap[a.id.toLowerCase()] ?? 0;
+        const countB = regCountsMap[b.id.toLowerCase()] ?? 0;
+
+        const isRegOpenA = isRegistrationActive(a, countA) && !isRegistrationFull(a, countA);
+        const isRegOpenB = isRegistrationActive(b, countB) && !isRegistrationFull(b, countB);
+
+        // 1st Priority: Events with registration currently OPEN come first
+        if (isRegOpenA !== isRegOpenB) {
+          return isRegOpenA ? -1 : 1;
+        }
+
+        // 2nd Priority: Nearest upcoming chronological date & time
+        const timeA = getEventStartDateTime(a.date, a.start_time)?.getTime() ?? Infinity;
+        const timeB = getEventStartDateTime(b.date, b.start_time)?.getTime() ?? Infinity;
+        return timeA - timeB;
       });
 
     if (upcomingCandidates.length > 0) {
@@ -145,7 +145,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
     setActiveAdEvent(null);
     setIsFeedbackWindow(false);
     setIsOpen(false);
-  }, [events, isHomeOrSection]);
+  }, [events, isHomeOrSection, regCountsMap]);
 
   useEffect(() => {
     if (isOpen) {
@@ -182,8 +182,8 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
   if (!isHomeOrSection || !activeAdEvent || !isOpen || isAdminModalOpen) return null;
 
-  const diffDays = getDiffDays(activeAdEvent.date);
-  const isFeedbackActive = isFeedbackWindow || diffDays === 0 || diffDays === -1 || activeAdEvent.status === 'live';
+  const isFeedbackOpen = isFeedbackWindow || isFeedbackActive(activeAdEvent);
+  const statusInfo = getEventStatusInfo(activeAdEvent.date, activeAdEvent.start_time);
 
   const eventDateFormatted = activeAdEvent.date
     ? new Date(activeAdEvent.date).toLocaleDateString('en-US', {
@@ -213,7 +213,6 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const regCount = activeAdEvent ? (regCountsMap[activeAdEvent.id.toLowerCase()] ?? 0) : 0;
   const isCapacityFull = isRegistrationFull(activeAdEvent, regCount);
   const regOpen = isRegistrationActive(activeAdEvent, regCount);
-  const statusInfo = getEventStatusInfo(activeAdEvent.date);
 
   return (
     <AnimatePresence>
@@ -260,12 +259,12 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                 {/* Status Badges Header */}
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Event Status Pill (First) */}
-                  {statusInfo.type === 'ongoing' || diffDays === 0 ? (
+                  {statusInfo.type === 'ongoing' ? (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider border bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-sm animate-pulse">
                       <Sparkles className="w-3.5 h-3.5 text-current" />
                       <span>ONGOING EVENT</span>
                     </div>
-                  ) : isFeedbackActive && diffDays === -1 ? (
+                  ) : isFeedbackOpen ? (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] sm:text-xs font-black uppercase tracking-wider border bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-sm">
                       <Sparkles className="w-3.5 h-3.5 text-current" />
                       <span>RECENT EVENT • FEEDBACK OPEN</span>
@@ -285,7 +284,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   )}
 
                   {/* Registration Indicator (Upcoming events only) */}
-                  {activeAdEvent.registration_enabled && !isFeedbackActive && (
+                  {activeAdEvent.registration_enabled && !isFeedbackOpen && (
                     regOpen ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 animate-pulse">
                         ● Registration Open
@@ -414,7 +413,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
-                {isFeedbackActive && onFeedbackClick && (
+                {isFeedbackOpen && onFeedbackClick && (
                   <button
                     type="button"
                     onClick={() => {
@@ -432,7 +431,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                   </button>
                 )}
 
-                {activeAdEvent.registration_enabled && (!isFeedbackActive || regOpen) && (
+                {activeAdEvent.registration_enabled && (!isFeedbackOpen || regOpen) && (
                   regOpen && onRegisterClick ? (
                     <button
                       type="button"
@@ -451,7 +450,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                       <span>Registration Full • Capacity Reached</span>
                     </div>
                   ) : (
-                    !isFeedbackActive && (
+                    !isFeedbackOpen && (
                       <div className="w-full sm:flex-1 py-3 px-6 rounded-2xl bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700 select-none">
                         <span>Registration Closed</span>
                       </div>
