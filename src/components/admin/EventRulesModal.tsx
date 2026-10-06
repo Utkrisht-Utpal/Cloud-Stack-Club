@@ -34,6 +34,18 @@ interface EventRulesModalProps {
 
 const MAX_RULES_LENGTH = 5000;
 
+const FONT_SIZES = [
+  { label: '10', size: '10', desc: 'Tiny' },
+  { label: '12', size: '12', desc: 'Small' },
+  { label: '14', size: '14', desc: 'Regular' },
+  { label: '16', size: '16', desc: 'Medium' },
+  { label: '18', size: '18', desc: 'Large' },
+  { label: '20', size: '20', desc: 'Extra' },
+  { label: '24', size: '24', desc: 'Title' },
+  { label: '28', size: '28', desc: 'Huge' },
+  { label: '32', size: '32', desc: 'Banner' },
+];
+
 // Find closest element with given tag name
 const findClosestTag = (
   node: Node | null,
@@ -171,7 +183,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
   const listsDropdownRef = useRef<HTMLDivElement>(null);
 
   const savedRangeRef = useRef<Range | null>(null);
-  const preferredFontSizeRef = useRef<'small' | 'normal' | 'large'>('normal');
+  const preferredFontSizeRef = useRef<string>('14');
+  const fontSizeListRef = useRef<HTMLDivElement>(null);
 
   // Undo/Redo history stack
   const historyRef = useRef<{ html: string; start: number; end: number }[]>([]);
@@ -185,7 +198,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
-  const [activeFontSize, setActiveFontSize] = useState<'small' | 'normal' | 'large'>('normal');
+  const [activeFontSize, setActiveFontSize] = useState<string>('14');
   const [activeListType, setActiveListType] = useState<
     'bullet' | 'numbered' | 'checklist' | 'arrow' | null
   >(null);
@@ -198,7 +211,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     '#8B5CF6',
     '#EC4899',
   ]);
-  const [activeLineSpacing, setActiveLineSpacing] = useState<'1' | '1.5' | '2' | '2.5'>('1.5');
+  const [activeLineSpacing, setActiveLineSpacing] = useState<string>('1.5');
+  const [customLineSpacingInput, setCustomLineSpacingInput] = useState<string>('1.5');
   const [activeIndent, setActiveIndent] = useState<number>(0);
 
   // Dropdown open states
@@ -306,36 +320,41 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
 
     // Check font size state
-    let node: Node | null = sel.anchorNode;
-    let detectedSize: 'small' | 'normal' | 'large' | null = null;
-    while (node && node !== editorRef.current) {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const el = node as HTMLElement;
+    let detectedSize = '14';
+    let sizeNode: Node | null = sel.anchorNode;
+    while (sizeNode && sizeNode !== editorRef.current) {
+      if (sizeNode.nodeType === Node.ELEMENT_NODE) {
+        const el = sizeNode as HTMLElement;
+        if (el.style.fontSize) {
+          const match = el.style.fontSize.match(/(\d+)/);
+          if (match) {
+            detectedSize = match[1];
+            break;
+          }
+        }
         const sizeAttr = el.getAttribute('data-font-size');
-        if (sizeAttr === 'small' || sizeAttr === 'large') {
+        if (sizeAttr && /^\d+$/.test(sizeAttr)) {
           detectedSize = sizeAttr;
+          break;
+        } else if (sizeAttr === 'small') {
+          detectedSize = '12';
+          break;
+        } else if (sizeAttr === 'large') {
+          detectedSize = '18';
           break;
         }
         const style = el.getAttribute('style') || '';
-        if (style.includes('0.75rem') || style.includes('12px')) {
-          detectedSize = 'small';
-          break;
-        }
-        if (style.includes('1.125rem') || style.includes('18px')) {
-          detectedSize = 'large';
+        const match = style.match(/font-size:\s*(\d+)px/i);
+        if (match) {
+          detectedSize = match[1];
           break;
         }
       }
-      node = node.parentNode;
+      sizeNode = sizeNode.parentNode;
     }
 
-    if (detectedSize) {
-      setActiveFontSize(detectedSize);
-      preferredFontSizeRef.current = detectedSize;
-    } else {
-      setActiveFontSize('normal');
-      preferredFontSizeRef.current = 'normal';
-    }
+    setActiveFontSize(detectedSize);
+    preferredFontSizeRef.current = detectedSize;
 
     // Detect active text color (including mixed colors in selection)
     let detectedColor = '';
@@ -390,19 +409,24 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
     // Detect active line spacing
     let spacingNode: Node | null = sel.anchorNode;
-    let detectedSpacing: '1' | '1.5' | '2' | '2.5' = '1.5';
+    let detectedSpacing: string = '1.5';
     while (spacingNode && spacingNode !== editorRef.current) {
       if (spacingNode.nodeType === Node.ELEMENT_NODE) {
         const el = spacingNode as HTMLElement;
         const sp = el.getAttribute('data-line-spacing');
-        if (sp === '1' || sp === '1.5' || sp === '2' || sp === '2.5') {
+        if (sp) {
           detectedSpacing = sp;
+          break;
+        }
+        if (el.style.lineHeight) {
+          detectedSpacing = el.style.lineHeight.replace('!important', '').trim();
           break;
         }
       }
       spacingNode = spacingNode.parentNode;
     }
     setActiveLineSpacing(detectedSpacing);
+    setCustomLineSpacingInput(detectedSpacing);
 
     // Detect active indent level
     let indentNode: Node | null = sel.anchorNode;
@@ -520,7 +544,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     setIsLineSpacingOpen(false);
     setIsListsDropdownOpen(false);
     setActiveIndent(0);
-    preferredFontSizeRef.current = 'normal';
+    preferredFontSizeRef.current = '14';
 
     let initialHtml = '';
     if (initialRules && initialRules.trim()) {
@@ -629,17 +653,32 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     };
   }, [isListsDropdownOpen]);
 
-  // Format toggles (bold, italic, underline)
-  const handleToggleFormat = (command: 'bold' | 'italic' | 'underline') => {
+  // Auto-scroll to active font size when dropdown opens
+  useEffect(() => {
+    if (isFontDropdownOpen && fontSizeListRef.current) {
+      const selectedEl = fontSizeListRef.current.querySelector<HTMLElement>('[data-selected="true"]');
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [isFontDropdownOpen]);
+
+  // Format toggles (bold, italic, underline, strikethrough)
+  const handleToggleFormat = (command: 'bold' | 'italic' | 'underline' | 'strikethrough') => {
     setIsPlaceholderDismissed(true);
     restoreSavedRange();
-    document.execCommand(command, false);
+    pushHistorySnapshot();
+    if (command === 'strikethrough') {
+      document.execCommand('strikeThrough', false);
+    } else {
+      document.execCommand(command, false);
+    }
     saveCurrentRange();
     updateEditorState();
   };
 
-  // Font size handler
-  const handleApplyFontSize = (size: 'small' | 'normal' | 'large') => {
+  // Font size handler (supports any numeric font size e.g. '10', '12', '14', '16', '18', etc.)
+  const handleApplyFontSize = (size: string) => {
     setIsPlaceholderDismissed(true);
     restoreSavedRange();
     preferredFontSizeRef.current = size;
@@ -648,18 +687,12 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     if (!sel || !sel.rangeCount || !editorRef.current) return;
     const range = sel.getRangeAt(0);
 
+    pushHistorySnapshot();
+
     const rawText = editorRef.current.textContent || '';
     if (!rawText.trim()) {
       const p = document.createElement('p');
-      if (size !== 'normal') {
-        p.setAttribute('data-font-size', size);
-        p.setAttribute(
-          'style',
-          size === 'small'
-            ? 'font-size: 0.75rem; line-height: 1.25rem;'
-            : 'font-size: 1.125rem; line-height: 1.6rem;'
-        );
-      }
+      p.style.fontSize = `${size}px`;
       p.innerHTML = '<br>';
       editorRef.current.innerHTML = '';
       editorRef.current.appendChild(p);
@@ -681,53 +714,42 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
       try {
         document.execCommand('fontSize', false, '7');
       } catch {
-        // Fallback below
+        // Ignored
       }
 
       const fontNodes = editorRef.current.querySelectorAll('font[size="7"]');
+      const createdSpans: HTMLElement[] = [];
       if (fontNodes.length > 0) {
         fontNodes.forEach((fontEl) => {
-          if (size === 'normal') {
-            fontEl.querySelectorAll('[data-font-size]').forEach((s) => {
-              s.removeAttribute('data-font-size');
-              s.removeAttribute('style');
-            });
-            const parent = fontEl.parentNode;
-            while (fontEl.firstChild) {
-              parent?.insertBefore(fontEl.firstChild, fontEl);
-            }
-            fontEl.remove();
-          } else {
-            const span = document.createElement('span');
-            span.setAttribute('data-font-size', size);
-            span.setAttribute(
-              'style',
-              size === 'small'
-                ? 'font-size: 0.75rem; line-height: 1.25rem;'
-                : 'font-size: 1.125rem; line-height: 1.6rem;'
-            );
-            while (fontEl.firstChild) {
-              span.appendChild(fontEl.firstChild);
-            }
-            fontEl.parentNode?.replaceChild(span, fontEl);
+          const span = document.createElement('span');
+          span.style.fontSize = `${size}px`;
+          if (fontEl.getAttribute('color')) {
+            span.style.color = fontEl.getAttribute('color')!;
           }
+          // Clear any inner font-size styles
+          fontEl.querySelectorAll<HTMLElement>('[style*="font-size"]').forEach((inner) => {
+            inner.style.fontSize = '';
+          });
+          while (fontEl.firstChild) {
+            span.appendChild(fontEl.firstChild);
+          }
+          fontEl.parentNode?.replaceChild(span, fontEl);
+          createdSpans.push(span);
         });
+
+        if (createdSpans.length > 0 && sel) {
+          const newRange = document.createRange();
+          newRange.setStartBefore(createdSpans[0]);
+          newRange.setEndAfter(createdSpans[createdSpans.length - 1]);
+          sel.removeAllRanges();
+          sel.addRange(newRange);
+          savedRangeRef.current = newRange.cloneRange();
+        }
       }
     } else {
       const block = findClosestBlock(sel.anchorNode, editorRef.current);
       if (block && block !== editorRef.current) {
-        if (size === 'normal') {
-          block.removeAttribute('data-font-size');
-          block.removeAttribute('style');
-        } else {
-          block.setAttribute('data-font-size', size);
-          block.setAttribute(
-            'style',
-            size === 'small'
-              ? 'font-size: 0.75rem; line-height: 1.25rem;'
-              : 'font-size: 1.125rem; line-height: 1.6rem;'
-          );
-        }
+        block.style.fontSize = `${size}px`;
       }
     }
 
@@ -737,10 +759,14 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     updateEditorState();
   };
 
-  // Line spacing handler
-  const handleApplyLineSpacing = (spacing: '1' | '1.5' | '2' | '2.5') => {
+  // Line spacing handler (supports presets and custom values)
+  const applySpacingDirect = (spacing: string, closeDropdown: boolean = false) => {
     if (!editorRef.current) return;
     restoreSavedRange();
+
+    const cleanSpacing = parseFloat(spacing);
+    if (isNaN(cleanSpacing) || cleanSpacing <= 0) return;
+    const spacingStr = cleanSpacing.toString();
 
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return;
@@ -767,16 +793,26 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         });
 
     targetBlocks.forEach((block) => {
-      if (spacing === '1.5') {
+      if (spacingStr === '1.5') {
         block.removeAttribute('data-line-spacing');
+        block.style.removeProperty('line-height');
+        block.style.lineHeight = '';
       } else {
-        block.setAttribute('data-line-spacing', spacing);
+        block.setAttribute('data-line-spacing', spacingStr);
+        block.style.setProperty('line-height', spacingStr, 'important');
       }
     });
 
-    setActiveLineSpacing(spacing);
-    setIsLineSpacingOpen(false);
+    setActiveLineSpacing(spacingStr);
+    setCustomLineSpacingInput(spacingStr);
+    if (closeDropdown) {
+      setIsLineSpacingOpen(false);
+    }
     updateEditorState();
+  };
+
+  const handleApplyLineSpacing = (spacing: string) => {
+    applySpacingDirect(spacing, true);
   };
 
   // Text color handler
@@ -784,40 +820,60 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     setIsPlaceholderDismissed(true);
     restoreSavedRange();
 
-    if (!color) {
+    if (!color || color === 'auto') {
       try {
         document.execCommand('styleWithCSS', false, 'true');
       } catch {
         // Ignored
       }
-      document.execCommand('foreColor', false, 'inherit');
-      const sel = window.getSelection();
-      if (sel && sel.rangeCount > 0 && editorRef.current) {
-        const range = sel.getRangeAt(0);
-        const walker = document.createTreeWalker(editorRef.current, NodeFilter.SHOW_ELEMENT);
-        const toStrip: HTMLElement[] = [];
-        let curr = walker.nextNode();
-        while (curr) {
-          const el = curr as HTMLElement;
-          if (range.intersectsNode(el)) {
-            if (/color\s*:/i.test(el.getAttribute('style') || '')) toStrip.push(el);
-            if (el.tagName.toLowerCase() === 'font' && el.getAttribute('color')) toStrip.push(el);
-          }
-          curr = walker.nextNode();
-        }
-        toStrip.forEach((el) => {
-          if (el.tagName.toLowerCase() === 'font') {
-            el.removeAttribute('color');
-          } else {
-            const cleaned = (el.getAttribute('style') || '')
-              .replace(/(?:^|;)\s*color\s*:[^;]*/gi, '')
-              .trim()
-              .replace(/^;/, '')
-              .trim();
-            if (cleaned) el.setAttribute('style', cleaned);
-            else el.removeAttribute('style');
+
+      // Use sentinel marker #000001 to cleanly strip colors in Chromium
+      const MARKER = '#000001';
+      document.execCommand('foreColor', false, MARKER);
+
+      if (editorRef.current) {
+        const markers = editorRef.current.querySelectorAll<HTMLElement>(
+          'font[color="#000001"], font[color="#00001"], [style*="rgb(0, 0, 1)"], [style*="#000001"]'
+        );
+        markers.forEach((el) => {
+          el.removeAttribute('color');
+          el.style.color = '';
+          el.querySelectorAll<HTMLElement>('font[color], [style*="color"]').forEach((child) => {
+            child.removeAttribute('color');
+            child.style.color = '';
+          });
+          if (
+            el.tagName.toLowerCase() === 'font' &&
+            !el.hasAttribute('size') &&
+            !el.hasAttribute('face') &&
+            (!el.getAttribute('style') || el.getAttribute('style')?.trim() === '')
+          ) {
+            const parent = el.parentNode;
+            if (parent) {
+              while (el.firstChild) parent.insertBefore(el.firstChild, el);
+              parent.removeChild(el);
+            }
           }
         });
+
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          let curr: HTMLElement | null =
+            range.commonAncestorContainer instanceof HTMLElement
+              ? range.commonAncestorContainer
+              : range.commonAncestorContainer.parentElement;
+
+          while (curr && curr !== editorRef.current && editorRef.current.contains(curr)) {
+            if (curr.tagName.toLowerCase() === 'font' && curr.hasAttribute('color')) {
+              curr.removeAttribute('color');
+            }
+            if (curr.style.color) {
+              curr.style.color = '';
+            }
+            curr = curr.parentElement;
+          }
+        }
       }
       setActiveColor('');
     } else {
@@ -962,6 +1018,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     }
 
     setActiveIndent(0);
+    setActiveLineSpacing('1.5');
+    setCustomLineSpacingInput('1.5');
     saveCurrentRange();
     updateEditorState();
   };
@@ -1261,35 +1319,85 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
   // Keyboard navigation and shortcut handler
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    // Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y)
+    // Keyboard shortcuts (Ctrl+B, Ctrl+I, Ctrl+U, Ctrl+Z, Ctrl+Y, Ctrl+X, Ctrl+C, Ctrl+A, Ctrl+Shift+S, etc.)
     if (e.ctrlKey || e.metaKey) {
       const key = e.key.toLowerCase();
+      // Undo: Ctrl+Z (without Shift)
+      if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      // Redo: Ctrl+Y or Ctrl+Shift+Z
+      if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        handleRedo();
+        return;
+      }
+      // Cut: Ctrl+X
+      if (key === 'x') {
+        pushHistorySnapshot();
+        setTimeout(() => {
+          handleInput();
+          pushHistorySnapshot();
+        }, 10);
+        return;
+      }
+      // Copy: Ctrl+C (let native browser copy proceed)
+      if (key === 'c') {
+        return;
+      }
+      // Select All: Ctrl+A (let native select all proceed)
+      if (key === 'a') {
+        return;
+      }
+      // Bold: Ctrl+B
       if (key === 'b') {
         e.preventDefault();
         handleToggleFormat('bold');
         return;
       }
+      // Italic: Ctrl+I
       if (key === 'i') {
         e.preventDefault();
         handleToggleFormat('italic');
         return;
       }
-      if (key === 'u') {
+      // Underline: Ctrl+U
+      if (key === 'u' && !e.shiftKey) {
         e.preventDefault();
         handleToggleFormat('underline');
         return;
       }
-      if (key === 'z') {
+      // Strikethrough: Ctrl+Shift+S or Ctrl+Shift+X
+      if (e.shiftKey && (key === 's' || key === 'x')) {
         e.preventDefault();
-        if (e.shiftKey) handleRedo();
-        else handleUndo();
+        handleToggleFormat('strikethrough');
         return;
       }
-      if (key === 'y') {
+      // Numbered List: Ctrl+Shift+7
+      if (e.shiftKey && (key === '7' || key === '&')) {
         e.preventDefault();
-        handleRedo();
+        handleToggleList('numbered');
         return;
       }
+      // Bulleted List: Ctrl+Shift+8
+      if (e.shiftKey && (key === '8' || key === '*')) {
+        e.preventDefault();
+        handleToggleList('bullet');
+        return;
+      }
+      // Clear formatting: Ctrl+\
+      if (key === '\\') {
+        e.preventDefault();
+        handleClearFormatting();
+        return;
+      }
+    }
+
+    // On Enter or Space, push history immediately for word-boundary undo
+    if (e.key === 'Enter' || e.key === ' ') {
+      pushHistorySnapshot();
     }
 
     // Tab and Shift+Tab for Increase / Decrease Indent
@@ -1577,7 +1685,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
     activeColor !== 'inherit' &&
     activeColor !== 'initial' &&
     activeColor !== 'mixed' &&
-    activeColor !== 'transparent'
+    activeColor !== 'transparent' &&
+    activeColor !== 'auto'
   );
 
   return (
@@ -1735,6 +1844,10 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
           color: inherit;
         }
         /* In dark mode, ensure any pure black text is readable */
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor font[color="#000000" i],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor font[color="#000" i],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor font[color="#0f172a" i],
+        :is(.dark, [data-theme="dark"]) .rules-rich-editor font[color="#475569" i],
         :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: black"],
         :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:black"],
         :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color: #000000"],
@@ -1747,15 +1860,24 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
         :is(.dark, [data-theme="dark"]) .rules-rich-editor [style*="color:rgb(0,0,0);"] {
           color: #f1f5f9 !important;
         }
-        /* In light mode, ensure any pure white text is readable */
+        /* In light mode, ensure any pure white or faint text is readable */
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor font[color="#ffffff" i],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor font[color="#fff" i],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor font[color="#94a3b8" i],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor font[color="#cbd5e1" i],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor font[color="#e2e8f0" i],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: white"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:white"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #ffffff"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#ffffff"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #fff;"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#fff;"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: #94a3b8"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:#94a3b8"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(255, 255, 255)"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(255,255,255)"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(148, 163, 184)"],
+        :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(148,163,184)"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color: rgb(255, 255, 255);"],
         :not(.dark):not([data-theme="dark"]) .rules-rich-editor [style*="color:rgb(255,255,255);"] {
           color: #1e293b !important;
@@ -1860,17 +1982,25 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                   setIsLineSpacingOpen(false);
                   setIsListsDropdownOpen(false);
                 }}
-                title="Font Size"
-                aria-label="Font Size"
+                title={`Text Size (${activeFontSize}px)`}
+                aria-label="Text Size"
                 aria-haspopup="listbox"
                 aria-expanded={isFontDropdownOpen}
-                className={`h-7 px-2 rounded-lg flex items-center gap-1 text-[11.5px] font-medium tracking-wide border transition-all cursor-pointer ${
+                className={`h-7 px-1.5 rounded-lg flex items-center gap-1 border transition-all cursor-pointer ${
                   isFontDropdownOpen
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
-                <span className="capitalize">{activeFontSize}</span>
+                <span
+                  className={`text-[12px] leading-none font-mono tracking-tight ${
+                    activeFontSize !== '14'
+                      ? 'text-blue-600 dark:text-sky-400 font-extrabold'
+                      : 'font-bold'
+                  }`}
+                >
+                  {activeFontSize}
+                </span>
                 <ChevronDown
                   className={`w-3 h-3 transition-transform duration-150 ${
                     isFontDropdownOpen
@@ -1882,36 +2012,35 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
 
               {isFontDropdownOpen && (
                 <div
+                  ref={fontSizeListRef}
                   role="listbox"
-                  className="absolute left-0 top-full mt-2 w-40 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
+                  style={{
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                  }}
+                  className="absolute left-0 top-full mt-1.5 w-32 max-h-48 overflow-y-auto no-scrollbar rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
                 >
-                  {(['small', 'normal', 'large'] as const).map((size) => (
+                  {FONT_SIZES.map((item) => (
                     <button
-                      key={size}
+                      key={item.size}
                       type="button"
                       role="option"
-                      aria-selected={activeFontSize === size}
+                      data-selected={activeFontSize === item.size}
+                      aria-selected={activeFontSize === item.size}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleApplyFontSize(size)}
-                      className={`w-full px-3 py-2 flex items-center justify-between cursor-pointer transition-all text-xs rounded-xl ${
-                        activeFontSize === size
-                          ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
+                      onClick={() => handleApplyFontSize(item.size)}
+                      className={`w-full px-2.5 py-1.5 flex items-center justify-between cursor-pointer transition-all text-xs rounded-lg ${
+                        activeFontSize === item.size
+                          ? 'bg-blue-50 text-blue-600 font-bold dark:bg-blue-500/15 dark:text-sky-400'
                           : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                       }`}
                     >
-                      <span
-                        className={`font-medium ${
-                          size === 'small' ? 'text-[11px]' : size === 'large' ? 'text-sm font-semibold' : 'text-xs'
-                        }`}
-                      >
-                        {size === 'small'
-                          ? 'Small — 12px'
-                          : size === 'normal'
-                          ? 'Normal — 14px'
-                          : 'Large — 18px'}
-                      </span>
-                      {activeFontSize === size && (
-                        <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold w-5 text-left">{item.size}</span>
+                        <span className="text-[11px] opacity-60 font-sans">{item.desc}</span>
+                      </div>
+                      {activeFontSize === item.size && (
+                        <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                       )}
                     </button>
                   ))}
@@ -1931,7 +2060,13 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                   saveCurrentRange();
                 }}
                 onClick={() => {
-                  setIsLineSpacingOpen((prev) => !prev);
+                  setIsLineSpacingOpen((prev) => {
+                    const next = !prev;
+                    if (next) {
+                      setCustomLineSpacingInput(activeLineSpacing);
+                    }
+                    return next;
+                  });
                   setIsFontDropdownOpen(false);
                   setIsColorPickerOpen(false);
                   setIsListsDropdownOpen(false);
@@ -1943,6 +2078,8 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                 className={`h-7 px-1.5 rounded-lg flex items-center gap-1 border transition-all cursor-pointer ${
                   isLineSpacingOpen
                     ? 'bg-blue-50 border-blue-500 text-blue-600 dark:bg-slate-700 dark:border-slate-600 dark:text-white shadow-sm'
+                    : activeLineSpacing !== '1.5'
+                    ? 'bg-slate-50 border-slate-300 dark:bg-slate-800/90 dark:border-slate-600 text-slate-800 dark:text-slate-100 shadow-xs'
                     : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 dark:bg-slate-900/60 dark:border-slate-700/60 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-700/70 dark:hover:border-slate-600 shadow-xs'
                 }`}
               >
@@ -1980,7 +2117,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
               {isLineSpacingOpen && (
                 <div
                   role="listbox"
-                  className="absolute left-0 top-full mt-2 w-40 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
+                  className="absolute left-0 top-full mt-1.5 w-36 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
                 >
                   {(['1', '1.5', '2', '2.5'] as const).map((sp) => (
                     <button
@@ -1990,13 +2127,13 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       aria-selected={activeLineSpacing === sp}
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleApplyLineSpacing(sp)}
-                      className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                      className={`w-full px-2.5 py-1.5 text-xs flex items-center justify-between cursor-pointer transition-all rounded-lg ${
                         activeLineSpacing === sp
                           ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
                           : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                       }`}
                     >
-                      <span className="font-medium">
+                      <span className="font-medium whitespace-nowrap">
                         {sp === '1'
                           ? 'Compact (1.0)'
                           : sp === '1.5'
@@ -2006,10 +2143,81 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                           : 'Extra (2.5)'}
                       </span>
                       {activeLineSpacing === sp && (
-                        <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                       )}
                     </button>
                   ))}
+
+                  {/* Custom Spacing Section */}
+                  <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-slate-800/80 px-1 pb-0.5">
+                    <div className="flex items-center justify-between px-1 mb-1">
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                        Custom
+                      </span>
+                      {!['1', '1.5', '2', '2.5'].includes(activeLineSpacing) && (
+                        <span className="text-[10px] font-mono font-semibold text-blue-600 dark:text-sky-400 bg-blue-50 dark:bg-blue-500/15 px-1 py-0.5 rounded">
+                          {activeLineSpacing}×
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        title="Decrease spacing"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          const cur = parseFloat(customLineSpacingInput) || 1.5;
+                          const next = Math.max(0.5, Math.round((cur - 0.1) * 10) / 10).toFixed(1);
+                          setCustomLineSpacingInput(next);
+                          applySpacingDirect(next);
+                        }}
+                        className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        −
+                      </button>
+                      <div className="relative flex-1 min-w-0">
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0.5"
+                          max="3.5"
+                          value={customLineSpacingInput}
+                          onChange={(e) => setCustomLineSpacingInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleApplyLineSpacing(customLineSpacingInput);
+                            }
+                          }}
+                          className="w-full h-6 px-1 text-center font-mono text-xs rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="1.3"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        title="Increase spacing"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          const cur = parseFloat(customLineSpacingInput) || 1.5;
+                          const next = Math.min(3.5, Math.round((cur + 0.1) * 10) / 10).toFixed(1);
+                          setCustomLineSpacingInput(next);
+                          applySpacingDirect(next);
+                        }}
+                        className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        title="Apply custom spacing"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleApplyLineSpacing(customLineSpacingInput)}
+                        className="w-6 h-6 flex items-center justify-center rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs transition-colors cursor-pointer shrink-0 shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -2155,7 +2363,7 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                 <div
                   role="listbox"
                   style={{ transform: listsDropdownOffset ? `translateX(${listsDropdownOffset}px)` : undefined }}
-                  className="absolute left-0 top-full mt-2 w-44 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1.5 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
+                  className="absolute left-0 top-full mt-1.5 w-36 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-200/50 dark:shadow-2xl dark:shadow-black/80 p-1 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 animate-in fade-in zoom-in-95 duration-100"
                 >
                   <button
                     type="button"
@@ -2166,18 +2374,18 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       handleToggleList('bullet');
                       setIsListsDropdownOpen(false);
                     }}
-                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                    className={`w-full px-2.5 py-1.5 text-xs flex items-center justify-between cursor-pointer transition-all rounded-lg ${
                       activeListType === 'bullet'
                         ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 font-medium">
-                      <List className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <div className="flex items-center gap-2 font-medium whitespace-nowrap">
+                      <List className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                       <span>Bullet List</span>
                     </div>
                     {activeListType === 'bullet' && (
-                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     )}
                   </button>
 
@@ -2190,18 +2398,18 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       handleToggleList('numbered');
                       setIsListsDropdownOpen(false);
                     }}
-                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                    className={`w-full px-2.5 py-1.5 text-xs flex items-center justify-between cursor-pointer transition-all rounded-lg ${
                       activeListType === 'numbered'
                         ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 font-medium">
-                      <ListOrdered className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <div className="flex items-center gap-2 font-medium whitespace-nowrap">
+                      <ListOrdered className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                       <span>Numbered List</span>
                     </div>
                     {activeListType === 'numbered' && (
-                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     )}
                   </button>
 
@@ -2214,18 +2422,18 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       handleToggleList('checklist');
                       setIsListsDropdownOpen(false);
                     }}
-                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                    className={`w-full px-2.5 py-1.5 text-xs flex items-center justify-between cursor-pointer transition-all rounded-lg ${
                       activeListType === 'checklist'
                         ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 font-medium">
-                      <CheckSquare className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <div className="flex items-center gap-2 font-medium whitespace-nowrap">
+                      <CheckSquare className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                       <span>Checklist</span>
                     </div>
                     {activeListType === 'checklist' && (
-                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     )}
                   </button>
 
@@ -2238,18 +2446,18 @@ export const EventRulesModal: React.FC<EventRulesModalProps> = ({
                       handleToggleList('arrow');
                       setIsListsDropdownOpen(false);
                     }}
-                    className={`w-full px-3 py-2 text-xs flex items-center justify-between cursor-pointer transition-all rounded-xl ${
+                    className={`w-full px-2.5 py-1.5 text-xs flex items-center justify-between cursor-pointer transition-all rounded-lg ${
                       activeListType === 'arrow'
                         ? 'bg-blue-50 text-blue-600 font-semibold dark:bg-blue-500/15 dark:text-sky-400'
                         : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
                     }`}
                   >
-                    <div className="flex items-center gap-2.5 font-medium">
-                      <ArrowRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                    <div className="flex items-center gap-2 font-medium whitespace-nowrap">
+                      <ArrowRight className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                       <span>Arrow List</span>
                     </div>
                     {activeListType === 'arrow' && (
-                      <Check className="w-4 h-4 text-blue-600 dark:text-sky-400 shrink-0" />
+                      <Check className="w-3.5 h-3.5 text-blue-600 dark:text-sky-400 shrink-0" />
                     )}
                   </button>
                 </div>

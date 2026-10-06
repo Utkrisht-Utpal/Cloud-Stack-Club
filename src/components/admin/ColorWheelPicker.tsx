@@ -1,571 +1,534 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Check, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check, RotateCcw, Pipette } from 'lucide-react';
 
-interface ColorWheelPickerProps {
+export interface ColorWheelPickerProps {
   currentColor: string; // Hex string e.g. '#3B82F6', named color, 'mixed', or ''
-  recentColors: string[];
+  recentColors?: string[];
   onApplyColor: (color: string) => void;
   onResetColor: () => void;
   onClose?: () => void;
 }
 
-// Named CSS colors mapped to hex codes
-const NAMED_COLORS: Record<string, string> = {
-  black: '#000000',
-  white: '#FFFFFF',
-  silver: '#94A3B8',
-  gray: '#64748B',
-  grey: '#64748B',
-  red: '#EF4444',
-  orange: '#F97316',
-  yellow: '#EAB308',
-  green: '#22C55E',
-  cyan: '#06B6D4',
-  blue: '#3B82F6',
-  purple: '#A855F7',
-  pink: '#EC4899',
-};
+// 18 Curated presets in a 6x3 grid (with Theme Default Auto as option 1)
+export interface ColorPreset {
+  id: string;
+  label: string;
+  color: string; // 'auto' or hex
+}
 
-// Preset color palette (organized by tone)
-const PRESET_COLORS = [
-  // Row 1: Neutrals & Primary
-  '#000000',
-  '#475569',
-  '#94A3B8',
-  '#FFFFFF',
-  '#EF4444',
-  '#F97316',
-  '#EAB308',
-  '#22C55E',
-  // Row 2: Accents & Pastels
-  '#06B6D4',
-  '#3B82F6',
-  '#6366F1',
-  '#8B5CF6',
-  '#A855F7',
-  '#EC4899',
-  '#F43F5E',
-  '#10B981',
+export const COLOR_PRESETS: ColorPreset[] = [
+  // Row 1: Theme Adaptive & Warm/Reds
+  { id: 'auto', label: 'Theme Default (Auto)', color: 'auto' },
+  { id: 'slate', label: 'Slate', color: '#64748B' },
+  { id: 'deepRed', label: 'Crimson', color: '#DC2626' },
+  { id: 'red', label: 'Red', color: '#EF4444' },
+  { id: 'orange', label: 'Orange', color: '#F97316' },
+  { id: 'amber', label: 'Amber', color: '#F59E0B' },
+  // Row 2: Warm & Greens
+  { id: 'gold', label: 'Gold', color: '#EAB308' },
+  { id: 'lime', label: 'Lime', color: '#84CC16' },
+  { id: 'emerald', label: 'Emerald', color: '#10B981' },
+  { id: 'teal', label: 'Teal', color: '#14B8A6' },
+  { id: 'cyan', label: 'Cyan', color: '#06B6D4' },
+  { id: 'sky', label: 'Sky Blue', color: '#0284C7' },
+  // Row 3: Blues, Purples & Pinks
+  { id: 'blue', label: 'Royal Blue', color: '#2563EB' },
+  { id: 'indigo', label: 'Indigo', color: '#4F46E5' },
+  { id: 'purple', label: 'Purple', color: '#7C3AED' },
+  { id: 'violet', label: 'Violet', color: '#A855F7' },
+  { id: 'pink', label: 'Hot Pink', color: '#EC4899' },
+  { id: 'rose', label: 'Rose', color: '#F43F5E' },
 ];
 
-// Color Conversion Helpers
-interface RGB {
-  r: number;
-  g: number;
-  b: number;
-}
-
-interface HSV {
-  h: number; // 0..360
-  s: number; // 0..1
-  v: number; // 0..1
-}
-
-const hexToRgb = (hex: string): RGB | null => {
-  if (!hex || hex === 'mixed') return null;
-  let cleaned = hex.toLowerCase().trim();
-
-  if (NAMED_COLORS[cleaned]) {
-    cleaned = NAMED_COLORS[cleaned].replace('#', '');
-  } else {
-    cleaned = cleaned.replace('#', '');
-  }
-
-  if (cleaned.startsWith('rgb')) {
-    const match = cleaned.match(/\d+/g);
-    if (match && match.length >= 3) {
-      return {
-        r: parseInt(match[0], 10),
-        g: parseInt(match[1], 10),
-        b: parseInt(match[2], 10),
-      };
-    }
-  }
-
-  if (cleaned.length === 3) {
-    cleaned = cleaned
-      .split('')
-      .map((c) => c + c)
-      .join('');
-  }
-
-  if (cleaned.length !== 6) return null;
-  const num = parseInt(cleaned, 16);
-  if (isNaN(num)) return null;
-  return {
-    r: (num >> 16) & 255,
-    g: (num >> 8) & 255,
-    b: num & 255,
+// Color Math: HSV to Hex
+function hsvToHex(h: number, s: number, v: number): string {
+  const sNorm = s / 100;
+  const vNorm = v / 100;
+  const f = (n: number) => {
+    const k = (n + h / 60) % 6;
+    return vNorm - vNorm * sNorm * Math.max(Math.min(k, 4 - k, 1), 0);
   };
-};
+  const r = Math.round(f(5) * 255);
+  const g = Math.round(f(3) * 255);
+  const b = Math.round(f(1) * 255);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+}
 
-const rgbToHsv = (r: number, g: number, b: number): HSV => {
-  r /= 255;
-  g /= 255;
-  b /= 255;
+// Color Math: Hex to HSV
+function hexToHsv(hex: string): { h: number; s: number; v: number } {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c.split('').map((x) => x + x).join('');
+  const num = parseInt(c, 16);
+  if (isNaN(num)) return { h: 217, s: 76, v: 96 };
+  const r = ((num >> 16) & 255) / 255;
+  const g = ((num >> 8) & 255) / 255;
+  const b = num & 255;
+
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const d = max - min;
   let h = 0;
   const s = max === 0 ? 0 : d / max;
   const v = max;
-  if (d !== 0) {
-    if (max === r) h = ((g - b) / d) % 6;
-    else if (max === g) h = (b - r) / d + 2;
-    else h = (r - g) / d + 4;
-    h *= 60;
-    if (h < 0) h += 360;
-  }
-  return { h, s, v };
-};
 
-const hsvToRgb = (h: number, s: number, v: number): RGB => {
-  const c = v * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = v - c;
-  let r = 0,
-    g = 0,
-    b = 0;
-  if (h >= 0 && h < 60) {
-    r = c;
-    g = x;
-    b = 0;
-  } else if (h >= 60 && h < 120) {
-    r = x;
-    g = c;
-    b = 0;
-  } else if (h >= 120 && h < 180) {
-    r = 0;
-    g = c;
-    b = x;
-  } else if (h >= 180 && h < 240) {
-    r = 0;
-    g = x;
-    b = c;
-  } else if (h >= 240 && h < 300) {
-    r = x;
-    g = 0;
-    b = c;
-  } else if (h >= 300 && h < 360) {
-    r = c;
-    g = 0;
-    b = x;
+  if (max !== min) {
+    switch (max) {
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
+    }
+    h /= 6;
   }
   return {
-    r: Math.round((r + m) * 255),
-    g: Math.round((g + m) * 255),
-    b: Math.round((b + m) * 255),
+    h: Math.round(h * 360),
+    s: Math.round(s * 100),
+    v: Math.round(v * 100),
   };
-};
+}
 
-const rgbToHex = (r: number, g: number, b: number): string => {
-  const toHex = (n: number) =>
-    Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0').toUpperCase();
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-};
-
-const hsvToHex = (h: number, s: number, v: number): string => {
-  const rgb = hsvToRgb(h, s, v);
-  return rgbToHex(rgb.r, rgb.g, rgb.b);
-};
+// Convert any rgb/rgba/hex string to uppercase #HEX
+function rgbToHex(colorStr: string): string {
+  if (!colorStr) return '';
+  if (colorStr.startsWith('#')) return colorStr.toUpperCase();
+  const match = colorStr.match(/\d+/g);
+  if (!match || match.length < 3) return colorStr;
+  const r = parseInt(match[0], 10);
+  const g = parseInt(match[1], 10);
+  const b = parseInt(match[2], 10);
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+}
 
 export const ColorWheelPicker: React.FC<ColorWheelPickerProps> = ({
-  currentColor,
-  recentColors,
+  currentColor = '',
   onApplyColor,
   onResetColor,
+  onClose,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isDraggingRef = useRef(false);
+  const [colorMode, setColorMode] = useState<'presets' | 'custom'>('presets');
+  const [customHex, setCustomHex] = useState('');
+  const [hsv, setHsv] = useState<{ h: number; s: number; v: number }>({ h: 217, s: 76, v: 96 });
 
-  // Wheel dimensions
-  const WHEEL_SIZE = 138;
-  const CENTER = WHEEL_SIZE / 2;
-  const RADIUS = CENTER - 4;
+  const satValRef = useRef<HTMLDivElement>(null);
 
-  const isMixed = currentColor === 'mixed';
-
-  // Initial HSV state
-  const parseColorToHsv = useCallback((colorStr: string): HSV => {
-    if (colorStr && colorStr !== 'mixed') {
-      const rgb = hexToRgb(colorStr);
-      if (rgb) return rgbToHsv(rgb.r, rgb.g, rgb.b);
-    }
-    // Default to sky blue
-    return { h: 217, s: 0.76, v: 0.96 };
-  }, []);
-
-  const [hsv, setHsv] = useState<HSV>(() => parseColorToHsv(currentColor));
-  const [hexInput, setHexInput] = useState<string>(() => {
-    if (currentColor && currentColor !== 'mixed') {
-      const rgb = hexToRgb(currentColor);
-      if (rgb) return rgbToHex(rgb.r, rgb.g, rgb.b);
-    }
-    return currentColor === 'mixed' ? '' : '#3B82F6';
-  });
-  const [hexError, setHexError] = useState(false);
-
-  // Synchronize when external currentColor prop changes
+  // Synchronize incoming active color
   useEffect(() => {
-    if (currentColor && currentColor !== 'mixed') {
-      const rgb = hexToRgb(currentColor);
-      if (rgb) {
-        const newHsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-        setHsv(newHsv);
-        setHexInput(rgbToHex(rgb.r, rgb.g, rgb.b));
+    if (currentColor && currentColor !== 'inherit' && currentColor !== 'auto') {
+      const hex = rgbToHex(currentColor);
+      if (hex && hex.startsWith('#')) {
+        setCustomHex(hex.replace('#', '').toUpperCase());
+        setHsv(hexToHsv(hex));
       }
-    } else if (currentColor === 'mixed') {
-      setHexInput('');
+    } else {
+      setCustomHex('');
     }
   }, [currentColor]);
 
-  // Render the circular color wheel onto canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  // 2D Saturation / Brightness Drag Handler
+  const updateSatValFromCoords = (clientX: number, clientY: number) => {
+    const rect = satValRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const actualSize = Math.round(WHEEL_SIZE * dpr);
-    canvas.width = actualSize;
-    canvas.height = actualSize;
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const y = Math.max(0, Math.min(clientY - rect.top, rect.height));
 
-    const actualCenter = actualSize / 2;
-    const actualRadius = actualCenter - 4 * dpr;
+    const s = Math.round((x / rect.width) * 100);
+    const v = Math.round((1 - y / rect.height) * 100);
 
-    const imgData = ctx.createImageData(actualSize, actualSize);
-    const data = imgData.data;
-
-    // Generate pure rainbow spectrum (V = 1.0)
-    for (let y = 0; y < actualSize; y++) {
-      for (let x = 0; x < actualSize; x++) {
-        const dx = x - actualCenter;
-        const dy = y - actualCenter;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const idx = (y * actualSize + x) * 4;
-
-        if (dist <= actualRadius) {
-          const angle = Math.atan2(dy, dx);
-          const h = ((angle * 180) / Math.PI + 360) % 360;
-          const s = dist / actualRadius;
-          const rgb = hsvToRgb(h, s, 1.0);
-
-          // Edge antialiasing
-          let alpha = 255;
-          if (dist > actualRadius - 1.2 * dpr) {
-            alpha = Math.round(Math.max(0, actualRadius - dist) * (255 / (1.2 * dpr)));
-          }
-
-          data[idx] = rgb.r;
-          data[idx + 1] = rgb.g;
-          data[idx + 2] = rgb.b;
-          data[idx + 3] = alpha;
-        } else {
-          data[idx + 3] = 0;
-        }
-      }
-    }
-
-    ctx.putImageData(imgData, 0, 0);
-  }, [WHEEL_SIZE]);
-
-  // Handle pointer coordinate to HSV (Hue & Saturation)
-  const updateFromPointer = (clientX: number, clientY: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-
-    const dx = x - CENTER;
-    const dy = y - CENTER;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    const angle = Math.atan2(dy, dx);
-    const h = ((angle * 180) / Math.PI + 360) % 360;
-    const s = Math.min(1, Math.max(0, dist / RADIUS));
-
-    const newHsv = { h, s, v: hsv.v };
-    const newHex = hsvToHex(newHsv.h, newHsv.s, newHsv.v);
-
-    setHsv(newHsv);
-    setHexInput(newHex);
-    setHexError(false);
-    onApplyColor(newHex);
+    setHsv((prev) => {
+      const next = { ...prev, s, v };
+      const hex = hsvToHex(next.h, next.s, next.v);
+      setCustomHex(hex.replace('#', ''));
+      onApplyColor(hex);
+      return next;
+    });
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+  const handleSatValDown = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => {
     e.preventDefault();
-    isDraggingRef.current = true;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    updateFromPointer(e.clientX, e.clientY);
+    e.stopPropagation();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    updateSatValFromCoords(clientX, clientY);
+
+    const onMove = (moveEvt: MouseEvent | TouchEvent) => {
+      const moveX = 'touches' in moveEvt ? moveEvt.touches[0].clientX : moveEvt.clientX;
+      const moveY = 'touches' in moveEvt ? moveEvt.touches[0].clientY : moveEvt.clientY;
+      updateSatValFromCoords(moveX, moveY);
+    };
+
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+    };
+
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!isDraggingRef.current) return;
-    updateFromPointer(e.clientX, e.clientY);
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    isDraggingRef.current = false;
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignored
-    }
-  };
-
-  // Brightness slider change
-  const handleBrightnessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newV = parseFloat(e.target.value);
-    const newHsv = { ...hsv, v: newV };
-    const newHex = hsvToHex(newHsv.h, newHsv.s, newHsv.v);
-
-    setHsv(newHsv);
-    setHexInput(newHex);
-    setHexError(false);
-    onApplyColor(newHex);
-  };
-
-  // Hex input change & validation
-  const handleHexChange = (val: string) => {
-    const raw = val.startsWith('#') ? val : `#${val}`;
-    setHexInput(raw.toUpperCase());
-
-    const cleaned = raw.replace('#', '').trim();
-    if (/^[0-9A-Fa-f]{6}$/.test(cleaned) || /^[0-9A-Fa-f]{3}$/.test(cleaned)) {
-      const rgb = hexToRgb(raw);
-      if (rgb) {
-        const newHsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-        setHsv(newHsv);
-        setHexError(false);
-        onApplyColor(raw.toUpperCase());
-        return;
+  // Native EyeDropper API (Chromium)
+  const handleEyeDropper = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window !== 'undefined' && 'EyeDropper' in window) {
+      try {
+        const eyeDropper = new (window as any).EyeDropper();
+        const result = await eyeDropper.open();
+        if (result?.sRGBHex) {
+          const hex = result.sRGBHex.toUpperCase();
+          setCustomHex(hex.replace('#', ''));
+          setHsv(hexToHsv(hex));
+          onApplyColor(hex);
+        }
+      } catch {
+        // User dismissed eyedropper without picking
       }
     }
-    setHexError(true);
   };
-
-  // Selection from presets or recent colors
-  const handleSelectExactColor = (colorHex: string) => {
-    const rgb = hexToRgb(colorHex);
-    if (!rgb) return;
-    const newHsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-    setHsv(newHsv);
-    setHexInput(colorHex.toUpperCase());
-    setHexError(false);
-    onApplyColor(colorHex.toUpperCase());
-  };
-
-  // Indicator coordinates on the wheel
-  const rad = (hsv.h * Math.PI) / 180;
-  const dist = hsv.s * RADIUS;
-  const indicatorX = CENTER + dist * Math.cos(rad);
-  const indicatorY = CENTER + dist * Math.sin(rad);
 
   const currentHex = hsvToHex(hsv.h, hsv.s, hsv.v);
-  const pureHueHex = hsvToHex(hsv.h, hsv.s, 1.0);
 
   return (
     <div
       role="dialog"
-      aria-label="Full Color Wheel Picker"
+      aria-label="Color Studio Picker"
       onMouseDown={(e) => {
-        // Prevent stealing focus from contenteditable editor when interacting with picker
+        // Prevent stealing selection focus from contenteditable editor
         if ((e.target as HTMLElement).tagName !== 'INPUT') {
           e.preventDefault();
         }
+        e.stopPropagation();
       }}
-      className="w-[230px] max-w-[calc(100vw-32px)] rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/90 dark:border-slate-700/80 shadow-2xl p-3 z-50 backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/5 select-none"
+      className="w-[216px] p-2.5 rounded-2xl bg-[#0f172a] text-white border border-white/20 shadow-2xl z-[60] select-none text-xs"
     >
       <style>{`
-        .color-brightness-slider::-webkit-slider-thumb {
+        .hue-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
           appearance: none;
-          width: 13px;
-          height: 13px;
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
           background: #ffffff;
-          border: 2px solid #3b82f6;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          border: 2px solid #111b21;
+          box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
           cursor: pointer;
         }
-        .color-brightness-slider::-moz-range-thumb {
-          width: 13px;
-          height: 13px;
+        .hue-slider::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
           border-radius: 50%;
           background: #ffffff;
-          border: 2px solid #3b82f6;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          border: 2px solid #111b21;
+          box-shadow: 0 0 4px rgba(0, 0, 0, 0.6);
           cursor: pointer;
         }
       `}</style>
 
-      {/* 1. Circular Color Wheel */}
-      <div className="flex flex-col items-center mb-2.5">
-        <div
-          className="relative flex items-center justify-center cursor-crosshair touch-none"
-          style={{ width: `${WHEEL_SIZE}px`, height: `${WHEEL_SIZE}px` }}
-        >
-          <canvas
-            ref={canvasRef}
-            style={{ width: `${WHEEL_SIZE}px`, height: `${WHEEL_SIZE}px`, display: 'block' }}
-            className="rounded-full shadow-inner border border-slate-200/80 dark:border-slate-700/60"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-          />
-          {/* Circular Selection Indicator */}
-          <div
-            className="absolute pointer-events-none w-3.5 h-3.5 rounded-full border-2 border-white shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-transform duration-75"
-            style={{
-              left: `${indicatorX}px`,
-              top: `${indicatorY}px`,
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: currentHex,
+      {/* Header: Mode Switcher & Reset */}
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 text-xs">
+        {/* Presets vs Custom Spectrum Tabs */}
+        <div className="flex items-center bg-white/10 p-0.5 rounded-lg text-[10px] font-bold">
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setColorMode('presets');
             }}
-          />
-        </div>
-      </div>
-
-      {/* 2. Brightness / Value Slider */}
-      <div className="mb-2.5 space-y-1">
-        <div className="flex items-center justify-between text-[10px] font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-          <span>Brightness</span>
-          <span>{Math.round(hsv.v * 100)}%</span>
-        </div>
-        <div className="relative flex items-center">
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={hsv.v}
-            onChange={handleBrightnessChange}
-            aria-label="Color Brightness"
-            className="color-brightness-slider w-full h-1.5 rounded-full appearance-none cursor-pointer focus:outline-hidden"
-            style={{
-              background: `linear-gradient(to right, #000000, ${pureHueHex})`,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* 3. HEX Input & Swatch Preview */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <div
-          className="w-7 h-7 rounded-lg shrink-0 border border-slate-300 dark:border-slate-600 shadow-sm relative overflow-hidden flex items-center justify-center text-[8px] font-bold text-white shadow-inner"
-          style={{
-            background:
-              isMixed && !hexInput
-                ? 'conic-gradient(#ef4444, #f97316, #eab308, #22c55e, #06b6d4, #3b82f6, #a855f7, #ef4444)'
-                : currentHex,
-          }}
-          title={
-            isMixed && !hexInput
-              ? 'Mixed text colors in selection'
-              : `Active Color: ${currentHex}`
-          }
-        />
-        <div className="relative flex-1">
-          <input
-            type="text"
-            value={hexInput}
-            onChange={(e) => handleHexChange(e.target.value)}
-            placeholder={isMixed ? 'Mixed Colors' : '#3B82F6'}
-            maxLength={7}
-            aria-label="HEX Color Code"
-            className={`w-full px-2 py-0.5 text-[11.5px] font-mono font-semibold rounded-lg border bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 transition-all focus:outline-hidden ${
-              hexError
-                ? 'border-red-500 ring-1 ring-red-500/50'
-                : 'border-slate-200 dark:border-slate-700 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50'
+            className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+              colorMode === 'presets'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-white'
             }`}
-          />
+          >
+            Presets
+          </button>
+          <button
+            type="button"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setColorMode('custom');
+            }}
+            className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+              colorMode === 'custom'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Custom
+          </button>
         </div>
+
+        {/* Reset to Default */}
+        <button
+          type="button"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onResetColor();
+            setCustomHex('');
+            onClose?.();
+          }}
+          className="flex items-center gap-1 text-[11px] font-semibold text-slate-400 hover:text-white transition-colors cursor-pointer"
+          title="Reset to default text color"
+        >
+          <RotateCcw className="w-3 h-3" />
+          <span>Default</span>
+        </button>
       </div>
 
-      {/* 4. Recent Colors */}
-      <div className="mb-2.5">
-        <p className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">
-          Recent Colors
-        </p>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {recentColors.length > 0 ? (
-            recentColors.slice(0, 8).map((color, idx) => (
-              <button
-                key={`${color}-${idx}`}
-                type="button"
-                onClick={() => handleSelectExactColor(color)}
-                title={color}
-                aria-label={`Recent color ${color}`}
-                className="w-[18px] h-[18px] rounded-full border border-slate-200 dark:border-slate-700 transition-transform hover:scale-115 cursor-pointer shadow-xs"
-                style={{ backgroundColor: color }}
-              />
-            ))
-          ) : (
-            <div className="text-[10.5px] text-slate-400 dark:text-slate-500 italic py-0.5">
-              No recent colors
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 5. Preset Colors */}
-      <div className="mb-2.5">
-        <p className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">
-          Preset Colors
-        </p>
-        <div className="grid grid-cols-8 gap-1.5 justify-items-center">
-          {PRESET_COLORS.map((color) => {
-            const isSelected =
-              currentColor &&
-              currentColor.toLowerCase() === color.toLowerCase();
-            return (
-              <button
-                key={color}
-                type="button"
-                onClick={() => handleSelectExactColor(color)}
-                title={color}
-                aria-label={`Preset color ${color}`}
-                className={`w-[18px] h-[18px] rounded-md border transition-transform hover:scale-120 cursor-pointer relative flex items-center justify-center ${
-                  color === '#FFFFFF'
-                    ? 'border-slate-300 dark:border-slate-600'
-                    : 'border-transparent'
-                } ${
-                  isSelected
-                    ? 'ring-2 ring-blue-500 shadow-md scale-105'
-                    : 'hover:border-slate-400 shadow-xs'
-                }`}
-                style={{ backgroundColor: color }}
-              >
-                {isSelected && (
-                  <Check
-                    className={`w-2.5 h-2.5 ${
-                      color === '#FFFFFF' || color === '#EAB308'
-                        ? 'text-slate-900'
-                        : 'text-white'
+      {/* MODE A: PRESETS GRID */}
+      {colorMode === 'presets' && (
+        <div className="space-y-2.5">
+          <div className="grid grid-cols-6 gap-1.5 justify-items-center">
+            {COLOR_PRESETS.map((item) => {
+              if (item.color === 'auto') {
+                const isAutoSelected =
+                  !currentColor || currentColor === 'inherit' || currentColor === 'auto';
+                return (
+                  <button
+                    key="auto"
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onResetColor();
+                      setCustomHex('');
+                      onClose?.();
+                    }}
+                    className={`w-6 h-6 rounded-full border transition-transform hover:scale-115 cursor-pointer flex items-center justify-center relative overflow-hidden ${
+                      isAutoSelected
+                        ? 'border-white scale-110 ring-2 ring-blue-500 shadow-md'
+                        : 'border-white/40'
                     }`}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                    style={{
+                      background: 'linear-gradient(135deg, #0f172a 50%, #ffffff 50%)',
+                    }}
+                    title="Theme Default (Adapts automatically to Light & Dark mode)"
+                  >
+                    {isAutoSelected && (
+                      <Check className="w-3 h-3 stroke-[3] text-blue-400 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]" />
+                    )}
+                  </button>
+                );
+              }
 
-      {/* 6. Reset to Default */}
-      <button
-        type="button"
-        onClick={() => {
-          onResetColor();
-        }}
-        className="w-full px-2 py-1 rounded-lg text-[11px] font-medium flex items-center justify-center gap-1.5 cursor-pointer transition-colors border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white active:scale-98 shadow-xs"
-      >
-        <RotateCcw className="w-3 h-3 text-slate-400 dark:text-slate-400" />
-        <span>Reset to Default</span>
-      </button>
+              const c = item.color;
+              const isSelected =
+                currentColor && rgbToHex(currentColor).toLowerCase() === c.toLowerCase();
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onApplyColor(c);
+                    setCustomHex(c.replace('#', ''));
+                    setHsv(hexToHsv(c));
+                    onClose?.();
+                  }}
+                  className={`w-6 h-6 rounded-full border transition-transform hover:scale-115 cursor-pointer flex items-center justify-center ${
+                    isSelected
+                      ? 'border-white scale-110 ring-2 ring-blue-500 shadow-md'
+                      : 'border-white/20'
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={item.label}
+                >
+                  {isSelected && (
+                    <Check
+                      className={`w-3 h-3 stroke-[3] ${
+                        c === '#FFFFFF' ? 'text-black' : 'text-white'
+                      }`}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Quick Hex & Jump to Custom */}
+          <div className="pt-2 border-t border-white/10 flex items-center gap-1.5">
+            <div
+              className="w-5 h-5 rounded-full border border-white/30 shrink-0 shadow-xs overflow-hidden"
+              style={{
+                backgroundColor:
+                  currentColor && currentColor !== 'inherit' && currentColor !== 'auto'
+                    ? currentColor
+                    : undefined,
+                backgroundImage:
+                  !currentColor || currentColor === 'inherit' || currentColor === 'auto'
+                    ? 'linear-gradient(135deg, #0f172a 50%, #ffffff 50%)'
+                    : undefined,
+              }}
+              title={
+                currentColor && currentColor !== 'inherit' && currentColor !== 'auto'
+                  ? `Active Color: ${currentColor}`
+                  : 'Theme Default (Auto)'
+              }
+            />
+            <div className="relative flex-1 flex items-center">
+              <span className="absolute left-2 text-[10px] text-slate-400 font-mono">#</span>
+              <input
+                type="text"
+                value={customHex}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+                  setCustomHex(val);
+                  if (val.length === 6) {
+                    const hex = `#${val}`;
+                    onApplyColor(hex);
+                    setHsv(hexToHsv(hex));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && customHex) {
+                    e.preventDefault();
+                    onApplyColor(`#${customHex}`);
+                    onClose?.();
+                  }
+                }}
+                placeholder="3B82F6"
+                className="w-full h-6 pl-4 pr-1 rounded-lg bg-white/10 border border-white/15 text-[11px] text-white font-mono placeholder:text-slate-500 focus:outline-none focus:border-blue-500 uppercase"
+              />
+            </div>
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setColorMode('custom');
+              }}
+              className="h-6 px-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-[10px] font-semibold text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+              title="Open custom 2D spectrum picker"
+            >
+              <div className="w-2 h-2 rounded-full bg-gradient-to-tr from-pink-500 via-amber-400 to-blue-500" />
+              <span>Custom</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODE B: CUSTOM 2D SPECTRUM STUDIO */}
+      {colorMode === 'custom' && (
+        <div className="space-y-2">
+          {/* 2D Saturation / Brightness Pad */}
+          <div
+            ref={satValRef}
+            onMouseDown={handleSatValDown}
+            onTouchStart={handleSatValDown}
+            style={{ backgroundColor: `hsl(${hsv.h}, 100%, 50%)` }}
+            className="relative w-full h-24 rounded-xl cursor-crosshair overflow-hidden select-none border border-white/20 shadow-inner"
+          >
+            {/* Horizontal white-to-transparent gradient (Saturation) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+            {/* Vertical black-to-transparent gradient (Brightness) */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent pointer-events-none" />
+            {/* Draggable Circle Handle */}
+            <div
+              style={{
+                left: `${hsv.s}%`,
+                top: `${100 - hsv.v}%`,
+                backgroundColor: currentHex,
+              }}
+              className="absolute w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md pointer-events-none ring-1 ring-black/50"
+            />
+          </div>
+
+          {/* Rainbow Hue Slider */}
+          <div className="relative flex items-center py-0.5">
+            <input
+              type="range"
+              min="0"
+              max="360"
+              value={hsv.h}
+              onChange={(e) => {
+                const h = Number(e.target.value);
+                const next = { ...hsv, h };
+                setHsv(next);
+                const hex = hsvToHex(next.h, next.s, next.v);
+                setCustomHex(hex.replace('#', ''));
+                onApplyColor(hex);
+              }}
+              className="w-full h-3 rounded-full appearance-none cursor-pointer outline-none hue-slider shadow-xs"
+              style={{
+                background:
+                  'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
+              }}
+            />
+          </div>
+
+          {/* Control Row: Preview, Hex Input, Eyedropper, Done */}
+          <div className="flex items-center gap-1.5 pt-1.5 border-t border-white/10">
+            {/* Live Preview Chip */}
+            <div
+              className="w-6 h-6 rounded-md border border-white/30 shrink-0 shadow-sm"
+              style={{ backgroundColor: currentHex }}
+              title={`Active Color: ${currentHex}`}
+            />
+
+            {/* Hex Input */}
+            <div className="relative flex-1 flex items-center">
+              <span className="absolute left-2 text-[10px] text-slate-400 font-mono">#</span>
+              <input
+                type="text"
+                value={customHex}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9A-Fa-f]/g, '').slice(0, 6);
+                  setCustomHex(val);
+                  if (val.length === 6) {
+                    const hex = `#${val}`;
+                    setHsv(hexToHsv(hex));
+                    onApplyColor(hex);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    onClose?.();
+                  }
+                }}
+                placeholder="3B82F6"
+                className="w-full h-6 pl-4 pr-1 rounded-lg bg-white/10 border border-white/15 text-[11px] text-white font-mono placeholder:text-slate-500 focus:outline-none focus:border-blue-500 uppercase"
+              />
+            </div>
+
+            {/* EyeDropper button (Chromium) */}
+            {typeof window !== 'undefined' && 'EyeDropper' in window && (
+              <button
+                type="button"
+                onClick={handleEyeDropper}
+                className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-slate-300 hover:text-white cursor-pointer transition-colors shrink-0"
+                title="Pick color from screen"
+              >
+                <Pipette className="w-3 h-3" />
+              </button>
+            )}
+
+            {/* Done Button */}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose?.();
+              }}
+              className="h-6 px-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold cursor-pointer transition-colors shrink-0"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
