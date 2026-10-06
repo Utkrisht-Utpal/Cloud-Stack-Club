@@ -184,7 +184,8 @@ export const sanitizeRulesHtml = (html: string): string => {
           );
           if (!valid) el.removeAttribute(attr.name);
         } else if (name === 'data-line-spacing') {
-          const valid = ['1', '1.5', '2', '2.5'].includes(attr.value);
+          const num = parseFloat(attr.value);
+          const valid = !isNaN(num) && num >= 0.5 && num <= 4.0;
           if (!valid) el.removeAttribute(attr.name);
         } else if (name === 'data-align') {
           const valid = ['left', 'center', 'right'].includes(attr.value.toLowerCase());
@@ -197,12 +198,13 @@ export const sanitizeRulesHtml = (html: string): string => {
         }
       } else if (tag === 'span' || tag === 'p' || tag === 'li') {
         if (name === 'data-font-size') {
-          const valid = ['small', 'normal', 'large'].includes(
-            attr.value.toLowerCase()
-          );
+          const valid =
+            ['small', 'normal', 'large'].includes(attr.value.toLowerCase()) ||
+            /^\d+$/.test(attr.value);
           if (!valid) el.removeAttribute(attr.name);
         } else if (name === 'data-line-spacing') {
-          const valid = ['1', '1.5', '2', '2.5'].includes(attr.value);
+          const num = parseFloat(attr.value);
+          const valid = !isNaN(num) && num >= 0.5 && num <= 4.0;
           if (!valid) el.removeAttribute(attr.name);
         } else if (name === 'data-align') {
           const valid = ['left', 'center', 'right'].includes(attr.value.toLowerCase());
@@ -216,7 +218,10 @@ export const sanitizeRulesHtml = (html: string): string => {
           const rawStyle = attr.value;
 
           // Preserve font-size
-          if (rawStyle.toLowerCase().includes('0.75rem') || rawStyle.toLowerCase().includes('12px')) {
+          const fontMatch = rawStyle.match(/(?:^|;)\s*font-size\s*:\s*([^;]+)/i);
+          if (fontMatch) {
+            cleanStyle += `font-size: ${fontMatch[1].trim()}; `;
+          } else if (rawStyle.toLowerCase().includes('0.75rem') || rawStyle.toLowerCase().includes('12px')) {
             cleanStyle += 'font-size: 0.75rem; line-height: 1.25rem; ';
           } else if (rawStyle.toLowerCase().includes('1.125rem') || rawStyle.toLowerCase().includes('18px')) {
             cleanStyle += 'font-size: 1.125rem; line-height: 1.6rem; ';
@@ -240,10 +245,14 @@ export const sanitizeRulesHtml = (html: string): string => {
             cleanStyle += `padding-left: ${paddingMatch[1]}; `;
           }
 
-          // Preserve line-height
-          const lhMatch = rawStyle.match(/(?:^|;)\s*line-height\s*:\s*(1|1\.5|2|2\.5)/i);
+          // Preserve line-height (preset or custom)
+          const lhMatch = rawStyle.match(/(?:^|;)\s*line-height\s*:\s*([^;!]+)(?:\s*!important)?/i);
           if (lhMatch) {
-            cleanStyle += `line-height: ${lhMatch[1]}; `;
+            const val = lhMatch[1].trim();
+            const num = parseFloat(val);
+            if (!isNaN(num) && num >= 0.5 && num <= 4.0) {
+              cleanStyle += `line-height: ${val} !important; `;
+            }
           }
 
           // Preserve color (safe chromatic custom colors only; neutral black/white stripped so themes adapt)

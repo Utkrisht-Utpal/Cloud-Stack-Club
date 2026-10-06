@@ -357,7 +357,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                 </div>
 
                 {/* Additional Details Badges (Only shown for upcoming / registration-active events, hidden when ongoing or in feedback window) */}
-                {!isFeedbackActive && (
+                {!isFeedbackOpen && (
                   <div className="flex flex-wrap items-center gap-2 pt-0.5">
                     {activeAdEvent.supports_teams && (
                       <span className="px-2.5 py-1 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center gap-1.5">
