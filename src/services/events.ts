@@ -199,13 +199,33 @@ export const sortEventsByRelevance = (eventsList: Event[]): Event[] => {
       if (!aIsPast && !bIsPast) {
         if (!aDateStr) return 1;
         if (!bDateStr) return -1;
-        return aDateStr.localeCompare(bDateStr);
+        const dateCmp = aDateStr.localeCompare(bDateStr);
+        if (dateCmp !== 0) return dateCmp;
+
+        // Same date tie-breakers:
+        // 1. Prioritize event with registration currently enabled
+        const regA = a.registration_enabled ? 1 : 0;
+        const regB = b.registration_enabled ? 1 : 0;
+        if (regA !== regB) return regB - regA;
+
+        // 2. Prioritize earlier start time
+        const timeA = a.start_time || '99:99';
+        const timeB = b.start_time || '99:99';
+        const timeCmp = timeA.localeCompare(timeB);
+        if (timeCmp !== 0) return timeCmp;
+
+        return (a.title || '').localeCompare(b.title || '');
       }
 
       // If both are Past/Completed, sort descending (most recent completed event first)
       if (!aDateStr) return 1;
       if (!bDateStr) return -1;
-      return bDateStr.localeCompare(aDateStr);
+      const pastDateCmp = bDateStr.localeCompare(aDateStr);
+      if (pastDateCmp !== 0) return pastDateCmp;
+
+      const timeA = a.start_time || '';
+      const timeB = b.start_time || '';
+      return timeB.localeCompare(timeA);
     });
 };
 
