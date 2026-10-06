@@ -118,18 +118,28 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
         return startDt.getTime() > nowMs;
       })
       .sort((a, b) => {
+        const aDateStr = a.date ? a.date.split('T')[0] : '';
+        const bDateStr = b.date ? b.date.split('T')[0] : '';
+
+        // Step 1: Compare Calendar Date (Nearest upcoming calendar date always comes first)
+        if (aDateStr !== bDateStr) {
+          if (!aDateStr) return 1;
+          if (!bDateStr) return -1;
+          return aDateStr.localeCompare(bDateStr);
+        }
+
+        // Step 2: Same Date - Prioritize the event with Registration OPEN (not full)
         const countA = regCountsMap[a.id.toLowerCase()] ?? 0;
         const countB = regCountsMap[b.id.toLowerCase()] ?? 0;
 
         const isRegOpenA = isRegistrationActive(a, countA) && !isRegistrationFull(a, countA);
         const isRegOpenB = isRegistrationActive(b, countB) && !isRegistrationFull(b, countB);
 
-        // 1st Priority: Events with registration currently OPEN come first
         if (isRegOpenA !== isRegOpenB) {
           return isRegOpenA ? -1 : 1;
         }
 
-        // 2nd Priority: Nearest upcoming chronological date & time
+        // Step 3: Same Date & Same Registration Status - Earlier Start Time comes first
         const timeA = getEventStartDateTime(a.date, a.start_time)?.getTime() ?? Infinity;
         const timeB = getEventStartDateTime(b.date, b.start_time)?.getTime() ?? Infinity;
         return timeA - timeB;
