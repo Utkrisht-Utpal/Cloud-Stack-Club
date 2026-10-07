@@ -11,7 +11,7 @@ import {
   isRegistrationActive,
   isRegistrationFull,
 } from '../../utils/formatters';
-import { getEventRegistrationCountsMap } from '../../services/registrationForms';
+import { getEventRegistrationCountsMap, getCachedRegistrationCountsMap } from '../../services/registrationForms';
 import { getStoredDriveUrlsMap } from '../../services/events';
 import { sanitizeDescriptionHtml } from '../../utils/descriptionFormatting';
 import type { Event } from '../../types/database';
@@ -44,7 +44,7 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
   const [activeAdEvent, setActiveAdEvent] = useState<Event | null>(null);
   const [isFeedbackWindow, setIsFeedbackWindow] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [regCountsMap, setRegCountsMap] = useState<Record<string, number>>({});
+  const [regCountsMap, setRegCountsMap] = useState<Record<string, number>>(() => getCachedRegistrationCountsMap());
   const { isAdminLoggedIn, isAdminModalOpen } = useAdminAuth();
   const userDismissedRef = useRef(false);
 
@@ -385,7 +385,12 @@ export const EventAdModal: React.FC<EventAdModalProps> = ({
                       ) : (
                         <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 text-xs font-bold flex items-center gap-1.5">
                           <Ticket className="w-3.5 h-3.5" />
-                          <span>{Math.max(0, activeAdEvent.max_registrations - regCount)} seats available</span>
+                          <span>
+                            {(() => {
+                              const remaining = Math.max(0, activeAdEvent.max_registrations - regCount);
+                              return `${remaining} ${remaining === 1 ? 'seat available' : 'seats available'}`;
+                            })()}
+                          </span>
                         </span>
                       )
                     )}
