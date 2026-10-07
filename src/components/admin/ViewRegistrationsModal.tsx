@@ -77,7 +77,14 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
   useEffect(() => {
     if (isOpen && event) {
+      setSearchQuery('');
+      setExpandedRegId(null);
+      setSelectedAnswersRegId(null);
       loadRegistrations();
+    } else if (!isOpen) {
+      setSearchQuery('');
+      setExpandedRegId(null);
+      setSelectedAnswersRegId(null);
     }
   }, [isOpen, event]);
 
