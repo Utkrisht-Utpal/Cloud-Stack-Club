@@ -605,6 +605,22 @@ export const getRegistrationAnswersForEvent = async (
   return result;
 };
 
+const REG_COUNTS_CACHE_KEY = 'csc_cached_reg_counts';
+
+/**
+ * Synchronously retrieves cached event registration counts to prevent UI flicker on initial mount.
+ */
+export const getCachedRegistrationCountsMap = (): Record<string, number> => {
+  try {
+    const raw = sessionStorage.getItem(REG_COUNTS_CACHE_KEY) || localStorage.getItem(REG_COUNTS_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return parsed;
+    }
+  } catch {}
+  return {};
+};
+
 export const getEventRegistrationCountsMap = async (): Promise<Record<string, number>> => {
   const countsMap: Record<string, number> = {};
 
@@ -665,6 +681,13 @@ export const getEventRegistrationCountsMap = async (): Promise<Record<string, nu
           }
         }
       }
+    } catch {}
+  }
+
+  if (Object.keys(countsMap).length > 0) {
+    try {
+      sessionStorage.setItem(REG_COUNTS_CACHE_KEY, JSON.stringify(countsMap));
+      localStorage.setItem(REG_COUNTS_CACHE_KEY, JSON.stringify(countsMap));
     } catch {}
   }
 
