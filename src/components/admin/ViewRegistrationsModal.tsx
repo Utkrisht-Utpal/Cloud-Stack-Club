@@ -56,7 +56,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
   const [sortConfig, setSortConfig] = useState<{ field: 'date' | 'name'; order: 'asc' | 'desc' }>({
     field: 'date',
-    order: 'asc',
+    order: 'desc',
   });
 
   // Team details cache: reg.id -> team info
@@ -80,11 +80,13 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       setSearchQuery('');
       setExpandedRegId(null);
       setSelectedAnswersRegId(null);
+      setSortConfig({ field: 'date', order: 'desc' });
       loadRegistrations();
     } else if (!isOpen) {
       setSearchQuery('');
       setExpandedRegId(null);
       setSelectedAnswersRegId(null);
+      setSortConfig({ field: 'date', order: 'desc' });
     }
   }, [isOpen, event]);
 
