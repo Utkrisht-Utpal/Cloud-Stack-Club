@@ -1039,7 +1039,12 @@ export const resolveDynamicEventQuery = (
           ? `This event was successfully completed on **${dateFormatted}**.`
           : (maxReg && registered >= maxReg)
           ? `Registration has reached maximum capacity (${maxReg} seats filled).`
-          : (evt.registration_end && new Date(evt.registration_end) < new Date())
+          : (evt.registration_end && (() => {
+              const endStr = typeof evt.registration_end === 'string' ? evt.registration_end.split('T')[0] : '';
+              const [ey, em, ed] = endStr.split('-').map(Number);
+              const endDate = (ey && em && ed) ? new Date(ey, em - 1, ed, 23, 59, 59, 999) : new Date(evt.registration_end);
+              return endDate.getTime() < Date.now();
+            })())
           ? `The registration deadline (${formatEventDate(evt.registration_end)}) has passed.`
           : `Registrations are currently closed for this event.`;
 
