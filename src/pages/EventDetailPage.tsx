@@ -381,7 +381,7 @@ export const EventDetailPage: React.FC = () => {
                 >
                   Give Event Feedback
                 </Button>
-              ) : event.status === 'upcoming' ? (
+              ) : (event.status === 'upcoming' || isRegActive || event.registration_enabled) && event.status !== 'completed' && event.status !== 'cancelled' ? (
                 isFull ? (
                   <button
                     disabled
