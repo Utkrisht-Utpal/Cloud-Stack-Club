@@ -102,6 +102,7 @@ import {
   deleteEventPosterAdmin,
   uploadEventImage,
   sortEventsByRelevance,
+  autoSyncEventStatuses,
 } from '../../services/events';
 import { getRoles } from '../../services/roles';
 import {
@@ -112,7 +113,7 @@ import {
   fetchFreshContactFeedbacksFromDb,
   fetchFreshEventFeedbacksFromDb,
 } from '../../services/feedback';
-import { exportFeedbacksToPdf, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
+import { exportFeedbacksToPdf, exportFeedbacksToExcel, exportMembersToExcel, exportMembersToPdf } from '../../utils/exportDirectory';
 import { validateFileSignature } from '../../lib/fileValidation';
 import type { Member, Event, Role, ContactFeedback, EventFeedback, FeedbackStatus } from '../../types/database';
 
@@ -427,6 +428,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
           return {};
         }),
       ]);
+      if (evs && counts) {
+        autoSyncEventStatuses(evs, counts).catch(() => {});
+      }
       if (evs) setEventsList(evs);
       if (counts) setRegistrationCounts(counts);
     } catch (err) {
@@ -625,6 +629,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
       exportFeedbacksToPdf(filteredContactFeedbacks as any, feedbackFilter, feedbackSearch);
     }
     setActionSuccess('Feedbacks PDF downloaded successfully!');
+    setTimeout(() => setActionSuccess(null), 3000);
+  };
+
+  const handleExportFeedbacksExcel = () => {
+    if (feedbackViewTab === 'event') {
+      exportFeedbacksToExcel(filteredEventFeedbacks as any, feedbackFilter, feedbackSearch, eventsList);
+    } else {
+      exportFeedbacksToExcel(filteredContactFeedbacks as any, feedbackFilter, feedbackSearch);
+    }
+    setActionSuccess('Feedbacks Excel downloaded successfully!');
     setTimeout(() => setActionSuccess(null), 3000);
   };
 
@@ -2057,8 +2071,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                         {/* Registration Status & Category/Ongoing Badge Overlay */}
                         <div className="absolute top-3 left-3 z-30 flex flex-col gap-1 items-start max-w-[calc(100%-80px)]">
                           {(() => {
-                            const regActive = isRegistrationActive(evt);
-                            const statusInfo = getEventStatusInfo(evt.date);
+                            const regCount = registrationCounts[(evt.id || '').toLowerCase()] ?? registrationCounts[(evt.slug || '').toLowerCase()] ?? 0;
+                            const regActive = isRegistrationActive(evt, regCount);
+                            const statusInfo = getEventStatusInfo(evt.date, evt.start_time);
                             return (
                               <>
                                 <span
@@ -2409,16 +2424,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                   />
                 </div>
 
-                {/* Download PDF Button */}
-                <button
-                  type="button"
-                  onClick={handleExportFeedbacksPdf}
-                  className="w-full sm:w-auto h-11 px-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
-                  title="Download filtered feedbacks as PDF"
-                >
-                  <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  <span>Download as PDF</span>
-                </button>
+                {/* Download Excel & PDF Buttons */}
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleExportFeedbacksExcel}
+                    className="flex-1 sm:flex-none h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 text-slate-700 dark:text-slate-200 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+                    title="Download filtered feedbacks as Excel"
+                  >
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>Download as Excel</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportFeedbacksPdf}
+                    className="flex-1 sm:flex-none h-11 px-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-red-500/50 dark:hover:border-red-500/50 text-slate-700 dark:text-slate-200 hover:text-red-600 dark:hover:text-red-400 text-xs font-bold transition-all shadow-sm hover:shadow flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+                    title="Download filtered feedbacks as PDF"
+                  >
+                    <FileText className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
+                    <span>Download as PDF</span>
+                  </button>
+                </div>
               </div>
             </div>
 
