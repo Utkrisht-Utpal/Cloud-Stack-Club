@@ -113,8 +113,12 @@ export const saveStoredWhatsappUrl = (eventId: string, whatsappUrl: string | nul
   } catch {}
 };
 
-export const autoSyncEventStatuses = async (eventsList: Event[]) => {
-  if (!isSupabaseConfigured() || !eventsList || eventsList.length === 0) return;
+import { getCachedRegistrationCountsMap } from './registrationForms';
+
+export const autoSyncEventStatuses = async (eventsList: Event[], regCountsMap?: Record<string, number>) => {
+  if (!eventsList || eventsList.length === 0) return;
+
+  const counts = regCountsMap || getCachedRegistrationCountsMap();
 
   // Use LOCAL date (not UTC) so status transitions happen at local midnight, not UTC midnight
   const now = new Date();
@@ -159,15 +163,22 @@ export const autoSyncEventStatuses = async (eventsList: Event[]) => {
       }
     }
 
-    if (needsUpdate) {
+    // 4. If maximum capacity has been reached -> update registration_enabled to false in database
+    if (evt.registration_enabled && evt.max_registrations) {
+      const regCount = counts[(evt.id || '').toLowerCase()] ?? counts[evt.id] ?? (evt.slug ? counts[evt.slug.toLowerCase()] : 0) ?? 0;
+      if (regCount >= evt.max_registrations) {
+        updates.registration_enabled = false;
+        evt.registration_enabled = false;
+        needsUpdate = true;
+      }
+    }
+
+    if (needsUpdate && isSupabaseConfigured()) {
       updates.updated_at = new Date().toISOString();
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          pendingDbUpdates.push(
-            Promise.resolve(supabase.from('events').update(updates).eq('id', evt.id))
-          );
-        }
+        pendingDbUpdates.push(
+          Promise.resolve(supabase.from('events').update(updates).eq('id', evt.id))
+        );
       } catch {}
     }
   }

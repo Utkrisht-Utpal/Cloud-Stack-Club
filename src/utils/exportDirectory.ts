@@ -574,3 +574,74 @@ export const exportFeedbacksToPdf = (
   const cleanFilter = filterType.replace(/[^a-zA-Z0-9]/g, '_');
   doc.save(`Cloud_Stack_Club_Feedbacks_${cleanFilter}_${new Date().toISOString().split('T')[0]}.pdf`);
 };
+
+export const exportFeedbacksToExcel = (
+  feedbacks: (ContactFeedback | EventFeedback)[],
+  filterType: string,
+  _searchQuery: string,
+  eventsList?: { id: string; title: string; status?: string }[]
+) => {
+  const eventMap = new Map((eventsList || []).map((e) => [e.id, e]));
+
+  const data = feedbacks.map((f, index) => {
+    const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
+    const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
+    let eventName = 'Contact Form';
+    if ('event_id' in f && f.event_id) {
+      const matched = eventMap.get(f.event_id);
+      if (matched) {
+        eventName = `${matched.title}${matched.status === 'cancelled' ? ' (Cancelled)' : ''}`;
+      } else {
+        eventName = (f as EventFeedback).event_title || 'Event Feedback';
+      }
+    }
+
+    const rating = 'rating' in f && f.rating ? `${f.rating}/5` : '—';
+    const clubRating = 'club_rating' in f && f.club_rating ? `${f.club_rating}/10` : '—';
+
+    return {
+      'S.No': index + 1,
+      'Sender Name': sanitizeFormulaValue(f.name || 'N/A'),
+      'University UID': sanitizeFormulaValue(uid),
+      'Registration ID': sanitizeFormulaValue(regId),
+      'Category / Event': sanitizeFormulaValue(eventName),
+      'Email': sanitizeFormulaValue(f.email || 'N/A'),
+      'Official Email': sanitizeFormulaValue(formatOfficialEmail(uid !== '—' ? uid : undefined)),
+      'Mobile No': sanitizeFormulaValue(f.phone || 'N/A'),
+      'Event Rating': sanitizeFormulaValue(rating),
+      'Club Rating': sanitizeFormulaValue(clubRating),
+      'Message / Feedback': sanitizeFormulaValue(f.message || 'N/A'),
+      'Status': sanitizeFormulaValue((f.status || 'pending').toUpperCase()),
+      'Submission Date': sanitizeFormulaValue(
+        f.created_at ? new Date(f.created_at).toLocaleString('en-IN') : 'N/A'
+      ),
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+
+  worksheet['!cols'] = [
+    { wch: 6 },  // S.No
+    { wch: 22 }, // Sender Name
+    { wch: 15 }, // UID
+    { wch: 22 }, // Reg ID
+    { wch: 28 }, // Category / Event
+    { wch: 28 }, // Email
+    { wch: 28 }, // Official Email
+    { wch: 16 }, // Mobile No
+    { wch: 14 }, // Event Rating
+    { wch: 14 }, // Club Rating
+    { wch: 50 }, // Message
+    { wch: 14 }, // Status
+    { wch: 22 }, // Submission Date
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedbacks');
+
+  const cleanFilter = filterType.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileDate = new Date().toISOString().split('T')[0];
+  const fileName = `Cloud_Stack_Club_Feedbacks_${cleanFilter}_${fileDate}.xlsx`;
+
+  XLSX.writeFile(workbook, fileName);
+};
