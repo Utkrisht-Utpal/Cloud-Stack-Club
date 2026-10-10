@@ -183,7 +183,6 @@ export interface SubmitEventFeedbackPayload {
   event_id: string;
   event_title: string;
   event_rating: number;
-  engagement_rating?: number;
   coordination_rating: string;
   message: string;
   turnstileToken?: string;
@@ -205,7 +204,6 @@ export const submitEventFeedback = async (
     event_id: payload.event_id.trim(),
     event_title: payload.event_title.trim(),
     event_rating: payload.event_rating,
-    engagement_rating: payload.engagement_rating,
     coordination_rating: payload.coordination_rating.trim(),
     message: payload.message.trim(),
     status: 'pending',
@@ -272,7 +270,6 @@ export const submitEventFeedback = async (
         university_id: payload.university_id.trim(),
         registration_id: payload.registration_id.trim(),
         event_rating: payload.event_rating,
-        engagement_rating: payload.engagement_rating ?? 5,
         coordination_rating: payload.coordination_rating.trim(),
         message: payload.message.trim(),
         turnstile_token: payload.turnstileToken,
@@ -334,7 +331,6 @@ export const fetchFreshEventFeedbacksFromDb = async (): Promise<EventFeedback[]>
       event_id: f.event_id,
       event_title: f.event_title || 'Event',
       event_rating: f.event_rating,
-      engagement_rating: f.engagement_rating,
       coordination_rating: f.coordination_rating,
       message: f.message,
       status: f.status || 'pending',

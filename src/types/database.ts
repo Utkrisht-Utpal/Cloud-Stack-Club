@@ -162,6 +162,7 @@ export interface EventTeamMember {
   phone?: string | null;
   department?: string | null;
   year?: string | null;
+  section?: string | null;
   registration_number?: string | null;
   member_id: string | null;
   created_at: string;
@@ -178,6 +179,7 @@ export interface EventRegistration {
   uid?: string | null;
   department?: string | null;
   year?: string | null;
+  section?: string | null;
   is_member: boolean;
   team_id: string | null;
   status: RegistrationStatus;
@@ -218,7 +220,6 @@ export interface EventFeedback {
   event_id: string;
   event_title: string;
   event_rating: number;
-  engagement_rating?: number;
   coordination_rating: string;
   message: string;
   status: FeedbackStatus;
@@ -247,10 +248,11 @@ export interface EventRegistrationPayload {
   uid?: string;
   department?: string;
   year?: string;
+  section?: string;
   member_id?: string;
   is_member?: boolean;
   team_name?: string;
-  team_members?: { name: string; email: string; uid?: string; phone?: string; department?: string; year?: string; registration_number?: string }[];
+  team_members?: { name: string; email: string; uid?: string; phone?: string; department?: string; year?: string; section?: string; registration_number?: string }[];
   answers?: { field_id: string; answer_text?: string; answer_json?: any; file_url?: string }[];
 }
 
@@ -569,7 +571,6 @@ export interface Database {
           event_id: string;
           event_title: string;
           event_rating: number;
-          engagement_rating: number;
           coordination_rating: string;
           message: string;
           status?: FeedbackStatus;
@@ -584,7 +585,6 @@ export interface Database {
           event_id?: string;
           event_title?: string;
           event_rating?: number;
-          engagement_rating?: number;
           coordination_rating?: string;
           message?: string;
           status?: FeedbackStatus;

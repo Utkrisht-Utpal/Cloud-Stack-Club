@@ -14,6 +14,7 @@ export const registerForEvent = async (
     uid,
     department,
     year,
+    section,
     team_name,
     team_members,
     answers,
@@ -59,6 +60,7 @@ export const registerForEvent = async (
     uid: m.uid ? m.uid.trim().toUpperCase() : null,
     department: m.department?.trim() || null,
     year: m.year?.trim() || null,
+    section: m.section?.trim() || null,
   }));
 
   const formattedAnswers = (answers || []).map((ans) => ({
@@ -83,6 +85,7 @@ export const registerForEvent = async (
       uid: uid ? uid.trim().toUpperCase() : null,
       department: department?.trim() || null,
       year: year?.trim() || null,
+      section: section?.trim() || null,
       team_name: team_name?.trim() || null,
       team_members: formattedTeamMembers,
       answers: formattedAnswers,
@@ -108,6 +111,9 @@ export const registerForEvent = async (
     registrant_email: registrant_email.trim(),
     registrant_phone: registrant_phone?.trim() || null,
     uid: uid ? uid.trim().toUpperCase() : null,
+    department: department?.trim() || null,
+    year: year?.trim() || null,
+    section: section?.trim() || null,
     is_member: false,
     team_id: parsed.team_id || null,
     status: 'registered',
@@ -167,6 +173,7 @@ export const registerForEvent = async (
           uid: m.uid ? m.uid.trim().toUpperCase() : null,
           department: match?.department || m.department?.trim() || null,
           year: match?.year || m.year?.trim() || null,
+          section: match?.section || m.section?.trim() || null,
           registration_number: match?.registration_number || null,
           member_id: match?.member_id || null,
           created_at: match?.created_at || new Date().toISOString(),

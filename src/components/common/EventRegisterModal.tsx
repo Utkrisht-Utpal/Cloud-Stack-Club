@@ -16,7 +16,8 @@ import {
   ArrowRight,
   Ticket,
   Info,
-  ExternalLink
+  ExternalLink,
+  Layers
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { CustomSelect } from '../ui/CustomSelect';
@@ -67,6 +68,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     uid: '',
     department: '',
     year: '1st Year',
+    section: '',
   });
 
   // Team Registration State
@@ -80,6 +82,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       phone: string;
       department: string;
       year: string;
+      section: string;
     }>
   >([]);
   const [turnstileToken, setTurnstileToken] = useState<string>('');
@@ -110,9 +113,10 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
         uid: '',
         department: '',
         year: '1st Year',
+        section: '',
       });
       setTeamName('');
-      setTeamMembers([{ name: '', email: '', uid: '', phone: '', department: '', year: '1st Year' }]);
+      setTeamMembers([{ name: '', email: '', uid: '', phone: '', department: '', year: '1st Year', section: '' }]);
       setCustomAnswers({});
       setTurnstileToken('');
 
@@ -190,7 +194,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
     if (teamMembers.length >= maxMembers) return;
     setTeamMembers((prev) => [
       ...prev,
-      { name: '', email: '', uid: '', phone: '', department: '', year: '1st Year' },
+      { name: '', email: '', uid: '', phone: '', department: '', year: '1st Year', section: '' },
     ]);
   };
 
@@ -200,7 +204,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
   const handleUpdateTeamMember = (
     index: number,
-    key: 'name' | 'email' | 'uid' | 'phone' | 'department' | 'year',
+    key: 'name' | 'email' | 'uid' | 'phone' | 'department' | 'year' | 'section',
     value: string
   ) => {
     setTeamMembers((prev) =>
@@ -356,6 +360,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
           uid: formData.uid.trim(),
           department: formData.department.trim(),
           year: formData.year,
+          section: formData.section.trim() || undefined,
           team_name: isTeamRegistration ? teamName.trim() : undefined,
           team_members:
             isTeamRegistration && teamMembers.length > 0
@@ -368,6 +373,7 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                     phone: m.phone ? m.phone.trim() : undefined,
                     department: m.department.trim(),
                     year: m.year || '1st Year',
+                    section: m.section ? m.section.trim() : undefined,
                   }))
               : undefined,
           answers: formattedAnswers,
@@ -824,6 +830,23 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Section / Group input field - full width */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Section / Group
+              </label>
+              <div className="relative">
+                <Layers className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={formData.section}
+                  onChange={(e) => setFormData({ ...formData, section: e.target.value })}
+                  placeholder="e.g. 24BCF-1 / Section A"
+                  className="w-full pl-9 pr-3.5 h-11 rounded-xl bg-slate-50 dark:bg-slate-900/80 text-xs font-medium border border-slate-200 dark:border-slate-700/60 text-slate-900 dark:text-white"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Section 2: Team Registration (If Supported) */}
@@ -934,6 +957,15 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                           triggerClassName="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white flex items-center justify-between cursor-pointer"
                         />
                       </div>
+
+                      {/* Row 4: Section / Group (full width) */}
+                      <input
+                        type="text"
+                        placeholder="Section / Group (e.g. 24BCF-1)"
+                        value={m.section || ''}
+                        onChange={(e) => handleUpdateTeamMember(idx, 'section', e.target.value)}
+                        className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
+                      />
                     </div>
                   ))}
 

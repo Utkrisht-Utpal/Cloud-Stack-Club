@@ -7,7 +7,11 @@ import {
   ChevronDown, 
   ChevronUp, 
   Users2,
-  ArrowUp
+  ArrowUp,
+  CheckSquare,
+  Square,
+  Download,
+  Check
 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { 
@@ -27,6 +31,14 @@ import {
 } from '../../utils/exportDirectory';
 import { formatOfficialEmail } from '../../utils/formatters';
 import type { Event, EventRegistration, EventFormField } from '../../types/database';
+
+interface ExportColumnItem {
+  id: string;
+  label: string;
+  excelHeader: string;
+  pdfHeader: string;
+  category: 'general' | 'team' | 'personal' | 'academic' | 'custom';
+}
 
 /**
  * Validates that a string is a safe HTTP or HTTPS URL to prevent Stored XSS via javascript: or data: URIs.
@@ -75,17 +87,26 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
   const [formFields, setFormFields] = useState<EventFormField[]>([]);
   const [answersMap, setAnswersMap] = useState<Record<string, Record<string, string>>>({});
 
+  // Export Customization Modal State
+  const [exportModalConfig, setExportModalConfig] = useState<{
+    isOpen: boolean;
+    type: 'excel' | 'pdf';
+  } | null>(null);
+  const [selectedColumnKeys, setSelectedColumnKeys] = useState<string[]>([]);
+
   useEffect(() => {
     if (isOpen && event) {
       setSearchQuery('');
       setExpandedRegId(null);
       setSelectedAnswersRegId(null);
+      setExportModalConfig(null);
       setSortConfig({ field: 'date', order: 'desc' });
       loadRegistrations();
     } else if (!isOpen) {
       setSearchQuery('');
       setExpandedRegId(null);
       setSelectedAnswersRegId(null);
+      setExportModalConfig(null);
       setSortConfig({ field: 'date', order: 'desc' });
     }
   }, [isOpen, event]);
@@ -133,6 +154,62 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
   if (!isOpen || !event) return null;
 
+  const isCurrentEventTeamBased = Boolean(
+    event.supports_teams ||
+    registrations.some((r) => {
+      const t = teamMap[r.id];
+      return Boolean(t && (t.team_name || (t.members && t.members.length > 0)));
+    })
+  );
+
+  const getAvailableExportColumns = (): ExportColumnItem[] => {
+    const cols: ExportColumnItem[] = [
+      { id: 'sno', label: 'Serial Number (S.No)', excelHeader: 'S.No', pdfHeader: '#', category: 'general' },
+    ];
+
+    if (isCurrentEventTeamBased) {
+      cols.push(
+        { id: 'team_name', label: 'Team Name', excelHeader: 'Team Name', pdfHeader: 'Team Name', category: 'team' },
+        { id: 'team_reg_id', label: 'Team Registration ID', excelHeader: 'Team Reg ID', pdfHeader: 'Team Reg ID', category: 'team' },
+        { id: 'member_role', label: 'Member Role (Leader / Teammate)', excelHeader: 'Member Role', pdfHeader: 'Role', category: 'team' }
+      );
+    }
+
+    cols.push(
+      { id: 'registration_number', label: 'Registration Number', excelHeader: 'Registration No', pdfHeader: 'Reg Number', category: 'general' },
+      { id: 'name', label: isCurrentEventTeamBased ? 'Member Name' : 'Participant Name', excelHeader: isCurrentEventTeamBased ? 'Member Name' : 'Participant Name', pdfHeader: isCurrentEventTeamBased ? 'Member Name' : 'Participant Name', category: 'personal' },
+      { id: 'email', label: 'Email Address', excelHeader: 'Email', pdfHeader: 'Email', category: 'personal' },
+      { id: 'official_email', label: 'Official Email (UID@cuchd.in)', excelHeader: 'Official Email', pdfHeader: 'Official Email', category: 'personal' },
+      { id: 'phone', label: 'Phone Number', excelHeader: 'Phone', pdfHeader: 'Phone', category: 'personal' },
+      { id: 'uid', label: 'University UID', excelHeader: 'University UID', pdfHeader: 'UID', category: 'academic' },
+      { id: 'department', label: 'Department / Branch', excelHeader: 'Department', pdfHeader: 'Dept', category: 'academic' },
+      { id: 'year', label: 'Academic Year', excelHeader: 'Year', pdfHeader: 'Year', category: 'academic' },
+      { id: 'section', label: 'Section / Group', excelHeader: 'Section', pdfHeader: 'Sec', category: 'academic' }
+    );
+
+    if (formFields && formFields.length > 0) {
+      formFields.forEach((field) => {
+        cols.push({
+          id: `custom_${field.id}`,
+          label: field.label,
+          excelHeader: field.label,
+          pdfHeader: field.label.length > 20 ? `${field.label.slice(0, 18)}...` : field.label,
+          category: 'custom',
+        });
+      });
+    }
+
+    cols.push({
+      id: 'submitted_date',
+      label: 'Submission Date & Time',
+      excelHeader: 'Submitted Date',
+      pdfHeader: 'Date',
+      category: 'general',
+    });
+
+    return cols;
+  };
+
   const filtered = registrations.filter((r) => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return true;
@@ -145,6 +222,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     const leaderRegNum = (r.registration_number || '').toLowerCase();
     const leaderDept = (r.department || '').toLowerCase();
     const leaderYear = (r.year || '').toLowerCase();
+    const leaderSection = (r.section || '').toLowerCase();
     const teamName = (teamInfo?.team_name || '').toLowerCase();
     const teamRegNum = (teamInfo?.registration_number || '').toLowerCase();
 
@@ -157,6 +235,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       leaderRegNum.includes(q) ||
       leaderDept.includes(q) ||
       leaderYear.includes(q) ||
+      leaderSection.includes(q) ||
       teamName.includes(q) ||
       teamRegNum.includes(q)
     ) {
@@ -173,6 +252,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         const mRegNum = (m.registration_number || '').toLowerCase();
         const mDept = (m.department || '').toLowerCase();
         const mYear = (m.year || '').toLowerCase();
+        const mSection = (m.section || '').toLowerCase();
 
         return (
           mName.includes(q) ||
@@ -181,7 +261,8 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           mPhone.includes(q) ||
           mRegNum.includes(q) ||
           mDept.includes(q) ||
-          mYear.includes(q)
+          mYear.includes(q) ||
+          mSection.includes(q)
         );
       });
 
@@ -220,17 +301,19 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
     setExpandedRegId((prev) => (prev === regId ? null : regId));
   };
 
-  const handleExportExcel = () => {
+  const handleOpenExportModal = (type: 'excel' | 'pdf') => {
+    const allCols = getAvailableExportColumns();
+    setSelectedColumnKeys(allCols.map((c) => c.id));
+    setExportModalConfig({ isOpen: true, type });
+  };
+
+  const executeExportExcel = (selectedKeys: string[]) => {
     if (!event) return;
 
-    const isTeamEvent = Boolean(
-      event.supports_teams ||
-      sortedAndFiltered.some((r) => {
-        const t = teamMap[r.id];
-        return Boolean(t && (t.team_name || (t.members && t.members.length > 0)));
-      })
-    );
+    const availableCols = getAvailableExportColumns().filter((c) => selectedKeys.includes(c.id));
+    if (availableCols.length === 0) return;
 
+    const isTeamEvent = isCurrentEventTeamBased;
     const exportRows: any[] = [];
     let serialNo = 1;
 
@@ -238,100 +321,104 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       const teamInfo = teamMap[r.id];
       const regAnswers = answersMap[r.id] || {};
 
-      // Custom questions column dictionary for this registration
-      const customAnswersDict: Record<string, any> = {};
-      formFields.forEach((field) => {
-        const ansVal = regAnswers[field.id] || regAnswers[field.field_key] || '';
-        customAnswersDict[field.label] = sanitizeFormulaValue(ansVal);
-      });
+      const buildExcelRow = (
+        isTeammate: boolean,
+        memberObj?: any,
+        mRole?: string,
+        tName?: string,
+        tRegId?: string
+      ) => {
+        const row: Record<string, any> = {};
+        availableCols.forEach((col) => {
+          if (col.id === 'sno') {
+            row[col.excelHeader] = isTeammate ? '' : serialNo;
+          } else if (col.id === 'team_name') {
+            row[col.excelHeader] = sanitizeFormulaValue(tName || '');
+          } else if (col.id === 'team_reg_id') {
+            row[col.excelHeader] = sanitizeFormulaValue(tRegId || '');
+          } else if (col.id === 'member_role') {
+            row[col.excelHeader] = mRole || '';
+          } else if (col.id === 'registration_number') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.registration_number : r.registration_number) || ''
+            );
+          } else if (col.id === 'name') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.name : r.registrant_name) || ''
+            );
+          } else if (col.id === 'email') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.email : r.registrant_email) || ''
+            );
+          } else if (col.id === 'official_email') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              formatOfficialEmail(isTeammate ? memberObj?.uid : r.uid)
+            );
+          } else if (col.id === 'phone') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.phone : r.registrant_phone) || ''
+            );
+          } else if (col.id === 'uid') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.uid : r.uid) || ''
+            );
+          } else if (col.id === 'department') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.department : r.department) || ''
+            );
+          } else if (col.id === 'year') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.year : r.year) || ''
+            );
+          } else if (col.id === 'section') {
+            row[col.excelHeader] = sanitizeFormulaValue(
+              (isTeammate ? memberObj?.section : r.section) || ''
+            );
+          } else if (col.id.startsWith('custom_')) {
+            if (isTeammate) {
+              row[col.excelHeader] = '';
+            } else {
+              const fieldId = col.id.replace('custom_', '');
+              const field = formFields.find((f) => f.id === fieldId);
+              const ansVal = regAnswers[fieldId] || (field ? regAnswers[field.field_key] : '') || '';
+              row[col.excelHeader] = sanitizeFormulaValue(ansVal);
+            }
+          } else if (col.id === 'submitted_date') {
+            row[col.excelHeader] =
+              !isTeammate && r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '';
+          }
+        });
+        return row;
+      };
 
       if (isTeamEvent) {
         const hasTeammates = Boolean(teamInfo && teamInfo.members && teamInfo.members.length > 0);
         const teamName = teamInfo?.team_name || (hasTeammates ? 'Unnamed Team' : 'Solo Participant');
         const teamRegId = teamInfo?.registration_number || r.registration_number || '';
 
-        // 1. Team Leader / Primary Row
-        exportRows.push({
-          'S.No': serialNo,
-          'Team Name': sanitizeFormulaValue(teamName),
-          'Team Reg ID': sanitizeFormulaValue(teamRegId),
-          'Member Role': hasTeammates ? 'Team Leader' : 'Solo Participant',
-          'Registration No': sanitizeFormulaValue(r.registration_number || ''),
-          'Member Name': sanitizeFormulaValue(r.registrant_name || ''),
-          'Email': sanitizeFormulaValue(r.registrant_email || ''),
-          'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
-          'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
-          'University UID': sanitizeFormulaValue(r.uid || ''),
-          'Department': sanitizeFormulaValue(r.department || ''),
-          'Year': sanitizeFormulaValue(r.year || ''),
-          ...customAnswersDict,
-          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
-        });
+        // Leader row
+        exportRows.push(
+          buildExcelRow(false, null, hasTeammates ? 'Team Leader' : 'Solo Participant', teamName, teamRegId)
+        );
 
-        // 2. Teammates Rows
+        // Teammates rows
         if (hasTeammates && teamInfo && teamInfo.members) {
           teamInfo.members.forEach((m, mIdx) => {
-            const blankCustomDict: Record<string, string> = {};
-            formFields.forEach((field) => {
-              blankCustomDict[field.label] = '';
-            });
-
-            exportRows.push({
-              'S.No': '',
-              'Team Name': sanitizeFormulaValue(teamName),
-              'Team Reg ID': sanitizeFormulaValue(teamRegId),
-              'Member Role': `Teammate #${mIdx + 2}`,
-              'Registration No': sanitizeFormulaValue(m.registration_number || ''),
-              'Member Name': sanitizeFormulaValue(m.name || ''),
-              'Email': sanitizeFormulaValue(m.email || ''),
-              'Official Email': sanitizeFormulaValue(formatOfficialEmail(m.uid)),
-              'Phone': sanitizeFormulaValue(m.phone || ''),
-              'University UID': sanitizeFormulaValue(m.uid || ''),
-              'Department': sanitizeFormulaValue(m.department || ''),
-              'Year': sanitizeFormulaValue(m.year || ''),
-              ...blankCustomDict,
-              'Submitted Date': '',
-            });
+            exportRows.push(buildExcelRow(true, m, `Teammate #${mIdx + 2}`, teamName, teamRegId));
           });
         }
 
-        // 3. One-line space ONLY between distinct teams (never after the final team)
+        // Spacer row between distinct teams
         if (idx < sortedAndFiltered.length - 1) {
-          const emptyRow: Record<string, string> = {
-            'S.No': '',
-            'Team Name': '',
-            'Team Reg ID': '',
-            'Member Role': '',
-            'Registration No': '',
-            'Member Name': '',
-            'Email': '',
-            'Official Email': '',
-            'Phone': '',
-            'University UID': '',
-            'Department': '',
-            'Year': '',
-          };
-          formFields.forEach((field) => {
-            emptyRow[field.label] = '';
+          const emptyRow: Record<string, string> = {};
+          availableCols.forEach((col) => {
+            emptyRow[col.excelHeader] = '';
           });
-          emptyRow['Submitted Date'] = '';
           exportRows.push(emptyRow);
         }
       } else {
-        // Individual Event: Clean columns without team clutter, no blank spacer rows
-        exportRows.push({
-          'S.No': serialNo,
-          'Registration No': sanitizeFormulaValue(r.registration_number || ''),
-          'Participant Name': sanitizeFormulaValue(r.registrant_name || ''),
-          'Email': sanitizeFormulaValue(r.registrant_email || ''),
-          'Official Email': sanitizeFormulaValue(formatOfficialEmail(r.uid)),
-          'Phone': sanitizeFormulaValue(r.registrant_phone || ''),
-          'University UID': sanitizeFormulaValue(r.uid || ''),
-          'Department': sanitizeFormulaValue(r.department || ''),
-          'Year': sanitizeFormulaValue(r.year || ''),
-          ...customAnswersDict,
-          'Submitted Date': r.submitted_at ? new Date(r.submitted_at).toLocaleString('en-GB') : '',
-        });
+        // Individual Event
+        exportRows.push(buildExcelRow(false, null, '', '', ''));
       }
 
       serialNo++;
@@ -339,7 +426,6 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
     const worksheet = XLSX.utils.json_to_sheet(exportRows);
 
-    // Auto-fit column widths based on headers and cell content
     if (exportRows.length > 0) {
       const colKeys = Object.keys(exportRows[0]);
       worksheet['!cols'] = colKeys.map((key) => {
@@ -363,20 +449,18 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
     const cleanTitle = event.title.replace(/[^a-z0-9]+/gi, '_');
     XLSX.writeFile(workbook, `${cleanTitle}_Registrations_${new Date().toISOString().split('T')[0]}.xlsx`);
+    setExportModalConfig(null);
   };
 
-  const handleExportPdf = () => {
+  const executeExportPdf = (selectedKeys: string[]) => {
     if (!event) return;
 
-    const isTeamEvent = Boolean(
-      event.supports_teams ||
-      sortedAndFiltered.some((r) => {
-        const t = teamMap[r.id];
-        return Boolean(t && (t.team_name || (t.members && t.members.length > 0)));
-      })
-    );
+    const availableCols = getAvailableExportColumns().filter((c) => selectedKeys.includes(c.id));
+    if (availableCols.length === 0) return;
 
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const isTeamEvent = isCurrentEventTeamBased;
+    const isLandscape = availableCols.length > 6;
+    const doc = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(15);
@@ -401,15 +485,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
     doc.text(subTitle, 14, 22);
 
-    const pdfHeaders: string[] = isTeamEvent
-      ? ['#', 'Team Name', 'Team Reg ID', 'Role', 'Reg Number', 'Member Name', 'Email', 'Official Email', 'Phone', 'UID', 'Dept', 'Year']
-      : ['#', 'Reg Number', 'Participant Name', 'Email', 'Official Email', 'Phone', 'UID', 'Dept', 'Year'];
-
-    formFields.forEach((field) => {
-      pdfHeaders.push(field.label.slice(0, 18));
-    });
-    pdfHeaders.push('Date');
-
+    const pdfHeaders: string[] = availableCols.map((c) => c.pdfHeader);
     const tableRows: string[][] = [];
     let serialNo = 1;
 
@@ -417,9 +493,51 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       const teamInfo = teamMap[r.id];
       const regAnswers = answersMap[r.id] || {};
 
-      const customAnswersList = formFields.map((field) => {
-        return regAnswers[field.id] || regAnswers[field.field_key] || '';
-      });
+      const buildPdfRow = (
+        isTeammate: boolean,
+        memberObj?: any,
+        mRole?: string,
+        tName?: string,
+        tRegId?: string
+      ) => {
+        return availableCols.map((col) => {
+          if (col.id === 'sno') {
+            return isTeammate ? '' : serialNo.toString();
+          } else if (col.id === 'team_name') {
+            return tName || '';
+          } else if (col.id === 'team_reg_id') {
+            return tRegId || '';
+          } else if (col.id === 'member_role') {
+            return mRole || '';
+          } else if (col.id === 'registration_number') {
+            return (isTeammate ? memberObj?.registration_number : r.registration_number) || '';
+          } else if (col.id === 'name') {
+            return (isTeammate ? memberObj?.name : r.registrant_name) || '';
+          } else if (col.id === 'email') {
+            return (isTeammate ? memberObj?.email : r.registrant_email) || '';
+          } else if (col.id === 'official_email') {
+            return formatOfficialEmail(isTeammate ? memberObj?.uid : r.uid);
+          } else if (col.id === 'phone') {
+            return (isTeammate ? memberObj?.phone : r.registrant_phone) || '';
+          } else if (col.id === 'uid') {
+            return (isTeammate ? memberObj?.uid : r.uid) || '';
+          } else if (col.id === 'department') {
+            return (isTeammate ? memberObj?.department : r.department) || '';
+          } else if (col.id === 'year') {
+            return (isTeammate ? memberObj?.year : r.year) || '';
+          } else if (col.id === 'section') {
+            return (isTeammate ? memberObj?.section : r.section) || '';
+          } else if (col.id.startsWith('custom_')) {
+            if (isTeammate) return '';
+            const fieldId = col.id.replace('custom_', '');
+            const field = formFields.find((f) => f.id === fieldId);
+            return regAnswers[fieldId] || (field ? regAnswers[field.field_key] : '') || '';
+          } else if (col.id === 'submitted_date') {
+            return !isTeammate && r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '';
+          }
+          return '';
+        });
+      };
 
       if (isTeamEvent) {
         const hasTeammates = Boolean(teamInfo && teamInfo.members && teamInfo.members.length > 0);
@@ -427,66 +545,22 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
         const teamRegId = teamInfo?.registration_number || r.registration_number || '';
 
         // Leader row
-        tableRows.push([
-          serialNo.toString(),
-          teamName,
-          teamRegId,
-          hasTeammates ? 'Team Leader' : 'Solo',
-          r.registration_number || '',
-          r.registrant_name || '',
-          r.registrant_email || '',
-          formatOfficialEmail(r.uid),
-          r.registrant_phone || '',
-          r.uid || '',
-          r.department || '',
-          r.year || '',
-          ...customAnswersList,
-          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
-        ]);
+        tableRows.push(buildPdfRow(false, null, hasTeammates ? 'Team Leader' : 'Solo', teamName, teamRegId));
 
         // Teammates rows
         if (hasTeammates && teamInfo && teamInfo.members) {
-          const blankAnswersList = formFields.map(() => '');
           teamInfo.members.forEach((m, mIdx) => {
-            tableRows.push([
-              '',
-              teamName,
-              teamRegId,
-              `Teammate #${mIdx + 2}`,
-              m.registration_number || '',
-              m.name || '',
-              m.email || '',
-              formatOfficialEmail(m.uid),
-              m.phone || '',
-              m.uid || '',
-              m.department || '',
-              m.year || '',
-              ...blankAnswersList,
-              '',
-            ]);
+            tableRows.push(buildPdfRow(true, m, `Teammate #${mIdx + 2}`, teamName, teamRegId));
           });
         }
 
-        // Only add a single-line spacer row between different teams (never after the final team)
+        // Spacer row between different teams
         if (idx < sortedAndFiltered.length - 1) {
-          const blankSpacerRow = pdfHeaders.map(() => '');
-          tableRows.push(blankSpacerRow);
+          tableRows.push(availableCols.map(() => ''));
         }
       } else {
-        // Individual Event: No team columns, no spacer rows
-        tableRows.push([
-          serialNo.toString(),
-          r.registration_number || '',
-          r.registrant_name || '',
-          r.registrant_email || '',
-          formatOfficialEmail(r.uid),
-          r.registrant_phone || '',
-          r.uid || '',
-          r.department || '',
-          r.year || '',
-          ...customAnswersList,
-          r.submitted_at ? new Date(r.submitted_at).toLocaleDateString('en-GB') : '',
-        ]);
+        // Individual Event
+        tableRows.push(buildPdfRow(false, null, '', '', ''));
       }
 
       serialNo++;
@@ -500,7 +574,6 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
       headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { fontSize: 7.5 },
       didParseCell: (data: any) => {
-        // Subtle compact styling for blank spacer rows between teams
         if (isTeamEvent && data.row.raw && Array.isArray(data.row.raw)) {
           const isSpacer = data.row.raw.every((c: any) => !c || c === '');
           if (isSpacer) {
@@ -538,6 +611,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
 
     const cleanTitle = event.title.replace(/[^a-z0-9]+/gi, '_');
     doc.save(`${cleanTitle}_Registrations_${new Date().toISOString().split('T')[0]}.pdf`);
+    setExportModalConfig(null);
   };
 
   return (
@@ -564,7 +638,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleExportExcel}
+              onClick={() => handleOpenExportModal('excel')}
               disabled={sortedAndFiltered.length === 0}
               className="h-11 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
             >
@@ -573,7 +647,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={handleExportPdf}
+              onClick={() => handleOpenExportModal('pdf')}
               disabled={sortedAndFiltered.length === 0}
               className="h-11 px-4 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 shadow-md"
             >
@@ -700,7 +774,7 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                             <div className="font-bold text-slate-900 dark:text-white leading-tight whitespace-nowrap">{r.registrant_name}</div>
                             {r.uid && (
                               <div className="text-[11px] font-mono text-slate-400 font-normal whitespace-nowrap">
-                                UID: {r.uid.toUpperCase()}
+                                <span className="font-bold text-slate-600 dark:text-slate-300">UID:</span> {r.uid.toUpperCase()}
                               </div>
                             )}
                             {(r.department || r.year) && (
@@ -797,7 +871,16 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                         </div>
                                         <div className="font-bold text-slate-900 dark:text-white">{r.registrant_name}</div>
                                         <div className="text-[11px] text-slate-500">{r.registrant_email}</div>
-                                        {r.uid && <div className="text-[10px] font-mono text-slate-400">UID: {r.uid}</div>}
+                                        {r.uid && (
+                                          <div className="text-[10px] font-mono text-slate-400">
+                                            <span className="font-bold text-slate-600 dark:text-slate-300">UID:</span> {r.uid}
+                                          </div>
+                                        )}
+                                        {r.section && (
+                                          <div className="text-[10px] font-mono text-slate-400">
+                                            <span className="font-bold text-slate-600 dark:text-slate-300">Section:</span> {r.section}
+                                          </div>
+                                        )}
                                         {(r.department || r.year) && (
                                           <div className="text-[10px] text-slate-500 font-medium">
                                             {[r.department, r.year].filter(Boolean).join(' • ')}
@@ -818,7 +901,16 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                           </div>
                                           <div className="font-bold text-slate-900 dark:text-white">{m.name}</div>
                                           <div className="text-[11px] text-slate-500">{m.email}</div>
-                                          {m.uid && <div className="text-[10px] font-mono text-slate-400">UID: {m.uid}</div>}
+                                          {m.uid && (
+                                            <div className="text-[10px] font-mono text-slate-400">
+                                              <span className="font-bold text-slate-600 dark:text-slate-300">UID:</span> {m.uid}
+                                            </div>
+                                          )}
+                                          {m.section && (
+                                            <div className="text-[10px] font-mono text-slate-400">
+                                              <span className="font-bold text-slate-600 dark:text-slate-300">Section:</span> {m.section}
+                                            </div>
+                                          )}
                                           {(m.department || m.year) && (
                                             <div className="text-[10px] text-slate-500 font-medium">
                                               {[m.department, m.year].filter(Boolean).join(' • ')}
@@ -831,11 +923,18 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                                 ) : (
                                   <div className="p-3 rounded-xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 text-xs flex items-center justify-between flex-wrap gap-2">
                                     <span>Individual registration (No team attached).</span>
-                                    {(r.department || r.year) && (
-                                      <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
-                                        {[r.department, r.year].filter(Boolean).join(' • ')}
-                                      </span>
-                                    )}
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {r.section && (
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+                                          <strong className="font-bold">Sec:</strong> {r.section}
+                                        </span>
+                                      )}
+                                      {(r.department || r.year) && (
+                                        <span className="font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-md">
+                                          {[r.department, r.year].filter(Boolean).join(' • ')}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -907,6 +1006,182 @@ export const ViewRegistrationsModal: React.FC<ViewRegistrationsModalProps> = ({
                 </div>
               );
             })()}
+          </div>
+        </Modal>
+      )}
+
+      {/* Export Columns Customization Modal */}
+      {exportModalConfig && (
+        <Modal
+          isOpen={true}
+          onClose={() => setExportModalConfig(null)}
+          title={exportModalConfig.type === 'excel' ? 'Export to Excel — Select Columns' : 'Export to PDF — Select Columns'}
+          maxWidth="max-w-2xl"
+        >
+          <div className="space-y-4 text-xs">
+            {/* Description & Selection Counter */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+              <div>
+                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 text-sm">
+                  {exportModalConfig.type === 'excel' ? (
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                  )}
+                  <span>Choose Columns for {exportModalConfig.type.toUpperCase()} Export</span>
+                </div>
+                <div className="text-slate-500 text-[11px] mt-0.5">
+                  Only selected columns will be included in the downloaded document.
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allCols = getAvailableExportColumns();
+                    setSelectedColumnKeys(allCols.map((c) => c.id));
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-sky-400 hover:bg-blue-100 dark:hover:bg-blue-500/25 text-[11px] font-bold transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  <span>Select All</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedColumnKeys([])}
+                  className="px-2.5 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600 text-[11px] font-bold transition-colors cursor-pointer inline-flex items-center gap-1"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  <span>Deselect All</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Columns Categorized Tiles */}
+            <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-4 custom-scrollbar">
+              {(() => {
+                const availableCols = getAvailableExportColumns();
+                const categories: { key: ExportColumnItem['category']; label: string }[] = [
+                  { key: 'general', label: 'General & Identification' },
+                  ...(isCurrentEventTeamBased ? [{ key: 'team' as const, label: 'Team Details' }] : []),
+                  { key: 'personal', label: 'Participant Information' },
+                  { key: 'academic', label: 'Academic & Branch Details' },
+                  ...(formFields.length > 0 ? [{ key: 'custom' as const, label: 'Custom Form Fields' }] : []),
+                ];
+
+                return categories.map((cat) => {
+                  const catCols = availableCols.filter((c) => c.category === cat.key);
+                  if (catCols.length === 0) return null;
+
+                  const allCatSelected = catCols.every((c) => selectedColumnKeys.includes(c.id));
+
+                  return (
+                    <div key={cat.key} className="space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1.5">
+                        <span className="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[10.5px]">
+                          {cat.label}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (allCatSelected) {
+                              setSelectedColumnKeys((prev) => prev.filter((id) => !catCols.some((c) => c.id === id)));
+                            } else {
+                              setSelectedColumnKeys((prev) => Array.from(new Set([...prev, ...catCols.map((c) => c.id)])));
+                            }
+                          }}
+                          className="text-[10px] font-semibold text-blue-600 dark:text-sky-400 hover:underline cursor-pointer"
+                        >
+                          {allCatSelected ? 'Uncheck category' : 'Check category'}
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {catCols.map((col) => {
+                          const isChecked = selectedColumnKeys.includes(col.id);
+
+                          return (
+                            <button
+                              key={col.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedColumnKeys((prev) =>
+                                  prev.includes(col.id) ? prev.filter((id) => id !== col.id) : [...prev, col.id]
+                                );
+                              }}
+                              className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-2.5 cursor-pointer ${
+                                isChecked
+                                  ? exportModalConfig.type === 'excel'
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60 text-slate-900 dark:text-white shadow-sm'
+                                    : 'bg-red-50 dark:bg-red-950/20 border-red-300 dark:border-red-800/60 text-slate-900 dark:text-white shadow-sm'
+                                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div
+                                  className={`w-4 h-4 rounded-md flex items-center justify-center shrink-0 border transition-all ${
+                                    isChecked
+                                      ? exportModalConfig.type === 'excel'
+                                        ? 'bg-emerald-600 border-emerald-600 text-white'
+                                        : 'bg-red-600 border-red-600 text-white'
+                                      : 'border-slate-300 dark:border-slate-600 bg-transparent'
+                                  }`}
+                                >
+                                  {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                                </div>
+                                <span className={`truncate text-xs ${isChecked ? 'font-bold' : 'font-medium'}`}>
+                                  {col.label}
+                                </span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Footer Controls */}
+            <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-3 gap-3">
+              <div className="text-[11px] font-semibold text-slate-500">
+                <span className="font-bold text-slate-900 dark:text-white">{selectedColumnKeys.length}</span> of{' '}
+                {getAvailableExportColumns().length} columns selected
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setExportModalConfig(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold transition-colors cursor-pointer text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (exportModalConfig.type === 'excel') {
+                      executeExportExcel(selectedColumnKeys);
+                    } else {
+                      executeExportPdf(selectedColumnKeys);
+                    }
+                  }}
+                  disabled={selectedColumnKeys.length === 0}
+                  className={`px-4 py-2 rounded-xl text-white font-bold transition-all flex items-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-md text-xs ${
+                    exportModalConfig.type === 'excel'
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  <Download className="w-4 h-4" />
+                  <span>
+                    Download {exportModalConfig.type === 'excel' ? 'Excel (.xlsx)' : 'PDF (.pdf)'}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </Modal>
       )}
