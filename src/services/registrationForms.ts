@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { generateUUID } from '../utils/uuid';
 import type { EventRegistrationForm, EventFormField, EventRegistration, Event } from '../types/database';
 
 const LOCAL_FORM_PREFIX = 'csc_event_form_';
@@ -208,8 +209,11 @@ export const saveFormForEvent = async (
     const cleanKey = rawKey.replace(/^_+|_+$/g, '').slice(0, 30) || 'field';
     const uniqueKey = `${cleanKey}_${index + 1}`;
 
+    const isUuidValid = f.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(f.id);
+    const validId = isUuidValid ? (f.id as string) : generateUUID();
+
     return {
-      id: f.id || `field_${Date.now()}_${index}`,
+      id: validId,
       form_id: resolvedFormId,
       field_key: uniqueKey,
       label: f.label || `Custom Question ${index + 1}`,
@@ -271,11 +275,7 @@ export const saveFormForEvent = async (
         }
       } else {
         // Find which existing DB fields are no longer present in the updated list
-        const incomingDbIds = new Set(
-          formattedFields
-            .map((f) => f.id)
-            .filter((id) => id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
-        );
+        const incomingDbIds = new Set(formattedFields.map((f) => f.id));
 
         // Any ID in DB that is not in the incoming list MUST be deleted!
         const idsToDelete = existingIdsInDb.filter((dbId) => !incomingDbIds.has(dbId));
@@ -293,28 +293,23 @@ export const saveFormForEvent = async (
           }
         }
 
-        // Prepare clean fields payload for insert / upsert
-        const fieldsPayload = formattedFields.map((f, idx) => {
-          const payloadItem: any = {
-            form_id: activeFormId,
-            field_key: f.field_key,
-            label: f.label,
-            field_type: f.field_type,
-            options: f.options || null,
-            placeholder: f.placeholder || null,
-            help_text: f.help_text || null,
-            required: f.required ?? false,
-            display_order: idx + 1,
-          };
-          if (f.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(f.id)) {
-            payloadItem.id = f.id;
-          }
-          return payloadItem;
-        });
+        // Prepare clean fields payload for insert / upsert (every single row guaranteed valid UUID id)
+        const fieldsPayload = formattedFields.map((f, idx) => ({
+          id: f.id,
+          form_id: activeFormId,
+          field_key: f.field_key,
+          label: f.label,
+          field_type: f.field_type,
+          options: f.options || null,
+          placeholder: f.placeholder || null,
+          help_text: f.help_text || null,
+          required: f.required ?? false,
+          display_order: idx + 1,
+        }));
 
         const { error: upsertErr } = await supabase
           .from('event_form_fields')
-          .upsert(fieldsPayload, { onConflict: 'form_id,field_key' });
+          .upsert(fieldsPayload, { onConflict: 'id' });
 
         if (upsertErr) {
           console.error('Error upserting event_form_fields:', upsertErr);

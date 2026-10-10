@@ -22,6 +22,7 @@ import { CustomSelect } from '../ui/CustomSelect';
 import { Modal } from '../ui/Modal';
 import { Toast } from '../ui/Toast';
 import { getFormForEvent, saveFormForEvent } from '../../services/registrationForms';
+import { generateUUID } from '../../utils/uuid';
 import type { Event, EventFormField, FieldType } from '../../types/database';
 
 interface EventFormBuilderProps {
@@ -187,7 +188,11 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
         .filter(Boolean);
     }
 
+    const isExisting = editingFieldIndex !== null && fields[editingFieldIndex]?.id;
+    const fieldId = isExisting ? (fields[editingFieldIndex].id as string) : generateUUID();
+
     const newFieldObj: Partial<EventFormField> = {
+      id: fieldId,
       label: fieldModalData.label.trim(),
       field_key: fieldModalData.label.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
       field_type: fieldModalData.field_type,
@@ -217,7 +222,10 @@ export const EventFormBuilder: React.FC<EventFormBuilderProps> = ({
       const formTitle = selectedEvt ? `${selectedEvt.title} Registration Form` : 'Custom Registration Form';
       setIsSaving(true);
       try {
-        await saveFormForEvent(selectedEventId, updatedFields, formTitle);
+        const savedForm = await saveFormForEvent(selectedEventId, updatedFields, formTitle);
+        if (savedForm?.fields) {
+          setFields(savedForm.fields);
+        }
         setSaveSuccess(editingFieldIndex !== null ? 'Question updated and saved!' : 'Question added and saved!');
         setTimeout(() => setSaveSuccess(null), 3000);
       } catch (err: any) {
