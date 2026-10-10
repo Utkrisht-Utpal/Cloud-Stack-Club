@@ -524,6 +524,7 @@ export const getTeamDetailsForRegistration = async (
     uid?: string | null;
     department?: string | null;
     year?: string | null;
+    section?: string | null;
     registration_number?: string | null;
   }>;
 } | null> => {

@@ -457,24 +457,63 @@ export const exportFeedbacksToPdf = (
   feedbacks: (ContactFeedback | EventFeedback)[],
   filterType: string,
   searchQuery: string,
-  eventsList?: { id: string; title: string; status?: string }[]
+  eventsList?: { id: string; title: string; status?: string }[],
+  selectedColumnKeys?: string[],
+  isEventFeedback?: boolean
 ) => {
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const isEvent = isEventFeedback !== undefined ? isEventFeedback : (feedbacks.length > 0 && ('university_id' in feedbacks[0] || 'event_id' in feedbacks[0]));
+
+  const allCols: { id: string; header: string; width: number }[] = isEvent
+    ? [
+        { id: 'sno', header: '#', width: 8 },
+        { id: 'name', header: 'Attendee Name', width: 28 },
+        { id: 'university_id', header: 'UID', width: 20 },
+        { id: 'registration_id', header: 'Reg ID', width: 24 },
+        { id: 'event_title', header: 'Event Title', width: 28 },
+        { id: 'email', header: 'Email', width: 34 },
+        { id: 'official_email', header: 'Official Email', width: 34 },
+        { id: 'phone', header: 'Phone', width: 22 },
+        { id: 'event_rating', header: 'Rating', width: 14 },
+        { id: 'coordination_rating', header: 'Coordination', width: 20 },
+        { id: 'message', header: 'Feedback Remarks', width: 50 },
+        { id: 'status', header: 'Status', width: 18 },
+        { id: 'created_at', header: 'Received Date', width: 22 },
+      ]
+    : [
+        { id: 'sno', header: '#', width: 8 },
+        { id: 'name', header: 'Sender Name', width: 32 },
+        { id: 'email', header: 'Email', width: 38 },
+        { id: 'phone', header: 'Mobile No', width: 26 },
+        { id: 'subject', header: 'Subject', width: 36 },
+        { id: 'message', header: 'Message / Inquiry', width: 64 },
+        { id: 'status', header: 'Status', width: 20 },
+        { id: 'created_at', header: 'Received Date', width: 24 },
+      ];
+
+  const activeCols = selectedColumnKeys && selectedColumnKeys.length > 0
+    ? allCols.filter((col) => selectedColumnKeys.includes(col.id))
+    : allCols;
+
+  const isLandscape = activeCols.length > 5;
+  const doc = new jsPDF({ orientation: isLandscape ? 'landscape' : 'portrait', unit: 'mm', format: 'a4' });
 
   // Document Title
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setTextColor(15, 23, 42);
-  doc.text('Cloud Stack Club — Feedbacks & Inquiries Directory', 14, 15);
+  const titleText = isEvent
+    ? 'Cloud Stack Club — Event Feedbacks Directory'
+    : 'Cloud Stack Club — Contact Inquiries Directory';
+  doc.text(titleText, 14, 15);
 
   // Subtitle / Metadata
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9.5);
+  doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
 
   const filterText = filterType.replace('_', ' ').toUpperCase();
   const searchNote = searchQuery ? ` | Search: "${searchQuery}"` : '';
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const dateStr = new Date().toLocaleDateString('en-GB');
 
   doc.text(`Filter: ${filterText} (${feedbacks.length} total)${searchNote}  •  Exported on: ${dateStr}`, 14, 22);
 
@@ -482,57 +521,63 @@ export const exportFeedbacksToPdf = (
 
   // Table Data mapping
   const tableRows = feedbacks.map((f, index) => {
-    const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
-    const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
-    let eventName = 'Contact Form';
-    if ('event_id' in f && f.event_id) {
-      const matched = eventMap.get(f.event_id);
+    const ef = f as EventFeedback;
+    const cf = f as ContactFeedback;
+    const uid = 'university_id' in ef && ef.university_id ? ef.university_id : '—';
+    const regId = 'registration_id' in ef && ef.registration_id ? ef.registration_id : '—';
+    let eventName = 'General';
+    if ('event_id' in ef && ef.event_id) {
+      const matched = eventMap.get(ef.event_id);
       if (matched) {
         eventName = `${matched.title}${matched.status === 'cancelled' ? ' (Cancelled)' : ''}`;
       } else {
-        eventName = f.event_title || 'Event Feedback';
+        eventName = ef.event_title || 'Event Feedback';
       }
+    } else if (ef.event_title) {
+      eventName = ef.event_title;
     }
 
-    return [
-      (index + 1).toString(),
-      f.name || 'N/A',
-      uid,
-      regId,
-      eventName,
-      f.email || 'N/A',
-      f.message || 'N/A',
-      (f.status || 'pending').toUpperCase(),
-      f.created_at ? new Date(f.created_at).toLocaleDateString() : 'N/A',
-    ];
+    const rowMap: Record<string, string> = {
+      sno: (index + 1).toString(),
+      name: f.name || 'N/A',
+      email: f.email || 'N/A',
+      phone: f.phone || 'N/A',
+      subject: cf.subject || '—',
+      message: f.message || 'N/A',
+      status: (f.status || 'pending').toUpperCase(),
+      created_at: f.created_at ? new Date(f.created_at).toLocaleDateString('en-GB') : 'N/A',
+      university_id: uid,
+      registration_id: regId,
+      event_title: eventName,
+      official_email: formatOfficialEmail(uid !== '—' ? uid : undefined),
+      event_rating: ef.event_rating ? `${ef.event_rating}/5` : '—',
+      coordination_rating: ef.coordination_rating || '—',
+    };
+
+    return activeCols.map((col) => rowMap[col.id] || '');
+  });
+
+  const columnStyles: Record<number, { cellWidth: number }> = {};
+  activeCols.forEach((col, idx) => {
+    columnStyles[idx] = { cellWidth: col.width };
   });
 
   autoTable(doc, {
     startY: 27,
-    head: [['#', 'Sender Name', 'UID', 'Reg ID', 'Category / Event', 'Email', 'Message / Feedback', 'Status', 'Received Date']],
+    head: [activeCols.map((c) => c.header)],
     body: tableRows,
     theme: 'grid',
     headStyles: {
       fillColor: [37, 99, 235],
       textColor: [255, 255, 255],
       fontStyle: 'bold',
-      fontSize: 8.5,
+      fontSize: 8,
     },
     bodyStyles: {
-      fontSize: 8,
+      fontSize: 7.5,
       textColor: [30, 41, 59],
     },
-    columnStyles: {
-      0: { cellWidth: 8 },
-      1: { cellWidth: 30 },
-      2: { cellWidth: 22 },
-      3: { cellWidth: 26 },
-      4: { cellWidth: 32 },
-      5: { cellWidth: 38 },
-      6: { cellWidth: 70 },
-      7: { cellWidth: 20 },
-      8: { cellWidth: 22 },
-    },
+    columnStyles,
     alternateRowStyles: {
       fillColor: [248, 250, 252],
     },
@@ -542,8 +587,8 @@ export const exportFeedbacksToPdf = (
         const rawVal = data.cell.raw;
         if (hasEmoji(rawVal)) {
           (data.cell as any)._rawEmoji = String(rawVal);
-          const colWidth = data.column.width || (data.cell.styles as any).cellWidth || 70;
-          const minH = calculateEmojiCellHeight(String(rawVal), typeof colWidth === 'number' ? colWidth : 70, 8);
+          const colWidth = data.column.width || (data.cell.styles as any).cellWidth || 50;
+          const minH = calculateEmojiCellHeight(String(rawVal), typeof colWidth === 'number' ? colWidth : 50, 7.5);
           data.cell.styles.minCellHeight = Math.max(data.cell.styles.minCellHeight || 0, minH);
           data.cell.text = [];
         }
@@ -553,7 +598,7 @@ export const exportFeedbacksToPdf = (
       if (data.section === 'body' && (data.cell as any)._rawEmoji) {
         const rawVal = (data.cell as any)._rawEmoji;
         const imgData = renderEmojiCellToCanvas(rawVal, data.cell.width, data.cell.height, {
-          fontSizePt: 8,
+          fontSizePt: 7.5,
           textColor: '#1e293b',
           paddingMm: 1.5,
         });
@@ -572,76 +617,109 @@ export const exportFeedbacksToPdf = (
   });
 
   const cleanFilter = filterType.replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`Cloud_Stack_Club_Feedbacks_${cleanFilter}_${new Date().toISOString().split('T')[0]}.pdf`);
+  const filePrefix = isEvent ? 'Event_Feedbacks' : 'Contact_Inquiries';
+  doc.save(`Cloud_Stack_Club_${filePrefix}_${cleanFilter}_${new Date().toISOString().split('T')[0]}.pdf`);
 };
 
 export const exportFeedbacksToExcel = (
   feedbacks: (ContactFeedback | EventFeedback)[],
   filterType: string,
   _searchQuery: string,
-  eventsList?: { id: string; title: string; status?: string }[]
+  eventsList?: { id: string; title: string; status?: string }[],
+  selectedColumnKeys?: string[],
+  isEventFeedback?: boolean
 ) => {
+  const isEvent = isEventFeedback !== undefined ? isEventFeedback : (feedbacks.length > 0 && ('university_id' in feedbacks[0] || 'event_id' in feedbacks[0]));
   const eventMap = new Map((eventsList || []).map((e) => [e.id, e]));
 
+  const allCols: { id: string; excelHeader: string; width: number }[] = isEvent
+    ? [
+        { id: 'sno', excelHeader: 'S.No', width: 6 },
+        { id: 'name', excelHeader: 'Sender Name', width: 24 },
+        { id: 'university_id', excelHeader: 'University UID', width: 16 },
+        { id: 'registration_id', excelHeader: 'Registration ID', width: 22 },
+        { id: 'event_title', excelHeader: 'Category / Event', width: 28 },
+        { id: 'email', excelHeader: 'Email', width: 28 },
+        { id: 'official_email', excelHeader: 'Official Email', width: 28 },
+        { id: 'phone', excelHeader: 'Mobile No', width: 16 },
+        { id: 'event_rating', excelHeader: 'Event Rating', width: 14 },
+        { id: 'coordination_rating', excelHeader: 'Coordination Rating', width: 18 },
+        { id: 'message', excelHeader: 'Message / Feedback', width: 50 },
+        { id: 'status', excelHeader: 'Status', width: 14 },
+        { id: 'created_at', excelHeader: 'Submission Date', width: 22 },
+      ]
+    : [
+        { id: 'sno', excelHeader: 'S.No', width: 6 },
+        { id: 'name', excelHeader: 'Sender Name', width: 24 },
+        { id: 'email', excelHeader: 'Email', width: 28 },
+        { id: 'phone', excelHeader: 'Mobile No', width: 16 },
+        { id: 'subject', excelHeader: 'Subject', width: 30 },
+        { id: 'message', excelHeader: 'Message / Inquiry', width: 50 },
+        { id: 'status', excelHeader: 'Status', width: 14 },
+        { id: 'created_at', excelHeader: 'Submission Date', width: 22 },
+      ];
+
+  const activeCols = selectedColumnKeys && selectedColumnKeys.length > 0
+    ? allCols.filter((col) => selectedColumnKeys.includes(col.id))
+    : allCols;
+
   const data = feedbacks.map((f, index) => {
-    const uid = 'university_id' in f && f.university_id ? f.university_id : '—';
-    const regId = 'registration_id' in f && f.registration_id ? f.registration_id : '—';
+    const ef = f as EventFeedback;
+    const cf = f as ContactFeedback;
+    const uid = 'university_id' in ef && ef.university_id ? ef.university_id : '—';
+    const regId = 'registration_id' in ef && ef.registration_id ? ef.registration_id : '—';
+    
     let eventName = 'Contact Form';
-    if ('event_id' in f && f.event_id) {
-      const matched = eventMap.get(f.event_id);
+    if ('event_id' in ef && ef.event_id) {
+      const matched = eventMap.get(ef.event_id);
       if (matched) {
         eventName = `${matched.title}${matched.status === 'cancelled' ? ' (Cancelled)' : ''}`;
       } else {
-        eventName = (f as EventFeedback).event_title || 'Event Feedback';
+        eventName = ef.event_title || 'Event Feedback';
       }
+    } else if (ef.event_title) {
+      eventName = ef.event_title;
     }
 
-    const rating = 'rating' in f && f.rating ? `${f.rating}/5` : '—';
-    const clubRating = 'club_rating' in f && f.club_rating ? `${f.club_rating}/10` : '—';
-
-    return {
-      'S.No': index + 1,
-      'Sender Name': sanitizeFormulaValue(f.name || 'N/A'),
-      'University UID': sanitizeFormulaValue(uid),
-      'Registration ID': sanitizeFormulaValue(regId),
-      'Category / Event': sanitizeFormulaValue(eventName),
-      'Email': sanitizeFormulaValue(f.email || 'N/A'),
-      'Official Email': sanitizeFormulaValue(formatOfficialEmail(uid !== '—' ? uid : undefined)),
-      'Mobile No': sanitizeFormulaValue(f.phone || 'N/A'),
-      'Event Rating': sanitizeFormulaValue(rating),
-      'Club Rating': sanitizeFormulaValue(clubRating),
-      'Message / Feedback': sanitizeFormulaValue(f.message || 'N/A'),
-      'Status': sanitizeFormulaValue((f.status || 'pending').toUpperCase()),
-      'Submission Date': sanitizeFormulaValue(
+    const rowValues: Record<string, any> = {
+      sno: index + 1,
+      name: sanitizeFormulaValue(f.name || 'N/A'),
+      university_id: sanitizeFormulaValue(uid),
+      registration_id: sanitizeFormulaValue(regId),
+      event_title: sanitizeFormulaValue(eventName),
+      email: sanitizeFormulaValue(f.email || 'N/A'),
+      official_email: sanitizeFormulaValue(formatOfficialEmail(uid !== '—' ? uid : undefined)),
+      phone: sanitizeFormulaValue(f.phone || 'N/A'),
+      event_rating: sanitizeFormulaValue(ef.event_rating ? `${ef.event_rating}/5` : '—'),
+      coordination_rating: sanitizeFormulaValue(ef.coordination_rating || '—'),
+      subject: sanitizeFormulaValue(cf.subject || '—'),
+      message: sanitizeFormulaValue(f.message || 'N/A'),
+      status: sanitizeFormulaValue((f.status || 'pending').toUpperCase()),
+      created_at: sanitizeFormulaValue(
         f.created_at ? new Date(f.created_at).toLocaleString('en-IN') : 'N/A'
       ),
     };
+
+    const rowObj: Record<string, any> = {};
+    activeCols.forEach((col) => {
+      rowObj[col.excelHeader] = rowValues[col.id];
+    });
+
+    return rowObj;
   });
 
   const worksheet = XLSX.utils.json_to_sheet(data);
 
-  worksheet['!cols'] = [
-    { wch: 6 },  // S.No
-    { wch: 22 }, // Sender Name
-    { wch: 15 }, // UID
-    { wch: 22 }, // Reg ID
-    { wch: 28 }, // Category / Event
-    { wch: 28 }, // Email
-    { wch: 28 }, // Official Email
-    { wch: 16 }, // Mobile No
-    { wch: 14 }, // Event Rating
-    { wch: 14 }, // Club Rating
-    { wch: 50 }, // Message
-    { wch: 14 }, // Status
-    { wch: 22 }, // Submission Date
-  ];
+  worksheet['!cols'] = activeCols.map((col) => ({ wch: col.width }));
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Feedbacks');
+  const sheetName = isEvent ? 'Event Feedbacks' : 'Contact Inquiries';
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
   const cleanFilter = filterType.replace(/[^a-zA-Z0-9]/g, '_');
   const fileDate = new Date().toISOString().split('T')[0];
-  const fileName = `Cloud_Stack_Club_Feedbacks_${cleanFilter}_${fileDate}.xlsx`;
+  const filePrefix = isEvent ? 'Event_Feedbacks' : 'Contact_Inquiries';
+  const fileName = `Cloud_Stack_Club_${filePrefix}_${cleanFilter}_${fileDate}.xlsx`;
 
   XLSX.writeFile(workbook, fileName);
 };
