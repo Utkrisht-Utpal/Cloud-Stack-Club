@@ -55,6 +55,51 @@ const YEAR_OPTIONS = [
   { value: '4th Year', label: '4th Year' },
 ];
 
+const formatCustomSelectOptions = (rawOptions: any): { value: string; label: string }[] => {
+  if (!rawOptions) return [];
+  if (Array.isArray(rawOptions)) {
+    return rawOptions
+      .map((opt) => {
+        if (typeof opt === 'string') {
+          const trimmed = opt.trim();
+          return trimmed ? { value: trimmed, label: trimmed } : null;
+        }
+        if (opt && typeof opt === 'object') {
+          const val = String(opt.value ?? opt.label ?? opt.name ?? '').trim();
+          const lbl = String(opt.label ?? opt.value ?? opt.name ?? '').trim();
+          return val ? { value: val, label: lbl || val } : null;
+        }
+        return null;
+      })
+      .filter((opt): opt is { value: string; label: string } => opt !== null);
+  }
+  if (typeof rawOptions === 'string') {
+    const trimmed = rawOptions.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) return formatCustomSelectOptions(parsed);
+      } catch {
+        // Fallback to comma split
+      }
+    }
+    return trimmed
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((opt) => ({ value: opt, label: opt }));
+  }
+  if (typeof rawOptions === 'object') {
+    if (Array.isArray((rawOptions as any).options)) {
+      return formatCustomSelectOptions((rawOptions as any).options);
+    }
+    return Object.values(rawOptions)
+      .map((v) => (typeof v === 'string' ? { value: v.trim(), label: v.trim() } : null))
+      .filter((opt): opt is { value: string; label: string } => Boolean(opt && opt.value));
+  }
+  return [];
+};
+
 export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
   isOpen,
   onClose,
@@ -992,73 +1037,73 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                 <span>Event Specific Questions</span>
               </div>
 
-              {customFields.map((field) => (
-                <div key={field.id} className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-
-                  {field.field_type === 'textarea' ? (
-                    <textarea
-                      rows={2}
-                      required={field.required}
-                      value={customAnswers[field.field_key] || ''}
-                      onChange={(e) => setCustomAnswers({ ...customAnswers, [field.field_key]: e.target.value })}
-                      placeholder={field.placeholder || ''}
-                      className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                    />
-                  ) : field.field_type === 'select' ? (
-                    <select
-                      required={field.required}
-                      value={customAnswers[field.field_key] || ''}
-                      onChange={(e) => setCustomAnswers({ ...customAnswers, [field.field_key]: e.target.value })}
-                      className="w-full h-10 px-3 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                    >
-                      <option value="">Select an option...</option>
-                      {Array.isArray(field.options) &&
-                        field.options.map((opt, i) => (
-                          <option key={i} value={opt}>{opt}</option>
-                        ))}
-                    </select>
-                  ) : field.field_type === 'checkbox' ? (
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={!!customAnswers[field.field_key]}
-                        onChange={(e) => setCustomAnswers({ ...customAnswers, [field.field_key]: e.target.checked })}
-                        className="w-4 h-4 rounded text-blue-600"
-                      />
-                      <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
-                        {field.help_text || 'Agree / Confirm'}
-                      </span>
+              {customFields.map((field) => {
+                const fieldKey = field.field_key || field.id;
+                return (
+                  <div key={field.id} className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {field.label} {field.required && <span className="text-red-500">*</span>}
                     </label>
-                  ) : field.field_type === 'phone' ? (
-                    <input
-                      type="tel"
-                      required={field.required}
-                      maxLength={10}
-                      pattern="[0-9]{10}"
-                      value={customAnswers[field.field_key] || ''}
-                      onChange={(e) => setCustomAnswers({ ...customAnswers, [field.field_key]: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                      placeholder={field.placeholder || '10-digit Phone Number'}
-                      className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                    />
-                  ) : (
-                    <input
-                      type={field.field_type === 'number' ? 'number' : 'text'}
-                      required={field.required}
-                      value={customAnswers[field.field_key] || ''}
-                      onChange={(e) => setCustomAnswers({ ...customAnswers, [field.field_key]: e.target.value })}
-                      placeholder={field.placeholder || ''}
-                      className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                    />
-                  )}
 
-                  {field.help_text && field.field_type !== 'checkbox' && (
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400">{field.help_text}</p>
-                  )}
-                </div>
-              ))}
+                    {field.field_type === 'textarea' ? (
+                      <textarea
+                        rows={2}
+                        required={field.required}
+                        value={customAnswers[fieldKey] || ''}
+                        onChange={(e) => setCustomAnswers({ ...customAnswers, [fieldKey]: e.target.value })}
+                        placeholder={field.placeholder || ''}
+                        className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    ) : field.field_type === 'select' ? (
+                      <CustomSelect
+                        value={customAnswers[fieldKey] || ''}
+                        onChange={(val) => setCustomAnswers({ ...customAnswers, [fieldKey]: val })}
+                        options={formatCustomSelectOptions(field.options)}
+                        placeholder={field.placeholder || 'Select an option...'}
+                        clearable={!field.required}
+                        dropDirection="down"
+                        triggerClassName="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700/80 flex items-center justify-between hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer shadow-sm"
+                      />
+                    ) : field.field_type === 'checkbox' ? (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!!customAnswers[fieldKey]}
+                          onChange={(e) => setCustomAnswers({ ...customAnswers, [fieldKey]: e.target.checked })}
+                          className="w-4 h-4 rounded text-blue-600"
+                        />
+                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                          {field.help_text || 'Agree / Confirm'}
+                        </span>
+                      </label>
+                    ) : field.field_type === 'phone' ? (
+                      <input
+                        type="tel"
+                        required={field.required}
+                        maxLength={10}
+                        pattern="[0-9]{10}"
+                        value={customAnswers[fieldKey] || ''}
+                        onChange={(e) => setCustomAnswers({ ...customAnswers, [fieldKey]: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                        placeholder={field.placeholder || '10-digit Phone Number'}
+                        className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    ) : (
+                      <input
+                        type={field.field_type === 'number' ? 'number' : 'text'}
+                        required={field.required}
+                        value={customAnswers[fieldKey] || ''}
+                        onChange={(e) => setCustomAnswers({ ...customAnswers, [fieldKey]: e.target.value })}
+                        placeholder={field.placeholder || ''}
+                        className="w-full h-10 px-3.5 rounded-xl bg-white dark:bg-slate-900 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      />
+                    )}
+
+                    {field.help_text && field.field_type !== 'checkbox' && (
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">{field.help_text}</p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 

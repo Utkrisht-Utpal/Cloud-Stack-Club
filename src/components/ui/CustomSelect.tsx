@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { useClickOutside } from "../../hooks/useClickOutside";
 
 export interface SelectOption {
@@ -23,6 +23,8 @@ interface CustomSelectProps {
   triggerClassName?: string;
   minMenuWidth?: number;
   align?: 'left' | 'right';
+  dropDirection?: 'auto' | 'down' | 'up';
+  clearable?: boolean;
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -37,6 +39,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   triggerClassName,
   minMenuWidth,
   align = 'left',
+  dropDirection = 'down',
+  clearable = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [portalStyle, setPortalStyle] = useState<{
@@ -44,6 +48,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     bottom?: number;
     left: number;
     width: number;
+    maxHeight?: number;
     dropUp: boolean;
   } | null>(null);
 
@@ -63,13 +68,30 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       const rect = containerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
       const viewportWidth = window.innerWidth;
+
+      // If the trigger button scrolled completely out of view, close the menu
+      if (rect.bottom < 0 || rect.top > viewportHeight) {
+        setIsOpen(false);
+        return;
+      }
+
       const spaceBelow = viewportHeight - rect.bottom;
-      const shouldDropUp = spaceBelow < 200 && rect.top > 180;
-      
+      const spaceAbove = rect.top;
+      const shouldDropUp =
+        dropDirection === 'up'
+          ? true
+          : dropDirection === 'down'
+          ? false
+          : spaceBelow < 160 && spaceAbove > 180;
+
+      const maxHeight = shouldDropUp
+        ? Math.min(260, Math.max(100, spaceAbove - 16))
+        : Math.min(260, Math.max(100, spaceBelow - 16));
+
       // Sized in accordance with the trigger button width
       const targetMin = minMenuWidth ?? rect.width;
       const menuWidth = Math.min(viewportWidth - 24, Math.max(rect.width, targetMin));
-      
+
       let menuLeft = align === 'right' ? rect.right - menuWidth : rect.left;
       if (menuLeft + menuWidth > viewportWidth - 12) {
         menuLeft = Math.max(12, viewportWidth - menuWidth - 12);
@@ -83,6 +105,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           bottom: viewportHeight - rect.top + 4,
           left: menuLeft,
           width: menuWidth,
+          maxHeight,
           dropUp: true,
         });
       } else {
@@ -90,6 +113,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           top: rect.bottom + 4,
           left: menuLeft,
           width: menuWidth,
+          maxHeight,
           dropUp: false,
         });
       }
@@ -104,7 +128,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       window.removeEventListener("resize", updatePos);
       window.removeEventListener("scroll", updatePos, true);
     };
-  }, [isOpen, minMenuWidth, align]);
+  }, [isOpen, minMenuWidth, align, dropDirection]);
 
   useClickOutside({
     enabled: isOpen,
@@ -141,7 +165,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={triggerClassName || defaultTriggerClass}
+        className={
+          triggerClassName
+            ? `${triggerClassName} ${
+                isOpen
+                  ? "!border-blue-500 !ring-2 !ring-blue-500/25 dark:!border-sky-400 dark:!ring-sky-400/25 shadow-sm"
+                  : ""
+              }`
+            : defaultTriggerClass
+        }
       >
         <span className={`text-xs sm:text-sm font-medium flex items-center gap-2 text-left min-w-0 flex-1 whitespace-nowrap ${triggerClassName ? 'text-inherit font-inherit' : 'text-slate-900 dark:text-slate-100'}`}>
           {leadingIcon && (
@@ -156,11 +188,33 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform duration-300 shrink-0 ml-1.5 ${
-            triggerClassName ? 'text-inherit opacity-75' : 'text-blue-600 dark:text-sky-400'
-          } ${isOpen ? 'rotate-180' : 'rotate-0'}`}
-        />
+        <div className="flex items-center shrink-0 ml-1.5">
+          {clearable && selectedOption && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                onChange("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.stopPropagation();
+                  onChange("");
+                }
+              }}
+              className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors mr-1 cursor-pointer"
+              title="Clear selection"
+            >
+              <X className="w-3.5 h-3.5" />
+            </span>
+          )}
+          <ChevronDown
+            className={`w-4 h-4 transition-transform duration-300 shrink-0 ${
+              triggerClassName ? 'text-inherit opacity-75' : 'text-blue-600 dark:text-sky-400'
+            } ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+          />
+        </div>
       </button>
 
       {/* React Portal Floating Dropdown Menu */}
@@ -190,56 +244,63 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     : "auto",
                 left: `${portalStyle.left}px`,
                 width: `${portalStyle.width}px`,
+                maxHeight: portalStyle.maxHeight ? `${portalStyle.maxHeight}px` : undefined,
                 zIndex: 99999,
               }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl rounded-xl p-1 space-y-0.5 overflow-y-auto max-h-52 custom-scrollbar overscroll-contain focus:outline-none"
+              className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/80 shadow-2xl rounded-2xl p-1.5 space-y-1 overflow-y-auto max-h-56 custom-scrollbar overscroll-contain focus:outline-none"
             >
-              {options.map((option) => {
-                const isSelected = option.value === value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      onChange(option.value);
-                      setIsOpen(false);
-                    }}
-                    className={`w-full text-left transition-all flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
-                      isSelected
-                        ? "bg-blue-600 text-white shadow-sm"
-                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300"
-                    }`}
-                  >
-                    <div className="flex flex-col text-left min-w-0 flex-1">
-                      <span className="text-xs font-bold text-left truncate">
-                        {option.label}
-                      </span>
-                      {option.description && (
+              {options.length === 0 ? (
+                <div className="py-2.5 px-3 text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+                  No options available
+                </div>
+              ) : (
+                options.map((option) => {
+                  const isSelected = option.value === value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        onChange(option.value);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full text-left transition-all flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-bold cursor-pointer ${
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-blue-600 dark:hover:text-sky-300"
+                      }`}
+                    >
+                      <div className="flex flex-col text-left min-w-0 flex-1">
+                        <span className="text-xs font-bold text-left truncate">
+                          {option.label}
+                        </span>
+                        {option.description && (
+                          <span
+                            className={`text-[10px] text-left leading-tight mt-0.5 truncate ${
+                              isSelected
+                                ? "text-blue-100"
+                                : "text-slate-500 dark:text-slate-400"
+                            }`}
+                          >
+                            {option.description}
+                          </span>
+                        )}
+                      </div>
+                      {option.badge && (
                         <span
-                          className={`text-[10px] text-left leading-tight mt-0.5 truncate ${
+                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0 transition-colors ${
                             isSelected
-                              ? "text-blue-100"
-                              : "text-slate-500 dark:text-slate-400"
+                              ? "bg-white/20 text-white"
+                              : "bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20"
                           }`}
                         >
-                          {option.description}
+                          {option.badge}
                         </span>
                       )}
-                    </div>
-                    {option.badge && (
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0 transition-colors ${
-                          isSelected
-                            ? "bg-white/20 text-white"
-                            : "bg-blue-500/10 text-blue-600 dark:text-sky-400 border border-blue-500/20"
-                        }`}
-                      >
-                        {option.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                    </button>
+                  );
+                })
+              )}
             </motion.div>
           </AnimatePresence>,
           document.body,
