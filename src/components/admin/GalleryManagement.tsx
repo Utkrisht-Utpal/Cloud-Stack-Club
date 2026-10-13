@@ -11,6 +11,8 @@ import {
   FileImage,
   Layers,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
@@ -21,6 +23,7 @@ import {
   getGalleryPhotos,
   uploadGalleryPhotos,
   updateGalleryPhoto,
+  reorderGalleryPhotos,
   deleteGalleryPhoto,
   MAX_GALLERY_PHOTO_SIZE,
 } from '../../services/gallery';
@@ -138,13 +141,73 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
   }, [events]);
 
   // Filter photos for selected event (or all if selectedEventId === 'all')
-  const visiblePhotos = selectedEventId === 'all'
-    ? photosList
-    : photosList.filter((p) => p.event_id === selectedEventId);
+  // Sorted strictly by display_order ascending, then created_at descending
+  const visiblePhotos = useMemo(() => {
+    const list = selectedEventId === 'all'
+      ? [...photosList]
+      : photosList.filter((p) => p.event_id === selectedEventId);
+    
+    return list.sort((a, b) => {
+      if ((a.display_order ?? 0) !== (b.display_order ?? 0)) {
+        return (a.display_order ?? 0) - (b.display_order ?? 0);
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [photosList, selectedEventId]);
 
   // Photo counts per event
   const getEventPhotoCount = (eventId: string) => {
     return photosList.filter((p) => p.event_id === eventId).length;
+  };
+
+  // Reorder photo handler: move photo up/left (-1) or down/right (+1)
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+
+  const handleMovePhoto = async (photoId: string, direction: -1 | 1) => {
+    const currentIndex = visiblePhotos.findIndex((p) => p.id === photoId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = currentIndex + direction;
+    if (targetIndex < 0 || targetIndex >= visiblePhotos.length) return;
+
+    const currentPhoto = visiblePhotos[currentIndex];
+    const targetPhoto = visiblePhotos[targetIndex];
+
+    // Build reordered array of the visible photos
+    const reorderedVisible = [...visiblePhotos];
+    reorderedVisible[currentIndex] = targetPhoto;
+    reorderedVisible[targetIndex] = currentPhoto;
+
+    // Assign clean sequential display_order: 1, 2, 3...
+    const updates = reorderedVisible.map((p, idx) => ({
+      id: p.id,
+      display_order: idx + 1,
+    }));
+
+    const updateMap = new Map(updates.map((u) => [u.id, u.display_order]));
+
+    // Optimistic UI update
+    setPhotosList((prev) =>
+      prev.map((p) =>
+        updateMap.has(p.id) ? { ...p, display_order: updateMap.get(p.id)! } : p
+      )
+    );
+
+    setReorderingId(photoId);
+
+    try {
+      await reorderGalleryPhotos(updates);
+    } catch (err: any) {
+      console.error('Failed to save reordered photos:', err);
+      // Rollback on error
+      fetchPhotos();
+      setStatusMsg({
+        type: 'error',
+        text: err?.message || 'Failed to save new order.',
+      });
+    } finally {
+      setReorderingId(null);
+    }
   };
 
   const processIncomingFiles = async (rawFiles: File[]) => {
@@ -512,56 +575,110 @@ export const GalleryManagement: React.FC<GalleryManagementProps> = ({ events }) 
             ) : (
               <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
-                  {visiblePhotos.map((photo) => (
-                    <div
-                      key={photo.id}
-                      onClick={() => setPreviewPhoto(photo)}
-                      className="group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm aspect-square flex flex-col justify-end cursor-pointer"
-                    >
-                      <img
-                        src={photo.image_url}
-                        alt={photo.caption || 'Event photo'}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="lazy"
-                      />
+                  {visiblePhotos.map((photo, photoIndex) => {
+                    const isFirst = photoIndex === 0;
+                    const isLast = photoIndex === visiblePhotos.length - 1;
+                    const isMoving = reorderingId === photo.id;
 
-                      {/* Top Action Buttons (Edit & Delete on Top Right) */}
-                      <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleStartEdit(photo);
-                          }}
-                          className="w-7 h-7 rounded-lg bg-slate-950/75 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 hover:border-blue-400 backdrop-blur-md shadow-[0_0_10px_rgba(59,130,246,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
-                          title="Edit Caption / Order"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
+                    return (
+                      <div
+                        key={photo.id}
+                        onClick={() => setPreviewPhoto(photo)}
+                        className={`group relative rounded-2xl overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 shadow-sm aspect-square flex flex-col justify-end cursor-pointer transition-all duration-200 ${
+                          isMoving ? 'scale-95 ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-slate-900' : ''
+                        }`}
+                      >
+                        <img
+                          src={photo.image_url}
+                          alt={photo.caption || 'Event photo'}
+                          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
 
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPhotoToDelete(photo);
-                          }}
-                          className="w-7 h-7 rounded-lg bg-slate-950/75 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 hover:border-red-400 backdrop-blur-md shadow-[0_0_10px_rgba(239,68,68,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
-                          title="Delete Photo"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-
-                      {/* Caption Badge at Bottom: single line truncate, no wrap */}
-                      {photo.caption && (
-                        <div className="absolute bottom-2 left-2 right-2 z-10 pointer-events-none">
-                          <span className="px-2 py-0.5 rounded-md bg-slate-950/75 backdrop-blur-md text-[10px] font-medium text-white truncate block max-w-full shadow-sm">
-                            {photo.caption}
+                        {/* Top Left: Order Indicator Badge */}
+                        <div className="absolute top-2 left-2 z-20 pointer-events-none">
+                          <span className="px-2 py-0.5 rounded-lg bg-slate-950/80 border border-white/10 text-[10px] font-black text-white/90 backdrop-blur-md shadow-sm">
+                            #{photoIndex + 1}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  ))}
+
+                        {/* Top Right Action Buttons (Edit & Delete) */}
+                        <div className="absolute top-2 right-2 z-20 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartEdit(photo);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-slate-950/75 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/40 hover:border-blue-400 backdrop-blur-md shadow-[0_0_10px_rgba(59,130,246,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
+                            title="Edit Caption"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPhotoToDelete(photo);
+                            }}
+                            className="w-7 h-7 rounded-lg bg-slate-950/75 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/40 hover:border-red-400 backdrop-blur-md shadow-[0_0_10px_rgba(239,68,68,0.4)] transition-all cursor-pointer inline-flex items-center justify-center hover:scale-110 active:scale-95"
+                            title="Delete Photo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Middle/Center: Reorder Arrows (Visible on hover or mobile tap) */}
+                        <div className="absolute inset-x-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* Move Left / Previous */}
+                          <button
+                            type="button"
+                            disabled={isFirst || isMoving}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMovePhoto(photo.id, -1);
+                            }}
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full pointer-events-auto flex items-center justify-center backdrop-blur-md border transition-all cursor-pointer shadow-lg ${
+                              isFirst
+                                ? 'opacity-30 bg-slate-950/50 text-slate-500 border-white/5 cursor-not-allowed'
+                                : 'bg-slate-950/80 hover:bg-blue-600 text-white border-white/20 hover:border-blue-400 hover:scale-110 active:scale-90'
+                            }`}
+                            title={isFirst ? 'Already first' : 'Move Earlier (Left)'}
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+
+                          {/* Move Right / Next */}
+                          <button
+                            type="button"
+                            disabled={isLast || isMoving}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMovePhoto(photo.id, 1);
+                            }}
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full pointer-events-auto flex items-center justify-center backdrop-blur-md border transition-all cursor-pointer shadow-lg ${
+                              isLast
+                                ? 'opacity-30 bg-slate-950/50 text-slate-500 border-white/5 cursor-not-allowed'
+                                : 'bg-slate-950/80 hover:bg-blue-600 text-white border-white/20 hover:border-blue-400 hover:scale-110 active:scale-90'
+                            }`}
+                            title={isLast ? 'Already last' : 'Move Later (Right)'}
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Caption Badge at Bottom: single line truncate, no wrap */}
+                        {photo.caption && (
+                          <div className="absolute bottom-2 left-2 right-2 z-10 pointer-events-none">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-950/75 backdrop-blur-md text-[10px] font-medium text-white truncate block max-w-full shadow-sm">
+                              {photo.caption}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
