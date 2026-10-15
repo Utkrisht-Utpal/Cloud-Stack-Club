@@ -302,6 +302,15 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
       return;
     }
 
+    if (!formData.section.trim()) {
+      triggerErrorWithCooldown(
+        isTeamRegistration
+          ? 'Please enter the Section / Group for the team leader.'
+          : 'Please enter your Section / Group.'
+      );
+      return;
+    }
+
     if (isTeamRegistration) {
       if (!teamName.trim()) {
         triggerErrorWithCooldown('Please enter a Team Name.');
@@ -318,8 +327,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
 
       for (let i = 0; i < teamMembers.length; i++) {
         const m = teamMembers[i];
-        if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim() || !m.department.trim()) {
-          triggerErrorWithCooldown(`Please fill in Name, Email, UID, Phone Number, and Department for Teammate #${i + 2}.`);
+        if (!m.name.trim() || !m.email.trim() || !m.uid.trim() || !m.phone.trim() || !m.department.trim() || !m.section?.trim()) {
+          triggerErrorWithCooldown(`Please fill in Name, Email, UID, Phone Number, Department, and Section / Group for Teammate #${i + 2}.`);
           return;
         }
         if (m.uid.trim().length !== 10) {
@@ -879,12 +888,13 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
             {/* Section / Group input field - full width */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                Section / Group
+                Section / Group <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Layers className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
+                  required
                   value={formData.section}
                   onChange={(e) => setFormData({ ...formData, section: e.target.value })}
                   placeholder="e.g. 24BCF-1 / Section A"
@@ -1006,7 +1016,8 @@ export const EventRegisterModal: React.FC<EventRegisterModalProps> = ({
                       {/* Row 4: Section / Group (full width) */}
                       <input
                         type="text"
-                        placeholder="Section / Group (e.g. 24BCF-1)"
+                        required
+                        placeholder="Section / Group (e.g. 24BCF-1) *"
                         value={m.section || ''}
                         onChange={(e) => handleUpdateTeamMember(idx, 'section', e.target.value)}
                         className="w-full h-9 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/90 text-xs border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400"
