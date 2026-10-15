@@ -282,6 +282,46 @@ export const updateGalleryPhoto = async (
 };
 
 /**
+ * Update display order for multiple photos in batch
+ */
+export const reorderGalleryPhotos = async (
+  photoOrders: { id: string; display_order: number }[]
+): Promise<void> => {
+  if (photoOrders.length === 0) return;
+
+  // 1. Update local cache immediately
+  try {
+    const cached = localStorage.getItem(LOCAL_STORAGE_GALLERY_KEY);
+    if (cached) {
+      const list: GalleryPhoto[] = JSON.parse(cached);
+      const orderMap = new Map(photoOrders.map((po) => [po.id, po.display_order]));
+      for (const p of list) {
+        if (orderMap.has(p.id)) {
+          p.display_order = orderMap.get(p.id)!;
+        }
+      }
+      localStorage.setItem(LOCAL_STORAGE_GALLERY_KEY, JSON.stringify(list));
+    }
+  } catch {}
+
+  // 2. Persist to Supabase
+  if (isSupabaseConfigured()) {
+    const promises = photoOrders.map((po) =>
+      supabase
+        .from('event_gallery')
+        .update({ display_order: po.display_order })
+        .eq('id', po.id)
+    );
+    const results = await Promise.all(promises);
+    const firstErr = results.find((r) => r.error)?.error;
+    if (firstErr) {
+      console.error('Failed to batch reorder gallery photos:', firstErr);
+      throw firstErr;
+    }
+  }
+};
+
+/**
  * Delete a photo from database and remove image file from Cloudflare R2
  */
 export const deleteGalleryPhoto = async (id: string, imageUrl: string): Promise<void> => {
