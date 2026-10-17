@@ -42,11 +42,15 @@ The platform provides a comprehensive, high-performance experience for universit
   - Interactive modal viewers for official poster artwork and PDF schedule brochures.
   - Markdown-rendered event rules, eligibility prerequisites, prize pools, and schedule timelines.
   - Organizer showcase highlighting faculty coordinators and student leads.
+- **Featured Event Announcement Popup (Ad Modal)**:
+  - Responsive high-impact popup spotlighting featured/active club events with live registration status pills, seat availability counters, date, time, venue, and full rich-text event descriptions.
+  - 1-click transition directly into the Event Registration flow or past event feedback.
 - **Solo & Team Registration Engine**:
   - Supports individual registrations and custom-sized team registrations (with leader and member roles).
-  - Collects participant name, University ID (UID), email, phone, department, and academic year.
+  - Mandatory collection and verification of student credentials: **Full Name**, **Institutional / Personal Email**, **10-character University ID (UID)**, **10-digit Phone Number**, **Department / Branch**, **Academic Year**, and **Section / Group** across all registrants and teammates.
   - Instant automated registration number generation (`REG-YYYYMMDD-XXXXXX`).
   - Dynamic custom question support (text, dropdowns, multi-select, and file uploads).
+  - Cloudflare Turnstile anti-bot security verification widget guarding public registration submissions.
   - Real-time seat capacity enforcement and automated registration window closing.
   - Official WhatsApp Group invite link presented on confirmation popup and dispatched in emails.
 - **Self-Service Registration Lookup**: Students can look up their registration pass, check status, and view team rosters anytime using their UID.
@@ -58,6 +62,7 @@ The platform provides a comprehensive, high-performance experience for universit
 - **Justified Aspect-Ratio Engine**: Smart layout inspired by Google Photos and Apple Photos that computes natural aspect ratios on the fly.
 - **Zero-Crop Preservation**: Preserves 16:9 landscape, 9:16 vertical portrait, 1:1 square, 4:3, and panoramic photos without unwanted cropping.
 - **Interactive Lightbox**: Fullscreen high-resolution photo viewer with keyboard navigation (`Left`, `Right`, `Esc`) and instant one-click downloads.
+- **Admin Photo Ordering Controls**: On-card interactive reordering arrows (`◀` / `▶`) and sequence badges (`#1`, `#2`, `#3`) inside Admin Gallery Management for on-the-fly display ordering without page reloads.
 
 ---
 
@@ -103,12 +108,12 @@ The platform provides a comprehensive, high-performance experience for universit
 A protected dashboard for authorized club administrators:
 
 | # | Admin Tab | Capabilities |
-| :---: | :--- | :--- |
+| :--- | :--- | :--- |
 | **1** | **Members** | Review applications, inspect verification proofs, approve/reject with email triggers, assign roles, export member directory to Excel & PDF. |
 | **2** | **Events** | Create/edit events, upload posters & PDF schedules, toggle registration windows, broadcast announcements, view participant rosters with search & export. |
-| **3** | **Forms** | Dynamic event form builder configuring custom input fields (text, select, radio, checkbox, file upload) per event. |
+| **3** | **Forms** | Dynamic event form builder configuring custom input fields (text, select, radio, checkbox, file upload) per event with full multi-question support. |
 | **4** | **Feedbacks** | Centralized dashboard for contact inquiries and event feedback submissions with status resolution workflow. |
-| **5** | **Gallery** | Multi-photo batch upload, file size validation, inline caption editing, and gallery curation. |
+| **5** | **Gallery** | Multi-photo batch upload, file size validation, inline caption editing, position indicator badges, and 1-click reorder arrows (`◀` / `▶`). |
 | **6** | **Team** | Manage leadership directory, crop headshots with `ImageCropModal`, and assign role hierarchy ranks. |
 | **7** | **Emails** | Audit delivery logs, launch the Email Design Studio, and customize institutional email templates. |
 | **8** | **Chatbot** | FAQ knowledge base CRUD manager to update bot answers and train question patterns in real time. |
@@ -117,7 +122,7 @@ A protected dashboard for authorized club administrators:
 #### Additional Admin Tools:
 - **Notice Manager**: Publish real-time flash banners, tickers, and urgent alerts.
 - **Role Hierarchy Manager**: Configure club organizational roles, hierarchy display ranks, and member counts.
-- **Participant Roster Export**: 1-click export of complete attendee data (including department, year, team hierarchy, and custom form answers) into formatted **Excel (`.xlsx`)** and **PDF** reports.
+- **Participant Roster Export**: 1-click export of complete attendee data (including department, academic year, section/group, team hierarchy, and custom form answers) into formatted **Excel (`.xlsx`)** and **PDF** reports.
 - **Inactivity Protection**: Automatic session termination after extended administrative inactivity.
 
 ---
@@ -131,6 +136,7 @@ A protected dashboard for authorized club administrators:
 | **Styling & Styling Engine** | **Tailwind CSS v4** |
 | **Animations & Transitions** | **Framer Motion 12** |
 | **Routing** | **React Router DOM v7** |
+| **Security & Bot Protection** | **Cloudflare Turnstile** |
 | **Iconography** | **Lucide React** |
 | **Database & Realtime** | **Supabase (PostgreSQL 15+)** |
 | **Media Storage & CDN** | **Cloudflare Workers & Cloudflare R2** |
