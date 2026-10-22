@@ -20,6 +20,20 @@ import { ErrorPopupModal } from './ErrorPopupModal';
 import { TurnstileWidget, resetTurnstile } from './TurnstileWidget';
 import { useSubmitCooldown } from '../../hooks/useSubmitCooldown';
 
+// Auto-format Registration ID: handles 20261015688241, REG20261015688241, REG20261015-688241 -> REG-20261015-688241
+const formatRegistrationIdInput = (raw: string): string => {
+  if (!raw) return '';
+  const trimmed = raw.trim().toUpperCase();
+  const cleaned = trimmed.replace(/[^A-Z0-9]/g, '');
+  if (!cleaned) return '';
+
+  const withoutPrefix = cleaned.startsWith('REG') ? cleaned.slice(3) : cleaned;
+  if (/^\d{8}[A-Z0-9]{4,6}$/.test(withoutPrefix)) {
+    return 'REG-' + withoutPrefix.slice(0, 8) + '-' + withoutPrefix.slice(8);
+  }
+  return trimmed;
+};
+
 interface EventFeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -135,7 +149,7 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
         email: email.trim(),
         phone: phone.trim(),
         university_id: universityId.trim().toUpperCase(),
-        registration_id: registrationId.trim().toUpperCase(),
+        registration_id: formatRegistrationIdInput(registrationId) || registrationId.trim().toUpperCase(),
         event_id: event.id,
         event_title: event.title,
         event_rating: eventRating,
@@ -359,9 +373,15 @@ export const EventFeedbackModal: React.FC<EventFeedbackModalProps> = ({
                       <input
                         type="text"
                         required
-                        placeholder="Registration ID"
+                        placeholder="Registration ID (e.g., REG-20261015-688241)"
                         value={registrationId}
                         onChange={(e) => setRegistrationId(e.target.value.toUpperCase())}
+                        onBlur={(e) => {
+                          const formatted = formatRegistrationIdInput(e.target.value);
+                          if (formatted && formatted !== e.target.value) {
+                            setRegistrationId(formatted);
+                          }
+                        }}
                         className="w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs sm:text-sm font-mono font-bold text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:font-normal focus:outline-none focus:ring-2 focus:ring-blue-500/40 uppercase"
                       />
                     </div>
