@@ -122,6 +122,24 @@ export const ChatbotWidget: React.FC = () => {
     }
   }, [isOpen]);
 
+  // Listen for global open-chatbot event
+  useEffect(() => {
+    const handleOpenChatbot = (e?: Event) => {
+      const customEvent = e as CustomEvent<{ prompt?: string; sendImmediately?: boolean }>;
+      setIsOpen(true);
+      if (customEvent?.detail?.prompt) {
+        if (customEvent.detail.sendImmediately) {
+          handleAskQuestion(customEvent.detail.prompt);
+        } else {
+          setInputText(customEvent.detail.prompt);
+        }
+      }
+    };
+
+    window.addEventListener('open-chatbot', handleOpenChatbot);
+    return () => window.removeEventListener('open-chatbot', handleOpenChatbot);
+  }, [faqs]);
+
   const handleAskQuestion = async (questionText: string) => {
     if (!questionText.trim()) return;
 
