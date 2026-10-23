@@ -80,6 +80,12 @@ export const MainLayout: React.FC = () => {
   }, [isAdminUrl]);
 
   useEffect(() => {
+    if (!isJoinUrl) {
+      setJoinModalDismissed(false);
+    }
+  }, [isJoinUrl]);
+
+  useEffect(() => {
     if (!isDiscrepancyUrl) {
       setDiscrepancyModalDismissed(false);
     }
@@ -98,7 +104,19 @@ export const MainLayout: React.FC = () => {
   }, [isDiscrepancyUrl, discrepancyModalDismissed]);
 
   useEffect(() => {
-    const handleOpen = () => setDiscrepancyModalOpen(true);
+    const handleOpenJoin = () => {
+      setJoinModalDismissed(false);
+      setJoinModalOpen(true);
+    };
+    window.addEventListener('csc-open-join-modal', handleOpenJoin);
+    return () => window.removeEventListener('csc-open-join-modal', handleOpenJoin);
+  }, []);
+
+  useEffect(() => {
+    const handleOpen = () => {
+      setDiscrepancyModalDismissed(false);
+      setDiscrepancyModalOpen(true);
+    };
     window.addEventListener('csc-open-discrepancy-modal', handleOpen);
     return () => window.removeEventListener('csc-open-discrepancy-modal', handleOpen);
   }, []);
