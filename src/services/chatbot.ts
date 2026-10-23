@@ -2074,6 +2074,9 @@ export const resolveBotQuery = async (
   const isJoinIntent =
     cleanQ.includes('how can i join') ||
     cleanQ.includes('how to join') ||
+    cleanQ.includes('how do i join') ||
+    cleanQ.includes('how do we join') ||
+    cleanQ.includes('how can we join') ||
     cleanQ.includes('join club') ||
     cleanQ.includes('join csc') ||
     cleanQ.includes('membership') ||
@@ -2093,16 +2096,68 @@ export const resolveBotQuery = async (
       (cleanQ.includes('can') || cleanQ.includes('i') || cleanQ.includes('club') || cleanQ.includes('csc')));
 
   if (isJoinIntent) {
-    const text = `To join Cloud Stack Club:\n\n` +
-      `1. 📝 **Register as Member:** Fill out the member registration form at [/join](/join) with your university UID, contact details, and department.\n` +
-      `2. ⭐ **Interested in Becoming a Core Member?** There is no separate application link. First complete your member registration, then either reach out via our [Contact Form](/contact) or visit us directly in person at **D3 202, South Campus, Chandigarh University**.\n\n` +
-      `Membership is 100% free and open to all Chandigarh University students!`;
+    // If an active FAQ exists in the Knowledge Base (database or default), reuse its verified answer!
+    const dbJoinFaq = faqs.find(
+      (f) =>
+        f.is_active &&
+        (f.id === 'faq-join-csc' ||
+          (f.category === 'Membership' && (f.keywords || []).some((k) => k.toLowerCase().includes('join'))) ||
+          normalizeText(f.question).includes('how to join') ||
+          normalizeText(f.question).includes('join cloud stack club') ||
+          normalizeText(f.question).includes('how can i join') ||
+          normalizeText(f.question).includes('how do i join'))
+    );
+
+    if (dbJoinFaq && dbJoinFaq.answer) {
+      return {
+        text: dbJoinFaq.answer,
+        suggestions: faqs
+          .filter((f) => f.id !== dbJoinFaq.id && (f.category === 'Membership' || f.category === 'About Club'))
+          .slice(0, 3),
+        actionLinks: [
+          { label: '🚀 Join Club', url: '/join' },
+          { label: '⚠️ Discrepancy Form', url: '/discrepancy' },
+          { label: '💬 Contact Form', url: '/contact' },
+        ],
+      };
+    }
+
+    const text = `Here is the official step-by-step process to join **Cloud Stack Club**:
+
+### 1️⃣ Step 1: Join on CUIMS (University Portal)
+1. Open [CUIMS](https://students.cuchd.in)
+2. Go to **Student Relation Management System**
+3. Select **Club & Society**
+4. Click on **Register Entity**
+5. Search for **CloudStack Club**
+6. Click **Join Club**
+7. 📸 **Take a screenshot** after successfully joining the club. *(This screenshot is mandatory proof required for Step 2!)*
+
+### 2️⃣ Step 2: Complete Registration on the CloudStack Club Website
+1. Visit the [Cloud Stack Club Join Page](/join) and click **Join Club**
+2. Fill in all the required details in the registration form
+3. Upload the screenshot showing that you have joined CloudStack Club on CUIMS
+4. Submit the form
+5. 🆔 **Save your Registration ID:** After submission, keep your Registration ID safely for future reference
+6. 📩 **Review & Confirmation:** You will get an email when your membership is reviewed regarding approval or rejection
+
+⚠️ **Important:** Your registration will be considered complete **only after completing both CUIMS and the CloudStack Club website registration**.
+
+---
+
+❓ **Facing any issues while joining?**
+If you run into any errors or problems, you can reach out in two ways:
+• Submit our [Discrepancy Form](/discrepancy)
+• Or contact us directly via our [Contact Form](/contact)
+
+*(Note: To become a **Core Member**, first complete regular membership above, then reach out via our [Contact Form](/contact) or meet us in person at **D3 202, South Campus**).*`;
 
     return {
       text,
       suggestions: faqs.filter((f) => f.category === 'Membership' || f.category === 'About Club').slice(0, 3),
       actionLinks: [
-        { label: '🚀 Register as Member', url: '/join' },
+        { label: '🚀 Join Club', url: '/join' },
+        { label: '⚠️ Discrepancy Form', url: '/discrepancy' },
         { label: '💬 Contact Form', url: '/contact' },
       ],
     };
