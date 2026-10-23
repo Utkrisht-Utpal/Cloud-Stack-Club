@@ -553,16 +553,14 @@ export const JoinModal: React.FC<JoinModalProps> = ({
                     ? `Submit in ${cooldown}s`
                     : "Submit Application"}
                 </Button>
-              </div>
 
-              <div className="pt-3 text-center">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
                   Having Problem Joining our club?{' '}
                   <button
                     type="button"
                     onClick={() => {
                       onClose();
-                      window.dispatchEvent(new CustomEvent('open-chatbot'));
+                      window.dispatchEvent(new CustomEvent('open-chatbot', { detail: { prompt: 'How do I join Cloud Stack Club?', sendImmediately: true } }));
                     }}
                     className="font-medium text-blue-600 dark:text-sky-400 hover:text-blue-700 dark:hover:text-sky-300 hover:underline transition-colors cursor-pointer"
                   >

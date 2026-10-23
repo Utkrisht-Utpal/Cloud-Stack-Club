@@ -239,6 +239,11 @@ export const ChatbotWidget: React.FC = () => {
             type="button"
             key={`link-${match.index}`}
             onClick={() => {
+              if (url === '/join' || url === '/apply') {
+                window.dispatchEvent(new CustomEvent('csc-open-join-modal'));
+              } else if (url === '/discrepancy' || url === '/query') {
+                window.dispatchEvent(new CustomEvent('csc-open-discrepancy-modal'));
+              }
               navigate(url);
               setIsOpen(false);
             }}
@@ -456,6 +461,11 @@ export const ChatbotWidget: React.FC = () => {
                             key={`btn-${bIdx}`}
                             onClick={() => {
                               if (btn.url.startsWith('/')) {
+                                if (btn.url === '/join' || btn.url === '/apply') {
+                                  window.dispatchEvent(new CustomEvent('csc-open-join-modal'));
+                                } else if (btn.url === '/discrepancy' || btn.url === '/query') {
+                                  window.dispatchEvent(new CustomEvent('csc-open-discrepancy-modal'));
+                                }
                                 navigate(btn.url);
                                 setIsOpen(false);
                               } else {
