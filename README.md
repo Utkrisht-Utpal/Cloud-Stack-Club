@@ -29,6 +29,15 @@ The platform provides a comprehensive, high-performance experience for universit
   - Desktop: Elegant hanging wooden-style notice board right below the navbar.
   - Mobile: Sleek upfront announcement pill with instant modal preview for urgent alerts and flash notices.
 - **Dynamic Terminal & Tech Badges**: Interactive hero section featuring live terminal status emulation and technology badges (*AWS, Kubernetes, Docker, DevOps, Azure, React, Node.js, AI/ML*).
+- **Interactive Multi-Mode Opening Reveal Screen**:
+  - High-impact cinematic welcome animation displayed on initial entry (plays once per session with `sessionStorage` persistence and instant `ESC` skip).
+  - **4 Switchable Reveal Styles**:
+    1. *Futuristic Vault Doors*: Double hydraulic carbon blast doors with cyber circuit traces, central rotating security iris, and cluster boot HUD parting smoothly to reveal the website.
+    2. *Map / Satellite Orbit Radar Zoom*: Holographic wireframe globe targeting Chandigarh University coordinates (`30.7688° N, 76.5754° E`) with altitude telemetry and hypersonic camera descent.
+    3. *Cosmic Shutter / Iris Aperture*: 8-blade camera iris rotating centrifugally over an active interstellar nebula and glowing club emblem.
+    4. *Cinematic Split Blinds*: Minimalist multi-panel alternating vertical blinds with neon laser seam and bold typographical presentation.
+  - Interactive preview dock allowing live 1-click switching to try each style.
+  - Replayable anytime via the Footer *"Replay Intro"* trigger or Claudyi Chatbot (`/intro` command).
 
 ---
 
@@ -54,7 +63,11 @@ The platform provides a comprehensive, high-performance experience for universit
   - Real-time seat capacity enforcement and automated registration window closing.
   - Official WhatsApp Group invite link presented on confirmation popup and dispatched in emails.
 - **Self-Service Registration Lookup**: Students can look up their registration pass, check status, and view team rosters anytime using their UID.
-- **Post-Event Reviews & Feedback (`/events/:slug/feedback`)**: Collection of attendee ratings across event coordination, speaker clarity, technical depth, and suggestions.
+- **Post-Event Reviews & Verified Feedback (`/events/:slug/feedback`)**: 
+  - Collection of attendee ratings across event coordination, speaker clarity, technical depth, and suggestions.
+  - **Zero-Trust 4-Way Verification Engine**: Cryptographic validation binding Registration ID, University ID, registered Email, and Phone number.
+  - **Granular Bidirectional Diagnostics**: Pinpoints the exact field mismatch (e.g. *"Mobile number does not match registered phone"* or *"University ID found, but Registration ID does not match"*) rather than generic errors.
+  - **Foolproof Registration ID Formatting**: Resilient on-the-fly input normalization (`REG-YYYYMMDD-XXXXXX`) accepting inputs with or without prefixes, spaces, or hyphens.
 
 ---
 
@@ -79,17 +92,23 @@ The platform provides a comprehensive, high-performance experience for universit
 
 ---
 
-### 🤖 6. 24/7 AI Chatbot Assistant
-- **Floating Student Companion**: Always-accessible widget providing instant answers regarding upcoming events, registration steps, eligibility, and club domains.
-- **Quick Prompt Chips & Markdown Formatting**: Easy one-tap suggestions with clear formatted responses.
+### 🤖 6. 24/7 AI Chatbot Assistant (Claudyi)
+- **High-Performance Floating Companion**: Always-accessible student widget providing instant answers regarding upcoming events, registration steps, eligibility, domains, and leadership.
+- **Dynamic Mobile & Desktop Responsiveness**: Adaptive centered window (`inset-x-3`) on mobile screens with dynamic viewport height (`100dvh`), iOS Safari auto-zoom prevention, and desktop bottom-right alignment.
+- **Live Supabase Knowledge Base Synchronization**: Answers are matched against live administrative Knowledge Base FAQs with fallback intent scoring.
+- **Comprehensive Dual-Step Membership Guide**: Step-by-step instructions guiding students through both **CUIMS** registration (with proof screenshot) and the **Club Website** application.
+- **Global Modal Interoperability**: In-chat action buttons and links (`[Join Club](/join)`, `[Discrepancy Form](/discrepancy)`) dynamically open the target modals from anywhere in the app without page refreshes.
+- **Snappy Response Engine & Keyboard Shortcuts**: Sub-100ms response rendering, smooth auto-scrolling, touch-tactile feedback, and `Escape` key close shortcut.
+- **Interactive Easter Egg**: Built-in mini-game playable directly inside the widget (`/tetris`).
 
 ---
 
 ### 📝 7. Membership Onboarding & Student Support
 - **Online Application Portal (`/join`, `/apply`)**: Multi-step onboarding for students to join technical tracks (*Cloud Computing, DevOps, Full Stack, Containerization, AI/ML*).
+- **Embedded Chatbot Support**: Contextual *"Having Problem Joining our club? Ask our chatbot"* shortcut embedded directly beneath the submit button.
 - **Proof Verification**: Secure upload of student ID/profile verification documents.
 - **Smart Renewal & Reactivation**: Returning members automatically reactivate to pending review without duplicate key errors.
-- **Student Grievance & Discrepancy Portal (`/discrepancy`)**: Dedicated portal for students to resolve UID mismatches, profile updates, and registration queries.
+- **Student Grievance & Discrepancy Portal (`/discrepancy`)**: Dedicated portal for students to resolve UID mismatches, CUIMS duplicate club memberships, profile updates, and registration queries.
 
 ---
 
@@ -116,10 +135,11 @@ A protected dashboard for authorized club administrators:
 | **5** | **Gallery** | Multi-photo batch upload, file size validation, inline caption editing, position indicator badges, and 1-click reorder arrows (`◀` / `▶`). |
 | **6** | **Team** | Manage leadership directory, crop headshots with `ImageCropModal`, and assign role hierarchy ranks. |
 | **7** | **Emails** | Audit delivery logs, launch the Email Design Studio, and customize institutional email templates. |
-| **8** | **Chatbot** | FAQ knowledge base CRUD manager to update bot answers and train question patterns in real time. |
+| **8** | **Chatbot** | Full FAQ Knowledge Base CRUD manager to update bot answers and train question patterns in real time. |
 | **9** | **Testimonials** | Add testimonials, live preview cards, duplicate order detection, and 1-click atomic swap reordering (`▲`/`▼`). |
 
 #### Additional Admin Tools:
+- **Discrepancy Submissions Management**: Dedicated modal to review and resolve student grievances and CUIMS registration discrepancies.
 - **Notice Manager**: Publish real-time flash banners, tickers, and urgent alerts.
 - **Role Hierarchy Manager**: Configure club organizational roles, hierarchy display ranks, and member counts.
 - **Participant Roster Export**: 1-click export of complete attendee data (including department, academic year, section/group, team hierarchy, and custom form answers) into formatted **Excel (`.xlsx`)** and **PDF** reports.
@@ -142,6 +162,27 @@ A protected dashboard for authorized club administrators:
 | **Media Storage & CDN** | **Cloudflare Workers & Cloudflare R2** |
 | **Spreadsheet & PDF Export**| **SheetJS (XLSX)**, **jsPDF & AutoTable** |
 | **Deployment** | **Vercel Edge Network** |
+
+---
+
+## 📂 Repository Structure
+
+```
+Cloud-Stack-Club/
+├── public/                     # Static media, icons, and branding assets
+├── src/
+│   ├── components/             # Reusable modular UI components
+│   │   ├── admin/              # Comprehensive 9-Tab Admin Suite & editors
+│   │   ├── chatbot/            # Claudyi AI companion & embedded interactive widgets
+│   │   ├── common/             # Global modals (Join, Register, Discrepancy, Feedback)
+│   │   └── home/               # Landing page hero, notice boards, and feature sections
+│   ├── layouts/                # Root page shell and layout wrappers
+│   ├── pages/                  # Top-level route pages (Home, Events, Team, Gallery, etc.)
+│   ├── services/               # Supabase client, RPC calls, Cloudflare worker proxy, & AI NLP
+│   ├── types/                  # Strict TypeScript schemas and interfaces
+│   └── utils/                  # Data transformers, validation, XLSX/PDF exporters
+└── supabase/                   # Schema migrations, security RLS policies, and database RPCs
+```
 
 ---
 
