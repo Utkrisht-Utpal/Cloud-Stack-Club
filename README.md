@@ -29,15 +29,6 @@ The platform provides a comprehensive, high-performance experience for universit
   - Desktop: Elegant hanging wooden-style notice board right below the navbar.
   - Mobile: Sleek upfront announcement pill with instant modal preview for urgent alerts and flash notices.
 - **Dynamic Terminal & Tech Badges**: Interactive hero section featuring live terminal status emulation and technology badges (*AWS, Kubernetes, Docker, DevOps, Azure, React, Node.js, AI/ML*).
-- **Interactive Multi-Mode Opening Reveal Screen**:
-  - High-impact cinematic welcome animation displayed on initial entry (plays once per session with `sessionStorage` persistence and instant `ESC` skip).
-  - **4 Switchable Reveal Styles**:
-    1. *Futuristic Vault Doors*: Double hydraulic carbon blast doors with cyber circuit traces, central rotating security iris, and cluster boot HUD parting smoothly to reveal the website.
-    2. *Map / Satellite Orbit Radar Zoom*: Holographic wireframe globe targeting Chandigarh University coordinates (`30.7688° N, 76.5754° E`) with altitude telemetry and hypersonic camera descent.
-    3. *Cosmic Shutter / Iris Aperture*: 8-blade camera iris rotating centrifugally over an active interstellar nebula and glowing club emblem.
-    4. *Cinematic Split Blinds*: Minimalist multi-panel alternating vertical blinds with neon laser seam and bold typographical presentation.
-  - Interactive preview dock allowing live 1-click switching to try each style.
-  - Replayable anytime via the Footer *"Replay Intro"* trigger or Claudyi Chatbot (`/intro` command).
 
 ---
 
@@ -71,10 +62,14 @@ The platform provides a comprehensive, high-performance experience for universit
 
 ---
 
-### 📸 3. Dynamic Photo Gallery (`/gallery`)
+### 📸 3. Dynamic Photo Gallery & Member Certificates (`/gallery`, `/certificates`)
 - **Justified Aspect-Ratio Engine**: Smart layout inspired by Google Photos and Apple Photos that computes natural aspect ratios on the fly.
 - **Zero-Crop Preservation**: Preserves 16:9 landscape, 9:16 vertical portrait, 1:1 square, 4:3, and panoramic photos without unwanted cropping.
 - **Interactive Lightbox**: Fullscreen high-resolution photo viewer with keyboard navigation (`Left`, `Right`, `Esc`) and instant one-click downloads.
+- **Member Certifications Showcase**:
+  - Dedicated public showcase displaying verified industry certificates and credentials earned by club members.
+  - Seamless dual-mode segmented toggle pill (`Event Moments` | `Member Certificates`) on `/gallery`, plus direct route support (`/certificates`).
+  - High-performance responsive grid with 1-click full-resolution certificate inspection.
 - **Admin Photo Ordering Controls**: On-card interactive reordering arrows (`◀` / `▶`) and sequence badges (`#1`, `#2`, `#3`) inside Admin Gallery Management for on-the-fly display ordering without page reloads.
 
 ---
@@ -132,7 +127,7 @@ A protected dashboard for authorized club administrators:
 | **2** | **Events** | Create/edit events, upload posters & PDF schedules, toggle registration windows, broadcast announcements, view participant rosters with search & export. |
 | **3** | **Forms** | Dynamic event form builder configuring custom input fields (text, select, radio, checkbox, file upload) per event with full multi-question support. |
 | **4** | **Feedbacks** | Centralized dashboard for contact inquiries and event feedback submissions with status resolution workflow. |
-| **5** | **Gallery** | Multi-photo batch upload, file size validation, inline caption editing, position indicator badges, and 1-click reorder arrows (`◀` / `▶`). |
+| **5** | **Gallery & Certificates** | Dual-division segmented pill: Event Photo Gallery (batch upload, caption editing, reorder) and Certificates Manager (multi-JPG upload $\le$500KB, 1-click sequence reorder, removal). |
 | **6** | **Team** | Manage leadership directory, crop headshots with `ImageCropModal`, and assign role hierarchy ranks. |
 | **7** | **Emails** | Audit delivery logs, launch the Email Design Studio, and customize institutional email templates. |
 | **8** | **Chatbot** | Full FAQ Knowledge Base CRUD manager to update bot answers and train question patterns in real time. |
