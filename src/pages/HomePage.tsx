@@ -5,6 +5,7 @@ import { AboutSection } from '../components/sections/AboutSection';
 import { WhatWeDoSection } from '../components/sections/WhatWeDoSection';
 import { WhyJoinSection } from '../components/sections/WhyJoinSection';
 import { EventsSection } from '../components/sections/EventsSection';
+import { CertificatesSection } from '../components/certificates/CertificatesSection';
 import { TestimonialsSection } from '../components/sections/TestimonialsSection';
 import { ContactSection } from '../components/sections/ContactSection';
 
@@ -46,6 +47,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onJoinClick }) => {
       <WhatWeDoSection />
       <WhyJoinSection />
       <EventsSection />
+      <CertificatesSection />
       <TestimonialsSection />
       <ContactSection />
     </div>

@@ -86,6 +86,14 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="certificates"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <GalleryPage defaultTab="certificates" />
+                  </React.Suspense>
+                }
+              />
+              <Route
                 path="gallery"
                 element={
                   <React.Suspense fallback={<PageLoader />}>

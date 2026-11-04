@@ -226,6 +226,13 @@ export interface EventFeedback {
   created_at: string;
 }
 
+export interface Certificate {
+  id: string;
+  image_url: string;
+  display_order: number;
+  created_at: string;
+}
+
 export interface GalleryPhoto {
   id: string;
   event_id: string;

@@ -9,12 +9,14 @@ import {
   Image as ImageIcon,
   FolderOpen,
   ArrowUpRight,
+  Award,
 } from 'lucide-react';
 import { getGalleryGroupedByEvent } from '../../services/gallery';
 import { GalleryLightbox } from './GalleryLightbox';
 import { JustifiedGallery } from './JustifiedGallery';
 import type { EventWithGallery, GalleryPhoto } from '../../types/database';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { CertificatesSection } from '../certificates/CertificatesSection';
 import { Button } from '../ui/Button';
 
 // Format YYYY-MM-DD to DD-MM-YYYY
@@ -29,7 +31,24 @@ const formatToDDMMYYYY = (dateStr?: string | null): string => {
   return dateStr;
 };
 
-export const GallerySection: React.FC = () => {
+interface GallerySectionProps {
+  defaultMode?: 'photos' | 'certificates';
+}
+
+export const GallerySection: React.FC<GallerySectionProps> = ({ defaultMode = 'photos' }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeMode, setActiveMode] = useState<'photos' | 'certificates'>(
+    tabParam === 'certificates' || defaultMode === 'certificates' ? 'certificates' : 'photos'
+  );
+
+  useEffect(() => {
+    if (tabParam === 'certificates') {
+      setActiveMode('certificates');
+    } else if (tabParam === 'photos') {
+      setActiveMode('photos');
+    }
+  }, [tabParam]);
   const [eventsWithGallery, setEventsWithGallery] = useState<EventWithGallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -124,6 +143,49 @@ export const GallerySection: React.FC = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-12 space-y-8">
+        {/* Mode Switcher Pill */}
+        <div className="flex justify-center">
+          <div className="inline-flex items-center p-1 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveMode('photos');
+                setSearchParams({});
+              }}
+              className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                activeMode === 'photos'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Camera className="w-4 h-4 shrink-0" />
+              <span>Event Moments</span>
+            </button>
+
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1" />
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveMode('certificates');
+                setSearchParams({ tab: 'certificates' });
+              }}
+              className={`px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                activeMode === 'certificates'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Award className="w-4 h-4 shrink-0" />
+              <span>Member Certificates</span>
+            </button>
+          </div>
+        </div>
+
+        {activeMode === 'certificates' ? (
+          <CertificatesSection standalone />
+        ) : (
+          <>
         {/* Header Banner */}
         <div className="text-center space-y-3 max-w-3xl mx-auto">
           <motion.div
@@ -302,6 +364,8 @@ export const GallerySection: React.FC = () => {
               </motion.section>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 

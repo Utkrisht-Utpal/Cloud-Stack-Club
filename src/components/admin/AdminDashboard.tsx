@@ -25,6 +25,7 @@ import {
   Shield,
   RefreshCw,
   Camera,
+  Award,
   ArrowUp,
   ScrollText,
   Mail,
@@ -59,6 +60,7 @@ import { EventPosterModal } from './EventPosterModal';
 import { EventFormBuilder } from './EventFormBuilder';
 import { ViewRegistrationsModal } from './ViewRegistrationsModal';
 import { GalleryManagement } from './GalleryManagement';
+import { CertificatesManagement } from './CertificatesManagement';
 import { TeamMediaManagement } from './TeamMediaManagement';
 import { EventRulesModal } from './EventRulesModal';
 import { RichDescriptionEditor } from './RichDescriptionEditor';
@@ -164,7 +166,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = false, setMobileNavOpen }) => {
-  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'team' | 'emails' | 'chatbot' | 'testimonials'>('members');
+  const [activeTab, setActiveTab] = useState<'members' | 'events' | 'forms' | 'feedbacks' | 'gallery' | 'certificates' | 'team' | 'emails' | 'chatbot' | 'testimonials'>('members');
   const [memberViewTab, setMemberViewTab] = useState<'applications' | 'directory'>('directory');
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'core'>('all');
   const [isSyncingMembers, setIsSyncingMembers] = useState(false);
@@ -1318,20 +1320,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
                     )}
                 </button>
 
-                {/* Event Gallery */}
-                <button
-                  onClick={() => { setActiveTab('gallery'); setMobileNavOpen && setMobileNavOpen(false); }}
-                  className={`w-full px-4 py-3.5 rounded-2xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${activeTab === 'gallery'
-                      ? 'bg-blue-600/90 text-white shadow-lg shadow-blue-500/25'
-                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${activeTab === 'gallery' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-600 dark:text-sky-400'
-                    }`}>
-                    <Camera className="w-5 h-5" />
-                  </div>
-                  <span className="truncate flex-1 font-extrabold text-sm">Event Gallery</span>
-                </button>
+                {/* Event Gallery & Certificates Split Pill (Mobile) */}
+                <div className="p-1 rounded-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-slate-200/40 dark:border-slate-800/40 flex items-center gap-1">
+                  <button
+                    onClick={() => { setActiveTab('gallery'); setMobileNavOpen && setMobileNavOpen(false); }}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'gallery'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                  >
+                    <Camera className="w-4 h-4 shrink-0" />
+                    <span className="font-extrabold text-xs">Event Gallery</span>
+                  </button>
+
+                  <div className="w-px h-5 bg-slate-300 dark:bg-slate-700" />
+
+                  <button
+                    onClick={() => { setActiveTab('certificates'); setMobileNavOpen && setMobileNavOpen(false); }}
+                    className={`flex-1 px-3 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${activeTab === 'certificates'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/25'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                  >
+                    <Award className="w-4 h-4 shrink-0" />
+                    <span className="font-extrabold text-xs">Certificates</span>
+                  </button>
+                </div>
 
                 {/* Our Team */}
                 <button
@@ -1487,22 +1501,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
               )}
           </button>
 
-          {/* Event Gallery */}
-          <button
-            onClick={() => setActiveTab('gallery')}
-            title="Event Gallery"
-            className={`flex-1 min-w-fit justify-center px-2.5 sm:px-3.5 py-2 sm:py-2.5 rounded-2xl text-xs font-extrabold transition-all duration-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${activeTab === 'gallery'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700'
-              }`}
+          {/* Event Gallery & Certificates Split Pill (Desktop) */}
+          <div
+            className={`flex-1 min-w-fit rounded-2xl p-0.5 border flex items-center transition-all duration-200 ${
+              activeTab === 'gallery' || activeTab === 'certificates'
+                ? 'bg-slate-100 dark:bg-slate-800 border-blue-500/40 shadow-sm'
+                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+            }`}
           >
-            <Camera className="w-4 h-4 shrink-0" />
-            {activeTab === 'gallery' ? (
+            <button
+              type="button"
+              onClick={() => setActiveTab('gallery')}
+              title="Event Gallery Management"
+              className={`flex-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-extrabold transition-all duration-150 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'gallery'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5 shrink-0" />
               <span>Event Gallery</span>
-            ) : (
-              <span className="hidden xl:inline">Gallery</span>
-            )}
-          </button>
+            </button>
+
+            <div className="w-px h-3.5 bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('certificates')}
+              title="Certificates Upload & Management"
+              className={`flex-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-extrabold transition-all duration-150 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'certificates'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30'
+                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <Award className="w-3.5 h-3.5 shrink-0" />
+              <span>Certificates</span>
+            </button>
+          </div>
 
           {/* Our Team */}
           <button
@@ -2841,6 +2877,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ mobileNavOpen = 
         {/* Tab Content 5: Event Gallery Management */}
         {activeTab === 'gallery' && (
           <GalleryManagement events={eventsList} />
+        )}
+
+        {/* Tab Content 5.5: Certificates Management */}
+        {activeTab === 'certificates' && (
+          <CertificatesManagement />
         )}
 
         {/* Tab Content 6: Our Team Management */}
