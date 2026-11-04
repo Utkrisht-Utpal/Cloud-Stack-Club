@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Loader2, X, FileImage } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Award, Loader2, FileImage } from 'lucide-react';
 import { getCertificates } from '../../services/certificates';
+import { CertificateLightbox } from './CertificateLightbox';
 import type { Certificate } from '../../types/database';
 
 interface CertificatesSectionProps {
@@ -11,7 +12,10 @@ interface CertificatesSectionProps {
 export const CertificatesSection: React.FC<CertificatesSectionProps> = ({ standalone = false }) => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activePreview, setActivePreview] = useState<Certificate | null>(null);
+
+  // Lightbox state matching GalleryLightbox
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeCertIndex, setActiveCertIndex] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -31,16 +35,10 @@ export const CertificatesSection: React.FC<CertificatesSectionProps> = ({ standa
     };
   }, []);
 
-  // Listen for Escape key to dismiss full-screen preview
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && activePreview) {
-        setActivePreview(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activePreview]);
+  const openLightbox = (index: number) => {
+    setActiveCertIndex(index);
+    setLightboxOpen(true);
+  };
 
   return (
     <section
@@ -111,7 +109,7 @@ export const CertificatesSection: React.FC<CertificatesSectionProps> = ({ standa
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3, delay: Math.min(index * 0.05, 0.4) }}
-                onClick={() => setActivePreview(cert)}
+                onClick={() => openLightbox(index)}
                 className="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col"
               >
                 {/* Certificate Image Frame */}
@@ -136,50 +134,14 @@ export const CertificatesSection: React.FC<CertificatesSectionProps> = ({ standa
         )}
       </div>
 
-      {/* Full-view Certificate Modal on Click */}
-      <AnimatePresence>
-        {activePreview && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setActivePreview(null)}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative max-w-4xl w-full max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col"
-            >
-              {/* Modal Header */}
-              <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
-                  <Award className="w-4 h-4 text-blue-500" />
-                  <span>Member Certificate</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActivePreview(null)}
-                  className="p-1.5 rounded-xl text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Full Image Display */}
-              <div className="p-4 sm:p-6 flex items-center justify-center bg-slate-50 dark:bg-slate-950 overflow-auto">
-                <img
-                  src={activePreview.image_url}
-                  alt="Member Certificate Full Preview"
-                  className="max-h-[75vh] w-auto max-w-full object-contain rounded-xl shadow-md"
-                />
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Fullscreen Immersive Lightbox Modal (Portal on document.body, z-[999999]) */}
+      <CertificateLightbox
+        isOpen={lightboxOpen}
+        certificates={certificates}
+        currentIndex={activeCertIndex}
+        onClose={() => setLightboxOpen(false)}
+        onNavigate={(newIndex) => setActiveCertIndex(newIndex)}
+      />
     </section>
   );
 };
