@@ -25,10 +25,10 @@ interface AchievementItem {
 }
 
 const STATS = [
-  { label: 'Industry Cloud Certifications', value: '50+', icon: Award, color: 'text-blue-600 dark:text-sky-400' },
-  { label: 'Hackathons & Competitions', value: '12+', icon: Trophy, color: 'text-amber-500' },
-  { label: 'Active Cloud Builders', value: '100+', icon: Cloud, color: 'text-cyan-500' },
-  { label: 'Technical Bootcamps & Workshops', value: '15+', icon: Cpu, color: 'text-indigo-500' },
+  { label: 'Industry Oriented Certificate', value: '50+', icon: Award, color: 'text-blue-600 dark:text-sky-400' },
+  { label: 'Hackathons & Competitions', value: '3+', icon: Trophy, color: 'text-amber-500' },
+  { label: 'Active Cloud Builders', value: '200+', icon: Cloud, color: 'text-cyan-500' },
+  { label: 'Technical Bootcamps & Workshops', value: '5+', icon: Cpu, color: 'text-indigo-500' },
 ];
 
 const ACHIEVEMENTS: AchievementItem[] = [
@@ -85,7 +85,7 @@ const ACHIEVEMENTS: AchievementItem[] = [
     title: 'Hands-on Cloud, Docker & DevOps Bootcamps',
     category: 'Skill Building',
     date: 'Semester Highlights',
-    badge: '15+ Cohorts',
+    badge: '5+ Cohorts',
     description:
       'Conducted high-intensity coding bootcamps and live deployment masterclasses empowering 500+ student participants to deploy their first Docker containers and Kubernetes pods.',
     highlights: [

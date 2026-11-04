@@ -48,11 +48,11 @@ export const AboutSection: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-4 shrink-0 w-full md:w-auto">
               <div className="p-4 rounded-2xl neumorphic-card text-center">
-                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-sky-400">100+</p>
+                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-sky-400">200+</p>
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-400 mt-1">Active Members</p>
               </div>
               <div className="p-4 rounded-2xl neumorphic-card text-center">
-                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-sky-400">5+</p>
+                <p className="text-2xl sm:text-3xl font-black text-blue-600 dark:text-sky-400">10+</p>
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-400 mt-1">Workshops & Events</p>
               </div>
             </div>
