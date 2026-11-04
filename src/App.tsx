@@ -11,6 +11,7 @@ import { HomePage } from './pages/HomePage';
 const EventsDirectoryPage = lazyWithRetry(() => import('./pages/EventsDirectoryPage'), 'EventsDirectoryPage');
 const EventDetailPage = lazyWithRetry(() => import('./pages/EventDetailPage'), 'EventDetailPage');
 const GalleryPage = lazyWithRetry(() => import('./pages/GalleryPage'), 'GalleryPage');
+const AchievementsPage = lazyWithRetry(() => import('./pages/AchievementsPage'), 'AchievementsPage');
 const TeamPage = lazyWithRetry(() => import('./pages/TeamPage'), 'TeamPage');
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'), 'NotFoundPage');
 
@@ -86,10 +87,26 @@ export const App: React.FC = () => {
                 }
               />
               <Route
+                path="achievements"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <AchievementsPage />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="achievement"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <AchievementsPage />
+                  </React.Suspense>
+                }
+              />
+              <Route
                 path="certificates"
                 element={
                   <React.Suspense fallback={<PageLoader />}>
-                    <GalleryPage defaultTab="certificates" />
+                    <AchievementsPage defaultTab="certificates" />
                   </React.Suspense>
                 }
               />

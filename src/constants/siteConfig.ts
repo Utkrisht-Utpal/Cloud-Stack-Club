@@ -26,7 +26,7 @@ export const siteConfig: SiteConfig = {
   navLinks: [
     { name: 'Home', href: '/#hero' },
     { name: 'About', href: '/#about' },
-    { name: 'Domains', href: '/#domains' },
+    { name: 'Achievement', href: '/achievements', isExternalPage: true },
     { name: 'Events', href: '/events', isExternalPage: true },
     { name: 'Gallery', href: '/gallery', isExternalPage: true },
     { name: 'Meet Our Team', href: '/team', isExternalPage: true },
@@ -35,7 +35,7 @@ export const siteConfig: SiteConfig = {
   footerLinks: [
     { name: 'Home', href: '/#hero' },
     { name: 'About', href: '/#about' },
-    { name: 'Domains', href: '/#domains' },
+    { name: 'Achievement', href: '/achievements', isExternalPage: true },
     { name: 'Events', href: '/events', isExternalPage: true },
     { name: 'Gallery', href: '/gallery', isExternalPage: true },
     { name: 'Meet Our Team', href: '/team', isExternalPage: true },
