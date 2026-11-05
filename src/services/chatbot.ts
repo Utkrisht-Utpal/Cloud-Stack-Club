@@ -1978,6 +1978,24 @@ export const resolveBotQuery = async (
     };
   }
 
+  // 1.8 DIWALI FESTIVE CELEBRATION INTENT
+  const isDiwaliQuery =
+    /\b(diwali|deepavali|deepawali|shubh\s+diwali|happy\s+diwali|\/diwali)\b/i.test(cleanQ);
+  if (isDiwaliQuery) {
+    return {
+      text:
+        '🪔 **Shubh Deepavali from Cloud Stack Club!** ✨\n\n' +
+        'Wishing you, your family, and our entire university community a luminous, joyful, and prosperous Diwali!\n\n' +
+        'May this festival of lights illuminate your learning journey, inspire fearless building, and deploy infinite success to your cloud journey! 🚀\n\n' +
+        'Enjoy our festive celebrations — click the glowing earthen Diyas across our home page or explore upcoming club events!',
+      suggestions: faqs.slice(0, 3),
+      actionLinks: [
+        { label: '🏆 Member Achievements', url: '/achievements' },
+        { label: '🎪 Explore Events', url: '/events' },
+      ],
+    };
+  }
+
   // 2. DYNAMIC REAL MEMBER & LEADERSHIP ENGINE (Live DB)
   try {
     const coreMembers = await getCoreMembers();

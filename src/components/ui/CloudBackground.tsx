@@ -94,14 +94,15 @@ export const CloudBackground: React.FC = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* Dynamic Ambient Gradient Blobs — subtler in light mode */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-amber-500/12 dark:bg-amber-600/18 blur-3xl animate-float-slow" />
-      <div className="absolute top-1/3 -right-40 w-96 h-96 rounded-full bg-orange-500/10 dark:bg-orange-600/16 blur-3xl animate-float" />
-      <div className="absolute -bottom-40 left-1/3 w-96 h-96 rounded-full bg-yellow-500/10 dark:bg-amber-700/15 blur-3xl animate-float-slow" />
+      {/* Dynamic Ambient Gradient Blobs — Warm Festive Yellow/Amber Glowing Theme */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-amber-500/6 dark:bg-amber-500/10 blur-3xl animate-float-slow" />
+      <div className="absolute top-1/4 -right-32 w-96 h-96 rounded-full bg-yellow-500/5 dark:bg-orange-500/8 blur-3xl animate-float" />
+      <div className="absolute -bottom-40 left-1/4 w-96 h-96 rounded-full bg-orange-500/5 dark:bg-amber-600/9 blur-3xl animate-float-slow" />
+      <div className="absolute bottom-10 -right-20 w-80 h-80 rounded-full bg-yellow-400/5 dark:bg-yellow-500/8 blur-3xl animate-float" />
 
-      {/* Floating Cloud SVGs — dark mode only for ambient cloud vector accents */}
+      {/* Floating Cloud SVGs — Warm Golden Tone */}
       <svg
-        className="hidden dark:block absolute top-20 right-10 w-72 h-48 opacity-15 text-blue-500 animate-float"
+        className="hidden dark:block absolute top-20 right-10 w-72 h-48 opacity-20 text-amber-400 animate-float"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -110,7 +111,7 @@ export const CloudBackground: React.FC = () => {
         <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
       </svg>
       <svg
-        className="hidden dark:block absolute bottom-40 left-12 w-80 h-52 opacity-15 text-cyan-500 animate-float-slow"
+        className="hidden dark:block absolute bottom-40 left-12 w-80 h-52 opacity-20 text-yellow-500 animate-float-slow"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -120,7 +121,7 @@ export const CloudBackground: React.FC = () => {
       </svg>
 
       {/* Canvas for Particle Grid */}
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-40 dark:opacity-80" />
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full opacity-35 dark:opacity-60" />
     </div>
   );
 };

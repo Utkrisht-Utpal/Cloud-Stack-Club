@@ -25,7 +25,7 @@ import { EventRegisterModal } from '../components/common/EventRegisterModal';
 import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
 import { ChatbotWidget } from '../components/chatbot/ChatbotWidget';
-import { DiwaliCelebration } from '../components/diwali/DiwaliCelebration';
+import { DiwaliCelebration } from '../components/festive/DiwaliCelebration';
 
 export const MainLayout: React.FC = () => {
   const location = useLocation();

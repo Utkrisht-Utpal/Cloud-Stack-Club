@@ -11,7 +11,7 @@ interface Particle {
   decay: number;
 }
 
-const PARTICLE_COLORS = ['#fbbf24', '#f59e0b', '#f97316', '#fef08a', '#ffedd5', '#ffffff', '#f43f5e', '#fbbf24'];
+const PARTICLE_COLORS = ['#38bdf8', '#0ea5e9', '#818cf8', '#c084fc', '#ffffff', '#38bdf8'];
 
 export const CustomCursor: React.FC = () => {
   const [mounted, setMounted] = useState(false);
@@ -241,10 +241,10 @@ export const CustomCursor: React.FC = () => {
             !isVisible || isTextInput ? 'opacity-0 scale-50' : 'opacity-100'
           } ${
             isClicking
-              ? 'w-7 h-7 border-2 border-amber-300 bg-amber-400/50 shadow-[0_0_20px_rgba(245,158,11,0.9)] scale-90'
+              ? 'w-7 h-7 border-2 border-sky-300 bg-sky-400/40 shadow-[0_0_18px_rgba(56,189,248,0.8)] scale-90'
               : isHovering
-                ? 'w-12 h-12 border-2 border-amber-400 bg-amber-400/25 shadow-[0_0_26px_rgba(245,158,11,0.6)] backdrop-blur-[0.5px] scale-100'
-                : 'w-8 h-8 border border-amber-400/80 bg-amber-400/5 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                ? 'w-12 h-12 border-2 border-sky-400 bg-sky-400/20 shadow-[0_0_24px_rgba(56,189,248,0.45)] backdrop-blur-[0.5px] scale-100'
+                : 'w-8 h-8 border border-sky-400/70 bg-transparent shadow-[0_0_10px_rgba(56,189,248,0.25)]'
           }`}
         />
       </div>
@@ -260,7 +260,7 @@ export const CustomCursor: React.FC = () => {
             !isVisible || isTextInput || isHovering
               ? 'opacity-0 scale-0'
               : 'opacity-100 scale-100'
-          } w-2.5 h-2.5 bg-amber-400 shadow-[0_0_10px_#fbbf24,0_0_20px_rgba(245,158,11,0.9)]`}
+          } w-2.5 h-2.5 bg-sky-400 shadow-[0_0_10px_#38bdf8,0_0_18px_rgba(56,189,248,0.85)]`}
         />
       </div>
     </>
