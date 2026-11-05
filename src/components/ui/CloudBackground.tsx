@@ -46,7 +46,7 @@ export const CloudBackground: React.FC = () => {
     const render = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const particleColor = theme === 'dark' ? '56, 189, 248' : '37, 99, 235';
+      const particleColor = theme === 'dark' ? '251, 191, 36' : '217, 119, 6';
 
       particles.forEach((p) => {
         p.x += p.vx;
@@ -95,9 +95,9 @@ export const CloudBackground: React.FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
       {/* Dynamic Ambient Gradient Blobs — subtler in light mode */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-blue-400/8 dark:bg-blue-600/15 blur-3xl animate-float-slow" />
-      <div className="absolute top-1/3 -right-40 w-96 h-96 rounded-full bg-cyan-400/8 dark:bg-sky-500/15 blur-3xl animate-float" />
-      <div className="absolute -bottom-40 left-1/3 w-96 h-96 rounded-full bg-indigo-400/8 dark:bg-indigo-600/15 blur-3xl animate-float-slow" />
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-amber-500/12 dark:bg-amber-600/18 blur-3xl animate-float-slow" />
+      <div className="absolute top-1/3 -right-40 w-96 h-96 rounded-full bg-orange-500/10 dark:bg-orange-600/16 blur-3xl animate-float" />
+      <div className="absolute -bottom-40 left-1/3 w-96 h-96 rounded-full bg-yellow-500/10 dark:bg-amber-700/15 blur-3xl animate-float-slow" />
 
       {/* Floating Cloud SVGs — dark mode only for ambient cloud vector accents */}
       <svg
