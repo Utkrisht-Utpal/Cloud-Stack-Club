@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Terminal, Cpu, Bell, Sparkles, Flame, Info, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/Button';
+import { DiwaliRangoli } from '../diwali/DiwaliRangoli';
+import { triggerDiwaliFireworks } from '../../utils/diwaliFireworks';
 import { TECH_BADGES } from '../../constants/data';
 import { ClubLogo } from '../ui/ClubLogo';
 import { getActiveNotices } from '../../services/notices';
@@ -171,20 +173,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
               initial={{ opacity: 0, y: -15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="inline-flex items-center gap-2 sm:gap-2.5 px-4 py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden shadow-xs"
+              className="inline-flex items-center gap-2 sm:gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-yellow-500/15 border border-amber-500/30 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden shadow-sm"
             >
-              <span className="flex h-2 w-2 relative shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              <span className="text-base sm:text-lg animate-bounce leading-none">🪔</span>
+
+              <span className="font-black tracking-wide uppercase whitespace-nowrap shrink-0 text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-400 flex items-center gap-1">
+                <span>Shubh Deepavali</span>
               </span>
 
-              <span className="font-bold tracking-wide uppercase whitespace-nowrap shrink-0 text-blue-600 dark:text-sky-400 flex items-center gap-1">
-                <span>Cloud Stack Club</span>
-              </span>
-
-              <span className="text-blue-500/60 hidden xs:inline">•</span>
+              <span className="text-amber-500/60 hidden xs:inline">•</span>
               <span className="text-slate-700 dark:text-slate-300 font-medium truncate hidden sm:inline">
-                Chandigarh University's Premier Cloud Community
+                Wishing You A Joyous & Luminous Festival of Lights! ✨
               </span>
             </motion.div>
           )}
@@ -199,7 +198,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             transition={{ duration: 0.4 }}
             className="flex flex-col items-center justify-center"
           >
-            <div className="animate-hero-breathe flex flex-col items-center justify-center">
+            <div className="animate-hero-breathe flex flex-col items-center justify-center relative">
+              <DiwaliRangoli />
               {/* Main Shield Logo Badge */}
               <div className="relative flex items-center justify-center mb-6">
                 {/* Ambient breathing aura behind the shield */}
@@ -250,6 +250,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
               className="w-full sm:w-auto"
             >
               Explore Events
+            </Button>
+
+            <Button
+              variant="glass"
+              size="lg"
+              icon={<span className="text-base leading-none">🎆</span>}
+              onClick={triggerDiwaliFireworks}
+              className="w-full sm:w-auto border-amber-400/40 hover:border-amber-400 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 shadow-md shadow-amber-500/15"
+            >
+              Celebrate Diwali
             </Button>
           </motion.div>
         </div>

@@ -25,6 +25,7 @@ import { EventRegisterModal } from '../components/common/EventRegisterModal';
 import { EventFeedbackModal } from '../components/common/EventFeedbackModal';
 import { EventPdfModal } from '../components/admin/EventPdfModal';
 import { ChatbotWidget } from '../components/chatbot/ChatbotWidget';
+import { DiwaliCelebration } from '../components/diwali/DiwaliCelebration';
 
 export const MainLayout: React.FC = () => {
   const location = useLocation();
@@ -269,6 +270,9 @@ export const MainLayout: React.FC = () => {
 
       {/* Cloud & Particle Background */}
       <CloudBackground />
+
+      {/* Festive Diwali Celebration: Hanging Toran & Interactive Floating Diyas */}
+      <DiwaliCelebration />
 
       {/* Sticky Navbar */}
       <Navbar

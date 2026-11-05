@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
   Send,
-  Sparkles,
   Bot,
   RotateCcw,
   ArrowRight,
@@ -14,6 +13,7 @@ import {
 import { getChatbotFaqs, resolveBotQuery, type BotActionLink } from '../../services/chatbot';
 import type { ChatbotFaq } from '../../types/database';
 import { TetrisGame } from './TetrisGame';
+import { triggerDiwaliFireworks } from '../../utils/diwaliFireworks';
 
 interface ChatMessage {
   id: string;
@@ -74,7 +74,7 @@ export const ChatbotWidget: React.FC = () => {
         {
           id: 'welcome-msg',
           sender: 'bot',
-          text: "Hi there! 👋 Welcome to **Cloud Stack Club** at Chandigarh University. How can I assist you today? You can choose a common question below or type anything you'd like to know!\n\nIn the meantime, you can have some fun — type **/tetris** to play a game! 🕹️",
+          text: "✨ **Shubh Deepavali!** 🪔 Welcome to **Cloud Stack Club** at Chandigarh University! May this festival of lights illuminate your learning journey and projects with brilliance.\n\nHow can I assist you today? You can choose a common question below, type **/diwali** to burst fireworks 🎆, or type **/tetris** to play a game! 🕹️",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -164,6 +164,25 @@ export const ChatbotWidget: React.FC = () => {
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
+
+    // ── /diwali easter egg ──────────────────────────────────────────────────
+    if (questionText.trim().toLowerCase() === '/diwali') {
+      setIsTyping(true);
+      triggerDiwaliFireworks();
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `msg-${Date.now()}-bot`,
+            sender: 'bot',
+            text: '🪔 **Happy Diwali & Shubh Deepavali from Cloud Stack Club!** ✨\n\nMay the glow of the diyas light up your dreams, academic journey, and every tech stack you build! 🎆 Enjoy the fireworks display! Type **/diwali** again anytime to burst more crackers.',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          },
+        ]);
+      }, 400);
+      return;
+    }
 
     // ── /tetris easter egg ──────────────────────────────────────────────────
     if (questionText.trim().toLowerCase() === '/tetris') {
@@ -344,8 +363,8 @@ export const ChatbotWidget: React.FC = () => {
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               className="mb-3 mr-1 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3.5 py-2 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/80 text-xs font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 max-w-[240px]"
             >
-              <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-              <span>Have a question about Cloud Stack Club?</span>
+              <span className="text-sm shrink-0">🪔</span>
+              <span>✨ Happy Diwali! Ask me anything!</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
