@@ -193,6 +193,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
 
         {/* Main Hero Header */}
         <div className="text-center max-w-4xl mx-auto relative">
+          {/* Sacred Geometric Diwali Rangoli Mandala — Centered Vertically with Hero Content */}
+          <DiwaliRangoli />
+
           {/* Synchronized Hero Emblem & Title Breathing Unit */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -208,17 +211,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
                 <ClubLogo size="lg" showText={false} />
               </div>
 
-              {/* Main Title with Centered Rangoli Mandala */}
-              <div className="relative flex items-center justify-center">
-                {/* Sacred Geometric Diwali Rangoli Mandala (Centered on Title) */}
-                <DiwaliRangoli />
-
-                <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] relative z-10">
-                  <span className="hero-title-gradient">
-                    Cloud Stack Club
-                  </span>
-                </h1>
-              </div>
+              {/* Main Title */}
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] relative z-10">
+                <span className="hero-title-gradient">
+                  Cloud Stack Club
+                </span>
+              </h1>
             </div>
           </motion.div>
 
@@ -226,7 +224,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
-            className="mt-6 text-lg sm:text-2xl font-medium text-slate-700 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed"
+            className="mt-6 text-lg sm:text-2xl font-medium text-slate-700 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed relative z-20"
           >
             To empower students with cloud technologies, hands-on learning and industry exposure to build innovative solutions and become future-ready professionals.
           </motion.p>

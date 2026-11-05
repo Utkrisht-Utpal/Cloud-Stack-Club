@@ -5,18 +5,18 @@ export const DiwaliRangoli: React.FC = () => {
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none -z-10 select-none overflow-visible">
       {/* 1. Subtle Warm Golden Ambient Halo */}
-      <div className="absolute w-[320px] sm:w-[380px] md:w-[440px] h-[320px] sm:h-[380px] md:h-[440px] rounded-full bg-gradient-to-tr from-amber-500/10 via-yellow-400/8 to-orange-500/10 dark:from-amber-500/15 dark:via-yellow-400/10 dark:to-orange-500/12 blur-2xl animate-pulse" />
+      <div className="absolute w-[420px] sm:w-[520px] md:w-[600px] lg:w-[640px] h-[420px] sm:h-[520px] md:h-[600px] lg:h-[640px] rounded-full bg-gradient-to-tr from-amber-500/10 via-yellow-400/8 to-orange-500/10 dark:from-amber-500/15 dark:via-yellow-400/10 dark:to-orange-500/12 blur-3xl animate-pulse" />
 
-      {/* 2. Perfectly Centered Rotating Container (HTML div rotates around exact 50% 50% center) */}
+      {/* 2. Rotating Sacred Rangoli Mandala (Dead-center of the Hero Section) */}
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
         style={{ transformOrigin: 'center center' }}
-        className="w-[300px] sm:w-[380px] md:w-[440px] h-[300px] sm:h-[380px] md:h-[440px] flex items-center justify-center"
+        className="w-[380px] sm:w-[480px] md:w-[540px] lg:w-[580px] h-[380px] sm:h-[480px] md:h-[540px] lg:h-[580px] flex items-center justify-center"
       >
         <svg
           viewBox="0 0 500 500"
-          className="w-full h-full opacity-50 dark:opacity-65 overflow-visible drop-shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+          className="w-full h-full opacity-40 dark:opacity-55 overflow-visible drop-shadow-[0_0_12px_rgba(245,158,11,0.25)]"
         >
           <defs>
             {/* Golden Gradient for Outer Mandala & Petals */}
@@ -44,13 +44,13 @@ export const DiwaliRangoli: React.FC = () => {
 
             {/* Translucent Saffron Petal Powder Fill */}
             <linearGradient id="petalFillSaffron" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.10" />
-              <stop offset="100%" stopColor="#ea580c" stopOpacity="0.03" />
+              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#ea580c" stopOpacity="0.02" />
             </linearGradient>
 
             {/* Translucent Rose Petal Powder Fill */}
             <linearGradient id="petalFillRose" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.08" />
+              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.06" />
               <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.02" />
             </linearGradient>
 
