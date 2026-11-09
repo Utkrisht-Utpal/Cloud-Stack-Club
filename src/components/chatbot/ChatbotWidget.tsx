@@ -74,7 +74,7 @@ export const ChatbotWidget: React.FC = () => {
         {
           id: 'welcome-msg',
           sender: 'bot',
-          text: "Shubh Deepavali! 🪔✨ Welcome to **Cloud Stack Club** at Chandigarh University. How can I illuminate your cloud journey today? You can choose a question below or type anything you'd like to know!\n\nCelebrate with us — type **/diwali** for fireworks or **/tetris** to play a game! 🕹️",
+          text: "Hi there! 👋 Welcome to **Cloud Stack Club** at Chandigarh University. How can I assist you today? You can choose a common question below or type anything you'd like to know!\n\nIn the meantime, you can have some fun — type **/tetris** to play a game! 🕹️",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -164,22 +164,6 @@ export const ChatbotWidget: React.FC = () => {
 
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
-
-    // ── /diwali fireworks easter egg ──────────────────────────────────────────
-    if (
-      questionText.trim().toLowerCase() === '/diwali' ||
-      /\b(happy diwali|shubh diwali|diwali fireworks)\b/i.test(questionText.trim())
-    ) {
-      import('canvas-confetti').then(({ default: confetti }) => {
-        confetti({
-          particleCount: 70,
-          spread: 85,
-          origin: { y: 0.65 },
-          colors: ['#fbbf24', '#f59e0b', '#d97706', '#ea580c', '#fef08a'],
-          shapes: ['circle', 'star'],
-        });
-      });
-    }
 
     // ── /tetris easter egg ──────────────────────────────────────────────────
     if (questionText.trim().toLowerCase() === '/tetris') {

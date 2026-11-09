@@ -6,7 +6,6 @@ import { TECH_BADGES } from '../../constants/data';
 import { ClubLogo } from '../ui/ClubLogo';
 import { getActiveNotices } from '../../services/notices';
 import { NoticeDetailModal } from '../common/NoticeDetailModal';
-import { DiwaliRangoli } from '../festive/DiwaliRangoli';
 import type { Notice } from '../../types/database';
 
 interface HeroSectionProps {
@@ -172,47 +171,44 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
               initial={{ opacity: 0, y: -15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="inline-flex items-center gap-2 sm:gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/15 via-orange-500/15 to-yellow-500/15 border border-amber-500/30 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden shadow-xs backdrop-blur-md"
+              className="inline-flex items-center gap-2 sm:gap-2.5 px-4 py-1.5 rounded-full bg-blue-500/10 dark:bg-blue-500/15 border border-blue-500/20 text-[10px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors max-w-full overflow-hidden shadow-xs"
             >
               <span className="flex h-2 w-2 relative shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
               </span>
 
-              <span className="font-bold tracking-wide uppercase whitespace-nowrap shrink-0 text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
-                <span>🪔 Shubh Deepavali</span>
+              <span className="font-bold tracking-wide uppercase whitespace-nowrap shrink-0 text-blue-600 dark:text-sky-400 flex items-center gap-1">
+                <span>Cloud Stack Club</span>
               </span>
 
-              <span className="text-amber-500/60 hidden xs:inline">•</span>
+              <span className="text-blue-500/60 hidden xs:inline">•</span>
               <span className="text-slate-700 dark:text-slate-300 font-medium truncate hidden sm:inline">
-                May your cloud innovations shine bright! ✨
+                Chandigarh University's Premier Cloud Community
               </span>
             </motion.div>
           )}
         </div>
 
         {/* Main Hero Header */}
-        <div className="text-center max-w-4xl mx-auto relative">
-          {/* Sacred Geometric Diwali Rangoli Mandala — Centered Vertically with Hero Content */}
-          <DiwaliRangoli />
-
+        <div className="text-center max-w-4xl mx-auto">
           {/* Synchronized Hero Emblem & Title Breathing Unit */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="flex flex-col items-center justify-center relative"
+            className="flex flex-col items-center justify-center"
           >
-            <div className="animate-hero-breathe flex flex-col items-center justify-center relative">
+            <div className="animate-hero-breathe flex flex-col items-center justify-center">
               {/* Main Shield Logo Badge */}
               <div className="relative flex items-center justify-center mb-6">
-                {/* Ambient breathing aura behind the shield with warm golden festive radiance */}
-                <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 via-yellow-400/15 to-orange-500/18 rounded-full blur-2xl pointer-events-none -z-10 animate-breathe-aura" />
+                {/* Ambient breathing aura behind the shield */}
+                <div className="absolute inset-0 bg-blue-500/25 dark:bg-sky-400/25 rounded-full blur-2xl pointer-events-none -z-10 animate-breathe-aura" />
                 <ClubLogo size="lg" showText={false} />
               </div>
 
               {/* Main Title */}
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1] relative z-10">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight leading-[1.1]">
                 <span className="hero-title-gradient">
                   Cloud Stack Club
                 </span>
@@ -224,7 +220,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onJoinClick, onExplore
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.15 }}
-            className="mt-6 text-lg sm:text-2xl font-medium text-slate-700 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed relative z-20"
+            className="mt-6 text-lg sm:text-2xl font-medium text-slate-700 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed"
           >
             To empower students with cloud technologies, hands-on learning and industry exposure to build innovative solutions and become future-ready professionals.
           </motion.p>
