@@ -186,14 +186,14 @@ export const Footer: React.FC = () => {
               className="group flex flex-col items-center justify-center gap-0.5 text-center"
               title="Meet the Developers behind Cloud Stack Club"
             >
-              <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
+              <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 group-hover:text-amber-700/80 dark:group-hover:text-amber-400/70 transition-colors">
                 <span>Designed & built with</span>
                 <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse inline" />
               </div>
-              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors flex items-center justify-center gap-1.5 flex-wrap">
-                <span className="hover:underline underline-offset-4 decoration-blue-500/50">Utkrisht Utpal</span>
-                <span className="text-slate-400 dark:text-slate-600 select-none">·</span>
-                <span className="hover:underline underline-offset-4 decoration-blue-500/50">Sushant Kumar</span>
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors flex items-center justify-center gap-1.5 flex-wrap">
+                <span className="hover:underline underline-offset-4 decoration-amber-600/40 dark:decoration-amber-400/40">Utkrisht Utpal</span>
+                <span className="text-slate-400 dark:text-slate-600 group-hover:text-amber-700/30 dark:group-hover:text-amber-400/30 select-none transition-colors">·</span>
+                <span className="hover:underline underline-offset-4 decoration-amber-600/40 dark:decoration-amber-400/40">Sushant Kumar</span>
               </div>
             </Link>
           </div>
