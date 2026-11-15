@@ -13,6 +13,7 @@ const EventDetailPage = lazyWithRetry(() => import('./pages/EventDetailPage'), '
 const GalleryPage = lazyWithRetry(() => import('./pages/GalleryPage'), 'GalleryPage');
 const AchievementsPage = lazyWithRetry(() => import('./pages/AchievementsPage'), 'AchievementsPage');
 const TeamPage = lazyWithRetry(() => import('./pages/TeamPage'), 'TeamPage');
+const DevelopersPage = lazyWithRetry(() => import('./pages/DevelopersPage'), 'DevelopersPage');
 const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'), 'NotFoundPage');
 
 // Wrapper for Home to receive layout outlet context
@@ -123,6 +124,22 @@ export const App: React.FC = () => {
                 element={
                   <React.Suspense fallback={<PageLoader />}>
                     <TeamPage />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="developers"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <DevelopersPage />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="creators"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <DevelopersPage />
                   </React.Suspense>
                 }
               />

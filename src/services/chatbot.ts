@@ -1642,11 +1642,11 @@ export const resolveDailyLifeQuery = (
     cleanQuery.includes('who designed you')
   ) {
     return {
-      text: `I was built by the technical team at **Cloud Stack Club**, Chandigarh University! 🚀 Designed to provide students with fast, verified information on club activities, hackathons, and technology tracks.`,
+      text: `This entire platform and I were designed and engineered by **Utkrisht Utpal** and **Sushant Kumar** at **Cloud Stack Club**, Chandigarh University! 🚀 Built with React 19, TypeScript, and modern cloud architecture to deliver blazing-fast experiences for our university community.`,
       suggestions: defaultSuggestions,
       actionLinks: [
+        { label: '💻 Meet The Developers', url: '/developers' },
         { label: '👥 Meet Our Team', url: '/team' },
-        { label: '🚀 Apply to Join', url: '/join' },
       ],
     };
   }

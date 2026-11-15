@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowUp, Heart, ShieldCheck } from 'lucide-react';
 import { siteConfig } from '../../constants/siteConfig';
@@ -179,14 +179,23 @@ export const Footer: React.FC = () => {
             <span>© 2026 {siteConfig.name}. All rights reserved. v3.01.0003</span>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-0.5 text-center">
-            <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              <span>Designed & built with</span>
-              <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse inline" />
-            </div>
-            <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-              Utkrisht Utpal · Sushant Kumar
-            </div>
+            <div className="flex flex-col items-center justify-center gap-0.5 text-center">
+            <Link
+              to="/developers"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="group flex flex-col items-center justify-center gap-0.5 text-center"
+              title="Meet the Developers behind Cloud Stack Club"
+            >
+              <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors">
+                <span>Designed & built with</span>
+                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse inline" />
+              </div>
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-sky-400 transition-colors flex items-center justify-center gap-1.5 flex-wrap">
+                <span className="hover:underline underline-offset-4 decoration-blue-500/50">Utkrisht Utpal</span>
+                <span className="text-slate-400 dark:text-slate-600 select-none">·</span>
+                <span className="hover:underline underline-offset-4 decoration-blue-500/50">Sushant Kumar</span>
+              </div>
+            </Link>
           </div>
 
           {/* Personal Social Icons LinkedIn & GitHub only*/}

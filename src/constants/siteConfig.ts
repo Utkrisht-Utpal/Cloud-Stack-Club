@@ -39,6 +39,7 @@ export const siteConfig: SiteConfig = {
     { name: 'Events', href: '/events', isExternalPage: true },
     { name: 'Gallery', href: '/gallery', isExternalPage: true },
     { name: 'Meet Our Team', href: '/team', isExternalPage: true },
+    { name: 'Developers', href: '/developers', isExternalPage: true },
     { name: 'Contact', href: '/#contact' },
     { name: 'Testimonials', href: '/#testimonials' },
   ],
