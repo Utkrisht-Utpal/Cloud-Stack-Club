@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Code2,
   Download,
   ExternalLink,
   Mail,
@@ -52,60 +51,58 @@ export const DevelopersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-28 sm:pt-32 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 sm:space-y-16">
-      {/* Top Breadcrumb & Back Button */}
-      <div className="flex items-center justify-between">
-        <motion.button
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer group shadow-xs"
-        >
-          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-          <span>Back</span>
-        </motion.button>
+      {/* Header Section: Navigation & Hero */}
+      <div className="space-y-6 sm:space-y-8">
+        {/* Top Line: Back Button & Architects Pill */}
+        <div className="relative flex items-center justify-between sm:justify-center">
+          <motion.button
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            onClick={() => navigate(-1)}
+            className="sm:absolute sm:left-0 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass-panel text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-sky-400 border border-slate-200/80 dark:border-slate-800 transition-all cursor-pointer group shadow-xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Back</span>
+          </motion.button>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 dark:bg-sky-500/15 border border-blue-500/20 text-[11px] font-bold text-blue-600 dark:text-sky-400 uppercase tracking-wider">
-          <Code2 className="w-3.5 h-3.5" />
-          <span>Platform Engineering</span>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="inline-flex items-center gap-2 px-3.5 sm:px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 via-sky-500/10 to-indigo-500/10 border border-blue-500/20 text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-slate-200"
+          >
+            <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
+            <span>Architects of Cloud Stack Club</span>
+          </motion.div>
         </div>
-      </div>
 
-      {/* Hero Header */}
-      <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 via-sky-500/10 to-indigo-500/10 border border-blue-500/20 text-xs font-semibold text-slate-800 dark:text-slate-200"
-        >
-          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" />
-          <span>Architects of Cloud Stack Club</span>
-        </motion.div>
+        {/* Hero Header */}
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <motion.h1
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight"
+          >
+            Meet the{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 dark:from-sky-400 dark:via-blue-400 dark:to-indigo-400">
+              Developers
+            </span>
+          </motion.h1>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.05 }}
-          className="text-4xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight"
-        >
-          Meet the{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-sky-500 to-indigo-600 dark:from-sky-400 dark:via-blue-400 dark:to-indigo-400">
-            Developers
-          </span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal"
-        >
-          The minds and hands behind the architecture, design, and continuous engineering of the{' '}
-          <strong className="text-slate-900 dark:text-white font-semibold">
-            Cloud Stack Club
-          </strong>{' '}
-          digital ecosystem at Chandigarh University.
-        </motion.p>
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-normal"
+          >
+            The minds and hands behind the architecture, design, and continuous engineering of the{' '}
+            <strong className="text-slate-900 dark:text-white font-semibold">
+              Cloud Stack Club
+            </strong>{' '}
+            digital ecosystem at Chandigarh University.
+          </motion.p>
+        </div>
       </div>
 
       {/* Download Alert Notice (if triggered) */}
@@ -138,19 +135,21 @@ export const DevelopersPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                 {/* Avatar with Halo Ring */}
                 <div className="relative shrink-0">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden p-1 bg-gradient-to-tr from-blue-600 via-sky-400 to-indigo-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
-                    <img
-                      src={dev.avatarUrl}
-                      alt={dev.name}
-                      onError={(e) => {
-                        // Fallback in case GitHub avatar is blocked or offline
-                        const target = e.target as HTMLImageElement;
-                        target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                          dev.name
-                        )}&background=0284c7&color=fff&size=256&bold=true`;
-                      }}
-                      className="w-full h-full object-cover rounded-xl bg-slate-900"
-                    />
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl p-1 bg-gradient-to-tr from-blue-600 via-sky-400 to-indigo-500 shadow-lg group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-900">
+                      <img
+                        src={dev.avatarUrl}
+                        alt={dev.name}
+                        onError={(e) => {
+                          // Fallback in case GitHub avatar is blocked or offline
+                          const target = e.target as HTMLImageElement;
+                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                            dev.name
+                          )}&background=0284c7&color=fff&size=256&bold=true`;
+                        }}
+                        className="w-full h-full object-cover scale-[1.04]"
+                      />
+                    </div>
                   </div>
                   {/* Status Indicator */}
                   <span
