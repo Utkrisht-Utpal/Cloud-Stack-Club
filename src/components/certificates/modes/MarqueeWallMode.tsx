@@ -68,7 +68,7 @@ export const MarqueeWallMode: React.FC<MarqueeWallModeProps> = ({
   const dur3 = Math.max(row3Items.length * 2.8, 28);
 
   return (
-    <div className="relative w-full py-4 overflow-hidden select-none space-y-4">
+    <div className="marquee-mask-edges relative w-full py-4 overflow-hidden select-none space-y-4">
       {/* Dynamic Keyframe Styles with Guaranteed In-Place Pause & Resume */}
       <style>{`
         @keyframes marqueeGlideLeft {
@@ -82,11 +82,17 @@ export const MarqueeWallMode: React.FC<MarqueeWallModeProps> = ({
         .marquee-row-hover:hover .marquee-track-anim {
           animation-play-state: paused !important;
         }
+        .marquee-mask-edges {
+          mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+        }
+        @media (min-width: 640px) {
+          .marquee-mask-edges {
+            mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+          }
+        }
       `}</style>
-
-      {/* Edge Vignette Blur Gradients */}
-      <div className="absolute left-0 inset-y-0 w-16 sm:w-32 bg-gradient-to-r from-slate-50 dark:from-slate-950 to-transparent z-20 pointer-events-none" />
-      <div className="absolute right-0 inset-y-0 w-16 sm:w-32 bg-gradient-to-l from-slate-50 dark:from-slate-950 to-transparent z-20 pointer-events-none" />
 
       {/* Row 1: Leftward Gliding Stream */}
       <div className="marquee-row-hover flex overflow-hidden py-1.5 cursor-pointer">
