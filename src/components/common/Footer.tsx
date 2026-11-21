@@ -89,6 +89,7 @@ export const Footer: React.FC = () => {
   const handleNavClick = (href: string, isExternalPage?: boolean) => {
     if (isExternalPage) {
       navigate(href);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (location.pathname !== '/') {

@@ -91,7 +91,7 @@ export const App: React.FC = () => {
                 path="achievements"
                 element={
                   <React.Suspense fallback={<PageLoader />}>
-                    <AchievementsPage />
+                    <AchievementsPage defaultTab="achievements" />
                   </React.Suspense>
                 }
               />
@@ -99,12 +99,28 @@ export const App: React.FC = () => {
                 path="achievement"
                 element={
                   <React.Suspense fallback={<PageLoader />}>
-                    <AchievementsPage />
+                    <AchievementsPage defaultTab="achievements" />
                   </React.Suspense>
                 }
               />
               <Route
                 path="certificates"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <AchievementsPage defaultTab="certificates" />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="certification"
+                element={
+                  <React.Suspense fallback={<PageLoader />}>
+                    <AchievementsPage defaultTab="certificates" />
+                  </React.Suspense>
+                }
+              />
+              <Route
+                path="certifications"
                 element={
                   <React.Suspense fallback={<PageLoader />}>
                     <AchievementsPage defaultTab="certificates" />

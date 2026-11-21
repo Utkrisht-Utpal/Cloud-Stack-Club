@@ -42,5 +42,6 @@ export const siteConfig: SiteConfig = {
     { name: 'Developers', href: '/developers', isExternalPage: true },
     { name: 'Contact', href: '/#contact' },
     { name: 'Testimonials', href: '/#testimonials' },
+    { name: 'Certifications', href: '/certificates', isExternalPage: true },
   ],
 };

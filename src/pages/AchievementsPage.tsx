@@ -25,12 +25,14 @@ export const AchievementsPage: React.FC<AchievementsPageProps> = ({ defaultTab =
       setActiveTab('achievements');
     } else if (tabParam === 'certificates') {
       setActiveTab('certificates');
+    } else if (defaultTab) {
+      setActiveTab(defaultTab);
     }
-  }, [tabParam]);
+  }, [tabParam, defaultTab]);
 
   const handleTabChange = (tab: 'certificates' | 'achievements') => {
     setActiveTab(tab);
-    setSearchParams(tab === 'certificates' ? {} : { tab });
+    setSearchParams({ tab });
   };
 
   return (
