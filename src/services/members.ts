@@ -509,17 +509,37 @@ export const updateCoreTeamMemberSocialsAdmin = async (
   if (!isSupabaseConfigured()) return true;
 
   try {
-    const { error } = await supabase
+    // 1. Update core_team_members table (matching either id or member_id)
+    const { data: updatedCores, error: coreError } = await supabase
       .from('core_team_members')
       .update({
         linkedin_url: cleanPayload.linkedin_url,
         linkedin_text: cleanPayload.linkedin_text,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', coreTeamMemberId);
+      .or(`id.eq.${coreTeamMemberId},member_id.eq.${coreTeamMemberId}`)
+      .select('id, member_id');
 
-    if (error) {
-      console.warn('DB update notice for member socials (saved locally):', error.message);
+    if (coreError) {
+      console.warn('DB update notice for core_team_members socials:', coreError.message);
+    }
+
+    // 2. Also update members table (matching member_id or coreTeamMemberId)
+    const targetMemberId = updatedCores?.[0]?.member_id || coreTeamMemberId;
+    if (targetMemberId) {
+      saveStoredMemberSocials(targetMemberId, cleanPayload);
+      const { error: memberError } = await supabase
+        .from('members')
+        .update({
+          linkedin_url: cleanPayload.linkedin_url,
+          linkedin_text: cleanPayload.linkedin_text,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', targetMemberId);
+
+      if (memberError) {
+        console.warn('DB update notice for members socials:', memberError.message);
+      }
     }
   } catch (err: any) {
     console.warn('Exception updating member socials (saved locally):', err?.message);
