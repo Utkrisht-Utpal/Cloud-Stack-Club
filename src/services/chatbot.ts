@@ -53,7 +53,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
     id: 'faq-selection-process',
     question: 'What is the selection process to become a core member?',
     answer:
-      'To become a core member or coordinator:\n\n1. **Register as a Member First:** Complete your member registration via [/join](/join).\n2. **Contact Us or Visit In Person:** Either submit a query through our [Contact Form](/contact) expressing your interest and domain, or meet the core team in person at **D3 202, South Campus, Chandigarh University**.\n3. **Skill Evaluation & Allotment:** The leadership council evaluates your skills, projects, and motivation to align you with open coordinator or functional roles.\n\n*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive council roles and not open for direct application).*',
+      'To become a core member or coordinator:\n\n1. **Register as a Member First:** Complete your member registration via [/join](/join).\n2. **Contact Us or Visit In Person:** Either submit a query through our [Contact Form](/contact) expressing your interest and domain, or meet the core team in person at **D3 202, South Campus, Chandigarh University**.\n3. **Skill Evaluation & Allotment:** The leadership council evaluates your skills, projects, and motivation to align you with open coordinator or functional roles.\n\n*(Note: Program Leader, Faculty Advisor, Secretary, and Joint Secretary are executive council roles and not open for direct application).*',
     category: 'Membership',
     keywords: ['selection', 'interview', 'process', 'how selected', 'after apply', 'shortlist', 'results', 'become core member', 'core team'],
     is_active: true,
@@ -69,7 +69,7 @@ export const DEFAULT_CHATBOT_FAQS: ChatbotFaq[] = [
       '• ✍️ **Content & Outreach:** Content Writer, Content Creator, Social Media Manager, Marketing Coordinator, Public Outreach Coordinator\n' +
       '• 🎪 **Events & Logistics:** Event Coordinator, Event Logistics and Resource Co-ordinator, Operations and planning\n' +
       '• 🤝 **Operations & Administration:** Volunteer Coordinator, Discipline Coordinator, Hospitality Incharge, Documentation Coordinator, Treasurer\n\n' +
-      '*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles. To join any role above, register on [/join](/join), then reach out via our [Contact Form](/contact) or visit **D3 202, South Campus, Chandigarh University**).*',
+      '*(Note: Program Leader, Faculty Advisor, Secretary, and Joint Secretary are executive roles. To join any role above, register on [/join](/join), then reach out via our [Contact Form](/contact) or visit **D3 202, South Campus, Chandigarh University**).*',
     category: 'About Club',
     keywords: ['domains', 'departments', 'sub divisions', 'roles', 'which roles', 'available roles', 'ai', 'ml', 'cloud', 'design', 'content'],
     is_active: true,
@@ -2053,7 +2053,7 @@ export const resolveBotQuery = async (
       `• ✍️ **Content & Marketing:** Content Writer, Content Creator, Social Media Manager, Marketing Coordinator, Public Outreach Coordinator\n` +
       `• 🎪 **Events & Logistics:** Event Coordinator, Event Logistics and Resource Co-ordinator, Operations and planning\n` +
       `• 🤝 **Operations & Administration:** Volunteer Coordinator, Discipline Coordinator, Hospitality Incharge, Documentation Coordinator, Treasurer\n\n` +
-      `*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles).*`;
+      `*(Note: Program Leader, Faculty Advisor, Secretary, and Joint Secretary are executive roles).*`;
 
     return {
       text,
@@ -2290,7 +2290,7 @@ If you run into any errors or problems, you can reach out in two ways:
         `2. **Express Interest for Core Roles:** There is no separate application form. Once registered, either reach out via our [Contact Form](/contact) mentioning your domain, or visit the core team in person at **D3 202, South Campus, Chandigarh University**.\n` +
         `3. **Interaction & Skill Fit:** The leadership council will schedule a brief interaction to assess your skills, projects, and motivation for available roles across Tech, Research, Creative, Media, Content, Events, and Operations.\n` +
         `4. **Onboarding:** Inducted members receive official responsibilities, credentials, and internal core channel access.\n\n` +
-        `*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles and not open for direct application).*`,
+        `*(Note: Program Leader, Faculty Advisor, Secretary, and Joint Secretary are executive roles and not open for direct application).*`,
       suggestions: faqs.filter((f) => f.category === 'Membership').slice(0, 3),
       actionLinks: [
         { label: '🚀 Register as Member', url: '/join' },
@@ -2441,7 +2441,7 @@ If you run into any errors or problems, you can reach out in two ways:
         `• ✍️ **Content & Outreach:** Content Writer, Content Creator, Social Media Manager, Marketing Coordinator, Public Outreach Coordinator\n` +
         `• 🎪 **Events & Logistics:** Event Coordinator, Event Logistics and Resource Co-ordinator, Operations and planning\n` +
         `• 🤝 **Operations & Administration:** Volunteer Coordinator, Discipline Coordinator, Hospitality Incharge, Documentation Coordinator, Treasurer\n\n` +
-        `*(Note: Faculty Advisor, Co-Faculty Advisor, Secretary, and Joint Secretary are executive roles. To join any role above, first register as a member at [/join](/join), then contact us via our [Contact Form](/contact) or visit **D3 202, South Campus, Chandigarh University**).*`,
+        `*(Note: Program Leader, Faculty Advisor, Secretary, and Joint Secretary are executive roles. To join any role above, first register as a member at [/join](/join), then contact us via our [Contact Form](/contact) or visit **D3 202, South Campus, Chandigarh University**).*`,
       suggestions: faqs.filter((f) => f.category === 'About Club' || f.category === 'Membership').slice(0, 3),
       actionLinks: [
         { label: '🚀 Register as Member', url: '/join' },

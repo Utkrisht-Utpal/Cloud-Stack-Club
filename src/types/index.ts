@@ -5,8 +5,8 @@ export interface SiteConfig {
   tagline: string;
   university: string;
   coordinators: {
-    faculty: string;
-    coFaculty: string;
+    programLeader: string;
+    facultyAdvisor: string;
     secretary: string;
     jointSecretary: string;
   };

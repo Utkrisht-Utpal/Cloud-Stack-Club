@@ -5,8 +5,8 @@ export const siteConfig: SiteConfig = {
   tagline: 'Learn • Build • Deploy • Scale',
   university: 'Chandigarh University',
   coordinators: {
-    faculty: 'Dr. Deepti Sharma',
-    coFaculty: 'Prof. Navjot Singh',
+    programLeader: 'Dr. Deepti Sharma',
+    facultyAdvisor: '',
     secretary: 'Lakshya Gosai',
     jointSecretary: 'Bani Kaur',
   },

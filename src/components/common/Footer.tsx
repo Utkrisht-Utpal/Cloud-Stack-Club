@@ -13,13 +13,13 @@ export const Footer: React.FC = () => {
   const location = useLocation();
 
   const [leadership, setLeadership] = useState<{
-    faculty: string;
-    coFaculty: string;
+    programLeader: string;
+    facultyAdvisor: string;
     secretary: string;
     jointSecretary: string;
   }>({
-    faculty: siteConfig.coordinators.faculty,
-    coFaculty: siteConfig.coordinators.coFaculty,
+    programLeader: siteConfig.coordinators.programLeader,
+    facultyAdvisor: siteConfig.coordinators.facultyAdvisor,
     secretary: siteConfig.coordinators.secretary,
     jointSecretary: siteConfig.coordinators.jointSecretary,
   });
@@ -29,23 +29,21 @@ export const Footer: React.FC = () => {
       .then((members) => {
         if (!members || members.length === 0) return;
 
-        let faculty = siteConfig.coordinators.faculty;
-        let coFaculty = siteConfig.coordinators.coFaculty;
+        let programLeader = siteConfig.coordinators.programLeader;
+        let facultyAdvisor = siteConfig.coordinators.facultyAdvisor;
         let secretary = siteConfig.coordinators.secretary;
         let jointSecretary = siteConfig.coordinators.jointSecretary;
 
         members.forEach((m: any) => {
-          const roleName = (m.role?.name || '').toLowerCase();
+          const roleName = (typeof m.role === 'string' ? m.role : m.role?.name || '').toLowerCase();
 
-          const isCoFaculty =
-            roleName.includes('co-faculty') ||
-            roleName.includes('co - faculty') ||
-            roleName.includes('co faculty') ||
-            roleName.includes('co- advisor') ||
-            roleName.includes('co - advisor');
+          const isProgramLeader =
+            roleName.includes('program leader') ||
+            roleName.includes('program head') ||
+            roleName.includes('programme leader');
 
-          const isFaculty =
-            !isCoFaculty &&
+          const isFacultyAdvisor =
+            !isProgramLeader &&
             (roleName.includes('faculty advisor') ||
               roleName.includes('faculty coordinator') ||
               roleName.includes('faculty'));
@@ -61,10 +59,10 @@ export const Footer: React.FC = () => {
               roleName.includes('president') ||
               roleName.includes('head'));
 
-          if (isCoFaculty) {
-            coFaculty = m.name;
-          } else if (isFaculty) {
-            faculty = m.name;
+          if (isProgramLeader) {
+            programLeader = m.name;
+          } else if (isFacultyAdvisor) {
+            facultyAdvisor = m.name;
           } else if (isJointOrVice) {
             jointSecretary = m.name;
           } else if (isSecretaryOrPresident) {
@@ -73,8 +71,8 @@ export const Footer: React.FC = () => {
         });
 
         setLeadership({
-          faculty,
-          coFaculty,
+          programLeader,
+          facultyAdvisor,
           secretary,
           jointSecretary,
         });
@@ -150,13 +148,13 @@ export const Footer: React.FC = () => {
             </h4>
             <div className="space-y-3 text-sm">
               <div className="p-3 rounded-xl glass-panel bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800">
-                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Faculty Coordinator</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{leadership.faculty}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Program Leader</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{leadership.programLeader}</p>
               </div>
 
               <div className="p-3 rounded-xl glass-panel bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800">
-                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Co-Faculty Coordinator</p>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{leadership.coFaculty}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Faculty Advisor</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 min-h-[1.25rem]">{leadership.facultyAdvisor}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
